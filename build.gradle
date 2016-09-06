@@ -1,0 +1,254 @@
+allprojects {
+	group = 'org.arivu'
+	version = '1.0.0'
+}
+
+
+subprojects {
+
+	apply plugin: 'java'
+	apply plugin: 'eclipse'
+	apply plugin: 'project-report'
+
+	sourceCompatibility = 1.6
+	targetCompatibility = 1.6
+  
+  eclipse{
+  	classpath{
+  		downloadSources=true
+  		downloadJavadoc=true
+  	}
+  }
+  
+  compileJava {
+    
+    //enable compilation in a separate daemon process
+    options.fork = true
+  
+    //enable incremental compilation
+//    options.incremental = true
+    
+    // set debug Levels
+    options.debugOptions.debugLevel = "source,lines,vars"
+  }
+  
+  compileTestJava {
+    
+    //enable compilation in a separate daemon process
+    options.fork = true
+  
+    //enable incremental compilation
+//    options.incremental = true
+    
+    // set debug Levels
+    options.debugOptions.debugLevel = "source,lines,vars"
+  }
+
+  repositories {
+  	mavenCentral()
+  }
+  
+  jar {
+     archiveName project.group+'-'+project.name+'-'+project.version+'.jar'
+	}
+
+dependencies {
+    compile 'org.slf4j:slf4j-api:1.7.21'
+	compile fileTree(dir: 'libs', include: '*.jar')
+
+    testCompile 'junit:junit:4.12'
+    testCompile 'org.mockito:mockito-all:1.10.19'
+}
+
+task createPom() << {
+	apply plugin: 'maven'
+    //description "Generates pom.xml"
+    
+    pom {
+        project {
+            groupId project.group.toString()
+            artifactId project.name
+            version project.version.toString()
+            packaging 'jar'
+        }
+    }.withXml {
+        def dependenciesNode = asNode().appendNode('dependencies')
+
+        configurations.compile.allDependencies.each { dependency ->
+            def dependencyNode = dependenciesNode.appendNode('dependency')
+            dependencyNode.appendNode('groupId', dependency.group)
+            dependencyNode.appendNode('artifactId', dependency.name)
+            dependencyNode.appendNode('version', dependency.version)
+        }
+    }.writeTo("$buildDir/libs/"+project.group+"-"+project.name+"-"+project.version+".xml")
+}
+
+
+build.finalizedBy 'createPom'
+
+uploadArchives {
+    repositories {
+       flatDir {
+           dirs 'repos'
+       }
+    }
+}
+  
+ }
+
+project(':ason'){
+task copyJars() << {
+}
+}
+
+project(':utils'){
+task copyJars() << {
+}
+}
+
+project(':datastructure'){
+dependencies {
+    compile project(':utils')
+  }
+  /*
+task copyJars() << {
+	copy{
+		from "../../utils/utils/build/libs"
+		into "libs"
+		include '*.jar'
+	}
+}*/
+}
+
+project(':lightninglog'){
+dependencies {
+    compile project(':datastructure')
+  }
+  /*
+task copyJars() << {
+	copy{
+		from "../../utils/utils/build/libs"
+		into "libs"
+		include '*.jar'
+	}
+	copy{
+		from "../../datastructure/datastructure/build/libs"
+		into "libs"
+		include '*.jar'
+	}
+}
+*/
+}
+
+project(':datasource'){
+dependencies {
+    compile project(':resourcepool')
+    compile "org.apache.tomcat:tomcat-catalina:7.0.14"
+    runtime project(':lightninglog')
+  }
+  /*
+task copyJars() << {
+	copy{
+		from "../../utils/utils/build/libs"
+		into "libs"
+		include '*.jar'
+	}
+	copy{
+		from "../../datastructure/datastructure/build/libs"
+		into "libs"
+		include '*.jar'
+	}
+	copy{
+		from "../../lightninglog/lightninglog/build/libs"
+		into "libs"
+		include '*.jar'
+	}
+	copy{
+		from "../../resourcepool/resourcepool/build/libs"
+		into "libs"
+		include '*.jar'
+	}
+}
+*/
+}
+
+
+project(':resourcepool'){
+dependencies {
+    compile project(':datastructure')
+    runtime project(':lightninglog')
+  }
+  /*
+task copyJars() << {
+	copy{
+		from "../../utils/utils/build/libs"
+		into "libs"
+		include '*.jar'
+	}
+	copy{
+		from "../../datastructure/datastructure/build/libs"
+		into "libs"
+		include '*.jar'
+	}
+	copy{
+		from "../../lightninglog/lightninglog/build/libs"
+		into "libs"
+		include '*.jar'
+	}
+}
+*/
+}
+
+
+
+project(':dmapper'){
+dependencies {
+    compile project(':resourcepool')
+    runtime project(':datasource')
+    runtime project(':lightninglog')
+  }
+  /*
+task copyJars() << {
+	copy{
+		from "../../utils/utils/build/libs"
+		into "libs"
+		include '*.jar'
+	}
+	copy{
+		from "../../datastructure/datastructure/build/libs"
+		into "libs"
+		include '*.jar'
+	}
+	copy{
+		from "../../lightninglog/lightninglog/build/libs"
+		into "libs"
+		include '*.jar'
+	}
+}
+*/
+}
+
+project(':nioserver'){
+dependencies {
+    runtime project(':lightninglog')
+  }
+  /*
+task copyJars() << {
+	copy{
+		from "../../utils/utils/build/libs"
+		into "libs"
+		include '*.jar'
+	}
+	copy{
+		from "../../datastructure/datastructure/build/libs"
+		into "libs"
+		include '*.jar'
+	}
+	copy{
+		from "../../lightninglog/lightninglog/build/libs"
+		into "libs"
+		include '*.jar'
+	}
+}
+*/
+}

@@ -1,0 +1,13 @@
+/bin/
+.classpath
+.gradle/
+.project
+.settings/
+/build/
+/src/.DS_Store
+/src/main/.DS_Store
+/src/main/java/.DS_Store
+/src/test/.DS_Store
+/logs/
+
+

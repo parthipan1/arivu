@@ -1,0 +1,2 @@
+rootProject.name = 'java'
+include 'ason','datasource','datastructure','dmapper','lightninglog','nioserver','resourcepool','utils'
