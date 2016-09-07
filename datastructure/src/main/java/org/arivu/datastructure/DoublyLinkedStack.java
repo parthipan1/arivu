@@ -101,7 +101,7 @@ public final  class DoublyLinkedStack<T> implements Iterable<T> {
 	}
 	
 	/**
-	 * @return
+	 * @return T
 	 */
 	//@Override
 	public T poll(){

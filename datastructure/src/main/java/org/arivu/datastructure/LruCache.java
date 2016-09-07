@@ -91,8 +91,12 @@ public final class LruCache<K,V> {
 	private final Amap<K,Tracker<V>> cache = new Amap<K,Tracker<V>>();
 
 	private final int size; 
+	
 	/**
+	 * Constructor for default Object creation.
+	 * 
 	 * @param cacheStrategy
+	 * @param size
 	 */
 	public LruCache(CacheStrategy cacheStrategy,int size) {
 		super();
@@ -107,7 +111,11 @@ public final class LruCache<K,V> {
 		this.size = size; 
 	}
 
+	
 	/**
+	 * put to cache with key.
+	 * 
+	 * @param key
 	 * @param t
 	 */
 	public void put(K key,V t) {
@@ -120,7 +128,10 @@ public final class LruCache<K,V> {
 	}
 
 	/**
-	 * @return
+	 * get from cache.
+	 * 
+	 * @param Key
+	 * @return V
 	 */
 	public V get(K key) {
 		Tracker<V> tracker = cache.get(key);
@@ -163,15 +174,15 @@ public final class LruCache<K,V> {
 	}
 	
 	/**
-	 * 
+	 * clears cache.
 	 */
 	public void clear() {
 		cache.clear();
 	}
 
 	/**
-	 * @param t
-	 * @return
+	 * @param Key
+	 * @return boolean
 	 */
 	public boolean remove(K key) {
 		if (key != null) {

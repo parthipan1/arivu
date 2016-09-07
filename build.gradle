@@ -9,6 +9,11 @@ buildscript {
 allprojects {
 	group = 'org.arivu'
 	version = '1.0.0'
+	
+    tasks.withType(Javadoc) {
+        options.addStringOption('Xdoclint:none', '-quiet')
+    }
+	
 }
 
 subprojects {
@@ -22,6 +27,8 @@ subprojects {
 
 	sourceCompatibility = 1.6
 	targetCompatibility = 1.6
+  
+  //tasks.withType(Javadoc).all { enabled = false }
   
   task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = 'sources'

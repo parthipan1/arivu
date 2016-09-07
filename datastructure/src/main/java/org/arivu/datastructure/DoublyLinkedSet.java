@@ -42,7 +42,6 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 	}
 	
 	/**
-	 * @param writeLock TODO
 	 * 
 	 */
 	public DoublyLinkedSet() {
@@ -50,9 +49,9 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 	}
 	
 	/**
-	 * @param size TODO
-	 * @param strategy TODO
-	 * @param obj
+	 * @param t
+	 * @param size 
+	 * @param strategy 
 	 */
 	private DoublyLinkedSet(T t, AtomicInteger size, CompareStrategy strategy) {
 		super();
@@ -88,7 +87,7 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 	}
 	
 	/**
-	 * @return
+	 * @return T
 	 */
 	@Override
 	public T poll(){

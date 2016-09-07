@@ -40,10 +40,8 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 	}
 	
 	/**
-	 * @param writeLock TODO
-	 * @param size TODO
-	 * @param lockfree TODO
-	 * @param obj
+	 * @param t
+	 * @param size 
 	 */
 	private DoublyLinkedList(T t, AtomicInteger size) {
 		super();
@@ -75,7 +73,7 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 	}
 	
 	/**
-	 * @return
+	 * @return T
 	 */
 	@Override
 	public T poll(){
