@@ -23,6 +23,24 @@ subprojects {
 	sourceCompatibility = 1.6
 	targetCompatibility = 1.6
   
+  task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+	}
+
+	task javadocJar(type: Jar, dependsOn: javadoc) {
+	    classifier = 'javadoc'
+	    from javadoc.destinationDir
+	}
+  
+  
+  artifacts {
+	 archives jar
+	 archives sourcesJar
+	 archives javadocJar
+	 
+	}
+  
   eclipse{
   	classpath{
   		downloadSources=true
@@ -58,11 +76,7 @@ subprojects {
   	mavenCentral()
   	// https://dl.bintray.com/parthipan/arivu/
   }
-  
-  jar {
-     archiveName project.group+'-'+project.name+'-'+project.version+'.jar'
-	}
-
+	
   dependencies {
     compile 'org.slf4j:slf4j-api:1.7.21'
 	compile fileTree(dir: 'libs', include: '*.jar')
@@ -71,40 +85,6 @@ subprojects {
     testCompile 'org.mockito:mockito-all:1.10.19'
   }
 
-  task createPom() << {
-	apply plugin: 'maven'
-    //description "Generates pom.xml"
-    
-    pom {
-        project {
-            groupId project.group.toString()
-            artifactId project.name
-            version project.version.toString()
-            packaging 'jar'
-        }
-    }.withXml {
-        def dependenciesNode = asNode().appendNode('dependencies')
-
-        configurations.compile.allDependencies.each { dependency ->
-            def dependencyNode = dependenciesNode.appendNode('dependency')
-            dependencyNode.appendNode('groupId', dependency.group)
-            dependencyNode.appendNode('artifactId', dependency.name)
-            dependencyNode.appendNode('version', dependency.version)
-        }
-    }.writeTo("$buildDir/libs/"+project.group+"-"+project.name+"-"+project.version+".xml")
-  }
-
-
-  build.finalizedBy 'createPom'
-
-  uploadArchives {
-    repositories {
-       flatDir {
-           dirs 'repos'
-       }
-    }
-  }
-  
   bintray {
     user = 'parthipan'
     key = '940dda68c833b2c49f0f8a2467d25f07922c08c6'
@@ -139,28 +119,32 @@ subprojects {
         githubRepo = 'parthipan1/arivu' //Optional Github repository
         githubReleaseNotesFile = 'README.md' //Optional Github readme file
 		
-		/*
+		
         //Optional version descriptor
         version {
-            name = '1.3-Final' //Bintray logical version name
-            desc = //Optional - Version-specific description'
-            released  = //Optional - Date of the version release. 2 possible values: date in the format of 'yyyy-MM-dd'T'HH:mm:ss.SSSZZ' OR a java.util.Date instance
-            vcsTag = '1.3.0'
-            attributes = ['gradle-plugin': 'com.use.less:com.use.less.gradle:gradle-useless-plugin'] //Optional version-level attributes
+            name = project.version //Bintray logical version name
+            //desc = //Optional - Version-specific description'
+            released  = new Date() //Optional - Date of the version release. 2 possible values: date in the format of 'yyyy-MM-dd'T'HH:mm:ss.SSSZZ' OR a java.util.Date instance
+            vcsTag = 'baseVersion'
+            //attributes = ['gradle-plugin': 'com.use.less:com.use.less.gradle:gradle-useless-plugin'] //Optional version-level attributes
             //Optional configuration for GPG signing
+            /*
             gpg {
                 sign = true //Determines whether to GPG sign the files. The default is false
                 passphrase = 'passphrase' //Optional. The passphrase for GPG signing'
             }
+            */
             //Optional configuration for Maven Central sync of the version
+            
             mavenCentralSync {
                 sync = true //[Default: true] Determines whether to sync the version to Maven Central.
-                user = 'userToken' //OSS user token: mandatory
-                password = 'paasword' //OSS user password: mandatory
+                user = 'Ys9ZqY2L' //OSS user token: mandatory
+                password = 'DwSej8ZhEqCumdnyATKgxAIWnpfgLKxKVt9lOSquNgi2' //OSS user password: mandatory
                 close = '1' //Optional property. By default the staging repository is closed and artifacts are released to Maven Central. You can optionally turn this behaviour off (by puting 0 as value) and release the version manually.
-            }            
+            } 
+                       
         }
-        */
+        
     	}
 	}
   
@@ -169,14 +153,49 @@ subprojects {
 	    publications {
 	        MyPublication(MavenPublication) {
 	            from components.java
+	                        
+	            pom.withXml {
+	                asNode().children().last() + {
+	                    resolveStrategy = Closure.DELEGATE_FIRST
+	                    name project.name
+	                    description 'Arivu java high performance libraries'
+	                    url 'https://github.com/parthipan1/arivu'
+	                    scm {
+	                        url 'https://github.com/parthipan1/arivu.git'
+	                        connection 'https://github.com/parthipan1/arivu.git'
+	                        developerConnection 'https://github.com/parthipan1/arivu.git'
+	                    }
+	                    licenses {
+	                        license {
+	                            name 'The Apache Software License, Version 2.0'
+	                            url 'http://www.apache.org/license/LICENSE-2.0.txt'
+	                            distribution 'repo'
+	                        }
+	                    }
+	                    developers {
+	                        developer {
+	                            id 'parthipan'
+	                            name 'parthipan'
+	                            email 'parthi05@gmail.com'
+	                        }
+	                    }
+	                }
+	            }
+	                        
 	            groupId project.group
 	            artifactId project.name
 	            version project.version
+	            
 	        }
+	        
+	        MyPublication(MavenPublication) {
+            	artifact source: file("${project.buildDir}/libs/${project.name}-${project.version}-javadoc.jar"),classifier:"javadoc",extension:"jar"
+        	}
+	        MyPublication(MavenPublication) {
+            	artifact source: file("${project.buildDir}/libs/${project.name}-${project.version}-sources.jar"),classifier:"sources",extension:"jar"
+        	}
 	    }
 	}
-  
-   //project.group+'-'+project.name+'-'+project.version
   
  }
 
@@ -194,34 +213,12 @@ project(':datastructure'){
 dependencies {
     compile project(':utils')
   }
-  /*
-task copyJars() << {
-	copy{
-		from "../../utils/utils/build/libs"
-		into "libs"
-		include '*.jar'
-	}
-}*/
 }
 
 project(':lightninglog'){
 dependencies {
     compile project(':datastructure')
   }
-  /*
-task copyJars() << {
-	copy{
-		from "../../utils/utils/build/libs"
-		into "libs"
-		include '*.jar'
-	}
-	copy{
-		from "../../datastructure/datastructure/build/libs"
-		into "libs"
-		include '*.jar'
-	}
-}
-*/
 }
 
 project(':datasource'){
@@ -231,30 +228,6 @@ dependencies {
     testCompile project(':lightninglog')
     runtime project(':lightninglog')
   }
-  /*
-task copyJars() << {
-	copy{
-		from "../../utils/utils/build/libs"
-		into "libs"
-		include '*.jar'
-	}
-	copy{
-		from "../../datastructure/datastructure/build/libs"
-		into "libs"
-		include '*.jar'
-	}
-	copy{
-		from "../../lightninglog/lightninglog/build/libs"
-		into "libs"
-		include '*.jar'
-	}
-	copy{
-		from "../../resourcepool/resourcepool/build/libs"
-		into "libs"
-		include '*.jar'
-	}
-}
-*/
 }
 
 
@@ -264,25 +237,6 @@ dependencies {
     testCompile project(':lightninglog')
     runtime project(':lightninglog')
   }
-  /*
-task copyJars() << {
-	copy{
-		from "../../utils/utils/build/libs"
-		into "libs"
-		include '*.jar'
-	}
-	copy{
-		from "../../datastructure/datastructure/build/libs"
-		into "libs"
-		include '*.jar'
-	}
-	copy{
-		from "../../lightninglog/lightninglog/build/libs"
-		into "libs"
-		include '*.jar'
-	}
-}
-*/
 }
 
 
@@ -293,48 +247,10 @@ dependencies {
     runtime project(':datasource')
     runtime project(':lightninglog')
   }
-  /*
-task copyJars() << {
-	copy{
-		from "../../utils/utils/build/libs"
-		into "libs"
-		include '*.jar'
-	}
-	copy{
-		from "../../datastructure/datastructure/build/libs"
-		into "libs"
-		include '*.jar'
-	}
-	copy{
-		from "../../lightninglog/lightninglog/build/libs"
-		into "libs"
-		include '*.jar'
-	}
-}
-*/
 }
 
 project(':nioserver'){
 dependencies {
     runtime project(':lightninglog')
   }
-  /*
-task copyJars() << {
-	copy{
-		from "../../utils/utils/build/libs"
-		into "libs"
-		include '*.jar'
-	}
-	copy{
-		from "../../datastructure/datastructure/build/libs"
-		into "libs"
-		include '*.jar'
-	}
-	copy{
-		from "../../lightninglog/lightninglog/build/libs"
-		into "libs"
-		include '*.jar'
-	}
-}
-*/
 }
