@@ -5,8 +5,8 @@
 		"org.arivu":"debug"
 	},
 	"buffer":{
-		"batch":100,
-		"ring":300
+		"batch":50,
+		"ring":50
 	},
 	"log":{
 		"showDateTime":true,

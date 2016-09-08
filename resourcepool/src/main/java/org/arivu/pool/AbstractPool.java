@@ -256,10 +256,14 @@ abstract class AbstractPool<T> implements Pool<T> {
 			}
 		}
 		
-		int size = head.size();
-		if (size < maxPoolSize) {
+		if (head.size() < maxPoolSize) {
+			final int size = head.size();
 			if( head.size.compareAndSet(size, size+1) ){
-				return getProxyLinked(createNew(params, true));
+				if (head.size() <= maxPoolSize) {
+					return getProxyLinked(createNew(params, true));
+				}else{
+					head.size.decrementAndGet();
+				}
 			}
 		}
 		
