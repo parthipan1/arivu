@@ -67,10 +67,10 @@ public final class Graph implements Serializable {
 	 * @author P
 	 *
 	 */
-	public interface Identity {
-		Collection<? extends Identity> getChildren();
+	public interface Edges {
+		Collection<Object> in(Object obj);
 
-		Collection<? extends Identity> getParents();
+		Collection<Object> out(Object obj);
 	}
 
 	/**
@@ -78,7 +78,7 @@ public final class Graph implements Serializable {
 	 */
 	private static final long serialVersionUID = -262978106533357393L;
 
-	private static class Node<T extends Identity> implements Serializable {
+	private static class Node<T extends Object> implements Serializable {
 		/**
 		 * 
 		 */
@@ -119,12 +119,15 @@ public final class Graph implements Serializable {
 
 	}
 
-	DoublyLinkedSet<Node<Identity>> all = new DoublyLinkedSet<Node<Identity>>(CompareStrategy.EQUALS);
+	DoublyLinkedSet<Node<Object>> all = new DoublyLinkedSet<Node<Object>>(CompareStrategy.EQUALS);
+
+	final Edges edges;
 
 	/**
 	 * 
 	 */
-	public Graph() {
+	public Graph(Edges edges) {
+		this.edges = edges;
 	}
 
 	public int size() {
@@ -135,7 +138,7 @@ public final class Graph implements Serializable {
 		return all.isEmpty();
 	}
 
-	public boolean add(final Identity e) throws CyclicException {
+	public boolean add(final Object e) throws CyclicException {
 		if (e != null) {
 			return addInternal(e, true);
 		} else {
@@ -143,15 +146,15 @@ public final class Graph implements Serializable {
 		}
 	}
 
-	private boolean addInternal(final Identity e, boolean resolve) throws CyclicException {
+	private boolean addInternal(final Object e, boolean resolve) throws CyclicException {
 		if (e != null) {
-			Node<Identity> node = getWrapper(e);
-//			final Node<Identity> node = get(e, all, false);
+			Node<Object> node = getWrapper(e);
+			// final Node<Object> node = get(e, all, false);
 			boolean add = all.add(node);
-//			//System.out.println(" added "+e+" add "+add);
+			// //System.out.println(" added "+e+" add "+add);
 			if (add) {
-				addAllInternal(e.getParents(), false);
-				addAllInternal(e.getChildren(), false);
+				addAllInternal(edges.in(e), false);
+				addAllInternal(edges.out(e), false);
 				if (resolve) {
 					resolveAll();
 				}
@@ -161,31 +164,32 @@ public final class Graph implements Serializable {
 		return false;
 	}
 
-//	private static final Lock glock = new AtomicWFLock();
-	
+	// private static final Lock glock = new AtomicWFLock();
+
 	private void resolveAll() throws CyclicException {
-		
-		final DoublyLinkedSet<Node<Identity>> tempAll = new DoublyLinkedSet<Node<Identity>>(CompareStrategy.EQUALS);
-		for (Node<Identity> node : all) {
-			final Node<Identity> wrapper = getWrapper(node.obj);
+
+		final DoublyLinkedSet<Node<Object>> tempAll = new DoublyLinkedSet<Node<Object>>(CompareStrategy.EQUALS);
+		for (Node<Object> node : all) {
+			final Node<Object> wrapper = getWrapper(node.obj);
 			if (wrapper != null) {
 				tempAll.add(wrapper);
 			}
 		}
 
-		final Set<Node<Identity>> root = new DoublyLinkedSet<Node<Identity>>(CompareStrategy.EQUALS);
-		final Set<Node<Identity>> leaf = new DoublyLinkedSet<Node<Identity>>(CompareStrategy.EQUALS);
-		for (Node<Identity> node : tempAll) {
-			setRootLeaf(node, root, leaf, tempAll);
+		final Set<Node<Object>> head = new DoublyLinkedSet<Node<Object>>(CompareStrategy.EQUALS);
+		final Set<Node<Object>> leg = new DoublyLinkedSet<Node<Object>>(CompareStrategy.EQUALS);
+		for (Node<Object> node : tempAll) {
+			headOverHeels(node, head, leg, tempAll, edges);
 		}
-		
-		//System.out.println("resolveAll :: "+getStr(root)+" tempAll "+tempAll.size());
-		
-		recursivelyResolve(tempAll, root, Direction.child, 1);
 
-		for (Node<Identity> node : leaf) {
+		// System.out.println("resolveAll :: "+getStr(root)+" tempAll
+		// "+tempAll.size());
+
+		recursivelyResolve(tempAll, head, Direction.out, 1, edges);
+
+		for (Node<Object> node : leg) {
 			if (node.level < 0) {
-				recursivelyResolve(tempAll, node, Direction.parent, getMaxLevel()+1);
+				recursivelyResolve(tempAll, node, Direction.in, getMaxLevel() + 1, edges);
 			}
 		}
 
@@ -193,54 +197,63 @@ public final class Graph implements Serializable {
 
 	}
 
-	private static void filter(final DoublyLinkedSet<Node<Identity>> allNodes,final Set<Node<Identity>> set,Direction direction){
-		final Set<Node<Identity>> tset = new DoublyLinkedSet<Node<Identity>>(CompareStrategy.EQUALS);
+	private static void filter(final DoublyLinkedSet<Node<Object>> allNodes, final Set<Node<Object>> set,
+			Direction direction, Edges edges) {
+		final Set<Node<Object>> tset = new DoublyLinkedSet<Node<Object>>(CompareStrategy.EQUALS);
 		tset.addAll(set);
-		for (Node<Identity> node : set) {
-			tset.removeAll(get(node, allNodes, direction, true)) ;
+		for (Node<Object> node : set) {
+			tset.removeAll(get(node, allNodes, direction, true, edges));
 		}
 		set.clear();
 		set.addAll(tset);
 		tset.clear();
 	}
-	
-	private static void recursivelyResolve(final DoublyLinkedSet<Node<Identity>> allNodes,
-			final Node<Identity> startNode, final Direction direction, int startLevel) throws CyclicException {
-		Set<Node<Identity>> nodes = new DoublyLinkedSet<Graph.Node<Identity>>();
+
+	private static void recursivelyResolve(final DoublyLinkedSet<Node<Object>> allNodes, final Node<Object> startNode,
+			final Direction direction, int startLevel, Edges edges) throws CyclicException {
+		Set<Node<Object>> nodes = new DoublyLinkedSet<Graph.Node<Object>>();
 		nodes.add(startNode);
-		recursivelyResolve(allNodes, nodes, direction, startLevel);
+		recursivelyResolve(allNodes, nodes, direction, startLevel, edges);
 	}
-	
-	private static void recursivelyResolve(final DoublyLinkedSet<Node<Identity>> allNodes,
-			final Set<Node<Identity>> startNodes, final Direction direction, int startLevel) throws CyclicException {
-		//System.out.println(" recursivelyResolve allNodes :: "+getStr(allNodes));
-		final Set<Node<Identity>> resolved = new DoublyLinkedSet<Node<Identity>>(CompareStrategy.EQUALS);
-		final Set<Node<Identity>> unresolved = new DoublyLinkedSet<Node<Identity>>(CompareStrategy.EQUALS);
+
+	private static void recursivelyResolve(final DoublyLinkedSet<Node<Object>> allNodes,
+			final Set<Node<Object>> startNodes, final Direction direction, int startLevel, Edges edges)
+					throws CyclicException {
+		// System.out.println(" recursivelyResolve allNodes ::
+		// "+getStr(allNodes));
+		final Set<Node<Object>> resolved = new DoublyLinkedSet<Node<Object>>(CompareStrategy.EQUALS);
+		final Set<Node<Object>> unresolved = new DoublyLinkedSet<Node<Object>>(CompareStrategy.EQUALS);
 		resolved.addAll(startNodes);
-		final Set<Node<Identity>> cursor = new DoublyLinkedSet<Node<Identity>>(CompareStrategy.EQUALS);
+		final Set<Node<Object>> cursor = new DoublyLinkedSet<Node<Object>>(CompareStrategy.EQUALS);
 		cursor.addAll(resolved);
 		while (resolved.size() < allNodes.size()) {
-			//System.out.println(" recursivelyResolve tempAll cursor :: "+getStr(cursor));
-			for (Node<Identity> node : cursor) {
-				final Collection<Node<Identity>> children = get(node, allNodes, direction, true);
+			// System.out.println(" recursivelyResolve tempAll cursor ::
+			// "+getStr(cursor));
+			for (Node<Object> node : cursor) {
+				final Collection<Node<Object>> children = get(node, allNodes, direction, true, edges);
 				if (children != null && children.size() > 0) {
-					for (Node<Identity> wrapper : children) {
-						final DoublyLinkedSet<Node<Identity>> search = allNodes.search(wrapper);
+					for (Node<Object> wrapper : children) {
+						final DoublyLinkedSet<Node<Object>> search = allNodes.search(wrapper);
 						if (search != null) {
 							search.obj.level = startLevel;
-							//System.out.println(" setLevel "+search.obj.level+" "+search.obj.obj+" recursivelyResolve 1");
+							// System.out.println(" setLevel
+							// "+search.obj.level+" "+search.obj.obj+"
+							// recursivelyResolve 1");
 							unresolved.add(search.obj);
-						}else{
+						} else {
 							allNodes.add(wrapper);
 							wrapper.level = startLevel;
 							unresolved.add(wrapper);
-							//System.out.println(" setLevel "+wrapper.level+" "+wrapper.obj+" recursivelyResolve 2 unresolved "+getStr(unresolved)+" allNodes :: "+getStr(allNodes));
+							// System.out.println(" setLevel "+wrapper.level+"
+							// "+wrapper.obj+" recursivelyResolve 2 unresolved
+							// "+getStr(unresolved)+" allNodes ::
+							// "+getStr(allNodes));
 						}
 					}
 				}
 			}
-			filter(allNodes, unresolved, direction);
-			final Set<Node<Identity>> tresolved = new DoublyLinkedSet<Node<Identity>>(CompareStrategy.EQUALS);
+			filter(allNodes, unresolved, direction, edges);
+			final Set<Node<Object>> tresolved = new DoublyLinkedSet<Node<Object>>(CompareStrategy.EQUALS);
 			tresolved.addAll(resolved);
 			tresolved.retainAll(unresolved);
 			if (!tresolved.isEmpty())
@@ -254,24 +267,24 @@ public final class Graph implements Serializable {
 			unresolved.clear();
 			startLevel = direction.getNext(startLevel);
 		}
-		//System.out.println("*******");
+		// System.out.println("*******");
 	}
 
-	private final static Node<Identity> getWrapper(Identity t) {
+	private final static Node<Object> getWrapper(Object t) {
 		if (t == null) {
 			return null;
 		}
 
-		final Node<Identity> node = new Node<Identity>(t);
+		final Node<Object> node = new Node<Object>(t);
 		node.level = Integer.MIN_VALUE;
-//		//System.out.println("Create Node "+t);
+		// //System.out.println("Create Node "+t);
 		return node;
 	}
 
-	private final static String getStr(Collection<Node<Identity>> tresolved) {
+	private final static String getStr(Collection<Node<Object>> tresolved) {
 		StringBuffer sb = new StringBuffer();
 
-		for (Node<Identity> node : tresolved) {
+		for (Node<Object> node : tresolved) {
 			if (sb.length() == 0) {
 				sb.append(node.obj.toString()).append("::").append(node.level);
 			} else {
@@ -282,13 +295,13 @@ public final class Graph implements Serializable {
 		return sb.toString();
 	}
 
-	private final static DoublyLinkedSet<Node<Identity>> get(Node<Identity> node,
-			DoublyLinkedSet<Node<Identity>> tempAll, Direction dir, boolean includeAll) {
-		DoublyLinkedSet<Node<Identity>> set = new DoublyLinkedSet<Graph.Node<Identity>>(CompareStrategy.EQUALS);
-		final Collection<? extends Identity> cols = dir.get(node.obj);
+	private final static DoublyLinkedSet<Node<Object>> get(Node<Object> node, DoublyLinkedSet<Node<Object>> tempAll,
+			Direction dir, boolean includeAll, Edges edges) {
+		DoublyLinkedSet<Node<Object>> set = new DoublyLinkedSet<Graph.Node<Object>>(CompareStrategy.EQUALS);
+		final Collection<? extends Object> cols = dir.get(node.obj, edges);
 		if (cols != null && cols.size() >= 0) {
-			for (Identity p : cols) {
-				final Node<Identity> wrapper = get(p, tempAll, true);
+			for (Object p : cols) {
+				final Node<Object> wrapper = get(p, tempAll, true);
 				if (wrapper != null) {
 					set.add(wrapper);
 				}
@@ -296,8 +309,8 @@ public final class Graph implements Serializable {
 		}
 		if (includeAll) {
 			final Direction other = dir.getOther();
-			for (Node<Identity> n : tempAll) {
-				if (node != n && get(n, tempAll, other, false).contains(node)) {
+			for (Node<Object> n : tempAll) {
+				if (node != n && get(n, tempAll, other, false, edges).contains(node)) {
 					set.add(n);
 				}
 			}
@@ -305,11 +318,11 @@ public final class Graph implements Serializable {
 		return set;
 	}
 
-	private final static Node<Identity> get(Identity p, DoublyLinkedSet<Node<Identity>> tempAll, boolean add) {
+	private final static Node<Object> get(Object p, DoublyLinkedSet<Node<Object>> tempAll, boolean add) {
 		if (p != null) {
-			final DoublyLinkedSet<Node<Identity>> search = tempAll.search(p);
+			final DoublyLinkedSet<Node<Object>> search = tempAll.search(p);
 			if (search == null) {
-				final Node<Identity> wrapper = getWrapper(p);
+				final Node<Object> wrapper = getWrapper(p);
 				if (add) {
 					tempAll.add(wrapper);
 				}
@@ -322,42 +335,43 @@ public final class Graph implements Serializable {
 		}
 	}
 
-	private static void setRootLeaf(final Node<Identity> node, final Set<Node<Identity>> root,
-			final Set<Node<Identity>> leaf, final DoublyLinkedSet<Node<Identity>> tempAll) {
-		final Collection<Node<Identity>> parents = get(node, tempAll, Direction.parent, true);
+	private static void headOverHeels(final Node<Object> node, final Set<Node<Object>> root, final Set<Node<Object>> leaf,
+			final DoublyLinkedSet<Node<Object>> tempAll, Edges edges) {
+		final Collection<Node<Object>> parents = get(node, tempAll, Direction.in, true, edges);
 		if (parents.size() == 0) {
 			node.level = 0;
-			//System.out.println(" setLevel "+node.level+" "+node.obj+" setRootLeaf");
+			// System.out.println(" setLevel "+node.level+" "+node.obj+"
+			// setRootLeaf");
 			root.add(node);
 		}
-		final Collection<Node<Identity>> children = get(node, tempAll, Direction.child, true);
+		final Collection<Node<Object>> children = get(node, tempAll, Direction.out, true, edges);
 		if (children != null && children.size() >= 0) {
 			if (children.size() == 0) {
 				leaf.add(node);
 			}
 		}
 	}
-	
-	public void resolve() throws CyclicException{
+
+	public void resolve() throws CyclicException {
 		resolveAll();
 	}
-	
+
 	public boolean remove(final Object o) {
 		try {
-			return all.remove(getWrapper((Identity) o));
+			return all.remove(getWrapper((Object) o));
 		} catch (ClassCastException e) {
 		}
 		return false;
 	}
 
-	public boolean addAll(final Collection<? extends Identity> c) throws CyclicException {
+	public boolean addAll(final Collection<? extends Object> c) throws CyclicException {
 		return addAllInternal(c, true);
 	}
 
-	private boolean addAllInternal(final Collection<? extends Identity> c, boolean resolve) throws CyclicException {
+	private boolean addAllInternal(final Collection<? extends Object> c, boolean resolve) throws CyclicException {
 		boolean r = true;
 		if (c != null) {
-			for (Identity e : c) {
+			for (Object e : c) {
 				r = r & addInternal(e, resolve);
 			}
 		}
@@ -380,16 +394,16 @@ public final class Graph implements Serializable {
 
 	public int getMaxLevel() {
 		int ml = 0;
-		for (Node<Identity> n : all) {
+		for (Node<Object> n : all) {
 			if (n != null)
 				ml = Math.max(ml, n.level);
 		}
 		return ml;
 	}
 
-	public Collection<Identity> get(final int level) {
-		final List<Identity> l = new DoublyLinkedList<Identity>();
-		for (Node<Identity> n : all) {
+	public Collection<Object> get(final int level) {
+		final List<Object> l = new DoublyLinkedList<Object>();
+		for (Node<Object> n : all) {
 			if (n != null && n.level == level) {
 				l.add(n.obj);
 			}
@@ -397,18 +411,19 @@ public final class Graph implements Serializable {
 		return Collections.unmodifiableList(l);
 	}
 
-	void print(){
+	void print() {
 		int m = getMaxLevel();
-		for( int i=0;i<=m;i++ ){
-			System.out.println("LEVEL ****** "+i);
-			System.out.println("   "+getStrt(get(i)));
+		for (int i = 0; i <= m; i++) {
+			System.out.println("LEVEL ****** " + i);
+			System.out.println("   " + getStrt(get(i)));
 		}
 		System.out.println("COMPLETE ****** ");
 	}
-	private final static String getStrt(Collection<Identity> tresolved) {
+
+	private final static String getStrt(Collection<Object> tresolved) {
 		StringBuffer sb = new StringBuffer();
 
-		for (Identity node : tresolved) {
+		for (Object node : tresolved) {
 			if (sb.length() == 0) {
 				sb.append(node.toString());
 			} else {
@@ -419,14 +434,12 @@ public final class Graph implements Serializable {
 		return sb.toString();
 	}
 
-
-	
 	enum Direction {
-		parent {
+		in {
 
 			@Override
-			Collection<? extends Identity> get(Identity i) {
-				return i.getParents();
+			Collection<? extends Object> get(Object i, Edges edges) {
+				return edges.in(i);
 			}
 
 			@Override
@@ -435,21 +448,21 @@ public final class Graph implements Serializable {
 			}
 
 		},
-		child;
+		out;
 
 		int getNext(int l) {
 			return l + 1;
 		}
 
-		Collection<? extends Identity> get(Identity i) {
-			return i.getChildren();
+		Collection<? extends Object> get(Object i, Edges edges) {
+			return edges.out(i);
 		}
 
 		Direction getOther() {
-			if (this == child)
-				return Direction.parent;
+			if (this == out)
+				return Direction.in;
 			else
-				return Direction.child;
+				return Direction.out;
 		}
 	}
 

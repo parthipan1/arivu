@@ -8,7 +8,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.Collection;
 
 import org.arivu.datastructure.Graph.CyclicException;
-import org.arivu.datastructure.Graph.Identity;
+import org.arivu.datastructure.Graph.Edges;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -65,24 +65,42 @@ public class GraphTest {
 //		fail("Not yet implemented");
 //	}
 
-	static class TestIdentity implements Graph.Identity{
+	static class TestEdges implements Edges{
+
+		@Override
+		public Collection<Object> in(Object obj) {
+			if( obj instanceof TestIdentity ){
+				return ((TestIdentity)obj).getParents();
+			}
+			return null;
+		}
+
+		@Override
+		public Collection<Object> out(Object obj) {
+			if( obj instanceof TestIdentity ){
+				return ((TestIdentity)obj).getChildren();
+			}
+			return null;
+		}
+		
+	}
+	
+	static class TestIdentity {
 
 		final String val;
-		final Collection<TestIdentity> children = new DoublyLinkedList<GraphTest.TestIdentity>();
-		final Collection<TestIdentity> parents = new DoublyLinkedList<GraphTest.TestIdentity>();
+		final Collection<Object> children = new DoublyLinkedList<Object>();
+		final Collection<Object> parents = new DoublyLinkedList<Object>();
 		
 		TestIdentity(String val) {
 			super();
 			this.val = val;
 		}
 
-		@Override
-		public Collection<? extends Identity> getChildren() {
+		public Collection<Object> getChildren() {
 			return children;
 		}
 
-		@Override
-		public Collection<? extends Identity> getParents() {
+		public Collection<Object> getParents() {
 			return parents;
 		}
 
@@ -128,7 +146,7 @@ public class GraphTest {
 		TestIdentity two = new TestIdentity("2");
 		TestIdentity three = new TestIdentity("3");
 		
-		Graph graph = new Graph();
+		Graph graph = new Graph(new TestEdges());
 		
 		graph.add(one);
 		graph.add(two);
@@ -147,7 +165,7 @@ public class GraphTest {
 		
 		two.parents.add(one);
 		
-		Graph graph = new Graph();
+		Graph graph = new Graph(new TestEdges());
 		
 		graph.add(one);
 		graph.add(two);
@@ -173,7 +191,7 @@ public class GraphTest {
 		
 		one.children.add(two);
 		
-		Graph graph = new Graph();
+		Graph graph = new Graph(new TestEdges());
 		
 		graph.add(one);
 		graph.add(two);
@@ -199,7 +217,7 @@ public class GraphTest {
 		one.children.add(two);
 		two.children.add(one);
 		
-		Graph graph = new Graph();
+		Graph graph = new Graph(new TestEdges());
 		
 		graph.add(one);
 		graph.add(two);
@@ -224,7 +242,7 @@ public class GraphTest {
 		one.children.add(two);
 		two.children.add(three);
 		
-		Graph graph = new Graph();
+		Graph graph = new Graph(new TestEdges());
 		
 		graph.add(one);
 		graph.add(two);
@@ -257,7 +275,7 @@ public class GraphTest {
 		c.children.add(e);
 		d.children.add(b);
 		
-		Graph graph = new Graph();
+		Graph graph = new Graph(new TestEdges());
 		
 		graph.add(a);
 		graph.print();
@@ -301,7 +319,7 @@ public class GraphTest {
 		c.children.add(d);
 		d.children.add(b);
 		
-		Graph graph = new Graph();
+		Graph graph = new Graph(new TestEdges());
 		
 		graph.add(a);
 		graph.print();
