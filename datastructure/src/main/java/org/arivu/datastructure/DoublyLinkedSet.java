@@ -231,15 +231,15 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 
 	@Override
 	public Iterator<T> iterator() {
-		final DoublyLinkedSet<T> ref = this.right;
+		final DoublyLinkedSet<T> ref = this;
 		return new Iterator<T>() {
-			DoublyLinkedSet<T> cursor = ref; 
+			DoublyLinkedSet<T> cursor = ref.right; 
 			@Override
 			public boolean hasNext() {
-				if(ref==null)
-					return false;
-				else 
-					return !(cursor == ref.left);
+//				if(ref==null)
+//					return false;
+//				else 
+					return !(cursor == ref);
 			}
 
 			@Override

@@ -248,12 +248,12 @@ public final  class DoublyLinkedStack<T> implements Iterable<T> {
 
 	//@Override
 	public Iterator<T> iterator() {
-		final DoublyLinkedStack<T> ref = this.right;
+		final DoublyLinkedStack<T> ref = this;
 		return new Iterator<T>() {
-			DoublyLinkedStack<T> cursor = ref; 
+			DoublyLinkedStack<T> cursor = ref.right; 
 			//@Override
 			public boolean hasNext() {
-				return !(cursor == ref.left);
+				return !(cursor == ref);
 			}
 
 			//@Override

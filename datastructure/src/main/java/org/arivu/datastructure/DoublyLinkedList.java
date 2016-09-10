@@ -185,12 +185,12 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 
 	@Override
 	public Iterator<T> iterator() {
-		final DoublyLinkedList<T> ref = this.right;
+		final DoublyLinkedList<T> ref = this;
 		return new Iterator<T>() {
-			DoublyLinkedList<T> cursor = ref; 
+			DoublyLinkedList<T> cursor = ref.right; 
 			@Override
 			public boolean hasNext() {
-				return !(cursor == ref.left);
+				return !(cursor == ref);
 			}
 
 			@Override

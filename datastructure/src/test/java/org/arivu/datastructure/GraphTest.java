@@ -7,6 +7,7 @@ import static org.junit.Assert.*;
 
 import java.util.Collection;
 
+import org.arivu.datastructure.Graph.CyclicException;
 import org.arivu.datastructure.Graph.Identity;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -119,14 +120,15 @@ public class GraphTest {
 	
 	/**
 	 * Test method for {@link org.arivu.datastructure.Graph#add(org.arivu.datastructure.Graph.Identity)}.
+	 * @throws CyclicException 
 	 */
 	@Test
-	public void testAdd() {
+	public void testAdd() throws CyclicException {
 		TestIdentity one = new TestIdentity("1");
 		TestIdentity two = new TestIdentity("2");
 		TestIdentity three = new TestIdentity("3");
 		
-		Graph<TestIdentity> graph = new Graph<TestIdentity>();
+		Graph graph = new Graph();
 		
 		graph.add(one);
 		graph.add(two);
@@ -138,20 +140,20 @@ public class GraphTest {
 	}
 
 	@Test
-	public void testAdd_Case1() {
+	public void testAdd_Case1() throws CyclicException {
 		TestIdentity one = new TestIdentity("1");
 		TestIdentity two = new TestIdentity("2");
 		TestIdentity three = new TestIdentity("3");
 		
 		two.parents.add(one);
 		
-		Graph<TestIdentity> graph = new Graph<TestIdentity>();
+		Graph graph = new Graph();
 		
 		graph.add(one);
 		graph.add(two);
 		graph.add(three);
 		
-		assertTrue("Failed in max Level",graph.getMaxLevel()==1);
+		assertTrue("Failed in max Level GOT :: "+graph.getMaxLevel(),graph.getMaxLevel()==1);
 		
 		assertTrue("Failed in resolve",graph.get(0).size()==2);
 		assertTrue("Failed in resolve",graph.get(1).size()==1);
@@ -164,15 +166,14 @@ public class GraphTest {
 	}
 	
 	@Test
-	public void testAdd_Case2() {
+	public void testAdd_Case2() throws CyclicException {
 		TestIdentity one = new TestIdentity("1");
 		TestIdentity two = new TestIdentity("2");
 		TestIdentity three = new TestIdentity("3");
 		
 		one.children.add(two);
-		two.parents.add(one);
 		
-		Graph<TestIdentity> graph = new Graph<TestIdentity>();
+		Graph graph = new Graph();
 		
 		graph.add(one);
 		graph.add(two);
