@@ -193,6 +193,17 @@ public final class Graph implements Serializable {
 
 	}
 
+	private static void filter(final DoublyLinkedSet<Node<Identity>> allNodes,final Set<Node<Identity>> set,Direction direction){
+		final Set<Node<Identity>> tset = new DoublyLinkedSet<Node<Identity>>(CompareStrategy.EQUALS);
+		tset.addAll(set);
+		for (Node<Identity> node : set) {
+			tset.removeAll(get(node, allNodes, direction, true)) ;
+		}
+		set.clear();
+		set.addAll(tset);
+		tset.clear();
+	}
+	
 	private static void recursivelyResolve(final DoublyLinkedSet<Node<Identity>> allNodes,
 			final Node<Identity> startNode, final Direction direction, int startLevel) throws CyclicException {
 		Set<Node<Identity>> nodes = new DoublyLinkedSet<Graph.Node<Identity>>();
@@ -228,14 +239,14 @@ public final class Graph implements Serializable {
 					}
 				}
 			}
-			cursor.clear();
+			filter(allNodes, unresolved, direction);
 			final Set<Node<Identity>> tresolved = new DoublyLinkedSet<Node<Identity>>(CompareStrategy.EQUALS);
 			tresolved.addAll(resolved);
 			tresolved.retainAll(unresolved);
-
 			if (!tresolved.isEmpty())
 				throw new CyclicException("Cyclic nodes ( " + getStr(tresolved) + " ) identified!");
 
+			cursor.clear();
 			if (unresolved.isEmpty())
 				break;
 			cursor.addAll(unresolved);
@@ -257,7 +268,7 @@ public final class Graph implements Serializable {
 		return node;
 	}
 
-	private final static String getStr(Set<Node<Identity>> tresolved) {
+	private final static String getStr(Collection<Node<Identity>> tresolved) {
 		StringBuffer sb = new StringBuffer();
 
 		for (Node<Identity> node : tresolved) {
@@ -386,6 +397,30 @@ public final class Graph implements Serializable {
 		return Collections.unmodifiableList(l);
 	}
 
+	void print(){
+		int m = getMaxLevel();
+		for( int i=0;i<=m;i++ ){
+			System.out.println("LEVEL ****** "+i);
+			System.out.println("   "+getStrt(get(i)));
+		}
+		System.out.println("COMPLETE ****** ");
+	}
+	private final static String getStrt(Collection<Identity> tresolved) {
+		StringBuffer sb = new StringBuffer();
+
+		for (Identity node : tresolved) {
+			if (sb.length() == 0) {
+				sb.append(node.toString());
+			} else {
+				sb.append(",").append(node.toString());
+			}
+		}
+
+		return sb.toString();
+	}
+
+
+	
 	enum Direction {
 		parent {
 

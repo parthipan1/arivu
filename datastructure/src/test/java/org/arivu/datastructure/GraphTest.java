@@ -3,7 +3,7 @@
  */
 package org.arivu.datastructure;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Collection;
 
@@ -13,7 +13,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -244,7 +243,6 @@ public class GraphTest {
 	
 
 	@Test
-	@Ignore
 	public void testAdd_Case5() throws CyclicException {
 		TestIdentity a = new TestIdentity("a");
 		TestIdentity b = new TestIdentity("b");
@@ -262,12 +260,17 @@ public class GraphTest {
 		Graph graph = new Graph();
 		
 		graph.add(a);
+		graph.print();
 		graph.add(b);
+		graph.print();
 		graph.add(c);
+		graph.print();
 		graph.add(d);
+		graph.print();
 		graph.add(e);
+		graph.print();
 		
-		assertTrue("Failed in max Level",graph.getMaxLevel()==5);
+		assertTrue("Failed in max Level",graph.getMaxLevel()==4);
 		
 		assertTrue("Failed in resolve",graph.get(0).size()==1);
 		assertTrue("Failed in resolve",graph.get(1).size()==1);
@@ -281,7 +284,50 @@ public class GraphTest {
 		assertTrue("Failed in resolve",graph.get(3).contains(c));
 		assertTrue("Failed in resolve",graph.get(4).contains(e));
 	}
-	
+
+	@Test(expected=CyclicException.class)
+	public void testAdd_Case6_Cyclic() throws CyclicException {
+		TestIdentity a = new TestIdentity("a");
+		TestIdentity b = new TestIdentity("b");
+		TestIdentity c = new TestIdentity("c");
+		TestIdentity d = new TestIdentity("d");
+		TestIdentity e = new TestIdentity("e");
+		
+		a.children.add(b);
+		a.children.add(d);
+		b.children.add(c);
+		b.children.add(e);
+		c.children.add(e);
+		c.children.add(d);
+		d.children.add(b);
+		
+		Graph graph = new Graph();
+		
+		graph.add(a);
+		graph.print();
+		graph.add(b);
+		graph.print();
+		graph.add(c);
+		graph.print();
+		graph.add(d);
+		graph.print();
+		graph.add(e);
+		graph.print();
+		
+		assertTrue("Failed in max Level",graph.getMaxLevel()==4);
+		
+		assertTrue("Failed in resolve",graph.get(0).size()==1);
+		assertTrue("Failed in resolve",graph.get(1).size()==1);
+		assertTrue("Failed in resolve",graph.get(2).size()==1);
+		assertTrue("Failed in resolve",graph.get(3).size()==1);
+		assertTrue("Failed in resolve",graph.get(4).size()==1);
+		
+		assertTrue("Failed in resolve",graph.get(0).contains(a));
+		assertTrue("Failed in resolve",graph.get(1).contains(d));
+		assertTrue("Failed in resolve",graph.get(2).contains(b));
+		assertTrue("Failed in resolve",graph.get(3).contains(c));
+		assertTrue("Failed in resolve",graph.get(4).contains(e));
+	}
 	
 //	/**
 //	 * Test method for {@link org.arivu.datastructure.Graph#remove(java.lang.Object)}.
