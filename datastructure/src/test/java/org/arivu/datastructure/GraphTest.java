@@ -278,15 +278,15 @@ public class GraphTest {
 		Graph graph = new Graph(new TestEdges());
 		
 		graph.add(a);
-		graph.print();
+		//graph.print();
 		graph.add(b);
-		graph.print();
+		//graph.print();
 		graph.add(c);
-		graph.print();
+		//graph.print();
 		graph.add(d);
-		graph.print();
+		//graph.print();
 		graph.add(e);
-		graph.print();
+		//graph.print();
 		
 		assertTrue("Failed in max Level",graph.getMaxLevel()==4);
 		
@@ -322,15 +322,15 @@ public class GraphTest {
 		Graph graph = new Graph(new TestEdges());
 		
 		graph.add(a);
-		graph.print();
+		//graph.print();
 		graph.add(b);
-		graph.print();
+		//graph.print();
 		graph.add(c);
-		graph.print();
+		//graph.print();
 		graph.add(d);
-		graph.print();
+		//graph.print();
 		graph.add(e);
-		graph.print();
+		//graph.print();
 		
 		assertTrue("Failed in max Level",graph.getMaxLevel()==4);
 		

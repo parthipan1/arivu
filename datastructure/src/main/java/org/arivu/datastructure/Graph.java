@@ -119,14 +119,22 @@ public final class Graph implements Serializable {
 
 	}
 
-	DoublyLinkedSet<Node<Object>> all = new DoublyLinkedSet<Node<Object>>(CompareStrategy.EQUALS);
+	private DoublyLinkedSet<Node<Object>> all = new DoublyLinkedSet<Node<Object>>(CompareStrategy.EQUALS);
 
-	final Edges edges;
+	private transient Edges edges;
 
 	/**
 	 * 
 	 */
 	public Graph(Edges edges) {
+		this.edges = edges;
+	}
+
+	public Edges getEdges() {
+		return edges;
+	}
+
+	public void setEdges(Edges edges) {
 		this.edges = edges;
 	}
 
@@ -168,32 +176,32 @@ public final class Graph implements Serializable {
 
 	private void resolveAll() throws CyclicException {
 
-		final DoublyLinkedSet<Node<Object>> tempAll = new DoublyLinkedSet<Node<Object>>(CompareStrategy.EQUALS);
-		for (Node<Object> node : all) {
-			final Node<Object> wrapper = getWrapper(node.obj);
-			if (wrapper != null) {
-				tempAll.add(wrapper);
-			}
-		}
+//		final DoublyLinkedSet<Node<Object>> tempAll = new DoublyLinkedSet<Node<Object>>(CompareStrategy.EQUALS);
+//		for (Node<Object> node : all) {
+//			final Node<Object> wrapper = getWrapper(node.obj);
+//			if (wrapper != null) {
+//				tempAll.add(wrapper);
+//			}
+//		}
 
 		final Set<Node<Object>> head = new DoublyLinkedSet<Node<Object>>(CompareStrategy.EQUALS);
 		final Set<Node<Object>> leg = new DoublyLinkedSet<Node<Object>>(CompareStrategy.EQUALS);
-		for (Node<Object> node : tempAll) {
-			headOverHeels(node, head, leg, tempAll, edges);
+		for (Node<Object> node : all) {
+			headOverHeels(node, head, leg, all, edges);
 		}
 
 		// System.out.println("resolveAll :: "+getStr(root)+" tempAll
 		// "+tempAll.size());
 
-		recursivelyResolve(tempAll, head, Direction.out, 1, edges);
+		recursivelyResolve(all, head, Direction.out, 1, edges);
 
 		for (Node<Object> node : leg) {
 			if (node.level < 0) {
-				recursivelyResolve(tempAll, node, Direction.in, getMaxLevel() + 1, edges);
+				recursivelyResolve(all, node, Direction.in, getMaxLevel() + 1, edges);
 			}
 		}
 
-		all = tempAll;
+//		all = tempAll;
 
 	}
 
@@ -270,9 +278,12 @@ public final class Graph implements Serializable {
 		// System.out.println("*******");
 	}
 
+	@SuppressWarnings("unchecked")
 	private final static Node<Object> getWrapper(Object t) {
 		if (t == null) {
 			return null;
+		}else if( t instanceof Node ){
+			return (Node<Object>)t;
 		}
 
 		final Node<Object> node = new Node<Object>(t);
@@ -335,8 +346,8 @@ public final class Graph implements Serializable {
 		}
 	}
 
-	private static void headOverHeels(final Node<Object> node, final Set<Node<Object>> root, final Set<Node<Object>> leaf,
-			final DoublyLinkedSet<Node<Object>> tempAll, Edges edges) {
+	private static void headOverHeels(final Node<Object> node, final Set<Node<Object>> root,
+			final Set<Node<Object>> leaf, final DoublyLinkedSet<Node<Object>> tempAll, Edges edges) {
 		final Collection<Node<Object>> parents = get(node, tempAll, Direction.in, true, edges);
 		if (parents.size() == 0) {
 			node.level = 0;
@@ -347,6 +358,10 @@ public final class Graph implements Serializable {
 		final Collection<Node<Object>> children = get(node, tempAll, Direction.out, true, edges);
 		if (children != null && children.size() >= 0) {
 			if (children.size() == 0) {
+
+				if (node.level != 0)
+					node.level = Integer.MIN_VALUE;
+
 				leaf.add(node);
 			}
 		}
@@ -358,7 +373,11 @@ public final class Graph implements Serializable {
 
 	public boolean remove(final Object o) {
 		try {
-			return all.remove(getWrapper((Object) o));
+			if( o instanceof Node ){
+				return all.remove(o);
+			}else{
+				return all.remove(getWrapper((Object) o));
+			}
 		} catch (ClassCastException e) {
 		}
 		return false;

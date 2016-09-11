@@ -31,22 +31,27 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 	DoublyLinkedList<T> left = this, right = this;
 	
 	AtomicInteger size;
-	
+	final CompareStrategy compareStrategy;
 	/**
 	 * 
 	 */
 	public DoublyLinkedList() {
-		this(null, new AtomicInteger(0));
+		this(null, new AtomicInteger(0),CompareStrategy.REF);
+	}
+	
+	DoublyLinkedList(CompareStrategy compareStrategy) {
+		this(null, new AtomicInteger(0),compareStrategy);
 	}
 	
 	/**
 	 * @param t
 	 * @param size 
 	 */
-	private DoublyLinkedList(T t, AtomicInteger size) {
+	private DoublyLinkedList(T t, AtomicInteger size,CompareStrategy compareStrategy) {
 		super();
 		this.obj = t;
 		this.size = size;
+		this.compareStrategy = compareStrategy;
 	}
 
 	/**
@@ -137,7 +142,8 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 					return ref;
 				}
 			}else{
-				if(ref.obj==o){
+//				if(ref.obj==o){
+				if(this.compareStrategy.compare(ref.obj, o) ){
 					return ref;
 				}
 			}
@@ -234,7 +240,7 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 	@Override
 	public boolean add(T e) {
 		if(e!=null){
-			addLeft(new DoublyLinkedList<T>(e, size));
+			addLeft(new DoublyLinkedList<T>(e, size, compareStrategy));
 			return true;
 		}else{
 			return false;
