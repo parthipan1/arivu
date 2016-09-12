@@ -745,7 +745,7 @@ public final class Graph implements Serializable {
 		void visit(final Node<Object> node, final Visitor visitor, final Direction dir,
 				final DoublyLinkedSet<Node<Object>> all, final Edges edges, final Graph graph, boolean includeAll) {
 			final Queue<Node<Object>> visitQueue = getQueue();
-			final Queue<Node<Object>> queue = new DoublyLinkedSet<Graph.Node<Object>>(CompareStrategy.EQUALS);
+			final Queue<Node<Object>> queue = getQueue();
 			final DoublyLinkedSet<Node<Object>> allRelated = new DoublyLinkedSet<Graph.Node<Object>>(
 					CompareStrategy.EQUALS);
 			final int maxLevel = dir.getMax(graph);
