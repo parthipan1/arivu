@@ -1,13 +1,18 @@
 package org.arivu.utils;
 
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.script.ScriptException;
 
@@ -18,7 +23,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class AsonTest {
-	private static final String CONFIGURATION_FILE = "asynclogger.properties";
+	private static final String CONFIGURATION_FILE = "lightninglog.json";
 	
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
@@ -36,35 +41,39 @@ public class AsonTest {
 	public void tearDown() throws Exception {
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testFromJsonString() throws ScriptException, IOException {
 		
 		InputStream systemResourceAsStream = ClassLoader.getSystemResourceAsStream(CONFIGURATION_FILE);
 		Map<String, Object> json = new Ason().fromJson(systemResourceAsStream);
 		
+		assertTrue(json!=null);
+		assertTrue(json.size()>0);
+		
 //		System.out.println("fromJson "+json);
 		
-//		Map<String, String> loggers = (Map<String, String>) get(json, "loggers", null );
-//		System.out.println("loggers "+loggers);
-//		
-//		System.out.println("DEFAULT_LOG_LEVEL "+get(json, "loggers.root","info"));
-//		System.out.println("RINGBUFFER_LEN "+get(json, "buffer.ring",300));
-//		System.out.println("BATCH_SIZE "+get(json, "buffer.batch",100));
-//		System.out.println("SHOW_LOG_NAME "+get(json, "log.showName",true));
-//		System.out.println("SHOW_SHORT_LOG_NAME "+get(json, "log.showShortName",false));
-//		System.out.println("SHOW_DATE_TIME "+get(json, "log.showDateTime",false));
-//		System.out.println("SHOW_THREAD_NAME "+get(json, "log.showThreadName",false));
-//		System.out.println("DATE_TIME_FORMAT_STR "+get(json, "log.dateTimeFormat",null));
-//		System.out.println("FILE_EXT_FORMAT "+get(json, "log.fileDateTimeExt",null));
-//		System.out.println("LOG_FILE "+get(json, "log.file","System.err"));
-//		System.out.println("FILE_THRESHOLD_LIMIT "+get(json, "log.fileSize",5242880));
-//		
-		Collection<String> split = (Collection<String>) convert((Map<String, String>) get(json, "appenders", null));// Arrays.asList("rollingfile,console".split(",")) 
-		System.out.println(" appenders "+split);
-//		
-//		Collection<String> customs = (Collection<String>) convert((Map<String, String>) get(json, "customAppenders", null));//get(json, "customAppenders", null);
-//		System.out.println(" customAppenders "+customs);
+		Map<String, String> loggers = (Map<String, String>) get(json, "loggers", null );
+		assertTrue(loggers!=null);
+		assertTrue(loggers.size()>0);
 		
+		
+		assertTrue(get(json, "loggers.root","info").equals("debug"));
+		assertTrue(((Integer)get(json, "buffer.ring",300))==50);
+		assertTrue(((Integer)get(json, "buffer.batch",300))==50);
+		assertTrue((Boolean)get(json, "log.showName",false));
+		assertTrue((Boolean)get(json, "log.showShortName",false));
+		assertTrue((Boolean)get(json, "log.showDateTime",false));
+		assertTrue((Boolean)get(json, "log.showThreadName",false));
+		assertTrue(get(json, "log.dateTimeFormat",null)!=null);
+		assertTrue(get(json, "log.fileDateTimeExt",null)!=null);
+		assertTrue(get(json, "log.fileDateTimeExt",null)!=null);
+		assertTrue(get(json, "log.file","System.err").equals("logs//rp.test.log"));
+		assertTrue(((Long)get(json, "log.fileSize",300))==5242880000l);
+		
+		Collection<String> split = (Collection<String>) convert((Map<String, String>) get(json, "appenders", null));// Arrays.asList("rollingfile,console".split(",")) 
+		assertTrue(split!=null);
+		assertTrue(split.size()>0);
 	}
 	
 	private static Collection<String> convert(final Map<String,String> map){
@@ -119,7 +128,7 @@ public class AsonTest {
 		return defailt;
 	}
 	
-	private static Object print(Map<String, Object> object2 ){
+	static Object print(Map<String, Object> object2 ){
 		Set<Entry<String, Object>> entrySet = object2.entrySet();
 		 for( Entry<String, Object> e:entrySet ){
 		 System.out.println(e.getKey()+" :: "+e.getValue());
@@ -127,11 +136,51 @@ public class AsonTest {
 		 return object2;
 	}
 	
-//
-//	@Test
-//	public void testFromJsonReader() {
-//		fail("Not yet implemented");
-//	}
+
+	@Test
+	public void testFromJsonReader() throws InterruptedException {
+		final int nThreads = 100;
+		final CountDownLatch start = new CountDownLatch(1);
+		final CountDownLatch end = new CountDownLatch(1);
+		final AtomicInteger f = new AtomicInteger(nThreads);
+		final ExecutorService exe = Executors.newFixedThreadPool( nThreads);
+		final Ason ason = new Ason();
+		for (int i = 0; i < nThreads; i++) {
+			exe.submit(new Runnable() {
+				
+				@Override
+				public void run() {
+					try {
+						start.await();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					
+					String key = Thread.currentThread().getName();
+					String json = "{\"name\":\""+key+"\"}";
+					Map<String, Object> fromJson;
+					try {
+						fromJson = ason.fromJson(json);
+						if( !key.equals(fromJson.get("name")) ){
+							throw new IllegalStateException("Failed on thread "+key);
+						}else{
+//							System.out.println( key+" :: "+fromJson.get("name") );
+						}
+					} catch (ScriptException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}finally {
+						if( f.decrementAndGet() == 0 ){
+							end.countDown();
+						}
+					}
+				}
+			});
+		}
+		start.countDown();
+		end.await();
+		
+	}
 //
 //	@Test
 //	public void testFromJsonInputStream() {
