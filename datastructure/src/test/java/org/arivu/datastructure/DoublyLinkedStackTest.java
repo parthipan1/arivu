@@ -38,10 +38,10 @@ public class DoublyLinkedStackTest {
 	public void testClear() {
 		DoublyLinkedStack<String> stack = new DoublyLinkedStack<String>();
 		stack.push("one");
-		assertFalse("Failed in clear", stack.empty());
+		assertFalse("Failed in clear", stack.isEmpty());
 		assertTrue("Failed in clear", stack.size()==1);
 		stack.clear();
-		assertTrue("Failed in clear", stack.empty());
+		assertTrue("Failed in clear", stack.isEmpty());
 		assertTrue("Failed in clear", stack.size()==0);
 	}
 
@@ -51,7 +51,7 @@ public class DoublyLinkedStackTest {
 		
 		DoublyLinkedStack<String> stack = new DoublyLinkedStack<String>();
 		stack.push(element1);
-		assertFalse("Failed in search", stack.empty());
+		assertFalse("Failed in search", stack.isEmpty());
 		assertTrue("Failed in search", stack.size()==1);
 		
 		int search = stack.search(element1);
@@ -60,14 +60,14 @@ public class DoublyLinkedStackTest {
 	}
 
 	@Test
-	public void testEmpty() {
+	public void testisEmpty() {
 		DoublyLinkedStack<String> stack = new DoublyLinkedStack<String>();
 		stack.push("one");
-		assertFalse("Failed in empty", stack.empty());
-		assertTrue("Failed in empty", stack.size()==1);
+		assertFalse("Failed in isEmpty", stack.isEmpty());
+		assertTrue("Failed in isEmpty", stack.size()==1);
 		stack.clear();
-		assertTrue("Failed in empty", stack.empty());
-		assertTrue("Failed in empty", stack.size()==0);
+		assertTrue("Failed in isEmpty", stack.isEmpty());
+		assertTrue("Failed in isEmpty", stack.size()==0);
 	}
 
 	@Test
@@ -76,7 +76,7 @@ public class DoublyLinkedStackTest {
 		String element2 = "two";
 		DoublyLinkedStack<String> stack = new DoublyLinkedStack<String>();
 		stack.push(element1);
-		assertFalse("Failed in poll", stack.empty());
+		assertFalse("Failed in poll", stack.isEmpty());
 		assertTrue("Failed in poll", stack.size()==1);
 		stack.push(element2);
 		
@@ -93,10 +93,10 @@ public class DoublyLinkedStackTest {
 	public void testPush() {
 		DoublyLinkedStack<String> stack = new DoublyLinkedStack<String>();
 		stack.push("one");
-		assertFalse("Failed in push", stack.empty());
+		assertFalse("Failed in push", stack.isEmpty());
 		assertTrue("Failed in push", stack.size()==1);
 		stack.clear();
-		assertTrue("Failed in push", stack.empty());
+		assertTrue("Failed in push", stack.isEmpty());
 		assertTrue("Failed in push", stack.size()==0);
 	}
 
@@ -105,7 +105,7 @@ public class DoublyLinkedStackTest {
 		String element1 = "one";
 		DoublyLinkedStack<String> stack = new DoublyLinkedStack<String>();
 		stack.push(element1);
-		assertFalse("Failed in peek", stack.empty());
+		assertFalse("Failed in peek", stack.isEmpty());
 		assertTrue("Failed in peek", stack.size()==1);
 		String poll = stack.peek();
 		assertTrue("Failed in peek", poll.equals(element1));
@@ -117,10 +117,10 @@ public class DoublyLinkedStackTest {
 	public void testSize() {
 		DoublyLinkedStack<String> stack = new DoublyLinkedStack<String>();
 		stack.push("one");
-		assertFalse("Failed in size", stack.empty());
+		assertFalse("Failed in size", stack.isEmpty());
 		assertTrue("Failed in size", stack.size()==1);
 		stack.clear();
-		assertTrue("Failed in size", stack.empty());
+		assertTrue("Failed in size", stack.isEmpty());
 		assertTrue("Failed in size", stack.size()==0);
 	}
 

@@ -7,6 +7,7 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
 
 /**
@@ -15,6 +16,10 @@ import java.util.Set;
  */
 public final class Graph implements Serializable {
 
+	/**
+	 * @author P
+	 *
+	 */
 	public static class CyclicException extends Exception {
 
 		/**
@@ -68,9 +73,29 @@ public final class Graph implements Serializable {
 	 *
 	 */
 	public interface Edges {
+		/**
+		 * @param obj
+		 * @return
+		 */
 		Collection<Object> in(Object obj);
 
+		/**
+		 * @param obj
+		 * @return
+		 */
 		Collection<Object> out(Object obj);
+	}
+
+	/**
+	 * @author P
+	 *
+	 */
+	public interface Visitor {
+		/**
+		 * @param obj
+		 * @param level
+		 */
+		public void visit(Object obj, int level);
 	}
 
 	/**
@@ -78,19 +103,38 @@ public final class Graph implements Serializable {
 	 */
 	private static final long serialVersionUID = -262978106533357393L;
 
+	/**
+	 * @author P
+	 *
+	 * @param <T>
+	 */
 	private static class Node<T extends Object> implements Serializable {
 		/**
 		 * 
 		 */
 		private static final long serialVersionUID = -1347041353565347216L;
+		/**
+		 * 
+		 */
 		T obj;
+		/**
+		 * 
+		 */
 		int level = 0;
 
+		/**
+		 * @param obj
+		 */
 		Node(T obj) {
 			super();
 			this.obj = obj;
 		}
 
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see java.lang.Object#hashCode()
+		 */
 		@Override
 		public int hashCode() {
 			final int prime = 31;
@@ -99,6 +143,11 @@ public final class Graph implements Serializable {
 			return result;
 		}
 
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see java.lang.Object#equals(java.lang.Object)
+		 */
 		@SuppressWarnings("rawtypes")
 		@Override
 		public boolean equals(Object obj) {
@@ -117,35 +166,68 @@ public final class Graph implements Serializable {
 			return true;
 		}
 
+		/**
+		 * @param visitor
+		 */
+		void visit(Visitor visitor) {
+			 visitor.visit(obj, level);	
+		}
+
 	}
 
+	/**
+	 * 
+	 */
 	private DoublyLinkedSet<Node<Object>> all = new DoublyLinkedSet<Node<Object>>(CompareStrategy.EQUALS);
 
+	/**
+	 * 
+	 */
 	private transient Edges edges;
 
 	/**
 	 * 
 	 */
+	/**
+	 * @param edges
+	 */
 	public Graph(Edges edges) {
 		this.edges = edges;
 	}
 
+	/**
+	 * @return
+	 */
 	public Edges getEdges() {
 		return edges;
 	}
 
+	/**
+	 * @param edges
+	 */
 	public void setEdges(Edges edges) {
 		this.edges = edges;
 	}
 
+	/**
+	 * @return
+	 */
 	public int size() {
 		return all.size();
 	}
 
+	/**
+	 * @return
+	 */
 	public boolean isEmpty() {
 		return all.isEmpty();
 	}
 
+	/**
+	 * @param e
+	 * @return
+	 * @throws CyclicException
+	 */
 	public boolean add(final Object e) throws CyclicException {
 		if (e != null) {
 			return addInternal(e, true);
@@ -154,6 +236,12 @@ public final class Graph implements Serializable {
 		}
 	}
 
+	/**
+	 * @param e
+	 * @param resolve
+	 * @return
+	 * @throws CyclicException
+	 */
 	private boolean addInternal(final Object e, boolean resolve) throws CyclicException {
 		if (e != null) {
 			Node<Object> node = getWrapper(e);
@@ -174,15 +262,19 @@ public final class Graph implements Serializable {
 
 	// private static final Lock glock = new AtomicWFLock();
 
+	/**
+	 * @throws CyclicException
+	 */
 	private void resolveAll() throws CyclicException {
 
-//		final DoublyLinkedSet<Node<Object>> tempAll = new DoublyLinkedSet<Node<Object>>(CompareStrategy.EQUALS);
-//		for (Node<Object> node : all) {
-//			final Node<Object> wrapper = getWrapper(node.obj);
-//			if (wrapper != null) {
-//				tempAll.add(wrapper);
-//			}
-//		}
+		// final DoublyLinkedSet<Node<Object>> tempAll = new
+		// DoublyLinkedSet<Node<Object>>(CompareStrategy.EQUALS);
+		// for (Node<Object> node : all) {
+		// final Node<Object> wrapper = getWrapper(node.obj);
+		// if (wrapper != null) {
+		// tempAll.add(wrapper);
+		// }
+		// }
 
 		final Set<Node<Object>> head = new DoublyLinkedSet<Node<Object>>(CompareStrategy.EQUALS);
 		final Set<Node<Object>> leg = new DoublyLinkedSet<Node<Object>>(CompareStrategy.EQUALS);
@@ -201,10 +293,16 @@ public final class Graph implements Serializable {
 			}
 		}
 
-//		all = tempAll;
+		// all = tempAll;
 
 	}
 
+	/**
+	 * @param allNodes
+	 * @param set
+	 * @param direction
+	 * @param edges
+	 */
 	private static void filter(final DoublyLinkedSet<Node<Object>> allNodes, final Set<Node<Object>> set,
 			Direction direction, Edges edges) {
 		final Set<Node<Object>> tset = new DoublyLinkedSet<Node<Object>>(CompareStrategy.EQUALS);
@@ -217,6 +315,14 @@ public final class Graph implements Serializable {
 		tset.clear();
 	}
 
+	/**
+	 * @param allNodes
+	 * @param startNode
+	 * @param direction
+	 * @param startLevel
+	 * @param edges
+	 * @throws CyclicException
+	 */
 	private static void recursivelyResolve(final DoublyLinkedSet<Node<Object>> allNodes, final Node<Object> startNode,
 			final Direction direction, int startLevel, Edges edges) throws CyclicException {
 		Set<Node<Object>> nodes = new DoublyLinkedSet<Graph.Node<Object>>();
@@ -224,6 +330,14 @@ public final class Graph implements Serializable {
 		recursivelyResolve(allNodes, nodes, direction, startLevel, edges);
 	}
 
+	/**
+	 * @param allNodes
+	 * @param startNodes
+	 * @param direction
+	 * @param startLevel
+	 * @param edges
+	 * @throws CyclicException
+	 */
 	private static void recursivelyResolve(final DoublyLinkedSet<Node<Object>> allNodes,
 			final Set<Node<Object>> startNodes, final Direction direction, int startLevel, Edges edges)
 					throws CyclicException {
@@ -278,12 +392,16 @@ public final class Graph implements Serializable {
 		// System.out.println("*******");
 	}
 
+	/**
+	 * @param t
+	 * @return
+	 */
 	@SuppressWarnings("unchecked")
 	private final static Node<Object> getWrapper(Object t) {
 		if (t == null) {
 			return null;
-		}else if( t instanceof Node ){
-			return (Node<Object>)t;
+		} else if (t instanceof Node) {
+			return (Node<Object>) t;
 		}
 
 		final Node<Object> node = new Node<Object>(t);
@@ -292,6 +410,10 @@ public final class Graph implements Serializable {
 		return node;
 	}
 
+	/**
+	 * @param tresolved
+	 * @return
+	 */
 	private final static String getStr(Collection<Node<Object>> tresolved) {
 		StringBuffer sb = new StringBuffer();
 
@@ -306,6 +428,14 @@ public final class Graph implements Serializable {
 		return sb.toString();
 	}
 
+	/**
+	 * @param node
+	 * @param tempAll
+	 * @param dir
+	 * @param includeAll
+	 * @param edges
+	 * @return
+	 */
 	private final static DoublyLinkedSet<Node<Object>> get(Node<Object> node, DoublyLinkedSet<Node<Object>> tempAll,
 			Direction dir, boolean includeAll, Edges edges) {
 		DoublyLinkedSet<Node<Object>> set = new DoublyLinkedSet<Graph.Node<Object>>(CompareStrategy.EQUALS);
@@ -329,6 +459,12 @@ public final class Graph implements Serializable {
 		return set;
 	}
 
+	/**
+	 * @param p
+	 * @param tempAll
+	 * @param add
+	 * @return
+	 */
 	private final static Node<Object> get(Object p, DoublyLinkedSet<Node<Object>> tempAll, boolean add) {
 		if (p != null) {
 			final DoublyLinkedSet<Node<Object>> search = tempAll.search(p);
@@ -346,7 +482,14 @@ public final class Graph implements Serializable {
 		}
 	}
 
-	private static void headOverHeels(final Node<Object> node, final Set<Node<Object>> root,
+	/**
+	 * @param node
+	 * @param root
+	 * @param leaf
+	 * @param tempAll
+	 * @param edges
+	 */
+	private final static void headOverHeels(final Node<Object> node, final Set<Node<Object>> root,
 			final Set<Node<Object>> leaf, final DoublyLinkedSet<Node<Object>> tempAll, Edges edges) {
 		final Collection<Node<Object>> parents = get(node, tempAll, Direction.in, true, edges);
 		if (parents.size() == 0) {
@@ -367,15 +510,31 @@ public final class Graph implements Serializable {
 		}
 	}
 
+	/**
+	 * @param edges
+	 * @throws CyclicException
+	 */
+	public void resolve(Edges edges) throws CyclicException {
+		this.edges = edges;
+		resolveAll();
+	}
+
+	/**
+	 * @throws CyclicException
+	 */
 	public void resolve() throws CyclicException {
 		resolveAll();
 	}
 
+	/**
+	 * @param o
+	 * @return
+	 */
 	public boolean remove(final Object o) {
 		try {
-			if( o instanceof Node ){
+			if (o instanceof Node) {
 				return all.remove(o);
-			}else{
+			} else {
 				return all.remove(getWrapper((Object) o));
 			}
 		} catch (ClassCastException e) {
@@ -383,10 +542,21 @@ public final class Graph implements Serializable {
 		return false;
 	}
 
+	/**
+	 * @param c
+	 * @return
+	 * @throws CyclicException
+	 */
 	public boolean addAll(final Collection<? extends Object> c) throws CyclicException {
 		return addAllInternal(c, true);
 	}
 
+	/**
+	 * @param c
+	 * @param resolve
+	 * @return
+	 * @throws CyclicException
+	 */
 	private boolean addAllInternal(final Collection<? extends Object> c, boolean resolve) throws CyclicException {
 		boolean r = true;
 		if (c != null) {
@@ -397,6 +567,10 @@ public final class Graph implements Serializable {
 		return r;
 	}
 
+	/**
+	 * @param c
+	 * @return
+	 */
 	public boolean removeAll(final Collection<?> c) {
 		boolean r = true;
 		if (c != null) {
@@ -407,10 +581,16 @@ public final class Graph implements Serializable {
 		return r;
 	}
 
+	/**
+	 * 
+	 */
 	public void clear() {
 		all.clear();
 	}
 
+	/**
+	 * @return
+	 */
 	public int getMaxLevel() {
 		int ml = 0;
 		for (Node<Object> n : all) {
@@ -420,6 +600,10 @@ public final class Graph implements Serializable {
 		return ml;
 	}
 
+	/**
+	 * @param level
+	 * @return
+	 */
 	public Collection<Object> get(final int level) {
 		final List<Object> l = new DoublyLinkedList<Object>();
 		for (Node<Object> n : all) {
@@ -430,6 +614,16 @@ public final class Graph implements Serializable {
 		return Collections.unmodifiableList(l);
 	}
 
+	Collection<Node<Object>> getNodes(final int level) {
+		final List<Node<Object>> l = new DoublyLinkedList<Node<Object>>();
+		for (Node<Object> n : all) {
+			if (n != null && n.level == level) {
+				l.add(n);
+			}
+		}
+		return Collections.unmodifiableList(l);
+	}
+	
 	void print() {
 		int m = getMaxLevel();
 		for (int i = 0; i <= m; i++) {
@@ -439,6 +633,33 @@ public final class Graph implements Serializable {
 		System.out.println("COMPLETE ****** ");
 	}
 
+	@SuppressWarnings("unchecked")
+	public void visit(Object o, Visitor visitor, Direction dir, Algo algo, boolean includeAll) {
+		if (dir == null)
+			dir = Direction.out;
+
+		if (algo == null)
+			algo = Algo.BFS;
+
+		if (o != null && visitor != null) {
+			Node<Object> n = null;
+			if (o instanceof Node) {
+				n = (Node<Object>) o;
+			} else {
+				n = getWrapper(o);
+			}
+			final DoublyLinkedSet<Node<Object>> search = all.search(n);
+			if (search != null) {
+				final Node<Object> node = search.obj;
+				algo.visit(node, visitor, dir, all, edges, Graph.this, includeAll);
+			}
+		}
+	}
+
+	/**
+	 * @param tresolved
+	 * @return
+	 */
 	private final static String getStrt(Collection<Object> tresolved) {
 		StringBuffer sb = new StringBuffer();
 
@@ -453,8 +674,21 @@ public final class Graph implements Serializable {
 		return sb.toString();
 	}
 
+	/**
+	 * @author P
+	 *
+	 */
 	enum Direction {
 		in {
+			@Override
+			boolean checkExit(int level,int max){
+				return level>=max;
+			}
+			
+			@Override
+			int getMax(Graph g) {
+				return 0;
+			}
 
 			@Override
 			Collection<? extends Object> get(Object i, Edges edges) {
@@ -469,10 +703,18 @@ public final class Graph implements Serializable {
 		},
 		out;
 
+		int getMax(Graph g){
+			return g.getMaxLevel();
+		}
+		
 		int getNext(int l) {
 			return l + 1;
 		}
 
+		boolean checkExit(int level,int max){
+			return level<=max;
+		}
+		
 		Collection<? extends Object> get(Object i, Edges edges) {
 			return edges.out(i);
 		}
@@ -482,6 +724,130 @@ public final class Graph implements Serializable {
 				return Direction.in;
 			else
 				return Direction.out;
+		}
+	}
+
+	enum Algo {
+		DFS{
+
+			@Override
+			void visit(Node<Object> node, Visitor visitor, Direction dir, DoublyLinkedSet<Node<Object>> all,
+					Edges edges, Graph graph, boolean includeAll) {
+				final Queue<Node<Object>> queue = new DoublyLinkedStack<Graph.Node<Object>>(true,CompareStrategy.EQUALS);
+				final DoublyLinkedSet<Node<Object>> allRelated = new DoublyLinkedSet<Graph.Node<Object>>(CompareStrategy.EQUALS);
+				final int maxLevel = dir.getMax(graph);
+				Node<Object> n = node;
+				int level = n.level;
+				final Collection<Node<Object>> nodes = new DoublyLinkedSet<Graph.Node<Object>>(CompareStrategy.EQUALS);
+				queue.add(n);
+				allRelated.add(n);
+				boolean nl = false;
+				while(dir.checkExit(level, maxLevel)) {
+//					System.out.println( " visit level "+level+" nodes "+getStr(nodes) );
+//					final Node<Object> on = n;
+					n = queue.poll();
+					if(n!=null) {
+						n.visit(visitor);
+						if(level!=n.level){
+							level = n.level;
+							nodes.clear();
+							nodes.addAll(graph.getNodes(dir.getNext(level)));
+							nl = true;
+							if( !includeAll ) {
+								if (n!=null) {
+									allRelated.addAll(get(n, all, dir, true, edges));
+								}
+								nodes.retainAll(allRelated);
+							}
+							queue.addAll(nodes);
+						}else{
+							if( !nl ){
+								nodes.clear();
+								nodes.addAll(graph.getNodes(dir.getNext(level)));
+								nl = true;
+							}
+							
+							if( !includeAll ) {
+								allRelated.addAll(get(n, all, dir, true, edges));
+								nodes.retainAll(allRelated);
+							}
+							queue.addAll(nodes);
+						}
+					}else{
+						level = dir.getNext(level);
+						nodes.clear();
+						nodes.addAll(graph.getNodes(level));
+						if( !includeAll ) {
+							nodes.retainAll(allRelated);
+						}
+						queue.addAll(nodes);
+					}
+				};
+			}
+
+//			@Override
+//			Queue<Node<Object>> getQueue() {
+//				return new DoublyLinkedStack<Graph.Node<Object>>();
+//			}
+			
+		}, BFS;
+
+//		Queue<Node<Object>> getQueue() {
+//			return new DoublyLinkedSet<Graph.Node<Object>>(CompareStrategy.EQUALS);
+//		}
+
+		void visit(final Node<Object> node, final Visitor visitor, final Direction dir,
+				final DoublyLinkedSet<Node<Object>> all, final Edges edges, final Graph graph, boolean includeAll) {
+			final Queue<Node<Object>> queue = new DoublyLinkedSet<Graph.Node<Object>>(CompareStrategy.EQUALS);
+			final DoublyLinkedSet<Node<Object>> allRelated = new DoublyLinkedSet<Graph.Node<Object>>(CompareStrategy.EQUALS);
+			final int maxLevel = dir.getMax(graph);
+			Node<Object> n = node;
+			int level = n.level;
+			final Collection<Node<Object>> nodes = new DoublyLinkedSet<Graph.Node<Object>>(CompareStrategy.EQUALS);
+			queue.add(n);
+			allRelated.add(n);
+			boolean nl = false;
+			while(dir.checkExit(level, maxLevel)) {
+//				System.out.println( " visit level "+level+" nodes "+getStr(nodes) );
+//				final Node<Object> on = n;
+				n = queue.poll();
+				if(n!=null) {
+					n.visit(visitor);
+					if(level!=n.level){
+						level = n.level;
+						nodes.clear();
+						nodes.addAll(graph.getNodes(dir.getNext(level)));
+						nl = true;
+						if( !includeAll ) {
+							if (n!=null) {
+								allRelated.addAll(get(n, all, dir, true, edges));
+							}
+							nodes.retainAll(allRelated);
+						}
+						queue.addAll(nodes);
+					}else{
+						if( !nl ){
+							nodes.clear();
+							nodes.addAll(graph.getNodes(dir.getNext(level)));
+							nl = true;
+						}
+						
+						if( !includeAll ) {
+							allRelated.addAll(get(n, all, dir, true, edges));
+							nodes.retainAll(allRelated);
+						}
+						queue.addAll(nodes);
+					}
+				}else{
+					level = dir.getNext(level);
+					nodes.clear();
+					nodes.addAll(graph.getNodes(level));
+					if( !includeAll ) {
+						nodes.retainAll(allRelated);
+					}
+					queue.addAll(nodes);
+				}
+			};
 		}
 	}
 
