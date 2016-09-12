@@ -490,4 +490,73 @@ public class GraphTest {
 		assertTrue("Failed in bfs GOT :: "+buf2.toString()+" EXP :: ecbda", buf2.toString().equals("ecbda") );
 		
 	}
+	
+	@Test
+	public void testAdd_Dfs_Case1() throws CyclicException {
+		TestIdentity a = new TestIdentity("a");
+		TestIdentity b = new TestIdentity("b");
+		TestIdentity c = new TestIdentity("c");
+		TestIdentity d = new TestIdentity("d");
+		TestIdentity e = new TestIdentity("e");
+
+		a.children.add(d);
+		b.children.add(d);
+		b.children.add(e);
+		c.children.add(e);
+		d.children.add(e);
+
+		Graph graph = new Graph(new TestEdges());
+
+		graph.add(a);
+		// graph.print();
+		graph.add(b);
+		// graph.print();
+		graph.add(c);
+		// graph.print();
+		graph.add(d);
+		// graph.print();
+		graph.add(e);
+//		graph.print();
+
+		assertTrue("Failed in max Level", graph.getMaxLevel() == 2);
+
+		assertTrue("Failed in resolve", graph.get(0).size() == 3);
+		assertTrue("Failed in resolve", graph.get(1).size() == 1);
+		assertTrue("Failed in resolve", graph.get(2).size() == 1);
+
+		assertTrue("Failed in resolve", graph.get(0).contains(a));
+		assertTrue("Failed in resolve", graph.get(0).contains(b));
+		assertTrue("Failed in resolve", graph.get(0).contains(c));
+		assertTrue("Failed in resolve", graph.get(1).contains(d));
+		assertTrue("Failed in resolve", graph.get(2).contains(e));
+
+		final StringBuffer buf = new StringBuffer();
+		final Visitor visitor = new Visitor() {
+
+			@Override
+			public void visit(Object obj, int level) {
+				buf.append(obj);
+			}
+		};
+
+		graph.visit(e, visitor, Direction.in, Algo.DFS, true);
+		
+		assertTrue("Failed in bfs GOT :: "+buf.toString()+" EXP :: abcde", buf.toString().equals("abcde") );
+		
+		final StringBuffer buf2 = new StringBuffer();
+		final Visitor visitor2 = new Visitor() {
+
+			@Override
+			public void visit(Object obj, int level) {
+				buf2.append(obj);
+			}
+		};
+
+		graph.visit(e, visitor2, Direction.in, Algo.DFS, false);
+		
+		assertTrue("Failed in bfs GOT :: "+buf2.toString()+" EXP :: abcde", buf2.toString().equals("abcde") );
+		
+	}
+	
+	
 }

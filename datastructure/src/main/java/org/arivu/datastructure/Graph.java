@@ -27,11 +27,14 @@ public final class Graph implements Serializable {
 		 */
 		private static final long serialVersionUID = 1771937291580555597L;
 
+		final Set<Object> source;
+
 		/**
 		 * 
 		 */
-		public CyclicException() {
+		public CyclicException(Set<Object> source) {
 			super();
+			this.source = source;
 		}
 
 		/**
@@ -40,30 +43,39 @@ public final class Graph implements Serializable {
 		 * @param enableSuppression
 		 * @param writableStackTrace
 		 */
-		public CyclicException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+		public CyclicException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace,
+				Set<Object> source) {
 			super(message, cause, enableSuppression, writableStackTrace);
+			this.source = source;
 		}
 
 		/**
 		 * @param message
 		 * @param cause
 		 */
-		public CyclicException(String message, Throwable cause) {
+		public CyclicException(String message, Throwable cause, Set<Object> source) {
 			super(message, cause);
+			this.source = source;
 		}
 
 		/**
 		 * @param message
 		 */
-		public CyclicException(String message) {
+		public CyclicException(String message, Set<Object> source) {
 			super(message);
+			this.source = source;
 		}
 
 		/**
 		 * @param cause
 		 */
-		public CyclicException(Throwable cause) {
+		public CyclicException(Throwable cause, Set<Object> source) {
 			super(cause);
+			this.source = source;
+		}
+
+		public Set<Object> getSource() {
+			return source;
 		}
 
 	}
@@ -340,7 +352,7 @@ public final class Graph implements Serializable {
 	 */
 	private static void recursivelyResolve(final DoublyLinkedSet<Node<Object>> allNodes,
 			final Set<Node<Object>> startNodes, final Direction direction, int startLevel, Edges edges)
-					throws CyclicException {
+			throws CyclicException {
 		// System.out.println(" recursivelyResolve allNodes ::
 		// "+getStr(allNodes));
 		final Set<Node<Object>> resolved = new DoublyLinkedSet<Node<Object>>(CompareStrategy.EQUALS);
@@ -378,8 +390,14 @@ public final class Graph implements Serializable {
 			final Set<Node<Object>> tresolved = new DoublyLinkedSet<Node<Object>>(CompareStrategy.EQUALS);
 			tresolved.addAll(resolved);
 			tresolved.retainAll(unresolved);
-			if (!tresolved.isEmpty())
-				throw new CyclicException("Cyclic nodes ( " + getStr(tresolved) + " ) identified!");
+			if (!tresolved.isEmpty()) {
+				Set<Object> ces = new DoublyLinkedSet<Object>();
+				for (Node<Object> n : tresolved) {
+					ces.add(n.obj);
+				}
+				throw new CyclicException(
+						"Cyclic nodes ( " + getStrt(ces) + " ) identified!", Collections.unmodifiableSet(ces));
+			}
 
 			cursor.clear();
 			if (unresolved.isEmpty())
@@ -414,7 +432,7 @@ public final class Graph implements Serializable {
 	 * @param tresolved
 	 * @return
 	 */
-	private final static String getStr(Collection<Node<Object>> tresolved) {
+	final static String getStr(Collection<Node<Object>> tresolved) {
 		StringBuffer sb = new StringBuffer();
 
 		for (Node<Object> node : tresolved) {
@@ -732,7 +750,7 @@ public final class Graph implements Serializable {
 
 			@Override
 			Queue<Node<Object>> getQueue() {
-				return new DoublyLinkedStack<Graph.Node<Object>>(true,CompareStrategy.EQUALS);
+				return new DoublyLinkedStack<Graph.Node<Object>>(true, CompareStrategy.EQUALS);
 			}
 
 		},
@@ -761,7 +779,7 @@ public final class Graph implements Serializable {
 				// final Node<Object> on = n;
 				n = queue.poll();
 				if (n != null) {
-//					n.visit(visitor);
+					// n.visit(visitor);
 					visitQueue.add(n);
 					if (level != n.level) {
 						level = n.level;
@@ -797,12 +815,13 @@ public final class Graph implements Serializable {
 					}
 					queue.addAll(nodes);
 				}
-			};
-			
-			while((n=visitQueue.poll())!=null){
+			}
+			;
+
+			while ((n = visitQueue.poll()) != null) {
 				n.visit(visitor);
 			}
-			
+
 		}
 	}
 
