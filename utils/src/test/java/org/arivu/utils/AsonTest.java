@@ -138,7 +138,7 @@ public class AsonTest {
 	
 
 	@Test
-	public void testFromJsonReader() throws InterruptedException {
+	public void testFromJson_Parallel() throws InterruptedException {
 		final int nThreads = 100;
 		final CountDownLatch start = new CountDownLatch(1);
 		final CountDownLatch end = new CountDownLatch(1);
