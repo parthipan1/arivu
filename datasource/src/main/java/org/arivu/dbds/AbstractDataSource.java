@@ -224,7 +224,7 @@ abstract class AbstractDataSource implements DataSource {
 			try {
 				ManagementFactory.getPlatformMBeanServer().unregisterMBean(mxbeanName);
 			} catch (Exception e) {
-				//			logger.error("Failed",e);
+				logger.error("Failed",e);
 			} 
 		}
 	}
@@ -247,7 +247,7 @@ abstract class AbstractDataSource implements DataSource {
 			public void setTimoutCheckInterval(int intreval) {
 				if( intreval == 0) throw new IllegalArgumentException("Zero not allowed for timoutCheckInterval!");
 				logger.error("Failed","JMX reset intreval value "+intreval+" old value "+that.getInterval());
-				that.setInterval(intreval);;
+				that.setInterval(intreval);
 			}
 			@Override
 			public void recycle() {

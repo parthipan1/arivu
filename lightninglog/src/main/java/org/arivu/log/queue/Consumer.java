@@ -86,7 +86,7 @@ public final class Consumer<T> implements AutoCloseable {
 	/**
 	 * 
 	 */
-	private final void registerMXBean(final int cnt) {
+	private void registerMXBean(final int cnt) {
 		try {
 			MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
 			beanNameStr = "org.arivu.log:type=" + getClass().getSimpleName() + this.threadId + "." + cnt;
@@ -102,7 +102,7 @@ public final class Consumer<T> implements AutoCloseable {
 	/**
 	 * @return
 	 */
-	private final LogMXBean getLogMXBean() {
+	private LogMXBean getLogMXBean() {
 		@SuppressWarnings("resource")
 		final Consumer<T> that = this;
 		return new LogMXBean() {
@@ -251,7 +251,7 @@ public final class Consumer<T> implements AutoCloseable {
 			try {
 				ManagementFactory.getPlatformMBeanServer().unregisterMBean(new ObjectName(beanNameStr));
 			} catch (Exception e) {
-				// System.err.println(e.getMessage());
+				System.err.println(e.toString());
 			}
 		}
 	}

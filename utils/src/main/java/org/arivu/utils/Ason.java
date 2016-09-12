@@ -101,11 +101,11 @@ public final class Ason {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public static final Map<String,Object> getObj(Map<String, Object> json,String token,Map<String,Object> deflt){
+	public static Map<String,Object> getObj(Map<String, Object> json,String token,Map<String,Object> deflt){
 		return (Map<String, Object>) get(json, token, deflt);
 	}
 
-	public static final Collection<String> getArray(Map<String, Object> json,String token,Collection<String> deflt){
+	public static Collection<String> getArray(Map<String, Object> json,String token,Collection<String> deflt){
 		@SuppressWarnings("unchecked")
 		Collection<String> arr = convert((Map<String, String>) get(json, token, null));
 		if( arr==null || arr.size()==0 )
@@ -114,7 +114,7 @@ public final class Ason {
 			return arr;
 	}
 	
-	public static final Number getNumber(Map<String, Object> json,String token,Number deflt){
+	public static Number getNumber(Map<String, Object> json,String token,Number deflt){
 		return (Number) get(json, token, deflt);
 	}
 	

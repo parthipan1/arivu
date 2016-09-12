@@ -187,7 +187,7 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 		return null;
 	}
 
-	final T removeRef(){
+	 T removeRef(){
 		cas.lock();
 		DoublyLinkedSet<T> tleft = left, tright = right;
 		

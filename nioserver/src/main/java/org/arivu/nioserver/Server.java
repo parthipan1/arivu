@@ -47,6 +47,7 @@ public class Server {
 			try {
 				port = Integer.parseInt(args[0]);
 			} catch (Exception e) {
+				e.printStackTrace();
 			}
 		}
 
@@ -81,7 +82,7 @@ class RequestHandler implements Runnable {
 	public void run() {
 
 		try {
-
+			System.out.println("run server");
 		} finally {
 			try {
 				this.sc.close();

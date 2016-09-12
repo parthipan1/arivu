@@ -369,7 +369,7 @@ public final class DoublyLinkedListInt  {
 			return Integer.MIN_VALUE;
 	}
 
-	private final DoublyLinkedListInt getLinked(int index) {
+	private DoublyLinkedListInt getLinked(int index) {
 		int idx = 0;
 		DoublyLinkedListInt ref = this.right;
 		while (ref != null) {
@@ -385,7 +385,7 @@ public final class DoublyLinkedListInt  {
 		return null;
 	}
 
-	private final void validateIndex(int index) {
+	private void validateIndex(int index) {
 		if( index >= size.get() || index < 0 ) throw new ArrayIndexOutOfBoundsException(index);
 	}
 

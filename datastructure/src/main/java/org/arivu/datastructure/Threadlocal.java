@@ -156,6 +156,7 @@ public final class Threadlocal<T> {
 		try {
 			Runtime.getRuntime().removeShutdownHook(hook);
 		} catch (Throwable e1) {
+			System.err.println(e1.toString());
 		}
 	}
 
@@ -202,7 +203,7 @@ public final class Threadlocal<T> {
 
 		private Future<?> tr = null;
 
-		final void trigger(long time) {
+		void trigger(long time) {
 			long diff = time - last;
 			last = time;
 			if (diff >= onceInMiliSecs) {

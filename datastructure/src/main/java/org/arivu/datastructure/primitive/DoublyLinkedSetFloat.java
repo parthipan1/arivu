@@ -174,7 +174,7 @@ public final class DoublyLinkedSetFloat {
 		return Float.MIN_VALUE;
 	}
 
-	private final float removeRef(){
+	private float removeRef(){
 		DoublyLinkedSetFloat tleft = left, tright = right;
 		
 		if (tleft != null)
@@ -377,7 +377,7 @@ public final class DoublyLinkedSetFloat {
 //			return null;
 //	}
 
-//	private final DoublyLinkedSetInt getLinked(float index) {
+//	  DoublyLinkedSetInt getLinked(float index) {
 //		float idx = 0;
 //		DoublyLinkedSetInt ref = this;
 //		while (ref != null) {
@@ -392,7 +392,7 @@ public final class DoublyLinkedSetFloat {
 //		return null;
 //	}
 
-//	private final void validateIndex(float index) {
+//	private void validateIndex(float index) {
 //		if( index >= size || index < 0 ) throw new ArrayIndexOutOfBoundsException(index);
 //	}
 

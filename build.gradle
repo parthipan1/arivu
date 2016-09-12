@@ -6,6 +6,9 @@ buildscript {
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7'
     }
 }
+
+def FS = java.io.File.separator
+
 allprojects {
 	group = 'org.arivu'
 	version = '1.0.0'
@@ -31,10 +34,64 @@ subprojects {
 	apply plugin: 'maven-publish'
 	apply plugin: 'com.jfrog.bintray'
 
+    apply plugin: 'findbugs'
+    apply plugin: 'pmd'
+    apply plugin: 'jacoco'
+
 	sourceCompatibility = 1.6
 	targetCompatibility = 1.6
   
   //tasks.withType(Javadoc).all { enabled = false }
+  
+  
+    findbugs {
+//      toolVersion = "2.0.1"
+      sourceSets = [sourceSets.main]
+      ignoreFailures = true
+      reportsDir = file("$project.buildDir"+FS+"findbugsReports")
+      effort = "max"
+      reportLevel = "low"//"high"
+      visitors = ["FindSqlInjection", "SwitchFallthrough"]
+      omitVisitors = ["FindNonShortCircuit"]
+//      includeFilter = file("$rootProject.projectDir"+FS+"config"+FS+"findbugs"+FS+"includeFilter.xml")
+//      excludeFilter = file("$rootProject.projectDir"+FS+"config"+FS+"findbugs"+FS+"excludeFilter.xml")
+    }
+    
+    tasks.withType(FindBugs) {
+	    reports {
+	        xml.enabled = false
+	        html.enabled = true
+	    }
+	}
+    
+
+    pmd{
+      ignoreFailures = true
+      targetJdk = 1.7
+      reportsDir = file("$project.buildDir"+FS+"pmdReports")
+      sourceSets = [sourceSets.main]
+      /*
+      ruleSets = [
+        "basic",
+        "braces",
+        "strings"
+        ]
+      */
+    }
+    
+    jacoco {
+      toolVersion = "0.7.4.201502262128"
+      reportsDir = file("$project.buildDir"+FS+"jacocoReports")
+    }
+    
+    jacocoTestReport {
+      reports {
+        xml.enabled false
+        csv.enabled false
+        html.destination "${buildDir}"+FS+"jacocoHtml"
+      }
+    }
+  
   
   task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = 'sources'

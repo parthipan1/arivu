@@ -31,7 +31,7 @@ final class State {
 	 *            TODO
 	 * 
 	 */
-	final void inc(IncType type) {
+	void inc(IncType type) {
 		reuse++;
 		lastTime = System.currentTimeMillis();
 		this.type = type;
@@ -47,9 +47,9 @@ final class State {
 	 */
 	boolean checkExp(int size, int maxPoolSize, int maxReuseCount, int lifeSpan, int idleTimeout) {
 		final long currentTimeMillis = System.currentTimeMillis();
-		return ((maxPoolSize > 0 && size > maxPoolSize || maxReuseCount > 0 && reuse >= maxReuseCount
+		return maxPoolSize > 0 && size > maxPoolSize || maxReuseCount > 0 && reuse >= maxReuseCount
 				|| lifeSpan > 0 && (currentTimeMillis - createTime) >= lifeSpan
-				|| idleTimeout > 0 && (currentTimeMillis - lastTime) >= idleTimeout));
+				|| idleTimeout > 0 && (currentTimeMillis - lastTime) >= idleTimeout;
 	}
 
 	/**

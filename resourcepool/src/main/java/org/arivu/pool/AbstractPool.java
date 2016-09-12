@@ -199,10 +199,8 @@ abstract class AbstractPool<T> implements Pool<T> {
 		
 		LinkedReference<T> ref = head.right;
 		while (ref != null) {
-			if( ref.t!=null ){
-				if( ref.available.compareAndSet(true, false) ){
-					return ref;
-				}
+			if( ref.t!=null && ref.available.compareAndSet(true, false) ){
+				return ref;
 			}
 			ref = ref.right;
 			if (ref == null || ref.t == null || ref == head) {

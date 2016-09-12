@@ -415,7 +415,7 @@ public final class Graph implements Serializable {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	private final static Node<Object> getWrapper(Object t) {
+	private static Node<Object> getWrapper(Object t) {
 		if (t == null) {
 			return null;
 		} else if (t instanceof Node) {
@@ -432,7 +432,7 @@ public final class Graph implements Serializable {
 	 * @param tresolved
 	 * @return
 	 */
-	final static String getStr(Collection<Node<Object>> tresolved) {
+	static String getStr(Collection<Node<Object>> tresolved) {
 		StringBuffer sb = new StringBuffer();
 
 		for (Node<Object> node : tresolved) {
@@ -454,7 +454,7 @@ public final class Graph implements Serializable {
 	 * @param edges
 	 * @return
 	 */
-	private final static DoublyLinkedSet<Node<Object>> get(Node<Object> node, DoublyLinkedSet<Node<Object>> tempAll,
+	private static DoublyLinkedSet<Node<Object>> get(Node<Object> node, DoublyLinkedSet<Node<Object>> tempAll,
 			Direction dir, boolean includeAll, Edges edges) {
 		DoublyLinkedSet<Node<Object>> set = new DoublyLinkedSet<Graph.Node<Object>>(CompareStrategy.EQUALS);
 		final Collection<? extends Object> cols = dir.get(node.obj, edges);
@@ -483,7 +483,7 @@ public final class Graph implements Serializable {
 	 * @param add
 	 * @return
 	 */
-	private final static Node<Object> get(Object p, DoublyLinkedSet<Node<Object>> tempAll, boolean add) {
+	private static Node<Object> get(Object p, DoublyLinkedSet<Node<Object>> tempAll, boolean add) {
 		if (p != null) {
 			final DoublyLinkedSet<Node<Object>> search = tempAll.search(p);
 			if (search == null) {
@@ -507,7 +507,7 @@ public final class Graph implements Serializable {
 	 * @param tempAll
 	 * @param edges
 	 */
-	private final static void headOverHeels(final Node<Object> node, final Set<Node<Object>> root,
+	private static void headOverHeels(final Node<Object> node, final Set<Node<Object>> root,
 			final Set<Node<Object>> leaf, final DoublyLinkedSet<Node<Object>> tempAll, Edges edges) {
 		final Collection<Node<Object>> parents = get(node, tempAll, Direction.in, true, edges);
 		if (parents.size() == 0) {
@@ -517,14 +517,14 @@ public final class Graph implements Serializable {
 			root.add(node);
 		}
 		final Collection<Node<Object>> children = get(node, tempAll, Direction.out, true, edges);
-		if (children != null && children.size() >= 0) {
-			if (children.size() == 0) {
+		if (children != null && children.size() == 0) {
+//			if (children.size() == 0) {
 
 				if (node.level != 0)
 					node.level = Integer.MIN_VALUE;
 
 				leaf.add(node);
-			}
+//			}
 		}
 	}
 
@@ -556,6 +556,7 @@ public final class Graph implements Serializable {
 				return all.remove(getWrapper((Object) o));
 			}
 		} catch (ClassCastException e) {
+			System.err.println(e.toString());
 		}
 		return false;
 	}
@@ -678,7 +679,7 @@ public final class Graph implements Serializable {
 	 * @param tresolved
 	 * @return
 	 */
-	private final static String getStrt(Collection<Object> tresolved) {
+	private static String getStrt(Collection<Object> tresolved) {
 		StringBuffer sb = new StringBuffer();
 
 		for (Object node : tresolved) {
@@ -816,7 +817,6 @@ public final class Graph implements Serializable {
 					queue.addAll(nodes);
 				}
 			}
-			;
 
 			while ((n = visitQueue.poll()) != null) {
 				n.visit(visitor);

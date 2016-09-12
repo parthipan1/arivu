@@ -749,6 +749,7 @@ public final class AsyncLogger implements Logger {
 		case LOG_LEVEL_ERROR:
 			buf.append("ERROR");
 			break;
+		default:
 		}
 		if (LEVEL_IN_BRACKETS)
 			buf.append(']');
@@ -833,14 +834,14 @@ public final class AsyncLogger implements Logger {
 	private boolean isLevelEnabled(int logLevel) {
 		// log level are numerically ordered so can use simple numeric
 		// comparison
-		return (logLevel >= currentLogLevel);
+		return logLevel >= currentLogLevel;
 	}
 
 	private static String recursivelyComputeLevelString(String tempName) {
 //		String tempName = name;
 		String levelString = null;
 		int indexOfLastDot = tempName.length();
-		while ((levelString == null) && (indexOfLastDot > -1)) {
+		while (levelString == null && indexOfLastDot > -1) {
 			tempName = tempName.substring(0, indexOfLastDot);
 			levelString = ALL_LOGGER.get(tempName);//getStringProperty(tempName, null);
 			indexOfLastDot = String.valueOf(tempName).lastIndexOf(".");
@@ -849,7 +850,7 @@ public final class AsyncLogger implements Logger {
 	}
 
 	private static String beanNameStr = null;
-	private static final void registerMXBean(final int cnt) {
+	private static void registerMXBean(final int cnt) {
 		try {
 			MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
 			beanNameStr = "org.arivu.log:type=" + AsyncLogger.class.getSimpleName()+String.valueOf(cnt);
@@ -862,12 +863,12 @@ public final class AsyncLogger implements Logger {
 		}
 	}
 	
-	private static final void unRegisterMXBean(){
+	private static void unRegisterMXBean(){
 		if (beanNameStr != null) {
 			try {
 				ManagementFactory.getPlatformMBeanServer().unregisterMBean(new ObjectName(beanNameStr));
 			} catch (Exception e) {
-//				e.printStackTrace();
+				System.err.println(e.toString());
 			}
 		}
 	}
@@ -1106,7 +1107,7 @@ public final class AsyncLogger implements Logger {
 				in.close();
 				return fromJson;
 			} catch (Exception e) {
-				// ignored
+				System.err.println(e.toString());
 			}
 		}
 		return null;

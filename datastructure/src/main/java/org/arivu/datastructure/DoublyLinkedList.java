@@ -341,7 +341,7 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 			return null;
 	}
 
-	private final DoublyLinkedList<T> getLinked(int index) {
+	private DoublyLinkedList<T> getLinked(int index) {
 		int idx = 0;
 		DoublyLinkedList<T> ref = this.right;
 		while (ref != null) {
@@ -357,7 +357,7 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 		return null;
 	}
 
-	private final void validateIndex(int index) {
+	private void validateIndex(int index) {
 		if( index >= size.get() || index < 0 ) throw new ArrayIndexOutOfBoundsException(index);
 	}
 

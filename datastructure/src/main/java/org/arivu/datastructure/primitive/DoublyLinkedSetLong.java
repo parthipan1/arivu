@@ -174,7 +174,7 @@ public final class DoublyLinkedSetLong {
 		return Long.MIN_VALUE;
 	}
 
-	private final long removeRef(){
+	private long removeRef(){
 		DoublyLinkedSetLong tleft = left, tright = right;
 		
 		if (tleft != null)
@@ -377,7 +377,7 @@ public final class DoublyLinkedSetLong {
 //			return null;
 //	}
 
-//	private final DoublyLinkedSetInt getLinked(long index) {
+//	private DoublyLinkedSetInt getLinked(long index) {
 //		long idx = 0;
 //		DoublyLinkedSetInt ref = this;
 //		while (ref != null) {
@@ -392,7 +392,7 @@ public final class DoublyLinkedSetLong {
 //		return null;
 //	}
 
-//	private final void validateIndex(long index) {
+//	private void validateIndex(long index) {
 //		if( index >= size || index < 0 ) throw new ArrayIndexOutOfBoundsException(index);
 //	}
 

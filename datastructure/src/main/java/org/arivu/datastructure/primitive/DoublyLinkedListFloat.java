@@ -294,7 +294,7 @@ public final class DoublyLinkedListFloat  {
 			return Float.MIN_VALUE;
 	}
 
-	private final DoublyLinkedListFloat getLinked(int index) {
+	private DoublyLinkedListFloat getLinked(int index) {
 		int idx = 0;
 		DoublyLinkedListFloat ref = this.right;
 		while (ref != null) {
@@ -310,7 +310,7 @@ public final class DoublyLinkedListFloat  {
 		return null;
 	}
 
-	private final void validateIndex(int index) {
+	private void validateIndex(int index) {
 		if( index >= size.get() || index < 0 ) throw new ArrayIndexOutOfBoundsException(index);
 	}
 

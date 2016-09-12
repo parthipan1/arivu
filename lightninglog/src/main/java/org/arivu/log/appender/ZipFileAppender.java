@@ -99,7 +99,7 @@ class ZipFileAppender implements Appender {
 	    boolean sameYear = calendar1.get(Calendar.YEAR) == calendar2.get(Calendar.YEAR);
 	    boolean sameMonth = calendar1.get(Calendar.MONTH) == calendar2.get(Calendar.MONTH);
 	    boolean sameDay = calendar1.get(Calendar.DAY_OF_MONTH) == calendar2.get(Calendar.DAY_OF_MONTH);
-	    return (sameDay && sameMonth && sameYear);
+	    return sameDay && sameMonth && sameYear;
 	}
 
 	@Override

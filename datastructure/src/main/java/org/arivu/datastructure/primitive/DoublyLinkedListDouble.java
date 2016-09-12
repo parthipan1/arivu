@@ -293,7 +293,7 @@ public final class DoublyLinkedListDouble  {
 			return Double.MIN_VALUE;
 	}
 
-	private final DoublyLinkedListDouble getLinked(int index) {
+	private DoublyLinkedListDouble getLinked(int index) {
 		int idx = 0;
 		DoublyLinkedListDouble ref = this.right;
 		while (ref != null) {
@@ -309,7 +309,7 @@ public final class DoublyLinkedListDouble  {
 		return null;
 	}
 
-	private final void validateIndex(int index) {
+	private void validateIndex(int index) {
 		if( index >= size.get() || index < 0 ) throw new ArrayIndexOutOfBoundsException(index);
 	}
 

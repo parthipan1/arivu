@@ -28,7 +28,7 @@ public class Btree implements Serializable {
 
 		final DoublyLinkedList<Object> arrs = new DoublyLinkedList<Object>(CompareStrategy.EQUALS);
 		final Node[] refs;
-		
+
 		/**
 		 * @param comparator
 		 * @param blen
@@ -37,23 +37,24 @@ public class Btree implements Serializable {
 			super();
 			this.comparator = comparator;
 			this.blen = blen;
-			this.refs = new Node[blen+1];
+			this.refs = new Node[blen + 1];
 		}
 
-		void add(Object obj){
-			if(arrs.size()<blen){
+		void add(Object obj) {
+			if (arrs.size() < blen) {
 				arrs.add(obj);
-				Collections.sort(arrs,comparator);
-			}else{
+				Collections.sort(arrs, comparator);
+			} else {
 				int idx = Collections.binarySearch(arrs, obj, comparator);
-				if( idx>=0 && idx<blen ){}
-				else{
-					idx = -1*(idx+1);
-				}
-				
+				// if( idx>=0 && idx<blen )//{}
+				// else{
+				if (idx < 0)
+					idx = -1 * (idx + 1);
+				// }
+
 			}
 		}
-		
+
 	}
 
 	final Node root;
@@ -67,27 +68,27 @@ public class Btree implements Serializable {
 		this.root = new Node(comparator, blen);
 	}
 
-//	public static void main(String[] args){
-//		List<Integer> list = new ArrayList<Integer>();
-//		list.add(0);
-//		list.add(1);
-//		list.add(4);
-//		list.add(8);
-//		list.add(9);
-//		
-//		Collections.sort(list);
-//		
-//		for(Integer i:list)
-//			System.out.print(i);
-//		System.out.println();
-//		
-//		System.out.println("search 0 "+Collections.binarySearch(list, 0));
-//		System.out.println("search 1 "+Collections.binarySearch(list, 1));
-//		System.out.println("search 4 "+Collections.binarySearch(list, 4));
-//		int idx = Collections.binarySearch(list, 3);
-//		idx = -1*(idx+1);
-//		System.out.println("search 3 "+idx);
-//		
-//	}
-//	
+	// public static void main(String[] args){
+	// List<Integer> list = new ArrayList<Integer>();
+	// list.add(0);
+	// list.add(1);
+	// list.add(4);
+	// list.add(8);
+	// list.add(9);
+	//
+	// Collections.sort(list);
+	//
+	// for(Integer i:list)
+	// System.out.print(i);
+	// System.out.println();
+	//
+	// System.out.println("search 0 "+Collections.binarySearch(list, 0));
+	// System.out.println("search 1 "+Collections.binarySearch(list, 1));
+	// System.out.println("search 4 "+Collections.binarySearch(list, 4));
+	// int idx = Collections.binarySearch(list, 3);
+	// idx = -1*(idx+1);
+	// System.out.println("search 3 "+idx);
+	//
+	// }
+	//
 }

@@ -80,7 +80,7 @@ public final class Producer<T> implements AutoCloseable {
 	/**
 	 * 
 	 */
-	private final void registerMXBean(final int cnt) {
+	private void registerMXBean(final int cnt) {
 		try {
 			MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
 			beanNameStr = "org.arivu.log:type=" + getClass().getSimpleName() + "." + String.valueOf(cnt);
@@ -96,7 +96,7 @@ public final class Producer<T> implements AutoCloseable {
 	/**
 	 * @return
 	 */
-	private final LogMXBean getLogMXBean() {
+	private LogMXBean getLogMXBean() {
 		final Producer<T> that = this;
 		return new LogMXBean() {
 
@@ -191,7 +191,7 @@ public final class Producer<T> implements AutoCloseable {
 		threadlocal.get(null).consume(t,time);
 	}
 
-	final String getThreadId() {
+	String getThreadId() {
 		return String.valueOf(Thread.currentThread().hashCode());
 	}
 	

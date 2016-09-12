@@ -24,7 +24,7 @@ final class Synchronizer {
 		this.waitLatches = new LinkedReference<CountDownLatch>();
 	}
 
-	final void youShallNotPass() {
+	void youShallNotPass() {
 
 		final CountDownLatch wait = new CountDownLatch(1);
 		int i = waitLatches.size.get();
@@ -40,7 +40,7 @@ final class Synchronizer {
 		logger.debug(Thread.currentThread().getName()+" Thread released from Wait!");
 	}
 
-	final void youShallPass() {
+	void youShallPass() {
 
 		int i = waitLatches.size.get();
 		if (i > 0) {
@@ -53,7 +53,7 @@ final class Synchronizer {
 
 	}
 
-	final void allShallPass() {
+	void allShallPass() {
 		int i = waitLatches.size.get();
 		if (i > 0) {
 			while (!waitLatches.size.compareAndSet(i, 0)) {
