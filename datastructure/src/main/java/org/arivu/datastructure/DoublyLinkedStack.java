@@ -305,12 +305,8 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 
 	@Override
 	public boolean add(T e) {
-		if(e!=null){
-			addLeft(new DoublyLinkedStack<T>(e,size, false, compareStrategy));
-			return true;
-		}else{
-			return false;
-		}
+		push(e);
+		return true;
 	}
 
 	@Override

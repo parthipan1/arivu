@@ -16,7 +16,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -353,7 +352,6 @@ public class GraphTest {
 	}
 
 	@Test
-//	@Ignore
 	public void testAdd_Bfs() throws CyclicException {
 		TestIdentity a = new TestIdentity("a");
 		TestIdentity b = new TestIdentity("b");
@@ -424,7 +422,6 @@ public class GraphTest {
 	}
 	
 	@Test
-	@Ignore
 	public void testAdd_Dfs() throws CyclicException {
 		TestIdentity a = new TestIdentity("a");
 		TestIdentity b = new TestIdentity("b");
@@ -477,7 +474,7 @@ public class GraphTest {
 
 		graph.visit(a, visitor, Direction.out, Algo.DFS, true);
 		
-		assertTrue("Failed in bfs GOT :: "+buf.toString()+" EXP :: adbce", buf.toString().equals("adbce") );
+		assertTrue("Failed in bfs GOT :: "+buf.toString()+" EXP :: ecbda", buf.toString().equals("ecbda") );
 		
 		final StringBuffer buf2 = new StringBuffer();
 		final Visitor visitor2 = new Visitor() {
@@ -487,10 +484,10 @@ public class GraphTest {
 				buf2.append(obj);
 			}
 		};
-//
-//		graph.visit(a, visitor2, Direction.out, Algo.BFS, false);
-//		
-//		assertTrue("Failed in bfs GOT :: "+buf2.toString()+" EXP :: adbce", buf2.toString().equals("adbce") );
-//		
+
+		graph.visit(a, visitor2, Direction.out, Algo.DFS, false);
+		
+		assertTrue("Failed in bfs GOT :: "+buf2.toString()+" EXP :: ecbda", buf2.toString().equals("ecbda") );
+		
 	}
 }

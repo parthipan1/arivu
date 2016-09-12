@@ -170,7 +170,7 @@ public final class Graph implements Serializable {
 		 * @param visitor
 		 */
 		void visit(Visitor visitor) {
-			 visitor.visit(obj, level);	
+			visitor.visit(obj, level);
 		}
 
 	}
@@ -623,7 +623,7 @@ public final class Graph implements Serializable {
 		}
 		return Collections.unmodifiableList(l);
 	}
-	
+
 	void print() {
 		int m = getMaxLevel();
 		for (int i = 0; i <= m; i++) {
@@ -681,10 +681,10 @@ public final class Graph implements Serializable {
 	enum Direction {
 		in {
 			@Override
-			boolean checkExit(int level,int max){
-				return level>=max;
+			boolean checkExit(int level, int max) {
+				return level >= max;
 			}
-			
+
 			@Override
 			int getMax(Graph g) {
 				return 0;
@@ -703,18 +703,18 @@ public final class Graph implements Serializable {
 		},
 		out;
 
-		int getMax(Graph g){
+		int getMax(Graph g) {
 			return g.getMaxLevel();
 		}
-		
+
 		int getNext(int l) {
 			return l + 1;
 		}
 
-		boolean checkExit(int level,int max){
-			return level<=max;
+		boolean checkExit(int level, int max) {
+			return level <= max;
 		}
-		
+
 		Collection<? extends Object> get(Object i, Edges edges) {
 			return edges.out(i);
 		}
@@ -728,78 +728,26 @@ public final class Graph implements Serializable {
 	}
 
 	enum Algo {
-		DFS{
+		DFS {
 
 			@Override
-			void visit(Node<Object> node, Visitor visitor, Direction dir, DoublyLinkedSet<Node<Object>> all,
-					Edges edges, Graph graph, boolean includeAll) {
-				final Queue<Node<Object>> queue = new DoublyLinkedStack<Graph.Node<Object>>(true,CompareStrategy.EQUALS);
-				final DoublyLinkedSet<Node<Object>> allRelated = new DoublyLinkedSet<Graph.Node<Object>>(CompareStrategy.EQUALS);
-				final int maxLevel = dir.getMax(graph);
-				Node<Object> n = node;
-				int level = n.level;
-				final Collection<Node<Object>> nodes = new DoublyLinkedSet<Graph.Node<Object>>(CompareStrategy.EQUALS);
-				queue.add(n);
-				allRelated.add(n);
-				boolean nl = false;
-				while(dir.checkExit(level, maxLevel)) {
-//					System.out.println( " visit level "+level+" nodes "+getStr(nodes) );
-//					final Node<Object> on = n;
-					n = queue.poll();
-					if(n!=null) {
-						n.visit(visitor);
-						if(level!=n.level){
-							level = n.level;
-							nodes.clear();
-							nodes.addAll(graph.getNodes(dir.getNext(level)));
-							nl = true;
-							if( !includeAll ) {
-								if (n!=null) {
-									allRelated.addAll(get(n, all, dir, true, edges));
-								}
-								nodes.retainAll(allRelated);
-							}
-							queue.addAll(nodes);
-						}else{
-							if( !nl ){
-								nodes.clear();
-								nodes.addAll(graph.getNodes(dir.getNext(level)));
-								nl = true;
-							}
-							
-							if( !includeAll ) {
-								allRelated.addAll(get(n, all, dir, true, edges));
-								nodes.retainAll(allRelated);
-							}
-							queue.addAll(nodes);
-						}
-					}else{
-						level = dir.getNext(level);
-						nodes.clear();
-						nodes.addAll(graph.getNodes(level));
-						if( !includeAll ) {
-							nodes.retainAll(allRelated);
-						}
-						queue.addAll(nodes);
-					}
-				};
+			Queue<Node<Object>> getQueue() {
+				return new DoublyLinkedStack<Graph.Node<Object>>(true,CompareStrategy.EQUALS);
 			}
 
-//			@Override
-//			Queue<Node<Object>> getQueue() {
-//				return new DoublyLinkedStack<Graph.Node<Object>>();
-//			}
-			
-		}, BFS;
+		},
+		BFS;
 
-//		Queue<Node<Object>> getQueue() {
-//			return new DoublyLinkedSet<Graph.Node<Object>>(CompareStrategy.EQUALS);
-//		}
+		Queue<Node<Object>> getQueue() {
+			return new DoublyLinkedSet<Graph.Node<Object>>(CompareStrategy.EQUALS);
+		}
 
 		void visit(final Node<Object> node, final Visitor visitor, final Direction dir,
 				final DoublyLinkedSet<Node<Object>> all, final Edges edges, final Graph graph, boolean includeAll) {
+			final Queue<Node<Object>> visitQueue = getQueue();
 			final Queue<Node<Object>> queue = new DoublyLinkedSet<Graph.Node<Object>>(CompareStrategy.EQUALS);
-			final DoublyLinkedSet<Node<Object>> allRelated = new DoublyLinkedSet<Graph.Node<Object>>(CompareStrategy.EQUALS);
+			final DoublyLinkedSet<Node<Object>> allRelated = new DoublyLinkedSet<Graph.Node<Object>>(
+					CompareStrategy.EQUALS);
 			final int maxLevel = dir.getMax(graph);
 			Node<Object> n = node;
 			int level = n.level;
@@ -807,47 +755,54 @@ public final class Graph implements Serializable {
 			queue.add(n);
 			allRelated.add(n);
 			boolean nl = false;
-			while(dir.checkExit(level, maxLevel)) {
-//				System.out.println( " visit level "+level+" nodes "+getStr(nodes) );
-//				final Node<Object> on = n;
+			while (dir.checkExit(level, maxLevel)) {
+				// System.out.println( " visit level "+level+" nodes
+				// "+getStr(nodes) );
+				// final Node<Object> on = n;
 				n = queue.poll();
-				if(n!=null) {
-					n.visit(visitor);
-					if(level!=n.level){
+				if (n != null) {
+//					n.visit(visitor);
+					visitQueue.add(n);
+					if (level != n.level) {
 						level = n.level;
 						nodes.clear();
 						nodes.addAll(graph.getNodes(dir.getNext(level)));
 						nl = true;
-						if( !includeAll ) {
-							if (n!=null) {
+						if (!includeAll) {
+							if (n != null) {
 								allRelated.addAll(get(n, all, dir, true, edges));
 							}
 							nodes.retainAll(allRelated);
 						}
 						queue.addAll(nodes);
-					}else{
-						if( !nl ){
+					} else {
+						if (!nl) {
 							nodes.clear();
 							nodes.addAll(graph.getNodes(dir.getNext(level)));
 							nl = true;
 						}
-						
-						if( !includeAll ) {
+
+						if (!includeAll) {
 							allRelated.addAll(get(n, all, dir, true, edges));
 							nodes.retainAll(allRelated);
 						}
 						queue.addAll(nodes);
 					}
-				}else{
+				} else {
 					level = dir.getNext(level);
 					nodes.clear();
 					nodes.addAll(graph.getNodes(level));
-					if( !includeAll ) {
+					if (!includeAll) {
 						nodes.retainAll(allRelated);
 					}
 					queue.addAll(nodes);
 				}
 			};
+			
+			while((n=visitQueue.poll())!=null){
+				n.visit(visitor);
+			}
+			
 		}
 	}
 
