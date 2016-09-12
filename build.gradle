@@ -92,6 +92,7 @@ subprojects {
       }
     }
   
+  test { finalizedBy jacocoTestReport }
   
   task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = 'sources'
