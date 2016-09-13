@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
 
 import org.arivu.utils.lock.AtomicWFLock;
 
@@ -32,26 +33,29 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 	
 	AtomicInteger size;
 	final CompareStrategy compareStrategy;
+	Lock cas;
 	/**
 	 * 
 	 */
 	public DoublyLinkedList() {
-		this(null, new AtomicInteger(0),CompareStrategy.REF);
+		this(null, new AtomicInteger(0),CompareStrategy.REF, new AtomicWFLock());
 	}
 	
 	DoublyLinkedList(CompareStrategy compareStrategy) {
-		this(null, new AtomicInteger(0),compareStrategy);
+		this(null, new AtomicInteger(0),compareStrategy, new AtomicWFLock());
 	}
 	
 	/**
 	 * @param t
 	 * @param size 
+	 * @param cas 
 	 */
-	private DoublyLinkedList(T t, AtomicInteger size,CompareStrategy compareStrategy) {
+	private DoublyLinkedList(T t, AtomicInteger size,CompareStrategy compareStrategy, Lock cas) {
 		super();
 		this.obj = t;
 		this.size = size;
 		this.compareStrategy = compareStrategy;
+		this.cas = cas;
 	}
 
 	/**
@@ -87,8 +91,6 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 			return removeRight.obj;
 		return null;
 	}
-	
-	static final AtomicWFLock cas = new AtomicWFLock();
 	
 	/**
 	 * @return
@@ -240,7 +242,7 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 	@Override
 	public boolean add(T e) {
 		if(e!=null){
-			addLeft(new DoublyLinkedList<T>(e, size, compareStrategy));
+			addLeft(new DoublyLinkedList<T>(e, size, compareStrategy, cas));
 			return true;
 		}else{
 			return false;

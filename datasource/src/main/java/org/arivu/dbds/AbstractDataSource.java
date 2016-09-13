@@ -538,7 +538,7 @@ abstract class AbstractDataSource implements DataSource {
 	} 
 
 	/**
-	 * @return
+	 * @return pool.getMaxPoolSize()
 	 */
 	public int getMaxPoolSize() {
 		return pool.getMaxPoolSize();
@@ -552,7 +552,7 @@ abstract class AbstractDataSource implements DataSource {
 	}
 
 	/**
-	 * @return
+	 * @return pool.getMaxReuseCount()
 	 */
 	public int getMaxReuseCount() {
 		return pool.getMaxReuseCount();
@@ -566,7 +566,7 @@ abstract class AbstractDataSource implements DataSource {
 	}
 
 	/**
-	 * @return
+	 * @return pool.getLifeSpan()
 	 */
 	public int getMaxReuseTime() {
 		return pool.getLifeSpan();
@@ -580,7 +580,7 @@ abstract class AbstractDataSource implements DataSource {
 	}
 	
 	/**
-	 * @return
+	 * @return pool.getIdleTimeout()
 	 */
 	public int getIdleTimeout() {
 		return pool.getIdleTimeout();
@@ -594,7 +594,7 @@ abstract class AbstractDataSource implements DataSource {
 	}
 
 	/**
-	 * @return
+	 * @return connectionTimeout
 	 */
 	public int getConnectionTimeout() {
 		return connectionTimeout;
@@ -608,7 +608,7 @@ abstract class AbstractDataSource implements DataSource {
 	}
 
 	/**
-	 * @return
+	 * @return autoCommit
 	 */
 	public boolean isAutoCommit() {
 		return autoCommit;

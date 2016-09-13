@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
 
 import org.arivu.utils.lock.AtomicWFLock;
 
@@ -31,35 +32,35 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 	DoublyLinkedStack<T> top = this;
 	
 	AtomicInteger size;
-	
+	Lock cas;
 	final CompareStrategy compareStrategy;
 	final boolean set;
 	/**
 	 * 
 	 */
 	public DoublyLinkedStack() {
-		this(null,new AtomicInteger(0), false, CompareStrategy.REF);
+		this(null,new AtomicInteger(0), false, CompareStrategy.REF, new AtomicWFLock());
 	}
 	
 	DoublyLinkedStack(boolean set,CompareStrategy compareStrategy) {
-		this(null,new AtomicInteger(0), set, compareStrategy);
+		this(null,new AtomicInteger(0), set, compareStrategy, new AtomicWFLock());
 	}
 	/**
 	 * @param size TODO
 	 * @param set TODO
 	 * @param compareStrategy TODO
+	 * @param cas TODO
 	 * @param obj
 	 */
-	private DoublyLinkedStack(T t, AtomicInteger size, boolean set, CompareStrategy compareStrategy) {
+	private DoublyLinkedStack(T t, AtomicInteger size, boolean set, CompareStrategy compareStrategy, Lock cas) {
 		super();
 		this.obj = t;
 		this.size = size;
 		this.set = set;
 		this.compareStrategy = compareStrategy;
+		this.cas = cas;
 	}
 	
-//	static final AtomicLock cas = new AtomicLock();
-	static final AtomicWFLock cas = new AtomicWFLock();
 	
 	/**
 	 * 
@@ -127,7 +128,7 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 			return e;
 		}
 		DoublyLinkedStack<T> ref = top;
-		DoublyLinkedStack<T> ref1 = new DoublyLinkedStack<T>(e, size, false, compareStrategy);
+		DoublyLinkedStack<T> ref1 = new DoublyLinkedStack<T>(e, size, false, compareStrategy, cas);
 		top.addRight(ref1);
 		top = ref1;
 		return ref.obj;

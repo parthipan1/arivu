@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
 
 import org.arivu.utils.lock.AtomicWFLock;
 
@@ -34,11 +35,12 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 	
 	final CompareStrategy compareStrategy;
 	
+	Lock cas;
 	/**
 	 * @param strategy
 	 */
 	DoublyLinkedSet(CompareStrategy strategy) {
-		this(null,new AtomicInteger(0), strategy);
+		this(null,new AtomicInteger(0), strategy, new AtomicWFLock());
 	}
 	
 	/**
@@ -52,12 +54,14 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 	 * @param t
 	 * @param size 
 	 * @param strategy 
+	 * @param cas 
 	 */
-	private DoublyLinkedSet(T t, AtomicInteger size, CompareStrategy strategy) {
+	private DoublyLinkedSet(T t, AtomicInteger size, CompareStrategy strategy, Lock cas) {
 		super();
 		this.obj = t;
 		this.size = size;
 		this.compareStrategy = strategy;
+		this.cas = cas;
 	}
 
 	/**
@@ -96,8 +100,6 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 			return removeRight.obj;
 		return null;
 	}
-	
-	static final AtomicWFLock cas = new AtomicWFLock();
 	
 	/**
 	 * @return
@@ -285,7 +287,7 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 		if(e!=null){
 			DoublyLinkedSet<T> search = search(e);
 			if( search == null ){
-				addLeft(new DoublyLinkedSet<T>(e, size, compareStrategy));
+				addLeft(new DoublyLinkedSet<T>(e, size, compareStrategy, cas));
 				return true;
 			}else{
 				return false;
