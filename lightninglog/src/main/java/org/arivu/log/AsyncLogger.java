@@ -1218,8 +1218,8 @@ public final class AsyncLogger implements Logger {
 		}
 		
 		DEFAULT_LOG_LEVEL = stringToLevel(get(json, "loggers.root","info").toString());
-		Consumer.RINGBUFFER_LEN = (Integer)get(json, "buffer.ring",300);
-		Consumer.BATCH_SIZE = (Integer)get(json, "buffer.batch",100);
+		Consumer.RINGBUFFER_LEN = ((Number)get(json, "buffer.ring",300)).intValue();
+		Consumer.BATCH_SIZE = ((Number)get(json, "buffer.batch",100)).intValue();
 		
 		SHOW_LOG_NAME = (Boolean)get(json, "log.showName",true);
 		SHOW_SHORT_LOG_NAME = (Boolean)get(json, "log.showShortName",false);
@@ -1258,7 +1258,13 @@ public final class AsyncLogger implements Logger {
 	@SuppressWarnings("unchecked")
 	private static Collection<Appender> getAppenders(Map<String, Object> json) throws IOException {
 		
-		Collection<String> split = (Collection<String>) convert( (Map<String, String>) get(json, "appenders", null ));
+		Object object = get(json, "appenders", null );
+		Collection<String> split = null;
+		if( object instanceof Collection ){
+			split = (Collection<String>)object;
+		}else{
+			split = (Collection<String>) convert( (Map<String, String>) get(json, "appenders", null ));
+		}
 		if(split==null || split.size()==0)
 			split = Arrays.asList("rollingfile,console".split(","));
 		

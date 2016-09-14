@@ -26,7 +26,7 @@ final class AsyncLoggerFactory implements ILoggerFactory {
 			return simpleLogger;
 		} else {
 			Logger newInstance = new AsyncLogger(name);
-			Logger oldInstance = loggerMap.putIfAbsent(name, newInstance);
+			Logger oldInstance = loggerMap.put(name, newInstance);
 			return oldInstance == null ? newInstance : oldInstance;
 		}
 	}
