@@ -9,7 +9,6 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -524,9 +523,9 @@ public class DoublyLinkedSetTest {
 	 */
 	@Test
 	public void testRunParallel() throws IOException {
-		final Set<String> set = new DoublyLinkedSet<String>();//new CopyOnWriteArraySet<String>();//
+		final DoublyLinkedSet<String> set = new DoublyLinkedSet<String>();//new CopyOnWriteArraySet<String>();//
 		
-		final int reqPerThread = 1000;
+		final int reqPerThread = 100;
 		final int noOfThreads = 100;
 		final ExecutorService exe = Executors.newFixedThreadPool(noOfThreads);
 		final AtomicInteger c = new AtomicInteger(noOfThreads);
@@ -544,9 +543,13 @@ public class DoublyLinkedSetTest {
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
+					final DoublyLinkedSet<String> tset = new DoublyLinkedSet<String>();
 					for( int i=0;i<reqPerThread;i++ ){
-						set.add(String.valueOf(initialValue-cnt.getAndDecrement()));
+						final String valueOf = String.valueOf(initialValue-cnt.getAndDecrement());
+						set.add(valueOf);
+						tset.add(valueOf);
 					}
+					set.removeAll(tset);
 //					System.out.println("Remaining count "+c.get());
 					if( c.decrementAndGet()<=0 ){
 						end.countDown();
@@ -561,6 +564,8 @@ public class DoublyLinkedSetTest {
 		} catch (InterruptedException e1) {
 			e1.printStackTrace();
 		}
-		assertTrue("Failed in || run test exp::"+initialValue+" got::"+set.size(), set.size()==initialValue);
+		for( String s:set )
+			System.out.println("set Obj :: "+s);
+		assertTrue("Failed in || run test exp::"+initialValue+" got::"+set.size(), set.size()==0);
 	}
 }

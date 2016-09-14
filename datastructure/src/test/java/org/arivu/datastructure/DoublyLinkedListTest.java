@@ -502,8 +502,8 @@ public class DoublyLinkedListTest {
 	public void testRunParallel() throws IOException {
 		final List<String> list = new DoublyLinkedList<String>();
 		
-		final int reqPerThread = 10000;
-		final int noOfThreads = 100;
+		final int reqPerThread = 100;
+		final int noOfThreads = 500;
 		final ExecutorService exe = Executors.newFixedThreadPool(noOfThreads);
 		final AtomicInteger c = new AtomicInteger(noOfThreads);
 		final CountDownLatch start = new CountDownLatch(1);
@@ -520,10 +520,14 @@ public class DoublyLinkedListTest {
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
+					final List<String> tlist = new DoublyLinkedList<String>();
 					for( int i=0;i<reqPerThread;i++ ){
-						list.add(String.valueOf(initialValue-cnt.getAndDecrement()));
+						final String valueOf = String.valueOf(initialValue-cnt.getAndDecrement());
+						list.add(valueOf);
+						tlist.add(valueOf);
 					}
 //					System.out.println("Remaining count "+c.get());
+					list.removeAll(tlist);
 					if( c.decrementAndGet()<=0 ){
 						end.countDown();
 					}
@@ -537,7 +541,7 @@ public class DoublyLinkedListTest {
 		} catch (InterruptedException e1) {
 			e1.printStackTrace();
 		}
-		assertTrue("Failed in || run test exp::"+initialValue+" got::"+list.size(), list.size()==initialValue);
+		assertTrue("Failed in || run test exp::"+initialValue+" got::"+list.size(), list.size()==0);
 	}
 	
 //	@Test

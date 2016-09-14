@@ -9,7 +9,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 
 import org.arivu.utils.lock.AtomicWFLock;
@@ -31,16 +30,14 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 	DoublyLinkedSet<T> left = this, right = this;
 	
 	
-	AtomicInteger size;
-	
-	final CompareStrategy compareStrategy;
-	
+	Counter size;
+	CompareStrategy compareStrategy;
 	Lock cas;
 	/**
 	 * @param strategy
 	 */
 	DoublyLinkedSet(CompareStrategy strategy) {
-		this(null,new AtomicInteger(0), strategy, new AtomicWFLock());
+		this(null,new Counter(), strategy, new AtomicWFLock());
 	}
 	
 	/**
@@ -56,7 +53,7 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 	 * @param strategy 
 	 * @param cas 
 	 */
-	private DoublyLinkedSet(T t, AtomicInteger size, CompareStrategy strategy, Lock cas) {
+	private DoublyLinkedSet(T t, Counter size, CompareStrategy strategy, Lock cas) {
 		super();
 		this.obj = t;
 		this.size = size;
@@ -72,14 +69,15 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 	 */
 	@Override
 	public void clear(){
-		cas.lock();
+		Lock l = this.cas;
+		l.lock();
 		left = this;
 		right = this;
 		
 		if(size!=null)
 			size.set(0);
 		
-		cas.unlock();
+		l.unlock();
 	}
 	
 	/* (non-Javadoc)
@@ -120,7 +118,8 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 	 */
 	DoublyLinkedSet<T> addLeft(final DoublyLinkedSet<T> l) {
 		if (l != null) {
-			cas.lock();
+			Lock lo = this.cas;
+			lo.lock();
 			if (size!=null) {
 				size.incrementAndGet();
 			}
@@ -149,7 +148,7 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 				}
 			}
 			
-			cas.unlock();
+			lo.unlock();
 		}
 		return l;
 	}
@@ -190,7 +189,8 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 	}
 
 	 T removeRef(){
-		cas.lock();
+		Lock l = this.cas;
+		l.lock();
 		DoublyLinkedSet<T> tleft = left, tright = right;
 		
 		if(left==right){
@@ -210,7 +210,9 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 		left = null;
 		right = null;
 		size = null;
-		cas.unlock();
+		cas = null;
+		compareStrategy = null;
+		l.unlock();
 		return obj;
 	}
 	
@@ -299,7 +301,11 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 
 	@Override
 	public boolean remove(Object o) {
-		DoublyLinkedSet<T> search = search(o);
+		DoublyLinkedSet<T> search = null;
+		Lock l = this.cas;
+		l.lock();
+		search = search(o);
+		l.unlock();
 //		System.out.println("remove "+this+" Object "+o+" search "+search.obj);
 		if( search!=null ){
 			search.removeRef();
@@ -352,7 +358,7 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 		if( c!=null && c.size()>0 ){
 			boolean ret = true;
 			for( Object t:c )
-				ret = ret && remove(t);
+				ret = ret & remove(t);
 			return ret;
 		}else{
 			return false;
@@ -650,4 +656,23 @@ enum CompareStrategy{
 		return o1==o2;
 	}
 	
+}
+final class Counter{
+	volatile int cnt = 0;
+	
+	void set(int v){
+		cnt = v;
+	}
+	
+	int incrementAndGet(){
+		return ++cnt;
+	}
+	
+	int decrementAndGet(){
+		return --cnt;
+	}
+	
+	int get(){
+		return cnt;
+	}
 }

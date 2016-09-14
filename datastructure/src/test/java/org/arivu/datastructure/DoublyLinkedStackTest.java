@@ -249,7 +249,7 @@ public class DoublyLinkedStackTest {
 	public void testRunParallel() throws IOException {
 		final DoublyLinkedStack<String> list = new DoublyLinkedStack<String>();
 		
-		final int reqPerThread = 10000;
+		final int reqPerThread = 100;
 		final int noOfThreads = 100;
 		final ExecutorService exe = Executors.newFixedThreadPool(noOfThreads);
 		final AtomicInteger c = new AtomicInteger(noOfThreads);
@@ -267,9 +267,13 @@ public class DoublyLinkedStackTest {
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
+					final DoublyLinkedStack<String> tlist = new DoublyLinkedStack<String>();
 					for( int i=0;i<reqPerThread;i++ ){
-						list.push(String.valueOf(initialValue-cnt.getAndDecrement()));
+						final String valueOf = String.valueOf(initialValue-cnt.getAndDecrement());
+						list.push(valueOf);
+						tlist.push(valueOf);
 					}
+					list.removeAll(tlist);
 //					System.out.println("Remaining count "+c.get());
 					if( c.decrementAndGet()<=0 ){
 						end.countDown();

@@ -8,7 +8,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 
 import org.arivu.utils.lock.AtomicWFLock;
@@ -31,19 +30,19 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 	
 	DoublyLinkedStack<T> top = this;
 	
-	AtomicInteger size;
+	Counter size;
 	Lock cas;
-	final CompareStrategy compareStrategy;
+	CompareStrategy compareStrategy;
 	final boolean set;
 	/**
 	 * 
 	 */
 	public DoublyLinkedStack() {
-		this(null,new AtomicInteger(0), false, CompareStrategy.REF, new AtomicWFLock());
+		this(null,new Counter(), false, CompareStrategy.REF, new AtomicWFLock());
 	}
 	
 	DoublyLinkedStack(boolean set,CompareStrategy compareStrategy) {
-		this(null,new AtomicInteger(0), set, compareStrategy, new AtomicWFLock());
+		this(null,new Counter(), set, compareStrategy, new AtomicWFLock());
 	}
 	/**
 	 * @param size TODO
@@ -52,7 +51,7 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 	 * @param cas TODO
 	 * @param obj
 	 */
-	private DoublyLinkedStack(T t, AtomicInteger size, boolean set, CompareStrategy compareStrategy, Lock cas) {
+	private DoublyLinkedStack(T t, Counter size, boolean set, CompareStrategy compareStrategy, Lock cas) {
 		super();
 		this.obj = t;
 		this.size = size;
@@ -70,11 +69,12 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 	 */
 	@Override
 	public void clear(){
-		cas.lock();
+		Lock l = this.cas;
+		l.lock();
 		left = this;
 		right = this;
 		size.set(0);
-		cas.unlock();
+		l.unlock();
 	}
 	
 	public int search(final Object o){
@@ -155,10 +155,7 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 		if( r == this || r == null ){
 			return null;
 		}else{
-			cas.lock();
 			r.remove();
-			size.decrementAndGet();
-			cas.unlock();
 			return r;
 		}
 	}
@@ -169,14 +166,15 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 	 */
 	DoublyLinkedStack<T> addRight(final DoublyLinkedStack<T> r) {
 		if (r != null) {
-			cas.lock();
+			Lock l = this.cas;
+			l.lock();
 			size.incrementAndGet();
 			r.left = this;
 			DoublyLinkedStack<T> tr = right;
 			this.right = r;
 			r.right = tr;
 			tr.left = r;
-			cas.unlock();
+			l.unlock();
 		}
 		return r;
 	}
@@ -187,14 +185,15 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 	 */
 	DoublyLinkedStack<T> addLeft(final DoublyLinkedStack<T> l) {
 		if (l != null) {
-			cas.lock();
+			Lock lo = this.cas;
+			lo.lock();
 			size.incrementAndGet();
 			l.right = this;
 			DoublyLinkedStack<T> tl = left;
 			this.left = l;
 			l.left = tl;
 			tl.right = l;
-			cas.unlock();
+			lo.unlock();
 		}
 		return l;
 	}
@@ -228,20 +227,28 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 	 */
 	@Override
 	public T remove() {
-		cas.lock();
+		return removeRef();
+	}
+
+	private T removeRef() {
+		Lock l = this.cas;
+		l.lock();
 		DoublyLinkedStack<T> tleft = left, tright = right;
 		if (tleft != null)
 			tleft.right = tright;
 		if (tright != null)
 			tright.left = tleft;
-		size.decrementAndGet();
+		if (size!=null) 
+			size.decrementAndGet();
 		left = null;
 		right = null;
 		size = null;
-		cas.unlock();
+		cas = null;
+		compareStrategy = null;
+		l.unlock();
 		return obj;
 	}
-
+	
 	@Override
 	public int size() {
 		return size.get();
@@ -312,7 +319,11 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 
 	@Override
 	public boolean remove(Object o) {
-		DoublyLinkedStack<T> search = searchRef(obj);
+		DoublyLinkedStack<T> search = null;
+		Lock l = this.cas;
+		l.lock();
+		search = searchRef(obj);
+		l.unlock();
 		if( search!=null ){
 			search.remove();
 			return true;
@@ -364,7 +375,7 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 		if( c!=null && c.size()>0 ){
 			boolean ret = true;
 			for( Object t:c )
-				ret = ret && remove(t);
+				ret = ret & remove(t);
 			return ret;
 		}else{
 			return false;

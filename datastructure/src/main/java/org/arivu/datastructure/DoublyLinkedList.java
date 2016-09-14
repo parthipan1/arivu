@@ -10,7 +10,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Queue;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 
 import org.arivu.utils.lock.AtomicWFLock;
@@ -31,18 +30,18 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 	 */
 	DoublyLinkedList<T> left = this, right = this;
 	
-	AtomicInteger size;
-	final CompareStrategy compareStrategy;
+	Counter size;
+	CompareStrategy compareStrategy;
 	Lock cas;
 	/**
 	 * 
 	 */
 	public DoublyLinkedList() {
-		this(null, new AtomicInteger(0),CompareStrategy.REF, new AtomicWFLock());
+		this(null, new Counter(),CompareStrategy.REF, new AtomicWFLock());
 	}
 	
 	DoublyLinkedList(CompareStrategy compareStrategy) {
-		this(null, new AtomicInteger(0),compareStrategy, new AtomicWFLock());
+		this(null, new Counter(),compareStrategy, new AtomicWFLock());
 	}
 	
 	/**
@@ -50,7 +49,7 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 	 * @param size 
 	 * @param cas 
 	 */
-	private DoublyLinkedList(T t, AtomicInteger size,CompareStrategy compareStrategy, Lock cas) {
+	private DoublyLinkedList(T t, Counter size,CompareStrategy compareStrategy, Lock cas) {
 		super();
 		this.obj = t;
 		this.size = size;
@@ -66,11 +65,12 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 	 */
 	@Override
 	public void clear(){
-		cas.lock();
+		Lock l = this.cas;
+		l.lock();
 		left = this;
 		right = this;
 		size.set(0);
-		cas.unlock();
+		l.unlock();
 	}
 	
 	/* (non-Javadoc)
@@ -100,10 +100,7 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 		if( r == this || r == null ){
 			return null;
 		}else{
-			cas.lock();
 			r.removeRef();
-			size.decrementAndGet();
-			cas.unlock();
 			return r;
 		}
 	}
@@ -114,8 +111,10 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 	 */
 	DoublyLinkedList<T> addLeft(final DoublyLinkedList<T> l) {
 		if (l != null) {
-			cas.lock();
-			size.incrementAndGet();
+			Lock lo = this.cas;
+			lo.lock();
+			if(size!=null)
+				size.incrementAndGet();
 			l.right = this;
 			DoublyLinkedList<T> tl = left;
 			this.left = l;
@@ -124,7 +123,7 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 			if(right==this){
 				right = l;
 			}
-			cas.unlock();
+			lo.unlock();
 		}
 		return l;
 	}
@@ -163,17 +162,24 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 	 * 
 	 */
 	private T removeRef() {
+		Lock l = this.cas;
+		l.lock();
 		DoublyLinkedList<T> tleft = left, tright = right;
-
+		
 		if (tleft != null)
 			tleft.right = tright;
 
 		if (tright != null)
 			tright.left = tleft;
 
+		if (size!=null) 
+			size.decrementAndGet();
+		
 		left = null;
 		right = null;
 		size = null;
+		compareStrategy = null;
+		l.unlock();
 		return obj;
 	}
 
@@ -251,10 +257,13 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 
 	@Override
 	public boolean remove(Object o) {
-		DoublyLinkedList<T> search = search(o);
+		DoublyLinkedList<T> search = null;
+		Lock l = this.cas;
+		l.lock();
+		search = search(o);
+		l.unlock();
 		if( search!=null ){
 			search.removeRef();
-			size.decrementAndGet();
 			return true;
 		}else 
 			return false;
@@ -304,7 +313,7 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 		if( c!=null && c.size()>0 ){
 			boolean ret = true;
 			for( Object t:c )
-				ret = ret && remove(t);
+				ret = ret & remove(t);
 			return ret;
 		}else{
 			return false;
@@ -324,7 +333,6 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 					DoublyLinkedList<T> ll = ref;
 					ref = ref.left;
 					ll.removeRef();
-					size.decrementAndGet();
 					ret = true;
 				}
 				ref = ref.right;
@@ -391,7 +399,6 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 		if(ref!=null){
 			T obj2 = ref.obj;
 			ref.removeRef();
-			size.decrementAndGet();
 			return obj2;
 		}else{
 			return null;
