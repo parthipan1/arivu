@@ -247,10 +247,10 @@ public class DoublyLinkedStackTest {
 	 */
 	@Test
 	public void testRunParallel() throws IOException {
-		final DoublyLinkedStack<String> list = new DoublyLinkedStack<String>();
+		final DoublyLinkedStack<String> list = new DoublyLinkedStack<String>(false,CompareStrategy.EQUALS);
 		
 		final int reqPerThread = 100;
-		final int noOfThreads = 100;
+		final int noOfThreads = 10;
 		final ExecutorService exe = Executors.newFixedThreadPool(noOfThreads);
 		final AtomicInteger c = new AtomicInteger(noOfThreads);
 		final CountDownLatch start = new CountDownLatch(1);
@@ -267,7 +267,7 @@ public class DoublyLinkedStackTest {
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
-					final DoublyLinkedStack<String> tlist = new DoublyLinkedStack<String>();
+					final DoublyLinkedStack<String> tlist = new DoublyLinkedStack<String>(false,CompareStrategy.EQUALS);
 					for( int i=0;i<reqPerThread;i++ ){
 						final String valueOf = String.valueOf(initialValue-cnt.getAndDecrement());
 						list.push(valueOf);
@@ -288,7 +288,7 @@ public class DoublyLinkedStackTest {
 		} catch (InterruptedException e1) {
 			e1.printStackTrace();
 		}
-		assertTrue("Failed in || run test exp::"+initialValue+" got::"+list.size(), list.size()==initialValue);
+		assertTrue("Failed in || run test exp::"+initialValue+" got::"+list.size(), list.size()==0);
 	}
 	
 }

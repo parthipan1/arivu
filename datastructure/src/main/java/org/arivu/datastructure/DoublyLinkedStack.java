@@ -322,7 +322,7 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 		DoublyLinkedStack<T> search = null;
 		Lock l = this.cas;
 		l.lock();
-		search = searchRef(obj);
+		search = searchRef(o);
 		l.unlock();
 		if( search!=null ){
 			search.remove();
@@ -497,12 +497,12 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 			if (ref == this) {
 				break;
 			}
-			if( o instanceof String ){
-				if(o.equals(ref.obj)){
+			if(o instanceof String){
+				if(CompareStrategy.EQUALS.compare(ref.obj, o)){
 					return idx;
 				}
 			}else{
-				if(ref.obj==o){
+				if(compareStrategy.compare(ref.obj, o)){
 					return idx;
 				}
 			}
@@ -520,13 +520,13 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 			if (ref == this) {
 				break;
 			}
-			if( o instanceof String ){
-				if(o.equals(ref.obj)){
-					break;
+			if(o instanceof String){
+				if(CompareStrategy.EQUALS.compare(ref.obj, o)){
+					return idx;
 				}
 			}else{
-				if(ref.obj==o){
-					break;
+				if(compareStrategy.compare(ref.obj, o)){
+					return idx;
 				}
 			}
 			ref = ref.left;
