@@ -50,8 +50,8 @@ public class TriesTest {
 		assertTrue("Failed on size!", words.size()==2);
 		
 		words = tries.getWords("t");
-		for(String t:words)
-			System.out.println(t);
+//		for(String t:words)
+//			System.out.println(t);
 	}
 
 	@Test

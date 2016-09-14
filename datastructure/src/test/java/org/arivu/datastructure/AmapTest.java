@@ -154,7 +154,8 @@ public class AmapTest {
 		Future<Integer> poll = null;
 		while ((poll = listFuture.poll()) != null) {
 			try {
-				System.out.println(" Completed :: "+poll.get());
+				poll.get();
+//				System.out.println(" Completed :: "+poll.get());
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			} catch (ExecutionException e) {
@@ -201,7 +202,7 @@ public class AmapTest {
 					}
 
 					map.remove(key);
-					System.out.println("Completed Thread "+decrementAndGet+" req "+value);
+//					System.out.println("Completed Thread "+decrementAndGet+" req "+value);
 				}
 				
 //				System.out.println("completed "+decrementAndGet);
