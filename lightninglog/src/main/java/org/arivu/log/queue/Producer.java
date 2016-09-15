@@ -31,7 +31,7 @@ import org.arivu.log.appender.Appenders;
  * @param <T>
  */
 public final class Producer<T> implements AutoCloseable {
-	private static final long IDEAL_TIME_THREAD = 1000*60*60*5;
+	private static final long IDEAL_TIME_THREAD = 1000*30;//*60*5;
 	
 	/**
 	 * 
@@ -177,6 +177,11 @@ public final class Producer<T> implements AutoCloseable {
 			@Override
 			public void evictConsumer() throws Exception {
 				that.threadlocal.evict();
+			}
+
+			@Override
+			public int getConsumerCount() {
+				return that.threadlocal.size();
 			}
 		};
 	}

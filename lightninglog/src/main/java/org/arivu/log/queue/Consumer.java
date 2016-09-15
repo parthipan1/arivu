@@ -184,6 +184,11 @@ public final class Consumer<T> implements AutoCloseable {
 			public void evictConsumer() throws Exception {
 				throw new IllegalStateException("Cannot invoke removeConsumer() on consumer !");
 			}
+
+			@Override
+			public int getConsumerCount() {
+				return producer.threadlocal.size();
+			}
 		};
 	}
 

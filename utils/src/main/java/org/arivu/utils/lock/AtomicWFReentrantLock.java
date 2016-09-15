@@ -6,6 +6,7 @@ package org.arivu.utils.lock;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
@@ -25,11 +26,19 @@ public final class AtomicWFReentrantLock implements Lock {
 	public void lock() {
 		if (reentrant!=null && reentrant.isSame() ) {
 			reentrant.acquire();
+			System.out.println("Rentrant acquire!");
 		}else{
 			while (!cas.compareAndSet(false, true)) {
 				waitForSignal();
 			}
-			reentrant = new Reentrant();
+//			if( reentrant == null ){
+//				synchronized (this) {
+//					if( reentrant == null ){
+						reentrant = new Reentrant();
+						System.out.println("Rentrant created!");
+//					}
+//				}
+//			}
 		}
 	}
 
@@ -50,6 +59,9 @@ public final class AtomicWFReentrantLock implements Lock {
 			reentrant = null;
 			cas.set(false);
 			releaseAWait();
+		}else{
+//			throw new RuntimeException("Lock unlock called with out lock");
+			System.err.println("Lock unlock called with out lock,"+Reentrant.getId());
 		}
 	}
 
@@ -92,19 +104,24 @@ public final class AtomicWFReentrantLock implements Lock {
 	}
 }
 final class Reentrant{
-	final String id = String.valueOf(Thread.currentThread().hashCode());
-	volatile long cnt = 1;
+	final String id = getId();
+
+	static String getId() {
+		return String.valueOf(Thread.currentThread().hashCode());
+	}
+	final AtomicLong cnt = new AtomicLong(1);
 	
 	void acquire(){
-		cnt++;
+		cnt.incrementAndGet();
 	}
 
 	boolean release(){
-		cnt--;
-		return cnt == 0;
+		boolean b = cnt.decrementAndGet() == 0l;
+		System.out.println("Rentrant released! "+b);
+		return b;
 	}
 	
 	boolean isSame(){
-		return id.equalsIgnoreCase(String.valueOf(Thread.currentThread().hashCode()));
+		return id.equalsIgnoreCase(getId());
 	}
 }
