@@ -38,7 +38,7 @@ class ZipFileAppender implements Appender {
 		super();
 		this.fileName = fileName;
 
-		file = new File(getFileName(fileName));
+		file = new File(fileName);
 		if (!file.exists()) {
 			file.createNewFile();
 		}
