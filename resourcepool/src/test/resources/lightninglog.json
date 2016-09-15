@@ -1,7 +1,7 @@
 {
 	"appenders":["file"],
 	"loggers":{
-		"root":"debug",
+		"root":"info",
 		"org.arivu":"info"
 	},
 	"buffer":{
