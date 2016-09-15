@@ -43,18 +43,19 @@ import org.slf4j.helpers.MessageFormatter;
 public final class AsyncLogger implements Logger {
 
 	private final String name;
-	private int currentLogLevel = LOG_LEVEL_INFO;
+//	private int currentLogLevel = LOG_LEVEL_INFO;
 	private transient String shortLogName = null;
 
 	public AsyncLogger(String name) {
 		super();
 		this.name = name;
-		String levelString = recursivelyComputeLevelString(name);
-		if (levelString != null) {
-			this.currentLogLevel = stringToLevel(levelString);
-		} else {
-			this.currentLogLevel = DEFAULT_LOG_LEVEL;
-		}
+//		String levelString = recursivelyComputeLevelString(name);
+//		if (levelString != null) {
+//			this.currentLogLevel = stringToLevel(levelString);
+//		} else {
+////			this.currentLogLevel = DEFAULT_LOG_LEVEL;
+//			this.currentLogLevel = stringToLevel(ALL_LOGGER.get("root"));
+//		}
 	}
 
 	/*
@@ -834,9 +835,20 @@ public final class AsyncLogger implements Logger {
 	private boolean isLevelEnabled(int logLevel) {
 		// log level are numerically ordered so can use simple numeric
 		// comparison
-		return logLevel >= currentLogLevel;
+		return logLevel >= getCurrrentLogLevel(name);//currentLogLevel;
 	}
 
+	private static int getCurrrentLogLevel(final String name){
+		String levelString = recursivelyComputeLevelString(name);
+		if (levelString != null) {
+			return stringToLevel(levelString);
+		} else {
+//			this.currentLogLevel = DEFAULT_LOG_LEVEL;
+			return stringToLevel(ALL_LOGGER.get("root"));
+		}
+	}
+	
+	
 	private static String recursivelyComputeLevelString(String tempName) {
 //		String tempName = name;
 		String levelString = null;
@@ -972,12 +984,13 @@ public final class AsyncLogger implements Logger {
 			
 			@Override
 			public String getLogLevel(String logger) {
-				String levelString = recursivelyComputeLevelString(logger);
-				if (levelString != null) {
-					return intlevelToString(stringToLevel(levelString));
-				} else {
-					return intlevelToString(DEFAULT_LOG_LEVEL);
-				}
+				return intlevelToString(getCurrrentLogLevel(logger));
+//				String levelString = recursivelyComputeLevelString(logger);
+//				if (levelString != null) {
+//					return intlevelToString(stringToLevel(levelString));
+//				} else {
+//					return intlevelToString(stringToLevel(ALL_LOGGER.get("root")));
+//				}
 			}
 			
 			@Override
@@ -1018,7 +1031,7 @@ public final class AsyncLogger implements Logger {
 	private static final int LOG_LEVEL_WARN = 30;
 	private static final int LOG_LEVEL_ERROR = 40;
 
-	private final static int DEFAULT_LOG_LEVEL;
+//	private final static int DEFAULT_LOG_LEVEL;
 	private static boolean SHOW_DATE_TIME;
 	private static String DATE_TIME_FORMAT_STR;
 //	private static DateFormat DATE_FORMATTER = null;
@@ -1214,10 +1227,10 @@ public final class AsyncLogger implements Logger {
 		
 		if( loggers!= null && loggers.size()>0 ){
 			ALL_LOGGER.putAll(loggers);
-			ALL_LOGGER.remove("root");
+//			ALL_LOGGER.remove("root");
 		}
 		
-		DEFAULT_LOG_LEVEL = stringToLevel(get(json, "loggers.root","info").toString());
+//		DEFAULT_LOG_LEVEL = stringToLevel(get(json, "loggers.root","info").toString());
 		Consumer.RINGBUFFER_LEN = ((Number)get(json, "buffer.ring",300)).intValue();
 		Consumer.BATCH_SIZE = ((Number)get(json, "buffer.batch",100)).intValue();
 		
