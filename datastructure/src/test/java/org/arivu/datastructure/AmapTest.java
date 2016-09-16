@@ -79,11 +79,14 @@ public class AmapTest {
 	@Test
 	public void testGet() {
 		Amap<String, String> map = new Amap<String, String>();
-		assertTrue("Failed on get ", map.get("test") == null);
+		String get = map.get("test");
+		assertTrue("Failed on get ", get == null);
 		map.put("test", "test");
-		assertTrue("Failed on get exp:: test got::" + map.get("test"), "test".equals(map.get("test")));
+		get = map.get("test");
+		assertTrue("Failed on get exp:: test got::" + get, "test".equals(get));
 		map.remove("test");
-		assertTrue("Failed on get ", map.get("test") == null);
+		get = map.get("test");
+		assertTrue("Failed on get ", get == null);
 	}
 	//
 	// @Test
