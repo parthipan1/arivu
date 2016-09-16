@@ -66,8 +66,12 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 	@Override
 	public V put(K key, V value) {
 		AnEntry<K, V> e = new AnEntry<K, V>(key, value);
-		if (binaryTree.get(e) != null) {
-			return null;
+		Object object = binaryTree.get(e);
+		if (object != null) {
+			@SuppressWarnings("unchecked")
+			java.util.Map.Entry<K, V> e1 = (java.util.Map.Entry<K, V>) object;
+			e1.setValue(value);
+			return value;
 		} else {
 			binaryTree.add(e);
 			return value;
