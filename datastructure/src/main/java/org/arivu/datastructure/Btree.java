@@ -21,22 +21,6 @@ public class Btree implements Serializable {
 	 */
 	private static final long serialVersionUID = -6344951761380914875L;
 
-//	private static final Comparator<Object> defaultComparator = new Comparator<Object>() {
-//		
-//		@Override
-//		public int compare(Object o1, Object o2) {
-//			if( o1 != null && o2 != null ){
-//				return o1.hashCode() - o2.hashCode();
-//			}else if( o1 == null && o2 != null ){
-//				return -1*o2.hashCode();
-//			}else if( o1 != null && o2 == null ){
-//				return o1.hashCode();
-//			}
-//			return 0;
-//		}
-//	}; 
-	
-	
 	private static final Lock dummyLock = new NoLock();
 	
 	/**
@@ -83,7 +67,6 @@ public class Btree implements Serializable {
 	 *
 	 */
 	static final class Node {
-//		final Comparator<Object> comparator;
 		final int order;
 		final Lock cas;
 		
@@ -100,7 +83,6 @@ public class Btree implements Serializable {
 		public Node(int order, Lock cas, boolean leaf, Counter cnt) {
 			super();
 			this.counter = cnt;
-//			this.comparator = comparator;
 			this.order = order;
 			this.cas = cas;
 			if(leaf){
@@ -253,8 +235,7 @@ public class Btree implements Serializable {
 	private static final long MAX = (long)(Integer.MAX_VALUE)+1l;
 	private static final int[] getPath(Object obj){
 		int[] ret = new int[4]; 
-		final long hashCode2 = (long)obj.hashCode();
-		long hashCode = hashCode2+MAX;
+		long hashCode = (long)obj.hashCode()+MAX;
 		ret[3] = (int)(hashCode & baseValue);
 		hashCode = hashCode >>> base;
 		ret[2] = (int)(hashCode & baseValue);
@@ -262,62 +243,66 @@ public class Btree implements Serializable {
 		ret[1] = (int)(hashCode & baseValue);
 		hashCode = hashCode >>> base;
 		ret[0] = (int)(hashCode & baseValue);
-//		System.out.println(" hashCode "+hashCode+" actual# "+hashCode2+" ret "+con(ret));
+//		System.out.println(" hashCode "+(obj.hashCode()+MAX)+" actual# "+obj.hashCode()+" ret "+con(ret));
 		return ret;
 	}
 	
-	private static final String con(int[] a){
-		StringBuffer b = new StringBuffer();
-		
-		for(int i:a)
-			b.append(i).append(",");
-		
-		return b.toString();
-	}
+//	private static final String con(int[] a){
+//		StringBuffer b = new StringBuffer();
+//		
+//		for(int i:a){
+//			if(b.length()==0)
+//				b.append(i);
+//			else
+//				b.append(",").append(i);		
+//		}
+//		
+//		return b.toString();
+//	}
 	
-	public static void main(String[] args) {
-		
-		System.out.println(con(getPath(16)));
-		
-//		List<Integer> list = new ArrayList<Integer>();
-//		list.add(0);
-//		list.add(1);
-//		list.add(4);
-//		list.add(8);
-//		list.add(9);
-//
-//		Collections.sort(list);
-//
-//		for (Integer i : list)
-//			System.out.print(i);
-//		System.out.println();
-//
-//		System.out.println("search 0 " + Collections.binarySearch(list, 0));
-//		System.out.println("search 1 " + Collections.binarySearch(list, 1));
-//		System.out.println("search 4 " + Collections.binarySearch(list, 4));
-//		int idx = Collections.binarySearch(list, 3);
-//		idx = -1 * (idx + 1);
-//		System.out.println("search 3 " + idx);
-
-//		Object[] a = new Object[7];
+//	public static void main(String[] args) {
 //		
-//		a[0] = 3;
-//		a[1] = 1;
-//		a[2] = 2;
-//		a[3] = 0;
-//
-//		for(Object o:a){
-//			if(o!=null)
-//				System.out.print(o.toString());
-//		}
-//		System.out.println();
-//		Arrays.sort(a, defaultComparator);
+//		System.out.println(con(getPath(Integer.MAX_VALUE)));
 //		
-//		for(Object o:a){
-//			if(o!=null)
-//				System.out.print(o.toString());
-//		}
-//		System.out.println();
-	}
+////		List<Integer> list = new ArrayList<Integer>();
+////		list.add(0);
+////		list.add(1);
+////		list.add(4);
+////		list.add(8);
+////		list.add(9);
+////
+////		Collections.sort(list);
+////
+////		for (Integer i : list)
+////			System.out.print(i);
+////		System.out.println();
+////
+////		System.out.println("search 0 " + Collections.binarySearch(list, 0));
+////		System.out.println("search 1 " + Collections.binarySearch(list, 1));
+////		System.out.println("search 4 " + Collections.binarySearch(list, 4));
+////		int idx = Collections.binarySearch(list, 3);
+////		idx = -1 * (idx + 1);
+////		System.out.println("search 3 " + idx);
+//
+////		Object[] a = new Object[7];
+////		
+////		a[0] = 3;
+////		a[1] = 1;
+////		a[2] = 2;
+////		a[3] = 0;
+////
+////		for(Object o:a){
+////			if(o!=null)
+////				System.out.print(o.toString());
+////		}
+////		System.out.println();
+////		Arrays.sort(a, defaultComparator);
+////		
+////		for(Object o:a){
+////			if(o!=null)
+////				System.out.print(o.toString());
+////		}
+////		System.out.println();
+//	}
 	//
 }
