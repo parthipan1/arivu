@@ -26,19 +26,11 @@ public final class AtomicWFReentrantLock implements Lock {
 	public void lock() {
 		if (reentrant!=null && reentrant.isSame() ) {
 			reentrant.acquire();
-			System.out.println("Rentrant acquire!");
 		}else{
 			while (!cas.compareAndSet(false, true)) {
 				waitForSignal();
 			}
-//			if( reentrant == null ){
-//				synchronized (this) {
-//					if( reentrant == null ){
-						reentrant = new Reentrant();
-						System.out.println("Rentrant created!");
-//					}
-//				}
-//			}
+			reentrant = new Reentrant();
 		}
 	}
 
@@ -55,13 +47,17 @@ public final class AtomicWFReentrantLock implements Lock {
 
 	@Override
 	public void unlock() {
-		if (reentrant!=null && reentrant.release()){
-			reentrant = null;
-			cas.set(false);
-			releaseAWait();
-		}else{
+		if (reentrant!=null ){
+			if( reentrant.release()){
+				reentrant = null;
+				cas.set(false);
+				releaseAWait();
+			}else{
+//				System.err.println("Lock unlock called with out lock,"+Reentrant.getId());
+			}
+//		}else{
 //			throw new RuntimeException("Lock unlock called with out lock");
-			System.err.println("Lock unlock called with out lock,"+Reentrant.getId());
+//			System.err.println("Lock unlock called with out lock,"+Reentrant.getId());
 		}
 	}
 
@@ -111,13 +107,22 @@ final class Reentrant{
 	}
 	final AtomicLong cnt = new AtomicLong(1);
 	
+	/**
+	 * 
+	 */
+	public Reentrant() {
+		super();
+//		System.out.println("Rentrant created! "+cnt);
+	}
+
 	void acquire(){
 		cnt.incrementAndGet();
+//		System.out.println("Rentrant acquired! "+cnt);
 	}
 
 	boolean release(){
 		boolean b = cnt.decrementAndGet() == 0l;
-		System.out.println("Rentrant released! "+b);
+//		System.out.println("Rentrant released! "+b+" "+cnt);
 		return b;
 	}
 	

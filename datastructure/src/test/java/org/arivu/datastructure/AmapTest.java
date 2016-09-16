@@ -192,7 +192,7 @@ public class AmapTest {
 					}
 
 					map.put(key, value);
-
+//					System.out.println("Key "+key+" value "+value);
 					if (map.get(key) != value) {
 						if (decrementAndGet <= 0) {
 							end.countDown();

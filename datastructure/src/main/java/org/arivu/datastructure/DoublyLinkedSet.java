@@ -11,7 +11,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 
-import org.arivu.utils.lock.AtomicWFLock;
+import org.arivu.utils.lock.AtomicWFReentrantLock;
 
 
 /**
@@ -37,7 +37,7 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 	 * @param strategy
 	 */
 	DoublyLinkedSet(CompareStrategy strategy) {
-		this(null,new Counter(), strategy, new AtomicWFLock());
+		this(null,new Counter(), strategy, new AtomicWFReentrantLock());
 	}
 	
 	/**
@@ -287,11 +287,16 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 	@Override
 	public boolean add(T e) {
 		if(e!=null){
-			DoublyLinkedSet<T> search = search(e);
+			DoublyLinkedSet<T> search = null;
+			Lock l = this.cas;
+			l.lock();
+			search = search(e);
 			if( search == null ){
 				addLeft(new DoublyLinkedSet<T>(e, size, compareStrategy, cas));
+				l.unlock();
 				return true;
 			}else{
+				l.unlock();
 				return false;
 			}
 		}else{
@@ -303,23 +308,31 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 	public boolean remove(Object o) {
 		DoublyLinkedSet<T> search = null;
 		Lock l = this.cas;
+		if(l==null) return false;
 		l.lock();
 		search = search(o);
-		l.unlock();
 //		System.out.println("remove "+this+" Object "+o+" search "+search.obj);
 		if( search!=null ){
 			search.removeRef();
+			l.unlock();
 			return true;
-		}else 
+		}else {
+			l.unlock();
 			return false;
+		}
 	}
 
 	@Override
 	public boolean containsAll(Collection<?> c) {
 		if( c!=null && c.size()>0 ){
 			boolean ret = true;
+			Lock l = this.cas;
+			l.lock();
+			
 			for( Object t:c )
 				ret = ret && contains(t);
+			
+			l.unlock();
 			return ret;
 		}else{
 			return false;
@@ -329,10 +342,15 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 	@Override
 	public boolean addAll(Collection<? extends T> c) {
 		if( c!=null && c.size()>0 ){
+			boolean ret = true;
+			Lock l = this.cas;
+			l.lock();
+			
 			for( T t:c )
-				add(t);
-
-			return true;
+				ret = ret & add(t);
+			
+			l.unlock();
+			return ret;
 		}else{
 			return false;
 		}
@@ -357,8 +375,13 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 	public boolean removeAll(Collection<?> c) {
 		if( c!=null && c.size()>0 ){
 			boolean ret = true;
+			Lock l = this.cas;
+			l.lock();
+			
 			for( Object t:c )
 				ret = ret & remove(t);
+			
+			l.unlock();
 			return ret;
 		}else{
 			return false;
