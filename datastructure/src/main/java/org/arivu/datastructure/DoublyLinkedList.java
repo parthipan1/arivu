@@ -41,7 +41,11 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 	}
 	
 	DoublyLinkedList(CompareStrategy compareStrategy) {
-		this(null, new Counter(),compareStrategy, new AtomicWFReentrantLock());
+		this(compareStrategy, new AtomicWFReentrantLock());
+	}
+	
+	DoublyLinkedList(CompareStrategy compareStrategy,Lock lock) {
+		this(null, new Counter(),compareStrategy, lock);
 	}
 	
 	/**

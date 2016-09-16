@@ -5,10 +5,10 @@ package org.arivu.datastructure;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.concurrent.locks.Lock;
 
 import org.arivu.utils.lock.AtomicWFReentrantLock;
+import org.arivu.utils.lock.NoLock;
 
 /**
  * @author P
@@ -21,28 +21,30 @@ public class Btree implements Serializable {
 	 */
 	private static final long serialVersionUID = -6344951761380914875L;
 
-	private static final Comparator<Object> defaultComparator = new Comparator<Object>() {
-		
-		@Override
-		public int compare(Object o1, Object o2) {
-			if( o1 != null && o2 != null ){
-				return o1.hashCode() - o2.hashCode();
-			}else if( o1 == null && o2 != null ){
-				return -1*o2.hashCode();
-			}else if( o1 != null && o2 == null ){
-				return o1.hashCode();
-			}
-			return 0;
-		}
-	}; 
+//	private static final Comparator<Object> defaultComparator = new Comparator<Object>() {
+//		
+//		@Override
+//		public int compare(Object o1, Object o2) {
+//			if( o1 != null && o2 != null ){
+//				return o1.hashCode() - o2.hashCode();
+//			}else if( o1 == null && o2 != null ){
+//				return -1*o2.hashCode();
+//			}else if( o1 != null && o2 == null ){
+//				return o1.hashCode();
+//			}
+//			return 0;
+//		}
+//	}; 
 	
+	
+	private static final Lock dummyLock = new NoLock();
 	
 	/**
 	 * @author P
 	 *
 	 */
 	static final class Ref  {
-		final DoublyLinkedList<Object> linkedList = new DoublyLinkedList<Object>(CompareStrategy.EQUALS);
+		final DoublyLinkedList<Object> linkedList = new DoublyLinkedList<Object>(CompareStrategy.EQUALS,dummyLock);
 		final int hashCode;
 		/**
 		 * @param hashCode
@@ -81,7 +83,7 @@ public class Btree implements Serializable {
 	 *
 	 */
 	static final class Node {
-		final Comparator<Object> comparator;
+//		final Comparator<Object> comparator;
 		final int order;
 		final Lock cas;
 		
@@ -91,15 +93,14 @@ public class Btree implements Serializable {
 		volatile int idx = 0;
 		final Counter counter;
 		/**
-		 * @param comparator
 		 * @param order
 		 * @param leaf TODO
 		 * @param cnt TODO
 		 */
-		public Node(Comparator<Object> comparator, int order, Lock cas, boolean leaf, Counter cnt) {
+		public Node(int order, Lock cas, boolean leaf, Counter cnt) {
 			super();
 			this.counter = cnt;
-			this.comparator = comparator;
+//			this.comparator = comparator;
 			this.order = order;
 			this.cas = cas;
 			if(leaf){
@@ -133,7 +134,7 @@ public class Btree implements Serializable {
 			}else{
 				Node n = nodes[arr[level]];
 				if(n==null){
-					n = new Node(comparator, order, cas, level == arr.length-2, this.counter);
+					n = new Node(order, cas, level == arr.length-2, this.counter);
 					nodes[arr[level]] = n;
 				}
 				n.add(obj, level+1, arr);
@@ -209,27 +210,22 @@ public class Btree implements Serializable {
 	final Counter counter = new Counter();
 	/**
 	 * @param order
-	 * @param comparator
 	 */
-	public Btree(int order, Comparator<Object> comparator) {
-		this(order , comparator, new AtomicWFReentrantLock());
-	}
-
 	public Btree(int order) {
-		this(order,defaultComparator);
+		this(order , new AtomicWFReentrantLock());
 	}
 	
 	public Btree() {
-		this((int)baseValue+1,defaultComparator);
+		this((int)baseValue+1);
 	}
 	
 	Btree(Lock lock) {
-		this((int)baseValue+1,defaultComparator,lock);
+		this((int)baseValue+1,lock);
 	}
 	
-	Btree(int order, Comparator<Object> comparator, Lock lock) {
+	Btree(int order, Lock lock) {
 		super();
-		this.root = new Node(comparator, order, lock, false, counter);
+		this.root = new Node(order, lock, false, counter);
 	}
 	
 	public void add(final Object obj){
