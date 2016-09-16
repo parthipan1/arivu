@@ -37,6 +37,10 @@ public class Btree implements Serializable {
 	}; 
 	
 	
+	/**
+	 * @author P
+	 *
+	 */
 	static final class Ref  {
 		final DoublyLinkedList<Object> linkedList = new DoublyLinkedList<Object>(CompareStrategy.EQUALS);
 		final int hashCode;
@@ -216,11 +220,11 @@ public class Btree implements Serializable {
 	}
 	
 	public Btree() {
-		this(256,defaultComparator);
+		this((int)baseValue+1,defaultComparator);
 	}
 	
 	Btree(Lock lock) {
-		this(256,defaultComparator,lock);
+		this((int)baseValue+1,defaultComparator,lock);
 	}
 	
 	Btree(int order, Comparator<Object> comparator, Lock lock) {

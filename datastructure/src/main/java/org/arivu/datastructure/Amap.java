@@ -12,9 +12,7 @@ import java.util.Set;
  * @author P
  *
  */
-public final class Amap<K, V> implements Map<K, V>, Serializable {// ,
-																	// Set<Map.Entry<K,V>>
-
+public final class Amap<K, V> implements Map<K, V>, Serializable {
 	/**
 	 * 
 	 */
@@ -24,7 +22,7 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {// ,
 
 	@Override
 	public int size() {
-		return binaryTree.counter.get();// set.size();
+		return binaryTree.counter.get();
 	}
 
 	@Override
@@ -39,34 +37,14 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {// ,
 
 	@Override
 	public boolean containsKey(Object key) {
-		// return set.contains(getKeyWrap(key));
 		return binaryTree.get(getKeyWrap(key)) != null;
 	}
 
 	@Override
 	public boolean containsValue(Object value) {
-		// DoublyLinkedSet<Entry<K, V>> ref = set.right;
-		// while (ref != null) {
-		// if (ref == set) {
-		// break;
-		// }
-		// if( value instanceof String ){
-		// if(ref.obj!=null &&
-		// CompareStrategy.EQUALS.compare(ref.obj.getValue(), value)){
-		// return true;
-		// }
-		// }else{
-		// if(ref.obj!=null && CompareStrategy.REF.compare(ref.obj.getValue(),
-		// value)){
-		// return true;
-		// }
-		// }
-		// ref = ref.right;
-		// }
 		for (Object e : binaryTree.getAll()) {
 			@SuppressWarnings("unchecked")
 			Entry<K, V> e1 = (Entry<K, V>)e; 
-//			keys.add(e1.getKey());
 			if( value!=null &&  value.equals(e1.getValue()) )
 				return true;
 		}
@@ -83,19 +61,10 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {// ,
 		} else {
 			return null;
 		}
-		// cas.lock();
-		// DoublyLinkedSet<java.util.Map.Entry<K, V>> search =
-		// set.search(getKeyWrap(key));
-		// cas.unlock();
-		// if( search==null )
-		// return null;
-		// else
-		// return search.obj.getValue();
 	}
 
 	@Override
 	public V put(K key, V value) {
-		// cas.lock();
 		AnEntry<K, V> e = new AnEntry<K, V>(key, value);
 		if (binaryTree.get(e) != null) {
 			return null;
@@ -103,9 +72,6 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {// ,
 			binaryTree.add(e);
 			return value;
 		}
-		// set.add(e);
-		// cas.unlock();
-		// return value;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -118,17 +84,6 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {// ,
 		} else {
 			return null;
 		}
-		// cas.lock();
-		// final DoublyLinkedSet<java.util.Map.Entry<K, V>> search =
-		// set.search(getKeyWrap(key));
-		// if( search==null ){
-		// cas.unlock();
-		// return null;
-		// }else{
-		// search.removeRef();
-		// cas.unlock();
-		// return search.obj.getValue();
-		// }
 	}
 
 	@SuppressWarnings("unchecked")
@@ -137,20 +92,15 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {// ,
 		if (m != null) {
 			@SuppressWarnings("rawtypes")
 			Set entrySet = m.entrySet();
-//			cas.lock();
 			for (Object o : entrySet) {
 				Entry<? extends K, ? extends V> e = (Entry<? extends K, ? extends V>) o;
 				put(e.getKey(), e.getValue());
 			}
-//			cas.unlock();
 		}
 	}
 
 	@Override
 	public void clear() {
-		// cas.lock();
-		// set.clear();
-		// cas.unlock();
 		binaryTree.clear();
 	}
 
