@@ -7,6 +7,10 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
+
+import org.arivu.utils.lock.AtomicWFReentrantLock;
+import org.arivu.utils.lock.NoLock;
 
 /**
  * @author P
@@ -19,8 +23,10 @@ public final class Amap<K,V> implements Map<K, V> ,Serializable {//, Set<Map.Ent
 	 */
 	private static final long serialVersionUID = -997810275912377568L;
 	
-	final DoublyLinkedSet<Entry<K, V>> set = new DoublyLinkedSet<Map.Entry<K,V>>(CompareStrategy.EQUALS);
+	final DoublyLinkedSet<Entry<K, V>> set = new DoublyLinkedSet<Map.Entry<K,V>>(CompareStrategy.EQUALS, new NoLock());
 
+	final Lock cas = new AtomicWFReentrantLock(); 
+	
 	@Override
 	public int size() {
 		return set.size();
@@ -64,7 +70,9 @@ public final class Amap<K,V> implements Map<K, V> ,Serializable {//, Set<Map.Ent
 
 	@Override
 	public V get(Object key) {
+		cas.lock();
 		DoublyLinkedSet<java.util.Map.Entry<K, V>> search = set.search(getKeyWrap(key));
+		cas.unlock();
 		if( search==null )
 			return null;
 		else
@@ -73,18 +81,23 @@ public final class Amap<K,V> implements Map<K, V> ,Serializable {//, Set<Map.Ent
 
 	@Override
 	public V put(K key, V value) {
+		cas.lock();
 		AnEntry<K, V> e = new AnEntry<K, V>(key, value);
 		set.add(e);
+		cas.unlock();
 		return value;
 	}
 
 	@Override
 	public V remove(Object key) {
-		DoublyLinkedSet<java.util.Map.Entry<K, V>> search = set.search(getKeyWrap(key));
+		cas.lock();
+		final DoublyLinkedSet<java.util.Map.Entry<K, V>> search = set.search(getKeyWrap(key));
 		if( search==null ){
+			cas.unlock();
 			return null;
 		}else{
 			search.removeRef();
+			cas.unlock();
 			return search.obj.getValue();
 		}
 	}
@@ -95,16 +108,20 @@ public final class Amap<K,V> implements Map<K, V> ,Serializable {//, Set<Map.Ent
 		if( m!=null ){
 			@SuppressWarnings("rawtypes")
 			Set entrySet = m.entrySet();
+			cas.lock();
 			for(Object o:entrySet){
 				Entry<? extends K, ? extends V> e = (Entry<? extends K, ? extends V>)o;
 				put(e.getKey(), e.getValue());
 			}
+			cas.unlock();
 		}
 	}
 
 	@Override
 	public void clear() {
+		cas.lock();
 		set.clear();
+		cas.unlock();
 	}
 
 	@Override

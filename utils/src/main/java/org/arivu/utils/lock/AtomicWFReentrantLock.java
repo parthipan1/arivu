@@ -24,14 +24,26 @@ public final class AtomicWFReentrantLock implements Lock {
 	
 	@Override
 	public void lock() {
-		if (reentrant!=null && reentrant.isSame() ) {
-			reentrant.acquire();
-		}else{
-			while (!cas.compareAndSet(false, true)) {
-				waitForSignal();
+		if (reentrant!=null ) {
+			try {
+				if(reentrant.isSame() ){
+					reentrant.acquire();
+				}else{
+					internalLock();
+				}
+			} catch (NullPointerException e) {
+				internalLock();
 			}
-			reentrant = new Reentrant();
+		}else{
+			internalLock();
 		}
+	}
+
+	private void internalLock() {
+		while (!cas.compareAndSet(false, true)) {
+			waitForSignal();
+		}
+		reentrant = new Reentrant();
 	}
 
 	private void waitForSignal() {
@@ -48,16 +60,19 @@ public final class AtomicWFReentrantLock implements Lock {
 	@Override
 	public void unlock() {
 		if (reentrant!=null ){
-			if( reentrant.release()){
-				reentrant = null;
-				cas.set(false);
-				releaseAWait();
-			}else{
-//				System.err.println("Lock unlock called with out lock,"+Reentrant.getId());
+			try {
+				if (reentrant.release()) {
+					reentrant = null;
+					cas.set(false);
+					releaseAWait();
+				} else {
+					//				System.err.println("Lock unlock called with out lock,"+Reentrant.getId());
+				}
+				//		}else{
+				//			throw new RuntimeException("Lock unlock called with out lock");
+				//			System.err.println("Lock unlock called with out lock,"+Reentrant.getId());
+			} catch (NullPointerException e) {
 			}
-//		}else{
-//			throw new RuntimeException("Lock unlock called with out lock");
-//			System.err.println("Lock unlock called with out lock,"+Reentrant.getId());
 		}
 	}
 

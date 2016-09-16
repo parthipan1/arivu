@@ -128,8 +128,8 @@ public class AmapTest {
 		final Map<String, String> map = new Amap<String, String>();// new
 																	// CopyOnWriteArraySet<String>();//
 
-		final int reqPerThread = 5;
-		final int noOfThreads = 5;
+		final int reqPerThread = 100;
+		final int noOfThreads = 500;
 		final Queue<Future<Integer>> listFuture = new DoublyLinkedList<Future<Integer>>();
 		final ExecutorService exe = Executors.newFixedThreadPool(noOfThreads);
 		final AtomicInteger c = new AtomicInteger(noOfThreads);

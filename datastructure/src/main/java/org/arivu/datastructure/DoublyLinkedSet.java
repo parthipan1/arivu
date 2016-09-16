@@ -40,6 +40,10 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 		this(null,new Counter(), strategy, new AtomicWFReentrantLock());
 	}
 	
+	DoublyLinkedSet(CompareStrategy strategy,Lock lock) {
+		this(null,new Counter(), strategy, lock);
+	}
+	
 	/**
 	 * 
 	 */
