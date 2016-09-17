@@ -130,6 +130,9 @@ public class Btree implements Serializable {
 				} else {
 					final Object removeRef = search.removeRef();
 					this.counter.decrementAndGet();
+					if(ref.size()==0){
+						refs[arr[level]] = null;
+					}
 					cas.unlock();
 					return removeRef;
 				}
