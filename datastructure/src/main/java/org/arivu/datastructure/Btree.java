@@ -230,20 +230,26 @@ public class Btree implements Serializable {
 		return root.getAll();
 	}
 	
-	private static final int base = 8;
+	private static final int basePower = 3;
+	private static final int base = (int) Math.pow(2, basePower);
 	private static final long baseValue = ((long) Math.pow(2, base)-1);
-	private static final long MAX = (long)(Integer.MAX_VALUE)+1l;
+	private static final long MAX_RANGE = (long)(Integer.MAX_VALUE)+1l;
 	private static final int[] getPath(Object obj){
-		int[] ret = new int[4]; 
-		long hashCode = (long)obj.hashCode()+MAX;
-		ret[3] = (int)(hashCode & baseValue);
-		hashCode = hashCode >>> base;
-		ret[2] = (int)(hashCode & baseValue);
-		hashCode = hashCode >>> base;
-		ret[1] = (int)(hashCode & baseValue);
-		hashCode = hashCode >>> base;
-		ret[0] = (int)(hashCode & baseValue);
-//		System.out.println(" hashCode "+(obj.hashCode()+MAX)+" actual# "+obj.hashCode()+" ret "+con(ret));
+		int[] ret = new int[basePower+1]; 
+		long hashCode = (long)obj.hashCode()+MAX_RANGE;
+		
+		for( int i=basePower;i>=0;i-- ){
+			ret[i] = (int)(hashCode & baseValue);
+			hashCode = hashCode >>> base;
+		}
+//		ret[3] = (int)(hashCode & baseValue);
+//		hashCode = hashCode >>> base;
+//		ret[2] = (int)(hashCode & baseValue);
+//		hashCode = hashCode >>> base;
+//		ret[1] = (int)(hashCode & baseValue);
+//		hashCode = hashCode >>> base;
+//		ret[0] = (int)(hashCode & baseValue);
+//		System.out.println(" hashCode "+(obj.hashCode()+MAX_RANGE)+" actual# "+obj.hashCode()+" ret "+con(ret));
 		return ret;
 	}
 	
@@ -259,10 +265,10 @@ public class Btree implements Serializable {
 //		
 //		return b.toString();
 //	}
-	
+//	
 //	public static void main(String[] args) {
 //		
-//		System.out.println(con(getPath(Integer.MAX_VALUE)));
+//		System.out.println(con(getPath(Integer.MIN_VALUE)));
 //		
 ////		List<Integer> list = new ArrayList<Integer>();
 ////		list.add(0);
