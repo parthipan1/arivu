@@ -22,7 +22,10 @@ public class Btree implements Serializable {
 	private static final long serialVersionUID = -6344951761380914875L;
 
 	private static final Lock dummyLock = new NoLock();
-
+	
+	private static final long MAX_RANGE = (long) (Integer.MAX_VALUE) + 1l;
+	
+	private static final int DEFAULT_BASEPOWER = 2;
 	/**
 	 * @author P
 	 *
@@ -48,7 +51,7 @@ public class Btree implements Serializable {
 			this.leaf = leaf;
 			this.order = order;
 			this.cas = cas;
-			
+
 			if (leaf) {
 				this.refs = new Object[order];
 				this.nodes = null;
@@ -86,12 +89,12 @@ public class Btree implements Serializable {
 				}
 				add = n.add(obj, level + 1, arr);
 			}
-			
-			if(add)
+
+			if (add)
 				this.counter.incrementAndGet();
-			
+
 			cas.unlock();
-			
+
 			return add;
 		}
 
@@ -103,7 +106,8 @@ public class Btree implements Serializable {
 					return null;
 				}
 				final DoublyLinkedList<Object> search = ref.search(obj);
-				//System.out.println(" find ref "+ref+" obj "+obj+" search "+search);
+				// System.out.println(" find ref "+ref+" obj "+obj+" search
+				// "+search);
 				if (search == null)
 					return null;
 				else
@@ -132,7 +136,7 @@ public class Btree implements Serializable {
 				} else {
 					final Object removeRef = search.removeRef();
 					this.counter.decrementAndGet();
-					if(ref.size()==0){
+					if (ref.size() == 0) {
 						refs[arr[level]] = null;
 					}
 					cas.unlock();
@@ -145,11 +149,8 @@ public class Btree implements Serializable {
 				}
 				cas.lock();
 				Object remove = n.remove(obj, level + 1, arr);
-				if (remove != null) {
-					int decrementAndGet = this.counter.decrementAndGet();
-					if(decrementAndGet==0){
-						nodes[arr[level]] = null;
-					}
+				if (remove != null && this.counter.decrementAndGet() == 0) {
+					nodes[arr[level]] = null;
 				}
 				cas.unlock();
 				return remove;
@@ -176,51 +177,80 @@ public class Btree implements Serializable {
 	}
 
 	final Node root;
-//	final Counter counter = new Counter();
-
+	private final int base;
+	private final int depth;
+	private final long baseValue;
+	
 	/**
 	 * @param order
 	 */
-	public Btree(int order) {
-		this(order, new AtomicWFReentrantLock(), CompareStrategy.EQUALS);
+	public Btree(int basePower) {
+		this(basePower, new AtomicWFReentrantLock(), CompareStrategy.EQUALS);
 	}
 
 	public Btree() {
-		this((int) baseValue + 1);
+		this(DEFAULT_BASEPOWER);
 	}
 
 	Btree(Lock lock) {
-		this((int) baseValue + 1, lock, CompareStrategy.EQUALS);
-	}
-	
-	Btree(Lock lock, CompareStrategy compareStrategy) {
-		this((int) baseValue + 1, lock, compareStrategy);
-	}
-	
-	Btree(int order, Lock lock, CompareStrategy compareStrategy) {
-		super();
-		this.root = new Node(order, lock, false, compareStrategy);
+		this(DEFAULT_BASEPOWER, lock, CompareStrategy.EQUALS);
 	}
 
-	public int size(){
-		return root.counter.get();
+	Btree(Lock lock, CompareStrategy compareStrategy) {
+		this(DEFAULT_BASEPOWER, lock, compareStrategy);
+	}
+
+	Btree(int basePower, Lock lock, CompareStrategy compareStrategy) {
+		super();
+		if(basePower<=0||basePower>4){
+			throw new IllegalArgumentException("Invalid basePower "+basePower+" (between 1-4) specified!");
+		}
+		this.base = (int) Math.pow(2, basePower);
+		this.depth = 32/base;
+		this.baseValue = ((long) Math.pow(2, base) - 1);
+		this.root = new Node((int)this.baseValue+1, lock, false, compareStrategy);
+	}
+
+	private int[] getPath(Object obj) {
+		int hashCode2 = obj.hashCode();
+		return getPath(hashCode2);
+	}
+
+	private int[] getPath(final int hashCode2) {
+		int[] ret = new int[depth];
+		long hashCode = (long) hashCode2 + MAX_RANGE;
+
+		for (int i = depth-1; i >= 0; i--) {
+			ret[i] = (int) (hashCode & baseValue);
+
+			if (i > 0)
+				hashCode = hashCode >>> base;
+		}
+		// //System.out.println(" getPath act hashCode "+hashCode2+" ret
+		// "+con(ret));
+		return ret;
 	}
 	
+	public int size() {
+		return root.counter.get();
+	}
+
 	public void add(final Object obj) {
 		int[] path = getPath(obj);
 		root.add(obj, 0, path);
-		//System.out.println(this+" bt add "+obj+" path "+con(path));
+		// System.out.println(this+" bt add "+obj+" path "+con(path));
 	}
 
 	public Object remove(final Object obj) {
-		//System.out.println(this+" bt remove "+obj);
+		// System.out.println(this+" bt remove "+obj);
 		return root.remove(obj, 0, getPath(obj));
 	}
 
 	public Object get(final Object obj) {
 		int[] path = getPath(obj);
 		Object find = root.find(obj, 0, path);
-		//System.out.println(this+" bt search "+obj+" find "+find+" path "+con(path));
+		// System.out.println(this+" bt search "+obj+" find "+find+" path
+		// "+con(path));
 		return find;
 	}
 
@@ -232,42 +262,18 @@ public class Btree implements Serializable {
 		return root.getAll();
 	}
 
-	private static final int basePower = 3;
-	private static final int base = (int) Math.pow(2, basePower);
-	private static final long baseValue = ((long) Math.pow(2, base) - 1);
-	private static final long MAX_RANGE = (long) (Integer.MAX_VALUE) + 1l;
-
-	private static final int[] getPath(Object obj) {
-		int hashCode2 = obj.hashCode();
-		return getPath(hashCode2);
-	}
-
-	private static final int[] getPath(final int hashCode2) {
-		int[] ret = new int[basePower + 1];
-		long hashCode = (long) hashCode2 + MAX_RANGE;
-
-		for (int i = basePower; i >= 0; i--) {
-			ret[i] = (int) (hashCode & baseValue);
-			
-			if( i>0 )
-				hashCode = hashCode >>> base;
-		}
-//		//System.out.println(" getPath act hashCode "+hashCode2+" ret "+con(ret));
-		return ret;
-	}
-
-//	private static final String con(int[] a) {
-//		StringBuffer b = new StringBuffer();
-//
-//		for (int i : a) {
-//			if (b.length() == 0)
-//				b.append(i);
-//			else
-//				b.append(",").append(i);
-//		}
-//
-//		return b.toString();
-//	}
+	// private static final String con(int[] a) {
+	// StringBuffer b = new StringBuffer();
+	//
+	// for (int i : a) {
+	// if (b.length() == 0)
+	// b.append(i);
+	// else
+	// b.append(",").append(i);
+	// }
+	//
+	// return b.toString();
+	// }
 	//
 	// public static void main(String[] args) {
 	//
