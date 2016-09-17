@@ -181,31 +181,37 @@ public class AmapTest {
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-				final String key = String.valueOf(Thread.currentThread().hashCode());
-				final int decrementAndGet = c.decrementAndGet();
-				for (int i = 0; i < reqPerThread; i++) {
-					String value = String.valueOf(i);
-					map.remove(key);
-					if (map.get(key) != null) {
-						if (decrementAndGet <= 0) {
-							end.countDown();
+				int decrementAndGet = c.decrementAndGet();
+				try {
+					final String key = String.valueOf(Thread.currentThread().hashCode());
+					
+					for (int i = 0; i < reqPerThread; i++) {
+						String value = String.valueOf(i);
+						map.remove(key);
+						if (map.get(key) != null) {
+							if (decrementAndGet <= 0) {
+								end.countDown();
+							}
+							System.err.println("Failed in check1 thread " + key + " value " + value);
+							throw new RuntimeException("Failed in check1 thread " + key + " value " + value);
 						}
-						System.err.println("Failed in check1 thread " + key + " value " + value);
-						throw new RuntimeException("Failed in check1 thread " + key + " value " + value);
-					}
 
-					map.put(key, value);
+						map.put(key, value);
 //					System.out.println("Key "+key+" value "+value);
-					if (map.get(key) != value) {
-						if (decrementAndGet <= 0) {
-							end.countDown();
+						if (map.get(key) != value) {
+							if (decrementAndGet <= 0) {
+								end.countDown();
+							}
+							System.err.println("Failed in check2 thread " + key + " value " + value);
+							throw new RuntimeException("Failed in check2 thread " + key + " value " + value);
 						}
-						System.err.println("Failed in check2 thread " + key + " value " + value);
-						throw new RuntimeException("Failed in check2 thread " + key + " value " + value);
-					}
 
-					map.remove(key);
+						map.remove(key);
 //					System.out.println("Completed Thread "+decrementAndGet+" req "+value);
+					}
+				} catch (Throwable e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
 				
 //				System.out.println("completed "+decrementAndGet);

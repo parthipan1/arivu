@@ -27,50 +27,11 @@ public class Btree implements Serializable {
 	 * @author P
 	 *
 	 */
-	static final class Ref  {
-		final DoublyLinkedList<Object> linkedList = new DoublyLinkedList<Object>(CompareStrategy.EQUALS,dummyLock);
-		final int hashCode;
-		/**
-		 * @param hashCode
-		 */
-		Ref(int hashCode) {
-			super();
-			this.hashCode = hashCode;
-		}
-		@Override
-		public int hashCode() {
-			return hashCode;
-		}
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			Ref other = (Ref) obj;
-			if (hashCode != other.hashCode)
-				return false;
-			if (linkedList == null) {
-				if (other.linkedList != null)
-					return false;
-			} else if (!linkedList.equals(other.linkedList))
-				return false;
-			return true;
-		}
-		
-	}
-	
-	/**
-	 * @author P
-	 *
-	 */
 	static final class Node {
 		final int order;
 		final Lock cas;
-		
-		final Ref[] refs;
+		final boolean  leaf;
+		final Object[] refs;
 		final Node[] nodes;
 		
 		volatile int idx = 0;
@@ -82,11 +43,12 @@ public class Btree implements Serializable {
 		 */
 		public Node(int order, Lock cas, boolean leaf, Counter cnt) {
 			super();
+			this.leaf = leaf;
 			this.counter = cnt;
 			this.order = order;
 			this.cas = cas;
 			if(leaf){
-				this.refs = new Ref[order];
+				this.refs = new Object[order];
 				this.nodes = null;
 			}else{
 				this.refs = null;
@@ -103,15 +65,16 @@ public class Btree implements Serializable {
 			cas.lock();
 		}
 
-		void add(Object obj,int level,int[] arr) {
+		@SuppressWarnings("unchecked")
+		void add(final Object obj,final int level,final int[] arr) {
 			cas.lock();
-			if( level == arr.length-1 ){
-				Ref ref = refs[arr[level]];
+			if( this.leaf ){
+				Object ref = refs[arr[level]];
 				if(ref == null){
-					ref = new Ref(obj.hashCode());
+					ref = new DoublyLinkedList<Object>(CompareStrategy.EQUALS,dummyLock);
 					refs[arr[level]] = ref;
 				}
-				ref.linkedList.add(obj);
+				((DoublyLinkedList<Object>)ref).add(obj);
 				this.counter.incrementAndGet();
 			}else{
 				Node n = nodes[arr[level]];
@@ -124,13 +87,14 @@ public class Btree implements Serializable {
 			cas.unlock();
 		}
 
-		Object find(Object obj,int level,int[] arr){
-			if( level == arr.length-1 ){
-				final Ref ref = refs[arr[level]];
+		Object find(final Object obj,final int level,final int[] arr){
+			if( this.leaf ){
+				@SuppressWarnings("unchecked")
+				final DoublyLinkedList<Object> ref = (DoublyLinkedList<Object>)refs[arr[level]];
 				if(ref == null){
 					return null;
 				}
-				final DoublyLinkedList<Object> search = ref.linkedList.search(obj);
+				final DoublyLinkedList<Object> search = ref.search(obj);
 				if( search == null )
 					return null;
 				else
@@ -144,14 +108,15 @@ public class Btree implements Serializable {
 			}
 		}
 
-		Object remove(Object obj,int level,int[] arr){
-			if( level == arr.length-1 ){
-				final Ref ref = refs[arr[level]];
+		Object remove(final Object obj,final int level,final int[] arr){
+			if( this.leaf ){
+				@SuppressWarnings("unchecked")
+				final DoublyLinkedList<Object> ref = (DoublyLinkedList<Object>)refs[arr[level]];
 				if(ref == null){
 					return null;
 				}
 				cas.lock();
-				final DoublyLinkedList<Object> search = ref.linkedList.search(obj);
+				final DoublyLinkedList<Object> search = ref.search(obj);
 				if( search == null ){
 					cas.unlock();	
 					return null;
@@ -170,12 +135,13 @@ public class Btree implements Serializable {
 			}
 		}
 
+		@SuppressWarnings("unchecked")
 		Collection<Object> getAll() {
 			Collection<Object> list = new DoublyLinkedList<Object>();
 			if(this.nodes==null){
-				for( Ref n:this.refs ){
+				for( Object n:this.refs ){
 					if(n!=null)
-						list.addAll(n.linkedList);
+						list.addAll((DoublyLinkedList<Object>)n);
 				}
 				
 			}else{
