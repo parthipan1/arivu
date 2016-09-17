@@ -181,12 +181,13 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 				size.incrementAndGet();
 			}
 			this.binaryTree.add(new Ref(l));
-			if(null==right && left == null ){
-				left = l;
-				right = l;
-				l.left = this;
-				l.right = this;
-			}else if(left==right && left == this ){
+//			if(null==right && left == null ){
+//				left = l;
+//				right = l;
+//				l.left = this;
+//				l.right = this;
+//			}else 
+			if(left==right && left == this ){
 				left = l;
 				right = l;
 				l.left = this;
@@ -395,7 +396,7 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 			l.lock();
 			
 			for( Object t:c )
-				ret = ret && contains(t);
+				ret = ret & contains(t);
 			
 			l.unlock();
 			return ret;
