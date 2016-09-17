@@ -44,8 +44,12 @@ public class AmapTest {
 		Amap<String, String> map = new Amap<String, String>();
 		map.put("test", "test");
 		assertTrue("Failed on size ", map.size() == 1);
-		// map.put(null, "test");
-		// assertTrue("Failed on size ", map.size()==2);
+		map.put(null, "tes1");
+		assertTrue("Failed on size ", map.size()==2);
+		assertTrue("Failed on size ", "tes1".equals(map.remove(null)));
+		assertTrue("Failed on size ", map.size() == 1);
+		assertTrue("Failed on size ", "test".equals(map.remove("test")));
+		assertTrue("Failed on size ", map.size() == 0);
 	}
 
 	@Test

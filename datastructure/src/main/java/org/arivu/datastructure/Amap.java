@@ -20,14 +20,17 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 
 	final Btree binaryTree = new Btree();
 
+	V nullValue;
+	volatile int nc = 0;
+	
 	@Override
 	public int size() {
-		return binaryTree.counter.get();
+		return binaryTree.size()+nc;
 	}
 
 	@Override
 	public boolean isEmpty() {
-		return binaryTree.counter.get() == 0;
+		return size() == 0;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -54,6 +57,9 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 	@SuppressWarnings("unchecked")
 	@Override
 	public V get(Object key) {
+		
+		if(key==null) return nullValue;
+		
 		final Object object = binaryTree.get(getKeyWrap(key));
 		if (object != null) {
 			java.util.Map.Entry<K, V> e = (java.util.Map.Entry<K, V>) object;
@@ -65,6 +71,20 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 
 	@Override
 	public V put(K key, V value) {
+		
+		if(key==null) {
+			binaryTree.root.cas.lock();
+			if(value==null){
+				nc=0;
+				this.nullValue = value;
+			}else{
+				nc=1;
+				this.nullValue = value;
+			}
+			binaryTree.root.cas.unlock();
+			return nullValue;	
+		}
+		
 		AnEntry<K, V> e = new AnEntry<K, V>(key, value);
 		Object object = binaryTree.get(e);
 		if (object != null) {
@@ -81,6 +101,19 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 	@SuppressWarnings("unchecked")
 	@Override
 	public V remove(Object key) {
+		if(key==null) {
+			if(nullValue==null){
+				return null;
+			}else{
+				binaryTree.root.cas.lock();
+				nc=0;
+				V value = this.nullValue;
+				this.nullValue = null;
+				binaryTree.root.cas.unlock();
+				return value;
+			}
+		}
+		
 		final Object object = binaryTree.remove(getKeyWrap(key));
 		if (object != null) {
 			java.util.Map.Entry<K, V> e = (java.util.Map.Entry<K, V>) object;
@@ -105,7 +138,13 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 
 	@Override
 	public void clear() {
+		binaryTree.root.cas.lock();
+		if( nc == 1 ){
+			nc=0;
+			nullValue = null;
+		}
 		binaryTree.clear();
+		binaryTree.root.cas.unlock();
 	}
 
 	@Override

@@ -35,22 +35,20 @@ public class Btree implements Serializable {
 		final Node[] nodes;
 		final CompareStrategy compareStrategy;
 		volatile int idx = 0;
-		final Counter counter;
+		final Counter counter = new Counter();
 
 		/**
 		 * @param order
 		 * @param leaf
 		 *            TODO
-		 * @param cnt
-		 *            TODO
 		 */
-		public Node(int order, Lock cas, boolean leaf, Counter cnt, CompareStrategy compareStrategy) {
+		public Node(int order, Lock cas, boolean leaf, CompareStrategy compareStrategy) {
 			super();
 			this.compareStrategy = compareStrategy;
 			this.leaf = leaf;
-			this.counter = cnt;
 			this.order = order;
 			this.cas = cas;
+			
 			if (leaf) {
 				this.refs = new Object[order];
 				this.nodes = null;
@@ -70,7 +68,8 @@ public class Btree implements Serializable {
 		}
 
 		@SuppressWarnings("unchecked")
-		void add(final Object obj, final int level, final int[] arr) {
+		boolean add(final Object obj, final int level, final int[] arr) {
+			boolean add = false;
 			cas.lock();
 			if (this.leaf) {
 				Object ref = refs[arr[level]];
@@ -78,19 +77,22 @@ public class Btree implements Serializable {
 					ref = new DoublyLinkedList<Object>(compareStrategy, dummyLock);
 					refs[arr[level]] = ref;
 				}
-//				boolean add = 
-				((DoublyLinkedList<Object>) ref).add(obj);
-				//System.out.println(" add ref "+ref+" obj "+obj+" addflag "+add+" compareStrategy "+compareStrategy);
-				this.counter.incrementAndGet();
+				add = ((DoublyLinkedList<Object>) ref).add(obj);
 			} else {
 				Node n = nodes[arr[level]];
 				if (n == null) {
-					n = new Node(order, cas, level == arr.length - 2, this.counter, compareStrategy);
+					n = new Node(order, cas, level == arr.length - 2, compareStrategy);
 					nodes[arr[level]] = n;
 				}
-				n.add(obj, level + 1, arr);
+				add = n.add(obj, level + 1, arr);
 			}
+			
+			if(add)
+				this.counter.incrementAndGet();
+			
 			cas.unlock();
+			
+			return add;
 		}
 
 		Object find(final Object obj, final int level, final int[] arr) {
@@ -141,7 +143,16 @@ public class Btree implements Serializable {
 				if (n == null) {
 					return null;
 				}
-				return n.remove(obj, level + 1, arr);
+				cas.lock();
+				Object remove = n.remove(obj, level + 1, arr);
+				if (remove != null) {
+					int decrementAndGet = this.counter.decrementAndGet();
+					if(decrementAndGet==0){
+						nodes[arr[level]] = null;
+					}
+				}
+				cas.unlock();
+				return remove;
 			}
 		}
 
@@ -165,7 +176,7 @@ public class Btree implements Serializable {
 	}
 
 	final Node root;
-	final Counter counter = new Counter();
+//	final Counter counter = new Counter();
 
 	/**
 	 * @param order
@@ -188,9 +199,13 @@ public class Btree implements Serializable {
 	
 	Btree(int order, Lock lock, CompareStrategy compareStrategy) {
 		super();
-		this.root = new Node(order, lock, false, counter, compareStrategy);
+		this.root = new Node(order, lock, false, compareStrategy);
 	}
 
+	public int size(){
+		return root.counter.get();
+	}
+	
 	public void add(final Object obj) {
 		int[] path = getPath(obj);
 		root.add(obj, 0, path);
