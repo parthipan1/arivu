@@ -33,15 +33,66 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 	Counter size;
 	CompareStrategy compareStrategy;
 	Lock cas;
+	
+	static final class Ref{
+		final DoublyLinkedSet<?> set;
+		final Object obj;
+		/**
+		 * @param set
+		 */
+		Ref(DoublyLinkedSet<?> set) {
+			super();
+			this.set = set;
+			this.obj = set.obj;
+		}
+		
+		/**
+		 * @param obj
+		 */
+		public Ref(Object obj) {
+			super();
+			this.set = null;
+			this.obj = obj;
+		}
+
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((obj == null) ? 0 : obj.hashCode());
+			return result;
+		}
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			Ref other = (Ref) obj;
+			if (this.obj == null) {
+				if (other.obj != null)
+					return false;
+			} else if (!this.obj.equals(other.obj))
+				return false;
+			return true;
+		}
+		
+	}
+	
+	
+	final Btree binaryTree;
 	/**
 	 * @param strategy
 	 */
 	DoublyLinkedSet(CompareStrategy strategy) {
-		this(null,new Counter(), strategy, new AtomicWFReentrantLock());
+		this(strategy, new AtomicWFReentrantLock());
 	}
 	
 	DoublyLinkedSet(CompareStrategy strategy,Lock lock) {
-		this(null,new Counter(), strategy, lock);
+		this(null,new Counter(), strategy, lock, new Btree(lock,CompareStrategy.EQUALS));
 	}
 	
 	/**
@@ -57,12 +108,13 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 	 * @param strategy 
 	 * @param cas 
 	 */
-	private DoublyLinkedSet(T t, Counter size, CompareStrategy strategy, Lock cas) {
+	private DoublyLinkedSet(T t, Counter size, CompareStrategy strategy, Lock cas,Btree binaryTree) {
 		super();
 		this.obj = t;
 		this.size = size;
 		this.compareStrategy = strategy;
 		this.cas = cas;
+		this.binaryTree = binaryTree;
 	}
 
 	/**
@@ -81,6 +133,7 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 		if(size!=null)
 			size.set(0);
 		
+		this.binaryTree.clear();
 		l.unlock();
 	}
 	
@@ -127,7 +180,7 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 			if (size!=null) {
 				size.incrementAndGet();
 			}
-
+			this.binaryTree.add(new Ref(l));
 			if(null==right && left == null ){
 				left = l;
 				right = l;
@@ -161,24 +214,30 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 	 * @param obj
 	 * @return
 	 */
+	@SuppressWarnings("unchecked")
 	DoublyLinkedSet<T> search(final Object o){
-		DoublyLinkedSet<T> ref = this.right;
-		while (ref != null) {
-			if (ref == this) {
-				break;
-			}
-			if( o instanceof String ){
-				if(ref.obj!=null && CompareStrategy.EQUALS.compare(ref.obj, o)){
-					return ref;
-				}
-			}else{
-				if(ref.obj!=null && compareStrategy.compare(ref.obj, o)){
-					return ref;
-				}
-			}
-			ref = ref.right;
-		}
-		return null;
+		Object object = this.binaryTree.get(new Ref(o));
+		if(object==null)
+			return null;
+		else
+			return (DoublyLinkedSet<T>)((Ref)object).set;
+//		DoublyLinkedSet<T> ref = this.right;
+//		while (ref != null) {
+//			if (ref == this) {
+//				break;
+//			}
+//			if( o instanceof String ){
+//				if(ref.obj!=null && CompareStrategy.EQUALS.compare(ref.obj, o)){
+//					return ref;
+//				}
+//			}else{
+//				if(ref.obj!=null && compareStrategy.compare(ref.obj, o)){
+//					return ref;
+//				}
+//			}
+//			ref = ref.right;
+//		}
+//		return null;
 	}
 	
 	/**
@@ -216,6 +275,7 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 		size = null;
 		cas = null;
 		compareStrategy = null;
+		this.binaryTree.remove(new Ref(obj));
 		l.unlock();
 		return obj;
 	}
@@ -296,7 +356,7 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 			l.lock();
 			search = search(e);
 			if( search == null ){
-				addLeft(new DoublyLinkedSet<T>(e, size, compareStrategy, cas));
+				addLeft(new DoublyLinkedSet<T>(e, size, compareStrategy, cas, binaryTree));
 				l.unlock();
 				return true;
 			}else{
@@ -315,12 +375,13 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 		if(l==null) return false;
 		l.lock();
 		search = search(o);
-//		System.out.println("remove "+this+" Object "+o+" search "+search.obj);
 		if( search!=null ){
+			//System.out.println("remove "+this+" Object "+o+" search "+search.obj);
 			search.removeRef();
 			l.unlock();
 			return true;
 		}else {
+			//System.out.println("remove "+this+" Object "+o+" search null");
 			l.unlock();
 			return false;
 		}
@@ -666,6 +727,31 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 	public T peek() {
 		return this.right.obj;
 	}
+
+//	@Override
+//	public int hashCode() {
+//		final int prime = 31;
+//		int result = 1;
+//		result = prime * result + ((obj == null) ? 0 : obj.hashCode());
+//		return result;
+//	}
+//
+//	@Override
+//	public boolean equals(Object obj) {
+//		if (this == obj)
+//			return true;
+//		if (obj == null)
+//			return false;
+//		if (getClass() != obj.getClass())
+//			return false;
+//		DoublyLinkedSet other = (DoublyLinkedSet) obj;
+//		if (this.obj == null) {
+//			if (other.obj != null)
+//				return false;
+//		} else if (!this.obj.equals(other.obj))
+//			return false;
+//		return true;
+//	}
 }
 enum CompareStrategy{
 	REF,EQUALS{

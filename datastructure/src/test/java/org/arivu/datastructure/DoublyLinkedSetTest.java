@@ -526,7 +526,7 @@ public class DoublyLinkedSetTest {
 		final DoublyLinkedSet<String> set = new DoublyLinkedSet<String>();//new CopyOnWriteArraySet<String>();//
 		
 		final int reqPerThread = 100;
-		final int noOfThreads = 100;
+		final int noOfThreads = 500;
 		final ExecutorService exe = Executors.newFixedThreadPool(noOfThreads);
 		final AtomicInteger c = new AtomicInteger(noOfThreads);
 		final CountDownLatch start = new CountDownLatch(1);
