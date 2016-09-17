@@ -100,7 +100,7 @@ public class QueueTest {
 		} catch (InterruptedException e1) {
 			e1.printStackTrace();
 		}
-		System.out.println("Producer close!");
+//		System.out.println("Producer close!");
 		try {
 			logProducer.close();
 		} catch (Exception e) {
@@ -136,7 +136,7 @@ public class QueueTest {
 						logProducer.produce(String.valueOf(initialValue-cnt.getAndDecrement()));
 //						logger.info(String.valueOf(initialValue-cnt.getAndDecrement()));
 					}
-					System.out.println("Remaining count "+c.get()+" cnt "+cnt.get());
+//					System.out.println("Remaining count "+c.get()+" cnt "+cnt.get());
 					if( c.decrementAndGet()<=0 ){
 						end.countDown();
 					}
@@ -272,7 +272,7 @@ public class QueueTest {
 			} catch (InterruptedException e1) {
 				e1.printStackTrace();
 			}
-			System.out.println("Producer close!");
+//			System.out.println("Producer close!");
 			try {
 				logProducer.close();
 			} catch (Exception e) {
@@ -324,7 +324,7 @@ public class QueueTest {
 						logProducer.produce(String.valueOf(initialValue-cnt.getAndDecrement()));
 //						logger.info(String.valueOf(initialValue-cnt.getAndDecrement()));
 					}
-					System.out.println("Remaining count "+c.get()+" cnt "+cnt.get());
+//					System.out.println("Remaining count "+c.get()+" cnt "+cnt.get());
 					if( c.decrementAndGet()<=0 ){
 						end.countDown();
 					}
@@ -390,7 +390,7 @@ public class QueueTest {
 			} catch (InterruptedException e1) {
 				e1.printStackTrace();
 			}
-			System.out.println("Producer close!");
+//			System.out.println("Producer close!");
 			try {
 				logProducer.close();
 			} catch (Exception e) {

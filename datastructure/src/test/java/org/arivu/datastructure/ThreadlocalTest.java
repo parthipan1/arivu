@@ -3,7 +3,8 @@
  */
 package org.arivu.datastructure;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.Map;
 import java.util.Queue;
@@ -19,7 +20,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -84,7 +84,6 @@ public class ThreadlocalTest {
 	 * Test method for {@link org.arivu.datastructure.Threadlocal#get(java.util.Map)}.
 	 */
 	@Test
-	@Ignore
 	public void testGetMapOfStringObject() {
 		final AtomicInteger create = new  AtomicInteger(0);
 		final Threadlocal<String> threadlocal = new Threadlocal<String>(new Threadlocal.Factory<String>(){
@@ -123,7 +122,9 @@ public class ThreadlocalTest {
 		Future<Integer> poll = null;
 		while ((poll = listFuture.poll()) != null) {
 			try {
-				System.out.println(" Completed :: "+poll.get());
+//				Integer integer = 
+						poll.get();
+//				System.out.println(" Completed :: "+integer);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			} catch (ExecutionException e) {
@@ -210,7 +211,7 @@ public class ThreadlocalTest {
 					}
 
 					map.remove();
-					System.out.println("Completed Thread "+decrementAndGet+" req "+value);
+//					System.out.println("Completed Thread "+decrementAndGet+" req "+value);
 				}
 				
 //				System.out.println("completed "+decrementAndGet);

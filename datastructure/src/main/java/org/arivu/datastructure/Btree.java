@@ -233,7 +233,9 @@ public class Btree implements Serializable {
 
 		for (int i = basePower; i >= 0; i--) {
 			ret[i] = (int) (hashCode & baseValue);
-			hashCode = hashCode >>> base;
+			
+			if( i>0 )
+				hashCode = hashCode >>> base;
 		}
 //		//System.out.println(" getPath act hashCode "+hashCode2+" ret "+con(ret));
 		return ret;
