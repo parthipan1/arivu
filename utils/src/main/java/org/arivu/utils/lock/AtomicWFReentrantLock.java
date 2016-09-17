@@ -22,6 +22,24 @@ public final class AtomicWFReentrantLock implements Lock {
 	
 	volatile Reentrant reentrant = null;
 	
+//	volatile boolean shutdown = false;
+	/**
+	 * 
+	 */
+	public AtomicWFReentrantLock() {
+		super();
+//		try {
+//			Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+//				@Override
+//				public void run() {
+//					shutdown = true;
+//					releaseAllWait();
+//				}
+//			}));
+//		} catch (Exception e) {
+//		}
+	}
+
 	@Override
 	public void lock() {
 		if (reentrant!=null ) {
@@ -32,6 +50,7 @@ public final class AtomicWFReentrantLock implements Lock {
 					internalLock();
 				}
 			} catch (NullPointerException e) {
+				e.printStackTrace();
 				internalLock();
 			}
 		}else{
@@ -40,10 +59,12 @@ public final class AtomicWFReentrantLock implements Lock {
 	}
 
 	private void internalLock() {
-		while (!cas.compareAndSet(false, true)) {
-			waitForSignal();
-		}
-		reentrant = new Reentrant();
+//		if (!shutdown) {
+			while (!cas.compareAndSet(false, true)) {
+				waitForSignal();
+			}
+			reentrant = new Reentrant();
+//		}
 	}
 
 	private void waitForSignal() {
@@ -83,6 +104,13 @@ public final class AtomicWFReentrantLock implements Lock {
 		}
 	}
 
+	void releaseAllWait() {
+		CountDownLatch poll = null;
+		while ((poll = waits.poll(Direction.right)) != null) {
+			poll.countDown();
+		}
+	}
+	
 	@Override
 	public void lockInterruptibly() throws InterruptedException {
 

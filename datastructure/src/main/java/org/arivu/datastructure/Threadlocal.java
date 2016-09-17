@@ -145,14 +145,15 @@ public final class Threadlocal<T> {
 	}
 	
 	public void close() {
-		final Map<String, Ref<T>> threadLocalTmp = new Amap<String, Ref<T>>();
-		threadLocalTmp.putAll(threadLocal);
-		threadLocal.clear();
-		for (Entry<String, Ref<T>> e : threadLocalTmp.entrySet()) {
+//		final Map<String, Ref<T>> threadLocalTmp = new Amap<String, Ref<T>>();
+//		threadLocalTmp.putAll(threadLocal);
+//		threadLocal.clear();
+		for (Entry<String, Ref<T>> e : threadLocal.entrySet()) {
 			Ref<T> value = e.getValue();
+			e.setValue(null);
 			close(value);
 		}
-		threadLocalTmp.clear();
+//		threadLocalTmp.clear();
 		try {
 			Runtime.getRuntime().removeShutdownHook(hook);
 		} catch (Throwable e1) {
@@ -161,7 +162,7 @@ public final class Threadlocal<T> {
 	}
 
 	private void close(Ref<T> value) {
-		if (value.t instanceof AutoCloseable) {
+		if ( value !=null && value.t!=null && value.t instanceof AutoCloseable) {
 			try {
 				((AutoCloseable) value.t).close();
 			} catch (Exception e1) {

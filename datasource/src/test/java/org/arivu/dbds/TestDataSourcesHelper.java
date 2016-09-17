@@ -35,7 +35,9 @@ class TestDataSourcesHelper {
 	public void tearDownAfterClass() throws Exception {
 		exe.shutdownNow();
 		if (!exe.awaitTermination(100, TimeUnit.MICROSECONDS)) {
-			logger.debug("Still waiting after 100ms: calling System.exit(0)...");
+			String msg = "Still waiting after 100ms: calling System.exit(0)...";
+			logger.debug(msg);
+//			System.err.println(msg);
 		}
 	}
 
@@ -63,6 +65,7 @@ class TestDataSourcesHelper {
 		logger.info(msg);
 		System.out.println(msg);
 		AsyncLogger.flush();
+//		System.out.println("After Flush!");
 	}
 
 	void testDataSource(final AbstractDataSource ds, final int verifyCnt, final boolean checkMin) throws InterruptedException {
@@ -85,6 +88,15 @@ class TestDataSourcesHelper {
 		}
 		start.countDown();
 		end.await();
+		
+//		for(Future<Integer> fu:listFuture)
+//			try {
+//				fu.get();
+//				fu.cancel(true);
+//			} catch (ExecutionException e) {
+//				e.printStackTrace();
+//			}
+		
 		listFuture.clear();
 		
 		assertTrue("Failed in allconnections! " + ds.getMaxPoolSize(), ds.getMaxPoolSize() <= verifyCnt);

@@ -19,6 +19,19 @@ public final class AtomicWFLock implements Lock {
 
 	final AtomicBoolean cas = new AtomicBoolean(false);
 	
+	/**
+	 * 
+	 */
+	public AtomicWFLock() {
+		super();
+//		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+//			@Override
+//			public void run() {
+//				releaseAllWait();
+//			}
+//		}));
+	}
+
 	@Override
 	public void lock() {
 		while (!cas.compareAndSet(false, true)) {
@@ -50,6 +63,13 @@ public final class AtomicWFLock implements Lock {
 		}
 	}
 
+	void releaseAllWait() {
+		CountDownLatch poll = null;
+		while ((poll = waits.poll(Direction.right)) != null) {
+			poll.countDown();
+		}
+	}
+	
 	@Override
 	public void lockInterruptibly() throws InterruptedException {
 
