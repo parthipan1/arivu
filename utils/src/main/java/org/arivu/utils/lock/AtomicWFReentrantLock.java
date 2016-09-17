@@ -50,7 +50,7 @@ public final class AtomicWFReentrantLock implements Lock {
 					internalLock();
 				}
 			} catch (NullPointerException e) {
-				e.printStackTrace();
+//				e.printStackTrace();
 				internalLock();
 			}
 		}else{
