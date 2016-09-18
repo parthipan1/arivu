@@ -90,25 +90,25 @@ public final class LruCache<K,V> {
 	 */
 	private final Amap<K,Tracker<V>> cache = new Amap<K,Tracker<V>>();
 
-	private final int size; 
+	private final int maxSize; 
 	
 	/**
 	 * Constructor for default Object creation.
 	 * 
 	 * @param cacheStrategy
-	 * @param size
+	 * @param maxSize
 	 */
-	public LruCache(CacheStrategy cacheStrategy,int size) {
+	public LruCache(CacheStrategy cacheStrategy,int maxSize) {
 		super();
 		if (cacheStrategy == null)
 			this.cacheStrategy = CacheStrategy.TIME_MOST_RECENT;
 		else
 			this.cacheStrategy = cacheStrategy;
 		
-		if( size<1 )
-			throw new IllegalArgumentException("Invalid size "+size);
+		if( maxSize<1 )
+			throw new IllegalArgumentException("Invalid maxSize "+maxSize);
 		
-		this.size = size; 
+		this.maxSize = maxSize; 
 	}
 
 	
@@ -120,7 +120,7 @@ public final class LruCache<K,V> {
 	 */
 	public void put(K key,V t) {
 		if (t != null) {
-			if( size == cache.size() ){
+			if( maxSize == cache.size() ){
 				remove();
 			}
 			cache.put(key,cacheStrategy.create(t));

@@ -502,8 +502,8 @@ public class DoublyLinkedListTest {
 	public void testRunParallel() throws IOException {
 		final List<String> list = new DoublyLinkedList<String>();
 		
-		final int reqPerThread = 100;
-		final int noOfThreads = 500;
+		final int reqPerThread = 10;
+		final int noOfThreads = 50;
 		final ExecutorService exe = Executors.newFixedThreadPool(noOfThreads);
 		final AtomicInteger c = new AtomicInteger(noOfThreads);
 		final CountDownLatch start = new CountDownLatch(1);

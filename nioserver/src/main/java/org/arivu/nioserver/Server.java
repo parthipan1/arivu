@@ -5,6 +5,7 @@ package org.arivu.nioserver;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
@@ -69,7 +70,7 @@ public class Server {
 	}
 }
 
-class RequestHandler implements Runnable {
+class RequestHandler implements Runnable,AutoCloseable {
 	private static final Logger logger = LoggerFactory.getLogger(RequestHandler.class);
 	final SocketChannel sc;
 
@@ -80,16 +81,21 @@ class RequestHandler implements Runnable {
 
 	@Override
 	public void run() {
-
+		final ByteBuffer buf = ByteBuffer.allocateDirect(1024);
 		try {
 			System.out.println("run server");
 		} finally {
 			try {
-				this.sc.close();
-			} catch (IOException e) {
+				close();
+			} catch (Exception e) {
 				logger.error("Failed to close socket::", e);
 			}
 		}
+	}
+
+	@Override
+	public void close() throws Exception {
+		this.sc.close();
 	}
 
 }

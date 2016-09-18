@@ -3,7 +3,7 @@
  */
 package org.arivu.datastructure;
 
-import java.util.ArrayList;
+import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -93,6 +93,13 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 	
 	DoublyLinkedSet(CompareStrategy strategy,Lock lock) {
 		this(null,new Counter(), strategy, lock, new Btree(lock,CompareStrategy.EQUALS));
+	}
+	/**
+	 * 
+	 */
+	public DoublyLinkedSet(Collection<T> col) {
+		this();
+		addAll(col);
 	}
 	
 	/**
@@ -322,31 +329,25 @@ public final class DoublyLinkedSet<T> implements Set<T>,Queue<T> {
 
 	@Override
 	public Object[] toArray() {
-		List<T> subl = new ArrayList<T>();
-		DoublyLinkedSet<T> ref = this.right;
-		while (ref != null) {
-			if (ref == this) {
-				break;
-			}
-			subl.add(ref.obj);
-			ref = ref.right;
+		List<T> subl = new DoublyLinkedList<T>(this);
+		Object[] arr = new Object[subl.size()];
+		int i=0;
+		for(T t:subl){
+			arr[i++] = t;
 		}
-		return subl.toArray();
+		return arr;
 	}
 
-	@SuppressWarnings("hiding")
+	@SuppressWarnings({ "hiding", "unchecked", "rawtypes" })
 	@Override
 	public <T> T[] toArray(T[] a) {
-		List<Object> subl = new ArrayList<Object>();
-		DoublyLinkedSet<?> ref = this.right;
-		while (ref != null) {
-			if (ref == this) {
-				break;
-			}
-			subl.add(ref.obj);
-			ref = ref.right;
+		List<?> subl = new DoublyLinkedList(this);
+		T[] arr = (T[])Array.newInstance(a.getClass(), subl.size());//new Object[subl.size()];
+		int i=0;
+		for(Object t:subl){
+			arr[i++] = (T)t;
 		}
-		return subl.toArray(a);
+		return arr;
 	}
 
 	@Override

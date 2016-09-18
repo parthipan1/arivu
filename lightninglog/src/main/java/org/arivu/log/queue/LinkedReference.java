@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 
+import org.arivu.datastructure.DoublyLinkedList;
+
 /**
  * Circular buffer to store all the logs and consumers.
  * 
@@ -184,7 +186,7 @@ final class LinkedReference<T> {
 	 * @return
 	 */
 	Object[] toArray(final Direction direction) {
-		List<T> subl = new ArrayList<T>();
+		List<T> subl = new DoublyLinkedList<T>();
 		LinkedReference<T> ref = direction.get(this);//this.right;
 		while (ref != null) {
 			if (ref == this) {

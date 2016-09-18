@@ -5,7 +5,6 @@ package org.arivu.log.queue;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -14,6 +13,7 @@ import javax.management.InstanceAlreadyExistsException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
+import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.datastructure.Threadlocal;
 import org.arivu.datastructure.Threadlocal.Factory;
 import org.arivu.log.Appender;
@@ -150,7 +150,7 @@ public final class Producer<T> implements AutoCloseable {
 
 			@Override
 			public String[] getAppenders() {
-				Collection<String> apnames = new ArrayList<String>();
+				Collection<String> apnames = new DoublyLinkedList<String>();
 				if (appenders != null) {
 					for (Appender a : appenders)
 						apnames.add(a.getClass().getSimpleName());

@@ -3,7 +3,7 @@
  */
 package org.arivu.datastructure;
 
-import java.util.ArrayList;
+import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -12,43 +12,61 @@ import java.util.concurrent.locks.Lock;
 
 import org.arivu.utils.lock.AtomicWFLock;
 
-
 /**
  * @author P
  *
  */
-public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
+public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 	/**
 	 * 
 	 */
 	T obj;
-	
+
 	/**
 	 * 
 	 */
 	DoublyLinkedStack<T> left = this, right = this;
-	
+
 	DoublyLinkedStack<T> top = this;
-	
+
 	Counter size;
 	Lock cas;
 	CompareStrategy compareStrategy;
 	final boolean set;
+
+	
+	/**
+	 * @param col
+	 */
+	public DoublyLinkedStack(Collection<T> col) {
+		this();
+		addAll(col);
+	}
+
 	/**
 	 * 
 	 */
 	public DoublyLinkedStack() {
-		this(null,new Counter(), false, CompareStrategy.REF, new AtomicWFLock());
+		this(null, new Counter(), false, CompareStrategy.REF, new AtomicWFLock());
 	}
-	
-	DoublyLinkedStack(boolean set,CompareStrategy compareStrategy) {
-		this(null,new Counter(), set, compareStrategy, new AtomicWFLock());
-	}
+
 	/**
-	 * @param size TODO
-	 * @param set TODO
-	 * @param compareStrategy TODO
-	 * @param cas TODO
+	 * @param set
+	 * @param compareStrategy
+	 */
+	DoublyLinkedStack(boolean set, CompareStrategy compareStrategy) {
+		this(null, new Counter(), set, compareStrategy, new AtomicWFLock());
+	}
+
+	/**
+	 * @param size
+	 *            TODO
+	 * @param set
+	 *            TODO
+	 * @param compareStrategy
+	 *            TODO
+	 * @param cas
+	 *            TODO
 	 * @param obj
 	 */
 	private DoublyLinkedStack(T t, Counter size, boolean set, CompareStrategy compareStrategy, Lock cas) {
@@ -59,16 +77,17 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 		this.compareStrategy = compareStrategy;
 		this.cas = cas;
 	}
-	
-	
+
 	/**
 	 * 
 	 */
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see java.util.List#clear()
 	 */
 	@Override
-	public void clear(){
+	public void clear() {
 		Lock l = this.cas;
 		l.lock();
 		left = this;
@@ -76,20 +95,20 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 		size.set(0);
 		l.unlock();
 	}
-	
-	public int search(final Object o){
+
+	public int search(final Object o) {
 		int idx = 0;
 		DoublyLinkedStack<T> ref = this.right;
 		while (ref != null) {
 			if (ref == this) {
 				break;
 			}
-			if(o instanceof String){
-				if(CompareStrategy.EQUALS.compare(ref.obj, o)){
+			if (o instanceof String) {
+				if (CompareStrategy.EQUALS.compare(ref.obj, o)) {
 					return idx;
 				}
-			}else{
-				if(compareStrategy.compare(ref.obj, o)){
+			} else {
+				if (compareStrategy.compare(ref.obj, o)) {
 					return idx;
 				}
 			}
@@ -98,33 +117,33 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 		}
 		return -1;
 	}
-	
-//	@Override
-	public T pop(){
+
+	// @Override
+	public T pop() {
 		return poll();
 	}
-	
+
 	/**
 	 * @return T
 	 */
 	@Override
-	public T poll(){
-		if(isEmpty()){
+	public T poll() {
+		if (isEmpty()) {
 			return null;
-		}else{
+		} else {
 			DoublyLinkedStack<T> ref = top;
 			top = ref.left;
-			
-			if(ref!=this)
+
+			if (ref != this)
 				ref.remove();
-			
+
 			return ref.obj;
 		}
 	}
 
-//	@Override
+	// @Override
 	public T push(T e) {
-		if(set && contains(e) ){
+		if (set && contains(e)) {
 			return e;
 		}
 		DoublyLinkedStack<T> ref = top;
@@ -141,25 +160,25 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 
 	@Override
 	public T peek() {
-		if( isEmpty() )
+		if (isEmpty())
 			return null;
 		else
 			return top.obj;
 	}
-	
+
 	/**
 	 * @return
 	 */
-	DoublyLinkedStack<T> removeRight(){
+	DoublyLinkedStack<T> removeRight() {
 		final DoublyLinkedStack<T> r = this.right;
-		if( r == this || r == null ){
+		if (r == this || r == null) {
 			return null;
-		}else{
+		} else {
 			r.remove();
 			return r;
 		}
 	}
-	
+
 	/**
 	 * @param random
 	 * @return
@@ -178,7 +197,7 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 		}
 		return r;
 	}
-	
+
 	/**
 	 * @param l
 	 * @return
@@ -197,31 +216,31 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 		}
 		return l;
 	}
-	
-//	/**
-//	 * @param obj
-//	 * @return
-//	 */
-//	DoublyLinkedStack<T> searchObj(final Object o){
-//		DoublyLinkedStack<T> ref = this.right;
-//		while (ref != null) {
-//			if (ref == this) {
-//				break;
-//			}
-//			if(o instanceof String){
-//				if(o.equals(ref.obj)){
-//					return ref;
-//				}
-//			}else{
-//				if(ref.obj==o){
-//					return ref;
-//				}
-//			}
-//			ref = ref.right;
-//		}
-//		return null;
-//	}
-	
+
+	// /**
+	// * @param obj
+	// * @return
+	// */
+	// DoublyLinkedStack<T> searchObj(final Object o){
+	// DoublyLinkedStack<T> ref = this.right;
+	// while (ref != null) {
+	// if (ref == this) {
+	// break;
+	// }
+	// if(o instanceof String){
+	// if(o.equals(ref.obj)){
+	// return ref;
+	// }
+	// }else{
+	// if(ref.obj==o){
+	// return ref;
+	// }
+	// }
+	// ref = ref.right;
+	// }
+	// return null;
+	// }
+
 	/**
 	 * 
 	 */
@@ -238,7 +257,7 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 			tleft.right = tright;
 		if (tright != null)
 			tright.left = tleft;
-		if (size!=null) 
+		if (size != null)
 			size.decrementAndGet();
 		left = null;
 		right = null;
@@ -248,7 +267,7 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 		l.unlock();
 		return obj;
 	}
-	
+
 	@Override
 	public int size() {
 		return size.get();
@@ -257,7 +276,7 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 	@Override
 	public boolean contains(Object o) {
 		DoublyLinkedStack<T> search = searchRef(o);
-		if( search == null )
+		if (search == null)
 			return false;
 		else
 			return true;
@@ -267,7 +286,8 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 	public Iterator<T> iterator() {
 		final DoublyLinkedStack<T> ref = this;
 		return new Iterator<T>() {
-			DoublyLinkedStack<T> cursor = ref.right; 
+			DoublyLinkedStack<T> cursor = ref.right;
+
 			@Override
 			public boolean hasNext() {
 				return !(cursor == ref);
@@ -276,7 +296,7 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 			@Override
 			public T next() {
 				T t = cursor.obj;
-				cursor = cursor.right; 
+				cursor = cursor.right;
 				return t;
 			}
 		};
@@ -284,31 +304,25 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 
 	@Override
 	public Object[] toArray() {
-		List<T> subl = new ArrayList<T>();
-		DoublyLinkedStack<T> ref = this.right;
-		while (ref != null) {
-			if (ref == this) {
-				break;
-			}
-			subl.add(ref.obj);
-			ref = ref.right;
+		List<T> subl = new DoublyLinkedList<T>(this);
+		Object[] arr = new Object[subl.size()];
+		int i=0;
+		for(T t:subl){
+			arr[i++] = t;
 		}
-		return subl.toArray();
+		return arr;
 	}
 
-	@SuppressWarnings("hiding")
+	@SuppressWarnings({ "hiding", "unchecked", "rawtypes" })
 	@Override
 	public <T> T[] toArray(T[] a) {
-		List<Object> subl = new ArrayList<Object>();
-		DoublyLinkedStack<?> ref = this.right;
-		while (ref != null) {
-			if (ref == this) {
-				break;
-			}
-			subl.add(ref.obj);
-			ref = ref.right;
+		List<?> subl = new DoublyLinkedList(this);
+		T[] arr = (T[])Array.newInstance(a.getClass(), subl.size());//new Object[subl.size()];
+		int i=0;
+		for(Object t:subl){
+			arr[i++] = (T)t;
 		}
-		return subl.toArray(a);
+		return arr;
 	}
 
 	@Override
@@ -324,60 +338,60 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 		l.lock();
 		search = searchRef(o);
 		l.unlock();
-		if( search!=null ){
+		if (search != null) {
 			search.remove();
 			return true;
-		}else 
+		} else
 			return false;
 	}
 
 	@Override
 	public boolean containsAll(Collection<?> c) {
-		if( c!=null && c.size()>0 ){
+		if (c != null && c.size() > 0) {
 			boolean ret = true;
-			for( Object t:c )
+			for (Object t : c)
 				ret = ret && contains(t);
 			return ret;
-		}else{
+		} else {
 			return false;
 		}
 	}
 
-//	//@Override
-//	public boolean addAll(Collection<? extends T> c) {
-//		if( c!=null && c.size()>0 ){
-//			for( T t:c )
-//				add(t);
-//
-//			return true;
-//		}else{
-//			return false;
-//		}
-//	}
-//
-//	//@Override
-//	public boolean addAll(int index, Collection<? extends T> c) {
-//		if( c!=null && c.size()>0 ){
-//			validateIndex(index);
-//			DoublyLinkedStackInt<T> linked = getLinked(index);
-//			if( linked != null ){
-//				for( T t:c )
-//					add(t);
-//			}
-//			return true;
-//		}else{
-//			return false;
-//		}
-//	}
-//
+	// //@Override
+	// public boolean addAll(Collection<? extends T> c) {
+	// if( c!=null && c.size()>0 ){
+	// for( T t:c )
+	// add(t);
+	//
+	// return true;
+	// }else{
+	// return false;
+	// }
+	// }
+	//
+	// //@Override
+	// public boolean addAll(int index, Collection<? extends T> c) {
+	// if( c!=null && c.size()>0 ){
+	// validateIndex(index);
+	// DoublyLinkedStackInt<T> linked = getLinked(index);
+	// if( linked != null ){
+	// for( T t:c )
+	// add(t);
+	// }
+	// return true;
+	// }else{
+	// return false;
+	// }
+	// }
+	//
 	@Override
 	public boolean removeAll(Collection<?> c) {
-		if( c!=null && c.size()>0 ){
+		if (c != null && c.size() > 0) {
 			boolean ret = true;
-			for( Object t:c )
+			for (Object t : c)
 				ret = ret & remove(t);
 			return ret;
-		}else{
+		} else {
 			return false;
 		}
 	}
@@ -385,10 +399,10 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 	@Override
 	public boolean retainAll(Collection<?> c) {
 		boolean ret = false;
-		if( c!=null && c.size()>0 ){
+		if (c != null && c.size() > 0) {
 			DoublyLinkedStack<T> ref = this;
 			while (ref != null) {
-				if( !c.contains(ref.obj) ){
+				if (!c.contains(ref.obj)) {
 					DoublyLinkedStack<T> ll = ref;
 					ref = ref.left;
 					ll.remove();
@@ -403,11 +417,11 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 		return ret;
 	}
 
-//	@Override
+	// @Override
 	public T get(int index) {
 		validateIndex(index);
 		DoublyLinkedStack<T> ref = getLinked(index);
-		if(ref!=null)
+		if (ref != null)
 			return ref.obj;
 		else
 			return null;
@@ -420,7 +434,7 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 			if (ref == this) {
 				break;
 			}
-			if(idx==index){
+			if (idx == index) {
 				return ref;
 			}
 			ref = ref.right;
@@ -430,24 +444,26 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 	}
 
 	private void validateIndex(int index) {
-		if( index >= size.get() || index < 0 ) throw new ArrayIndexOutOfBoundsException(index);
+		if (index >= size.get() || index < 0)
+			throw new ArrayIndexOutOfBoundsException(index);
 	}
+
 	/**
 	 * @param obj
 	 * @return
 	 */
-	DoublyLinkedStack<T> searchRef(final Object o){
+	DoublyLinkedStack<T> searchRef(final Object o) {
 		DoublyLinkedStack<T> ref = this.right;
 		while (ref != null) {
 			if (ref == this) {
 				break;
 			}
-			if( o instanceof String ){
-				if(ref.obj!=null && CompareStrategy.EQUALS.compare(ref.obj, o)){
+			if (o instanceof String) {
+				if (ref.obj != null && CompareStrategy.EQUALS.compare(ref.obj, o)) {
 					return ref;
 				}
-			}else{
-				if(ref.obj!=null && compareStrategy.compare(ref.obj, o)){
+			} else {
+				if (ref.obj != null && compareStrategy.compare(ref.obj, o)) {
 					return ref;
 				}
 			}
@@ -455,41 +471,41 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 		}
 		return null;
 	}
-	//@Override
-//	public T set(int index, T element) {
-//		validateIndex(index);
-//		DoublyLinkedStackInt<T> ref = getLinked(index);
-//		if(ref!=null){
-//			T obj2 = ref.obj;
-//			ref.obj = element;
-//			return obj2;
-//		}else{
-//			return null;
-//		}
-//	}
-//
-//	//@Override
-//	public void add(int index, T element) {
-//		validateIndex(index);
-//		DoublyLinkedStackInt<T> ref = getLinked(index);
-//		if(ref!=null){
-//			ref.add(element);
-//		}
-//	}
-//
-//	//@Override
-//	public T remove(int index) {
-//		DoublyLinkedStackInt<T> ref = getLinked(index);
-//		if(ref!=null){
-//			T obj2 = ref.obj;
-//			ref.remove();
-//			return obj2;
-//		}else{
-//			return null;
-//		}
-//	}
+	// @Override
+	// public T set(int index, T element) {
+	// validateIndex(index);
+	// DoublyLinkedStackInt<T> ref = getLinked(index);
+	// if(ref!=null){
+	// T obj2 = ref.obj;
+	// ref.obj = element;
+	// return obj2;
+	// }else{
+	// return null;
+	// }
+	// }
+	//
+	// //@Override
+	// public void add(int index, T element) {
+	// validateIndex(index);
+	// DoublyLinkedStackInt<T> ref = getLinked(index);
+	// if(ref!=null){
+	// ref.add(element);
+	// }
+	// }
+	//
+	// //@Override
+	// public T remove(int index) {
+	// DoublyLinkedStackInt<T> ref = getLinked(index);
+	// if(ref!=null){
+	// T obj2 = ref.obj;
+	// ref.remove();
+	// return obj2;
+	// }else{
+	// return null;
+	// }
+	// }
 
-//	@Override
+	// @Override
 	public int indexOf(final Object o) {
 		int idx = 0;
 		DoublyLinkedStack<T> ref = this.right;
@@ -497,12 +513,12 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 			if (ref == this) {
 				break;
 			}
-			if(o instanceof String){
-				if(CompareStrategy.EQUALS.compare(ref.obj, o)){
+			if (o instanceof String) {
+				if (CompareStrategy.EQUALS.compare(ref.obj, o)) {
 					return idx;
 				}
-			}else{
-				if(compareStrategy.compare(ref.obj, o)){
+			} else {
+				if (compareStrategy.compare(ref.obj, o)) {
 					return idx;
 				}
 			}
@@ -512,20 +528,20 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 		return -1;
 	}
 
-	//@Override
+	// @Override
 	public int lastIndexOf(Object o) {
 		DoublyLinkedStack<T> ref = this.left;
-		int idx = size.get()-1;
+		int idx = size.get() - 1;
 		while (ref != null) {
 			if (ref == this) {
 				break;
 			}
-			if(o instanceof String){
-				if(CompareStrategy.EQUALS.compare(ref.obj, o)){
+			if (o instanceof String) {
+				if (CompareStrategy.EQUALS.compare(ref.obj, o)) {
 					return idx;
 				}
-			}else{
-				if(compareStrategy.compare(ref.obj, o)){
+			} else {
+				if (compareStrategy.compare(ref.obj, o)) {
 					return idx;
 				}
 			}
@@ -539,15 +555,15 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 	@Override
 	public boolean addAll(Collection<? extends T> list) {
 		Object[] array = list.toArray();
-		for(Object obj:array){
-			push((T)obj);
+		for (Object obj : array) {
+			push((T) obj);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean isEmpty() {
-		return this==left;
+		return this == left;
 	}
 
 	@Override
@@ -555,145 +571,145 @@ public final class DoublyLinkedStack<T> implements Iterable<T> , Queue<T>{
 		return add(e);
 	}
 
-	//@Override
-//	public ListIterator<T> listIterator() {
-//		final DoublyLinkedStackInt<T> ref = this;
-//		return new ListIterator<T>() {
-//			DoublyLinkedStackInt<T> cursor = ref; 
-//			int idx = 0;
-//			//@Override
-//			public boolean hasNext() {
-//				return !(cursor == ref.left);
-//			}
-//
-//			//@Override
-//			public T next() {
-//				T t = cursor.obj;
-//				cursor = cursor.left; 
-//				idx++;
-//				return t;
-//			}
-//
-//			//@Override
-//			public boolean hasPrevious() {
-//				return !(cursor == ref.right);
-//			}
-//
-//			//@Override
-//			public T previous() {
-//				T t = cursor.obj;
-//				cursor = cursor.right; 
-//				idx--;
-//				return t;
-//			}
-//
-//			//@Override
-//			public int nextIndex() {
-//				return idx+1;
-//			}
-//
-//			//@Override
-//			public int previousIndex() {
-//				return idx-1;
-//			}
-//
-//			//@Override
-//			public void remove() {
-//				DoublyLinkedStackInt<T> tref = cursor.right;
-//				cursor.remove();
-//				cursor = tref;
-//			}
-//
-//			//@Override
-//			public void set(T e) {
-//				cursor.obj = e;
-//			}
-//
-//			//@Override
-//			public void add(T e) {
-//				cursor.add(e);
-//			}
-//		};
-//	}
-//
-//	//@Override
-//	public ListIterator<T> listIterator(int index) {
-//		validateIndex(index);
-//		final DoublyLinkedStackInt<T> ref = getLinked(index);
-//		return new ListIterator<T>() {
-//			DoublyLinkedStackInt<T> cursor = ref; 
-//			int idx = 0;
-//			//@Override
-//			public boolean hasNext() {
-//				return !(cursor == ref.left);
-//			}
-//
-//			//@Override
-//			public T next() {
-//				T t = cursor.obj;
-//				cursor = cursor.left; 
-//				idx++;
-//				return t;
-//			}
-//
-//			//@Override
-//			public boolean hasPrevious() {
-//				return !(cursor == ref.right);
-//			}
-//
-//			//@Override
-//			public T previous() {
-//				T t = cursor.obj;
-//				cursor = cursor.right; 
-//				idx--;
-//				return t;
-//			}
-//
-//			//@Override
-//			public int nextIndex() {
-//				return idx+1;
-//			}
-//
-//			//@Override
-//			public int previousIndex() {
-//				return idx-1;
-//			}
-//
-//			//@Override
-//			public void remove() {
-//				DoublyLinkedStackInt<T> tref = cursor.right;
-//				cursor.remove();
-//				cursor = tref;
-//			}
-//
-//			//@Override
-//			public void set(T e) {
-//				cursor.obj = e;
-//			}
-//
-//			//@Override
-//			public void add(T e) {
-//				cursor.add(e);
-//			}
-//		};
-//	}
-//
-//	//@Override
-//	public List<T> subList(int fromIndex, int toIndex) {
-//		validateIndex(toIndex);
-//		validateIndex(fromIndex);
-//		List<T> subl = new ArrayList<T>();
-//		DoublyLinkedStackInt<T> ref = getLinked(fromIndex);
-//		int idx = fromIndex;
-//		while (ref != null) {
-//			subl.add(ref.obj);
-//			ref = ref.right;
-//			idx++;
-//			if (idx == toIndex) {
-//				break;
-//			}
-//		}
-//		return Collections.unmodifiableList(subl);
-//	}
+	// @Override
+	// public ListIterator<T> listIterator() {
+	// final DoublyLinkedStackInt<T> ref = this;
+	// return new ListIterator<T>() {
+	// DoublyLinkedStackInt<T> cursor = ref;
+	// int idx = 0;
+	// //@Override
+	// public boolean hasNext() {
+	// return !(cursor == ref.left);
+	// }
+	//
+	// //@Override
+	// public T next() {
+	// T t = cursor.obj;
+	// cursor = cursor.left;
+	// idx++;
+	// return t;
+	// }
+	//
+	// //@Override
+	// public boolean hasPrevious() {
+	// return !(cursor == ref.right);
+	// }
+	//
+	// //@Override
+	// public T previous() {
+	// T t = cursor.obj;
+	// cursor = cursor.right;
+	// idx--;
+	// return t;
+	// }
+	//
+	// //@Override
+	// public int nextIndex() {
+	// return idx+1;
+	// }
+	//
+	// //@Override
+	// public int previousIndex() {
+	// return idx-1;
+	// }
+	//
+	// //@Override
+	// public void remove() {
+	// DoublyLinkedStackInt<T> tref = cursor.right;
+	// cursor.remove();
+	// cursor = tref;
+	// }
+	//
+	// //@Override
+	// public void set(T e) {
+	// cursor.obj = e;
+	// }
+	//
+	// //@Override
+	// public void add(T e) {
+	// cursor.add(e);
+	// }
+	// };
+	// }
+	//
+	// //@Override
+	// public ListIterator<T> listIterator(int index) {
+	// validateIndex(index);
+	// final DoublyLinkedStackInt<T> ref = getLinked(index);
+	// return new ListIterator<T>() {
+	// DoublyLinkedStackInt<T> cursor = ref;
+	// int idx = 0;
+	// //@Override
+	// public boolean hasNext() {
+	// return !(cursor == ref.left);
+	// }
+	//
+	// //@Override
+	// public T next() {
+	// T t = cursor.obj;
+	// cursor = cursor.left;
+	// idx++;
+	// return t;
+	// }
+	//
+	// //@Override
+	// public boolean hasPrevious() {
+	// return !(cursor == ref.right);
+	// }
+	//
+	// //@Override
+	// public T previous() {
+	// T t = cursor.obj;
+	// cursor = cursor.right;
+	// idx--;
+	// return t;
+	// }
+	//
+	// //@Override
+	// public int nextIndex() {
+	// return idx+1;
+	// }
+	//
+	// //@Override
+	// public int previousIndex() {
+	// return idx-1;
+	// }
+	//
+	// //@Override
+	// public void remove() {
+	// DoublyLinkedStackInt<T> tref = cursor.right;
+	// cursor.remove();
+	// cursor = tref;
+	// }
+	//
+	// //@Override
+	// public void set(T e) {
+	// cursor.obj = e;
+	// }
+	//
+	// //@Override
+	// public void add(T e) {
+	// cursor.add(e);
+	// }
+	// };
+	// }
+	//
+	// //@Override
+	// public List<T> subList(int fromIndex, int toIndex) {
+	// validateIndex(toIndex);
+	// validateIndex(fromIndex);
+	// List<T> subl = new ArrayList<T>();
+	// DoublyLinkedStackInt<T> ref = getLinked(fromIndex);
+	// int idx = fromIndex;
+	// while (ref != null) {
+	// subl.add(ref.obj);
+	// ref = ref.right;
+	// idx++;
+	// if (idx == toIndex) {
+	// break;
+	// }
+	// }
+	// return Collections.unmodifiableList(subl);
+	// }
 
 }

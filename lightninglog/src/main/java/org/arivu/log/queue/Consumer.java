@@ -9,6 +9,7 @@ import javax.management.InstanceAlreadyExistsException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
+import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.log.Appender;
 import org.arivu.log.AsyncLogger;
 import org.arivu.log.Converter;
@@ -156,7 +157,7 @@ public final class Consumer<T> implements AutoCloseable {
 
 			@Override
 			public String[] getAppenders() {
-				Collection<String> apnames = new ArrayList<String>();
+				Collection<String> apnames = new DoublyLinkedList<String>();
 				if (appenders != null) {
 					for (Appender a : appenders)
 						apnames.add(a.getClass().getSimpleName());

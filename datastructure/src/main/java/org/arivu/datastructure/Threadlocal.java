@@ -3,7 +3,6 @@
  */
 package org.arivu.datastructure;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -118,7 +117,7 @@ public final class Threadlocal<T> {
 	public void evict() {
 		final long currentTimeMillis = System.currentTimeMillis();
 		Set<Entry<String, Ref<T>>> entrySet = threadLocal.entrySet();
-		Collection<Entry<String, Ref<T>>> list = new ArrayList<Entry<String, Ref<T>>>();
+		Collection<Entry<String, Ref<T>>> list = new DoublyLinkedList<Entry<String, Ref<T>>>();
 		for (Entry<String, Ref<T>> e : entrySet) {
 			Ref<T> value = e.getValue();
 			if (value.isExpired(currentTimeMillis,threshold)) {
@@ -136,7 +135,7 @@ public final class Threadlocal<T> {
 	}
 	
 	public Collection<T> getAll(){
-		Collection<T> all = new ArrayList<T>();
+		Collection<T> all = new DoublyLinkedList<T>();
 		for( Ref<T> ref:threadLocal.values() ){
 			if( ref.t != null )
 				all.add(ref.t);
