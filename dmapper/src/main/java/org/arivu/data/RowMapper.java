@@ -4,7 +4,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
+//import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.arivu.datastructure.Amap;
+import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.utils.NullCheck;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -107,8 +108,8 @@ public final class RowMapper<T extends Annotation, R> {
 			Map<Field, Method> map = map2.get(returnClass);
 			final Map<Field, Method> methodToFieldMap = ((map == null) ? new Amap<Field, Method>() : map);
 			if (NullCheck.isNullOrEmpty(methodToFieldMap)) {
-				final Collection<Field> declaredFields = new ArrayList<Field>(Arrays.asList(returnClass.getDeclaredFields()));
-				final Collection<Method> declaredMethods = new ArrayList<Method>(Arrays.asList(returnClass.getDeclaredMethods()));
+				final Collection<Field> declaredFields = new DoublyLinkedList<Field>(Arrays.asList(returnClass.getDeclaredFields()));
+				final Collection<Method> declaredMethods = new DoublyLinkedList<Method>(Arrays.asList(returnClass.getDeclaredMethods()));
 				for (final Field field : declaredFields) {
 					if (java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
 						logger.debug(getClass().getName(), "field:" + field.getName() + " static field ignored!");
@@ -141,8 +142,8 @@ public final class RowMapper<T extends Annotation, R> {
 				}
 			} 
 		}else{
-			final Collection<Field> declaredFields = new ArrayList<Field>(Arrays.asList(returnClass.getDeclaredFields()));
-			final Collection<Method> declaredMethods = new ArrayList<Method>(Arrays.asList(returnClass.getDeclaredMethods()));
+			final Collection<Field> declaredFields = new DoublyLinkedList<Field>(Arrays.asList(returnClass.getDeclaredFields()));
+			final Collection<Method> declaredMethods = new DoublyLinkedList<Method>(Arrays.asList(returnClass.getDeclaredMethods()));
 			for (final Field field : declaredFields) {
 				final T annotation = field.getAnnotation(annotationClass);
 				if (annotation != null) {
@@ -240,8 +241,8 @@ public final class RowMapper<T extends Annotation, R> {
 			Map<Field, Method> map = map2.get(klass);
 			final Map<Field, Method> methodToFieldMap = ((map == null) ? new Amap<Field, Method>() : map);
 			if (NullCheck.isNullOrEmpty(methodToFieldMap)) {
-				final Collection<Field> declaredFields = new ArrayList<Field>(Arrays.asList(klass.getDeclaredFields()));
-				final Collection<Method> declaredMethods = new ArrayList<Method>(Arrays.asList(klass.getDeclaredMethods()));
+				final Collection<Field> declaredFields = new DoublyLinkedList<Field>(Arrays.asList(klass.getDeclaredFields()));
+				final Collection<Method> declaredMethods = new DoublyLinkedList<Method>(Arrays.asList(klass.getDeclaredMethods()));
 				for (final Field field : declaredFields) {
 					if (java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
 						logger.debug(getClass().getName(), "field:" + field.getName() + " static field ignored!");
@@ -272,8 +273,8 @@ public final class RowMapper<T extends Annotation, R> {
 				}
 			} 
 		}else{
-			final Collection<Field> declaredFields = new ArrayList<Field>(Arrays.asList(klass.getDeclaredFields()));
-			final Collection<Method> declaredMethods = new ArrayList<Method>(Arrays.asList(klass.getDeclaredMethods()));
+			final Collection<Field> declaredFields = new DoublyLinkedList<Field>(Arrays.asList(klass.getDeclaredFields()));
+			final Collection<Method> declaredMethods = new DoublyLinkedList<Method>(Arrays.asList(klass.getDeclaredMethods()));
 			for (final Field field : declaredFields) {
 				if (java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
 					logger.debug(getClass().getName(), "field:" + field.getName() + " static field ignored!");

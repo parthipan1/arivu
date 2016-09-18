@@ -7,7 +7,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -17,6 +16,7 @@ import java.util.Map;
 import javax.sql.DataSource;
 
 import org.arivu.datastructure.Amap;
+import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.utils.NullCheck;
 import org.arivu.utils.TimeTracker;
 import org.slf4j.Logger;
@@ -57,7 +57,7 @@ public class CallableQuery {
 		final TimeTracker tt = new TimeTracker("extractData");
 
 		final ResultSetMetaData metaData = queryResultSet.getMetaData();
-		final Collection<Map<String, Object>> resultSet = new ArrayList<Map<String, Object>>();
+		final Collection<Map<String, Object>> resultSet = new DoublyLinkedList<Map<String, Object>>();
 		final int columnCount = metaData.getColumnCount();
 		tt.nextTrack("metadata");
 		int rowcnt = 0;

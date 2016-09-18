@@ -4,7 +4,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -13,6 +12,7 @@ import java.util.Map;
 import javax.sql.DataSource;
 
 import org.arivu.datastructure.Amap;
+import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.utils.TimeTracker;
 
 /**
@@ -48,7 +48,7 @@ public class InsertQuery extends CallableQuery {
 				tt.nextTrack("setval");
 				int executeUpdate = preparedStatement.executeUpdate();
 				tt.nextTrack("query");
-				Collection<Map<String, Object>> retList = new ArrayList<Map<String, Object>>();
+				Collection<Map<String, Object>> retList = new DoublyLinkedList<Map<String, Object>>();
 				Map<String, Object> ret = new Amap<String, Object>();
 				ret.put("rows", executeUpdate);
 				retList.add(Collections.unmodifiableMap(ret));
