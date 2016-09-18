@@ -3,7 +3,7 @@
  */
 package org.arivu.datastructure;
 
-import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -313,16 +313,17 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 		return arr;
 	}
 
-	@SuppressWarnings({ "hiding", "unchecked", "rawtypes" })
+	@SuppressWarnings({ "hiding", "unchecked" })
 	@Override
 	public <T> T[] toArray(T[] a) {
-		List<?> subl = new DoublyLinkedList(this);
-		T[] arr = (T[])Array.newInstance(a.getClass(), subl.size());//new Object[subl.size()];
-		int i=0;
-		for(Object t:subl){
-			arr[i++] = (T)t;
-		}
-		return arr;
+		Object[] elementData = toArray();
+		if (a.length < size())
+			return (T[]) Arrays.copyOf(elementData, size(), a.getClass());
+		
+		System.arraycopy(elementData, 0, a, 0, size());
+		if (a.length > size())
+			a[size()] = null;
+		return a;
 	}
 
 	@Override
