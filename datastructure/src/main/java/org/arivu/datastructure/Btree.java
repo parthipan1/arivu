@@ -178,8 +178,8 @@ public class Btree implements Serializable {
 
 	final Node root;
 	private final int base;
-	private final int depth;
-	private final long baseValue;
+	private final int height;
+	private final long baseMask;
 	
 	/**
 	 * @param order
@@ -206,22 +206,21 @@ public class Btree implements Serializable {
 			throw new IllegalArgumentException("Invalid basePower "+basePower+" (between 1-4) specified!");
 		}
 		this.base = (int) Math.pow(2, basePower);
-		this.depth = 32/base;
-		this.baseValue = ((long) Math.pow(2, base) - 1);
-		this.root = new Node((int)this.baseValue+1, lock, false, compareStrategy);
+		this.height = 32/base;
+		this.baseMask = ((long) Math.pow(2, base) - 1);
+		this.root = new Node((int)this.baseMask+1, lock, false, compareStrategy);
 	}
 
 	private int[] getPath(Object obj) {
-		int hashCode2 = obj.hashCode();
-		return getPath(hashCode2);
+		return getPath(obj.hashCode());
 	}
 
 	private int[] getPath(final int hashCode2) {
-		int[] ret = new int[depth];
+		int[] ret = new int[height];
 		long hashCode = (long) hashCode2 + MAX_RANGE;
 
-		for (int i = depth-1; i >= 0; i--) {
-			ret[i] = (int) (hashCode & baseValue);
+		for (int i = height-1; i >= 0; i--) {
+			ret[i] = (int) (hashCode & baseMask);
 
 			if (i > 0)
 				hashCode = hashCode >>> base;
@@ -231,6 +230,10 @@ public class Btree implements Serializable {
 		return ret;
 	}
 	
+	public int getHeight() {
+		return height;
+	}
+
 	public int size() {
 		return root.counter.get();
 	}

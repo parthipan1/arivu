@@ -7,6 +7,9 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * @author P
@@ -22,10 +25,10 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 
 	V nullValue;
 	volatile int nc = 0;
-	
+
 	@Override
 	public int size() {
-		return binaryTree.size()+nc;
+		return binaryTree.size() + nc;
 	}
 
 	@Override
@@ -35,7 +38,7 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 
 	@SuppressWarnings("unchecked")
 	AnEntry<K, V> getKeyWrap(Object key) {
-		return new AnEntry<K, V>((K) key, null);
+		return new AnEntry<K, V>((K) key, null, null);
 	}
 
 	@Override
@@ -47,8 +50,8 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 	public boolean containsValue(Object value) {
 		for (Object e : binaryTree.getAll()) {
 			@SuppressWarnings("unchecked")
-			Entry<K, V> e1 = (Entry<K, V>)e; 
-			if( value!=null &&  value.equals(e1.getValue()) )
+			Entry<K, V> e1 = (Entry<K, V>) e;
+			if (value != null && value.equals(e1.getValue()))
 				return true;
 		}
 		return false;
@@ -57,9 +60,10 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 	@SuppressWarnings("unchecked")
 	@Override
 	public V get(Object key) {
-		
-		if(key==null) return nullValue;
-		
+
+		if (key == null)
+			return nullValue;
+
 		final Object object = binaryTree.get(getKeyWrap(key));
 		if (object != null) {
 			java.util.Map.Entry<K, V> e = (java.util.Map.Entry<K, V>) object;
@@ -70,22 +74,25 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 	}
 
 	@Override
-	public V put(K key, V value) {
-		
-		if(key==null) {
+	public V put(final K key, final V value) {
+
+		if (key == null) {
 			binaryTree.root.cas.lock();
-			if(value==null){
-				nc=0;
+			if (value == null) {
+				nc = 0;
 				this.nullValue = value;
-			}else{
-				nc=1;
+			} else {
+				nc = 1;
 				this.nullValue = value;
 			}
 			binaryTree.root.cas.unlock();
-			return nullValue;	
+			return nullValue;
+		} else if (value == null) {
+			binaryTree.remove(getKeyWrap(key));
+			return value;
 		}
-		
-		AnEntry<K, V> e = new AnEntry<K, V>(key, value);
+
+		AnEntry<K, V> e = new AnEntry<K, V>(key, value, binaryTree);
 		Object object = binaryTree.get(e);
 		if (object != null) {
 			@SuppressWarnings("unchecked")
@@ -101,19 +108,19 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 	@SuppressWarnings("unchecked")
 	@Override
 	public V remove(Object key) {
-		if(key==null) {
-			if(nullValue==null){
+		if (key == null) {
+			if (nullValue == null) {
 				return null;
-			}else{
+			} else {
 				binaryTree.root.cas.lock();
-				nc=0;
+				nc = 0;
 				V value = this.nullValue;
 				this.nullValue = null;
 				binaryTree.root.cas.unlock();
 				return value;
 			}
 		}
-		
+
 		final Object object = binaryTree.remove(getKeyWrap(key));
 		if (object != null) {
 			java.util.Map.Entry<K, V> e = (java.util.Map.Entry<K, V>) object;
@@ -136,15 +143,36 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 		}
 	}
 
+	Future<?> submitClear;
 	@Override
 	public void clear() {
 		binaryTree.root.cas.lock();
-		if( nc == 1 ){
-			nc=0;
+		if (nc == 1) {
+			nc = 0;
 			nullValue = null;
 		}
+		final Collection<Object> all = binaryTree.getAll();
 		binaryTree.clear();
 		binaryTree.root.cas.unlock();
+		final ExecutorService exe = Executors.newFixedThreadPool(1);
+		submitClear = exe.submit(new Runnable() {
+
+			@Override
+			public void run() {
+				try {
+					for (Object e : all) {
+						AnEntry<?, ?> e1 = (AnEntry<?, ?>) e;
+						e1.tree = null;
+					}
+				} finally {
+					if (submitClear != null) {
+						submitClear.cancel(true);
+						submitClear = null;
+					}
+					exe.shutdownNow();
+				}
+			}
+		});
 	}
 
 	@Override
@@ -152,7 +180,7 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 		DoublyLinkedSet<K> keys = new DoublyLinkedSet<K>();
 		for (Object e : binaryTree.getAll()) {
 			@SuppressWarnings("unchecked")
-			Entry<K, V> e1 = (Entry<K, V>)e; 
+			Entry<K, V> e1 = (Entry<K, V>) e;
 			keys.add(e1.getKey());
 		}
 		return keys;
@@ -163,7 +191,7 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 		DoublyLinkedList<V> keys = new DoublyLinkedList<V>();
 		for (Object e : binaryTree.getAll()) {
 			@SuppressWarnings("unchecked")
-			Entry<K, V> e1 = (Entry<K, V>)e; 
+			Entry<K, V> e1 = (Entry<K, V>) e;
 			keys.add(e1.getValue());
 		}
 		return keys;
@@ -174,7 +202,7 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 		DoublyLinkedSet<Entry<K, V>> entries = new DoublyLinkedSet<Entry<K, V>>();
 		for (Object e : binaryTree.getAll()) {
 			@SuppressWarnings("unchecked")
-			Entry<K, V> e1 = (Entry<K, V>)e; 
+			Entry<K, V> e1 = (Entry<K, V>) e;
 			entries.add(e1);
 		}
 		return entries;
@@ -189,11 +217,13 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 
 		final K k;
 		V v;
+		Btree tree;
 
-		AnEntry(K k, V v) {
+		AnEntry(K k, V v, Btree tree) {
 			super();
 			this.k = k;
 			this.v = v;
+			this.tree = tree;
 		}
 
 		@Override
@@ -210,6 +240,10 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 		public V setValue(V value) {
 			V v1 = this.v;
 			this.v = value;
+			if (value == null && tree != null) {
+				tree.remove(AnEntry.this);
+				tree=null;
+			}
 			return v1;
 		}
 
