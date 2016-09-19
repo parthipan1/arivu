@@ -5,6 +5,7 @@ package org.arivu.datastructure;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.locks.Lock;
 
 import org.arivu.utils.lock.AtomicWFReentrantLock;
@@ -39,19 +40,20 @@ public class Btree implements Serializable {
 		final CompareStrategy compareStrategy;
 		volatile int idx = 0;
 		final Counter counter = new Counter();
-
+		Node parent;
 		/**
 		 * @param order
 		 * @param leaf
 		 *            TODO
+		 * @param parent TODO
 		 */
-		public Node(int order, Lock cas, boolean leaf, CompareStrategy compareStrategy) {
+		public Node(int order, Lock cas, boolean leaf, CompareStrategy compareStrategy, Node parent) {
 			super();
 			this.compareStrategy = compareStrategy;
 			this.leaf = leaf;
 			this.order = order;
 			this.cas = cas;
-
+			this.parent = parent;
 			if (leaf) {
 				this.refs = new Object[order];
 				this.nodes = null;
@@ -63,13 +65,26 @@ public class Btree implements Serializable {
 
 		void clear() {
 			cas.lock();
-			for (int i = 0; i < this.nodes.length; i++)
-				this.nodes[i] = null;
-
+			resetNodes();
 			counter.set(0);
 			cas.lock();
 		}
 
+		private void resetNodes() {
+			for (int i = 0; i < this.nodes.length; i++){
+				if(this.nodes[i]!=null){
+					this.nodes[i].parent = null;
+					this.nodes[i] = null;
+				}
+			}
+		}
+		
+		private void resetLeaves() {
+			for (int i = 0; i < this.refs.length; i++){
+				this.refs[i] = null;
+			}
+		}
+		
 		@SuppressWarnings("unchecked")
 		boolean add(final Object obj, final int level, final int[] arr) {
 			boolean add = false;
@@ -84,7 +99,7 @@ public class Btree implements Serializable {
 			} else {
 				Node n = nodes[arr[level]];
 				if (n == null) {
-					n = new Node(order, cas, level == arr.length - 2, compareStrategy);
+					n = new Node(order, cas, level == arr.length - 2, compareStrategy, Node.this);
 					nodes[arr[level]] = n;
 				}
 				add = n.add(obj, level + 1, arr);
@@ -121,7 +136,7 @@ public class Btree implements Serializable {
 			}
 		}
 
-		Object remove(final Object obj, final int level, final int[] arr) {
+		Object remove(final Object obj, final int level, final int[] arr,List<Node> rns) {
 			if (this.leaf) {
 				@SuppressWarnings("unchecked")
 				final DoublyLinkedList<Object> ref = (DoublyLinkedList<Object>) refs[arr[level]];
@@ -135,9 +150,18 @@ public class Btree implements Serializable {
 					return null;
 				} else {
 					final Object removeRef = search.removeRef();
-					this.counter.decrementAndGet();
-					if (ref.size() == 0) {
-						refs[arr[level]] = null;
+					int cnt = this.counter.decrementAndGet();
+					if(cnt==0){
+						if(level>0 && parent!=null){
+							rns.add(parent.nodes[arr[level-1]]);
+							parent.nodes[arr[level-1]] = null;
+						}else{
+							resetLeaves();
+						}
+					}else{
+						if (ref.size() == 0) {
+							refs[arr[level]] = null;
+						}
 					}
 					cas.unlock();
 					return removeRef;
@@ -148,9 +172,15 @@ public class Btree implements Serializable {
 					return null;
 				}
 				cas.lock();
-				Object remove = n.remove(obj, level + 1, arr);
+				Object remove = n.remove(obj, level + 1, arr, rns);
 				if (remove != null && this.counter.decrementAndGet() == 0) {
-					nodes[arr[level]] = null;
+					if(level>0 && parent!=null){
+						rns.add(parent.nodes[arr[level-1]]);
+						parent.nodes[arr[level-1]] = null;
+					}else{
+						resetNodes();
+					}
+//					nodes[arr[level]] = null;
 				}
 				cas.unlock();
 				return remove;
@@ -208,7 +238,7 @@ public class Btree implements Serializable {
 		this.base = (int) Math.pow(2, basePower);
 		this.height = 32/base;
 		this.baseMask = ((long) Math.pow(2, base) - 1);
-		this.root = new Node((int)this.baseMask+1, lock, false, compareStrategy);
+		this.root = new Node((int)this.baseMask+1, lock, false, compareStrategy, null);
 	}
 
 	private int[] getPath(Object obj) {
@@ -246,7 +276,12 @@ public class Btree implements Serializable {
 
 	public Object remove(final Object obj) {
 		// System.out.println(this+" bt remove "+obj);
-		return root.remove(obj, 0, getPath(obj));
+		List<Node> rns = new DoublyLinkedList<Node>();
+		Object remove = root.remove(obj, 0, getPath(obj), rns);
+		for(Node n:rns)
+			n.parent = null;
+		rns.clear();
+		return remove;
 	}
 
 	public Object get(final Object obj) {
