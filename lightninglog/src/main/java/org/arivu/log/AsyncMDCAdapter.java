@@ -37,7 +37,11 @@ public class AsyncMDCAdapter implements MDCAdapter {
 	 */
 	@Override
 	public String get(String key) {
-		return mdc.get(null).get(key);
+		Map<String, String> map = mdc.get();
+		
+		if(map!=null)
+			return map.get(key);
+		else return null;
 	}
 
 	/* (non-Javadoc)
@@ -45,7 +49,10 @@ public class AsyncMDCAdapter implements MDCAdapter {
 	 */
 	@Override
 	public void remove(String key) {
-		mdc.get(null).remove(key);
+		Map<String, String> map = mdc.get();
+		
+		if(map!=null)
+			map.remove(key);
 	}
 
 	/* (non-Javadoc)
@@ -53,7 +60,10 @@ public class AsyncMDCAdapter implements MDCAdapter {
 	 */
 	@Override
 	public void clear() {
-		mdc.get(null).clear();
+		Map<String, String> map = mdc.get();
+		
+		if(map!=null)
+			map.clear();
 	}
 
 	/* (non-Javadoc)
@@ -61,7 +71,7 @@ public class AsyncMDCAdapter implements MDCAdapter {
 	 */
 	@Override
 	public Map<String, String> getCopyOfContextMap() {
-		return Collections.unmodifiableMap(mdc.get(null)) ;
+		return Collections.unmodifiableMap(mdc.get()) ;
 	}
 
 	/* (non-Javadoc)
@@ -69,9 +79,11 @@ public class AsyncMDCAdapter implements MDCAdapter {
 	 */
 	@Override
 	public void setContextMap(Map<String, String> contextMap) {
-		
-		if( contextMap!=null )
-			mdc.get(null).putAll(contextMap);
+		if( contextMap!=null ){
+			Map<String, String> map = mdc.get();
+			if(map!=null)
+				map.putAll(contextMap);
+		}
 	}
 
 }

@@ -33,12 +33,12 @@ public class Btree implements Serializable {
 	 */
 	static final class Node {
 		final int order;
-		final Lock cas;
+		Lock cas;
 		final boolean leaf;
 		final Object[] refs;
 		final Node[] nodes;
-		final CompareStrategy compareStrategy;
-		volatile int idx = 0;
+		CompareStrategy compareStrategy;
+//		volatile int idx = 0;
 		final Counter counter = new Counter();
 		Node parent;
 		/**
@@ -73,8 +73,11 @@ public class Btree implements Serializable {
 		private void resetNodes() {
 			for (int i = 0; i < this.nodes.length; i++){
 				if(this.nodes[i]!=null){
-					this.nodes[i].parent = null;
+					Node n = this.nodes[i];
 					this.nodes[i] = null;
+					n.parent = null;
+					n.cas = null;
+					n.compareStrategy = null;
 				}
 			}
 		}
@@ -269,22 +272,28 @@ public class Btree implements Serializable {
 	}
 
 	public void add(final Object obj) {
+		if( obj== null ) return;
 		int[] path = getPath(obj);
 		root.add(obj, 0, path);
 		// System.out.println(this+" bt add "+obj+" path "+con(path));
 	}
 
 	public Object remove(final Object obj) {
+		if( obj== null ) return null;
 		// System.out.println(this+" bt remove "+obj);
 		List<Node> rns = new DoublyLinkedList<Node>();
 		Object remove = root.remove(obj, 0, getPath(obj), rns);
-		for(Node n:rns)
+		for(Node n:rns){
 			n.parent = null;
+			n.cas = null;
+			n.compareStrategy = null;
+		}
 		rns.clear();
 		return remove;
 	}
 
 	public Object get(final Object obj) {
+		if( obj== null ) return null;
 		int[] path = getPath(obj);
 		Object find = root.find(obj, 0, path);
 		// System.out.println(this+" bt search "+obj+" find "+find+" path

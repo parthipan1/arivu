@@ -14,7 +14,7 @@ import org.arivu.datastructure.primitive.DoublyLinkedSetInt;
  */
 public final class Tries {
 
-	static class Node {
+	static final class Node {
 		final Node parent;
 		final char c;
 		boolean isLast = false;

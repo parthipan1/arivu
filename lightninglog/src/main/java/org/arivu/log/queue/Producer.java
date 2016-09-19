@@ -122,12 +122,12 @@ public final class Producer<T> implements AutoCloseable {
 
 			@Override
 			public int getBatchSize() {
-				throw new RuntimeException("Cannot perform this funcion on Producer!");
+				return Consumer.BATCH_SIZE;
 			}
 
 			@Override
 			public void setBatchSize(int size) {
-				throw new RuntimeException("Cannot perform this funcion on Producer!");
+				Consumer.BATCH_SIZE = size;
 			}
 
 			@Override

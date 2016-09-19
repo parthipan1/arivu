@@ -199,7 +199,7 @@ public final class LruCache<K,V> {
 	 *
 	 * @param <T>
 	 */
-	private static class Tracker<T> {
+	private static final class Tracker<T> {
 		T t;
 		long tracker = 0;
 

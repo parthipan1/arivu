@@ -20,7 +20,7 @@ public final class Graph implements Serializable {
 	 * @author P
 	 *
 	 */
-	public static class CyclicException extends Exception {
+	public static final class CyclicException extends Exception {
 
 		/**
 		 * 
@@ -120,7 +120,7 @@ public final class Graph implements Serializable {
 	 *
 	 * @param <T>
 	 */
-	private static class Node<T extends Object> implements Serializable {
+	private static final class Node<T extends Object> implements Serializable {
 		/**
 		 * 
 		 */

@@ -2,7 +2,6 @@ package org.arivu.log.queue;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import java.util.ArrayList;
 import java.util.Collection;
 
 import javax.management.InstanceAlreadyExistsException;
@@ -63,6 +62,8 @@ public final class Consumer<T> implements AutoCloseable {
 	 * 
 	 */
 	volatile long lasttime = System.currentTimeMillis();
+	
+	volatile int batchSize = BATCH_SIZE;
 
 	/**
 	 * @param converter
@@ -134,12 +135,12 @@ public final class Consumer<T> implements AutoCloseable {
 
 			@Override
 			public int getBatchSize() {
-				return Consumer.BATCH_SIZE;
+				return that.batchSize;
 			}
 
 			@Override
 			public void setBatchSize(int size) {
-				Consumer.BATCH_SIZE = size;
+				that.batchSize = size;
 			}
 
 			@Override
@@ -213,7 +214,7 @@ public final class Consumer<T> implements AutoCloseable {
 			if (obj != null) {
 				sb.append(obj).append(AppenderProperties.separator);
 				++limit;
-				if (limit == BATCH_SIZE) {
+				if (limit == batchSize) {
 					write(sb.toString());
 					limit = 0;
 					sb = new StringBuffer();

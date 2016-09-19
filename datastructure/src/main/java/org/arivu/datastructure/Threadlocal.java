@@ -33,6 +33,14 @@ public final class Threadlocal<T> {
 			close();
 		}
 	});
+	private final Runnable triggerRunnable = new Runnable() {
+		
+		@Override
+		public void run() {
+			evict();
+		}
+	};
+	
 	public Threadlocal(Factory<T> factory) {
 		this(factory,THRESHOLD_TIME);
 	}
@@ -41,13 +49,7 @@ public final class Threadlocal<T> {
 		super();
 		this.factory = factory;
 		this.threshold = threshold;
-		this.trigger = new Trigger(new Runnable() {
-
-			@Override
-			public void run() {
-				evict();
-			}
-		}, threshold);
+		this.trigger = new Trigger(triggerRunnable, threshold);
 		Runtime.getRuntime().addShutdownHook(hook);
 	}
 	
@@ -170,7 +172,7 @@ public final class Threadlocal<T> {
 		}
 	}
 
-	private static class Ref<T> {
+	private static final class Ref<T> {
 		private final T t;
 		volatile long time = System.currentTimeMillis();
 

@@ -208,7 +208,7 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 		return entries;
 	}
 
-	static class AnEntry<K, V> implements Entry<K, V>, Serializable {
+	static final class AnEntry<K, V> implements Entry<K, V>, Serializable {
 
 		/**
 		 * 

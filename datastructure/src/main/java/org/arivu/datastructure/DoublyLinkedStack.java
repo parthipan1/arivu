@@ -187,12 +187,17 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 		if (r != null) {
 			Lock l = this.cas;
 			l.lock();
-			size.incrementAndGet();
+			if (size!=null) {
+				size.incrementAndGet();
+			}
 			r.left = this;
 			DoublyLinkedStack<T> tr = right;
 			this.right = r;
 			r.right = tr;
-			tr.left = r;
+			
+			if(tr!=null)
+				tr.left = r;
+			
 			l.unlock();
 		}
 		return r;
