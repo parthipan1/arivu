@@ -15,7 +15,7 @@ import org.arivu.utils.lock.NoLock;
  * @author P
  *
  */
-public class Btree implements Serializable {
+public final class Btree implements Serializable {
 
 	/**
 	 * 
