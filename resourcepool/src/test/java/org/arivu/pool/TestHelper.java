@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
-import org.arivu.log.AsyncLogger;
+import org.arivu.log.LightningLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +80,7 @@ public class TestHelper {
 	public void tearDown() throws Exception {
 		System.out.println(
 				"No of Resources Created :: " + noOfCreate + " time millisecs " + (System.currentTimeMillis() - s));
-		AsyncLogger.flush();
+		LightningLogger.flush();
 	}
 
 	void testPool(final Pool<Resource> pool, final int verifyCnt, boolean absoluteWait) throws InterruptedException, Exception {

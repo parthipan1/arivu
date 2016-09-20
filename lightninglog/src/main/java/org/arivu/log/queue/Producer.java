@@ -17,7 +17,7 @@ import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.datastructure.Threadlocal;
 import org.arivu.datastructure.Threadlocal.Factory;
 import org.arivu.log.Appender;
-import org.arivu.log.AsyncLogger;
+import org.arivu.log.LightningLogger;
 import org.arivu.log.Converter;
 import org.arivu.log.LogMXBean;
 import org.arivu.log.appender.Appenders;
@@ -140,7 +140,7 @@ public final class Producer<T> implements AutoCloseable {
 						throw new RuntimeException(e);
 					}
 				} else
-					AsyncLogger.addCustomAppender(appenders, customAppender);
+					LightningLogger.addCustomAppender(appenders, customAppender);
 			}
 
 			@Override

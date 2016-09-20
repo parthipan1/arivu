@@ -14,7 +14,7 @@ import org.slf4j.spi.MDCAdapter;
  * @author P
  *
  */
-public class AsyncMDCAdapter implements MDCAdapter {
+public class LightningMDCAdapter implements MDCAdapter {
 
 	final Threadlocal<Map<String, String>> mdc = new Threadlocal<Map<String, String>>(new Threadlocal.Factory<Map<String, String>>() {
 

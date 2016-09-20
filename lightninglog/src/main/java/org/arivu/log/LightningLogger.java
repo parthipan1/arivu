@@ -43,12 +43,12 @@ import org.slf4j.helpers.MessageFormatter;
  * @author P
  *
  */
-public final class AsyncLogger implements Logger {
+public final class LightningLogger implements Logger {
 
 	private final String name;
 	private transient String shortLogName = null;
 
-	public AsyncLogger(String name) {
+	public LightningLogger(String name) {
 		super();
 		this.name = name;
 		this.currrentLogLevel = getCurrrentLogLevel(name);
@@ -876,7 +876,7 @@ public final class AsyncLogger implements Logger {
 	private static void registerMXBean(final int cnt) {
 		try {
 			MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
-			beanNameStr = "org.arivu.log:type=" + AsyncLogger.class.getSimpleName()+String.valueOf(cnt);
+			beanNameStr = "org.arivu.log:type=" + LightningLogger.class.getSimpleName()+String.valueOf(cnt);
 			mbs.registerMBean(getLoggerMXBean(), new ObjectName(beanNameStr));
 		} catch (InstanceAlreadyExistsException e) {
 //			e.printStackTrace();

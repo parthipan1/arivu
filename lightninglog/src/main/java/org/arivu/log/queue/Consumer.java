@@ -10,7 +10,7 @@ import javax.management.ObjectName;
 
 import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.log.Appender;
-import org.arivu.log.AsyncLogger;
+import org.arivu.log.LightningLogger;
 import org.arivu.log.Converter;
 import org.arivu.log.LogMXBean;
 import org.arivu.log.appender.AppenderProperties;
@@ -153,7 +153,7 @@ public final class Consumer<T> implements AutoCloseable {
 						throw new RuntimeException(e);
 					}
 				} else
-					AsyncLogger.addCustomAppender(appenders, customAppender);
+					LightningLogger.addCustomAppender(appenders, customAppender);
 			}
 
 			@Override
