@@ -165,9 +165,12 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 		}
 		Lock l = this.cas;
 		l.lock();
-		DoublyLinkedStack<T> ref = top;
 		DoublyLinkedStack<T> ref1 = new DoublyLinkedStack<T>(e, size, false, compareStrategy, cas, binaryTree);
-		top.addRight(ref1, l);
+		DoublyLinkedStack<T> ref = top;
+		do{
+		ref = top;
+		}while(ref.addRight(ref1, l)==null);
+		
 		top = ref1;
 		l.unlock();
 		return ref.obj;
@@ -206,7 +209,8 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 	 */
 	DoublyLinkedStack<T> addRight(final DoublyLinkedStack<T> r, Lock l) {
 		if (r != null) {
-			Lock ll = this.cas;
+			Lock ll = this.cas;//l;//
+			if(ll==null) return null;
 			ll.lock();
 			this.binaryTree.add(new Ref(r));
 			if (size!=null) {
