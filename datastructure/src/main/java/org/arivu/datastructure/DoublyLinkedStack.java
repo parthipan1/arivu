@@ -167,7 +167,7 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 		l.lock();
 		DoublyLinkedStack<T> ref = top;
 		DoublyLinkedStack<T> ref1 = new DoublyLinkedStack<T>(e, size, false, compareStrategy, cas, binaryTree);
-		top.addRight(ref1);
+		top.addRight(ref1, l);
 		top = ref1;
 		l.unlock();
 		return ref.obj;
@@ -186,27 +186,28 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 			return top.obj;
 	}
 
-	/**
-	 * @return
-	 */
-	DoublyLinkedStack<T> removeRight() {
-		final DoublyLinkedStack<T> r = this.right;
-		if (r == this || r == null) {
-			return null;
-		} else {
-			r.remove();
-			return r;
-		}
-	}
+//	/**
+//	 * @return
+//	 */
+//	DoublyLinkedStack<T> removeRight() {
+//		final DoublyLinkedStack<T> r = this.right;
+//		if (r == this || r == null) {
+//			return null;
+//		} else {
+//			r.remove();
+//			return r;
+//		}
+//	}
 
 	/**
+	 * @param l TODO
 	 * @param random
 	 * @return
 	 */
-	DoublyLinkedStack<T> addRight(final DoublyLinkedStack<T> r) {
+	DoublyLinkedStack<T> addRight(final DoublyLinkedStack<T> r, Lock l) {
 		if (r != null) {
-			Lock l = this.cas;
-			l.lock();
+			Lock ll = this.cas;
+			ll.lock();
 			this.binaryTree.add(new Ref(r));
 			if (size!=null) {
 				size.incrementAndGet();
@@ -219,7 +220,7 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 			if(tr!=null)
 				tr.left = r;
 			
-			l.unlock();
+			ll.unlock();
 		}
 		return r;
 	}
@@ -278,6 +279,7 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 	private T removeRef() {
 		Lock l = this.cas;
 		l.lock();
+		this.binaryTree.remove(new Ref(obj));
 		DoublyLinkedStack<T> tleft = left, tright = right;
 		if (tleft != null)
 			tleft.right = tright;
@@ -290,7 +292,6 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 		size = null;
 		cas = null;
 		compareStrategy = null;
-		this.binaryTree.remove(new Ref(obj));
 		l.unlock();
 		return obj;
 	}

@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.After;
@@ -520,9 +521,10 @@ public class DoublyLinkedSetTest {
 	}
 	
 	/**
+	 * @throws InterruptedException 
 	 */
 	@Test
-	public void testRunParallel() throws IOException {
+	public void testRunParallel() throws IOException, InterruptedException {
 		final DoublyLinkedSet<String> set = new DoublyLinkedSet<String>();//new CopyOnWriteArraySet<String>();//
 		
 		final int reqPerThread = 100;
@@ -568,6 +570,11 @@ public class DoublyLinkedSetTest {
 			end.await();
 		} catch (InterruptedException e1) {
 			e1.printStackTrace();
+		}
+		exe.shutdownNow();
+		if (!exe.awaitTermination(100, TimeUnit.MICROSECONDS)) {
+			String msg = "Still waiting after 100ms: calling System.exit(0)...";
+			System.err.println(msg);
 		}
 		for( String s:set )
 			System.out.println("set Obj :: "+s);

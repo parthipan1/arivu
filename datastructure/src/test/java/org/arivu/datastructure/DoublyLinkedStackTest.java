@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.After;
@@ -244,9 +245,10 @@ public class DoublyLinkedStackTest {
 	}
 	
 	/**
+	 * @throws InterruptedException 
 	 */
 	@Test
-	public void testRunParallel() throws IOException {
+	public void testRunParallel() throws IOException, InterruptedException {
 		final DoublyLinkedStack<String> list = new DoublyLinkedStack<String>(false,CompareStrategy.EQUALS);
 		
 		final int reqPerThread = 100;
@@ -291,6 +293,11 @@ public class DoublyLinkedStackTest {
 			end.await();
 		} catch (InterruptedException e1) {
 			e1.printStackTrace();
+		}
+		exe.shutdownNow();
+		if (!exe.awaitTermination(100, TimeUnit.MICROSECONDS)) {
+			String msg = "Still waiting after 100ms: calling System.exit(0)...";
+			System.err.println(msg);
 		}
 		assertTrue("Failed in || run test exp::"+initialValue+" got::"+list.size(), list.size()==0);
 	}

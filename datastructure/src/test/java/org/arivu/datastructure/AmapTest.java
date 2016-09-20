@@ -13,6 +13,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.After;
@@ -129,9 +130,10 @@ public class AmapTest {
 	// }
 
 	/**
+	 * @throws InterruptedException 
 	 */
 	@Test
-	public void testRunParallel() throws IOException {
+	public void testRunParallel() throws IOException, InterruptedException {
 		final Map<String, String> map = new Amap<String, String>();// new
 																	// CopyOnWriteArraySet<String>();//
 
@@ -170,7 +172,11 @@ public class AmapTest {
 				fail("failed in parallel run!");
 			}
 		}
-
+		exe.shutdownNow();
+		if (!exe.awaitTermination(100, TimeUnit.MICROSECONDS)) {
+			String msg = "Still waiting after 100ms: calling System.exit(0)...";
+			System.err.println(msg);
+		}
 		assertTrue("Failed in || run test exp::0 got::" + map.size(), map.size() == 0);
 	}
 
