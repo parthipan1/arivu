@@ -15,6 +15,7 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -31,7 +32,9 @@ import org.arivu.log.converter.StringConverter;
 import org.arivu.log.queue.Consumer;
 import org.arivu.log.queue.Producer;
 import org.arivu.utils.Ason;
+import org.arivu.utils.NullCheck;
 import org.slf4j.Logger;
+import org.slf4j.MDC;
 import org.slf4j.Marker;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
@@ -43,19 +46,12 @@ import org.slf4j.helpers.MessageFormatter;
 public final class AsyncLogger implements Logger {
 
 	private final String name;
-//	private int currentLogLevel = LOG_LEVEL_INFO;
 	private transient String shortLogName = null;
 
 	public AsyncLogger(String name) {
 		super();
 		this.name = name;
-//		String levelString = recursivelyComputeLevelString(name);
-//		if (levelString != null) {
-//			this.currentLogLevel = stringToLevel(levelString);
-//		} else {
-////			this.currentLogLevel = DEFAULT_LOG_LEVEL;
-//			this.currentLogLevel = stringToLevel(ALL_LOGGER.get("root"));
-//		}
+		this.currrentLogLevel = getCurrrentLogLevel(name);
 	}
 
 	/*
@@ -713,7 +709,6 @@ public final class AsyncLogger implements Logger {
 
 		// Append date-time if so configured
 		if (SHOW_DATE_TIME) {
-//			if (DATE_FORMATTER != null) {
 			if ( DATE_TIME_FORMAT_STR!=null ){
 				buf.append(new SimpleDateFormat(DATE_TIME_FORMAT_STR).format(new Date(System.currentTimeMillis())));
 				buf.append(' ');
@@ -723,6 +718,15 @@ public final class AsyncLogger implements Logger {
 			}
 		}
 
+		if(!MDC_KEYS.isEmpty()){
+			for( final String key:MDC_KEYS ){
+				final String mdcValue = MDC.get(key);
+				if(!NullCheck.isNullOrEmpty(mdcValue)){
+					buf.append(mdcValue).append(' ');
+				}
+			}
+		}
+		
 		// Append current thread name if so configured
 		if (SHOW_THREAD_NAME) {
 			buf.append('[');
@@ -826,16 +830,24 @@ public final class AsyncLogger implements Logger {
 		log(level, tp.getMessage(), tp.getThrowable());
 	}
 
+	private static final int LOG_CNT_REFRESH = 10;
+	private volatile int logcnt = 1;
+	private int currrentLogLevel = 0;
 	/**
 	 * Is the given log level currently enabled?
 	 *
 	 * @param logLevel
 	 *            is this level enabled?
 	 */
-	private boolean isLevelEnabled(int logLevel) {
+	private boolean isLevelEnabled(final int logLevel) {
 		// log level are numerically ordered so can use simple numeric
 		// comparison
-		return logLevel >= getCurrrentLogLevel(name);//currentLogLevel;
+		logcnt = (logcnt+1)/LOG_CNT_REFRESH;
+		
+		if(logcnt==0)
+			currrentLogLevel = getCurrrentLogLevel(name);
+		
+		return logLevel >= currrentLogLevel;//currentLogLevel;
 	}
 
 	private static int getCurrrentLogLevel(final String name){
@@ -843,7 +855,6 @@ public final class AsyncLogger implements Logger {
 		if (levelString != null) {
 			return stringToLevel(levelString);
 		} else {
-//			this.currentLogLevel = DEFAULT_LOG_LEVEL;
 			return stringToLevel(ALL_LOGGER.get("root"));
 		}
 	}
@@ -1024,7 +1035,7 @@ public final class AsyncLogger implements Logger {
 
 	private static final long START_TIME = System.currentTimeMillis();
 	private static final Map<String,String> ALL_LOGGER = new Amap<String,String>();
-
+	private static final List<String> MDC_KEYS = new DoublyLinkedList<String>();
 	private static final int LOG_LEVEL_TRACE = 00;
 	private static final int LOG_LEVEL_DEBUG = 10;
 	private static final int LOG_LEVEL_INFO = 20;
@@ -1041,48 +1052,6 @@ public final class AsyncLogger implements Logger {
 	public static String LOG_FILE;
 	private final static boolean LEVEL_IN_BRACKETS;
 	private final static String WARN_LEVEL_STRING;
-
-//	private static final String SYSTEM_PREFIX = "org.arivu.asyncLogger.";
-	
-//	private static final String DEFAULT_RINGBUFFER_CNT_KEY = SYSTEM_PREFIX + "ringbufferCnt";
-//	private static final String DEFAULT_RINGBUFFER_SIZE_KEY = SYSTEM_PREFIX + "ringbufferSize";
-//	private static final String DEFAULT_LOG_THREAD_CNT_KEY = SYSTEM_PREFIX + "defaultLogThreadCnt";
-//	private static final String DEFAULT_APPENDERS_KEY = SYSTEM_PREFIX + "appenders";
-//	private static final String CUSTOM_APPENDERS_PREFIX = DEFAULT_APPENDERS_KEY + ".custom.";
-//	private static final String DEFAULT_LOG_LEVEL_KEY = SYSTEM_PREFIX + "defaultLogLevel";
-//	private static final String SHOW_DATE_TIME_KEY = SYSTEM_PREFIX + "showDateTime";
-//	private static final String DATE_TIME_FORMAT_KEY = SYSTEM_PREFIX + "dateTimeFormat";
-//	private static final String FILE_DATE_TIME_EXT_KEY = SYSTEM_PREFIX + "fileDateTimeExt";
-//	private static final String SHOW_THREAD_NAME_KEY = SYSTEM_PREFIX + "showThreadName";
-//	private static final String SHOW_LOG_NAME_KEY = SYSTEM_PREFIX + "showLogName";
-//	private static final String SHOW_SHORT_LOG_NAME_KEY = SYSTEM_PREFIX + "showShortLogName";
-//	private static final String LOG_FILE_KEY = SYSTEM_PREFIX + "logFile";
-//	private static final String LOG_FILE_SIZE_KEY = SYSTEM_PREFIX + "logFileSize";
-//	private static final String LEVEL_IN_BRACKETS_KEY = SYSTEM_PREFIX + "levelInBrackets";
-//	private static final String WARN_LEVEL_STRING_KEY = SYSTEM_PREFIX + "warnLevelString";
-//	private static final String APPENDER_BATCH_SIZE_KEY = SYSTEM_PREFIX + "appenderBatchSize";
-
-//	private static final String LOG_KEY_PREFIX = SYSTEM_PREFIX + "log.";
-
-//	private static String getStringProperty(String name) {
-//		String prop = null;
-//		try {
-//			prop = System.getProperty(name);
-//		} catch (SecurityException e) {
-//			; // Ignore
-//		}
-//		return (prop == null) ? ALL_LOGGER.get(name) : prop;
-//	}
-//
-//	private static String getStringProperty(String name, String defaultValue) {
-//		String prop = getStringProperty(name);
-//		return (prop == null) ? defaultValue : prop;
-//	}
-//
-//	private static boolean getBooleanProperty(String name, boolean defaultValue) {
-//		String prop = getStringProperty(name);
-//		return (prop == null) ? defaultValue : "true".equalsIgnoreCase(prop);
-//	}
 
 	private static String getEnv(String key,String dvalue){
 		return System.getProperty(key, (System.getenv().get(key) == null ? dvalue : System.getenv().get(key)));
@@ -1111,11 +1080,6 @@ public final class AsyncLogger implements Logger {
 		}
 		if (null != in) {
 			try {
-//				Properties p = new Properties();
-//				p.load(in);
-//				for(Entry<Object, Object> e:p.entrySet()){
-//					ALL_LOGGER.put(e.getKey().toString(), e.getValue().toString());
-//				}
 				Map<String, Object> fromJson = new Ason().fromJson(in);
 				in.close();
 				return fromJson;
@@ -1219,35 +1183,57 @@ public final class AsyncLogger implements Logger {
 	}
 	
 	static {
-
 		final Map<String, Object> json = loadProperties();
 
-		@SuppressWarnings("unchecked")
-		Map<String, String> loggers = (Map<String, String>) get(json, "loggers", null );
-		
-		if( loggers!= null && loggers.size()>0 ){
-			ALL_LOGGER.putAll(loggers);
-//			ALL_LOGGER.remove("root");
+		if(json==null){
+			ALL_LOGGER.put("root", "debug");
+			Consumer.RINGBUFFER_LEN = 50;
+			Consumer.BATCH_SIZE = 50;
+			SHOW_LOG_NAME = true;
+			SHOW_SHORT_LOG_NAME = false;
+			SHOW_DATE_TIME = false;
+			SHOW_THREAD_NAME = false;
+			DATE_TIME_FORMAT_STR = "yyyy-MM-dd HH:mm:ss:SSS Z";
+			LEVEL_IN_BRACKETS = false;
+			WARN_LEVEL_STRING = "WARN";
+			LOG_FILE = "lightninglog.log";
+			AppenderProperties.FILE_THRESHOLD_LIMIT = 5242880000l;
+		}else{
+			@SuppressWarnings("unchecked")
+			Map<String, String> loggers = (Map<String, String>) get(json, "loggers", null );
+			
+			if( loggers!= null && loggers.size()>0 ){
+				ALL_LOGGER.putAll(loggers);
+			}
+			Consumer.RINGBUFFER_LEN = ((Number)get(json, "buffer.ring",300)).intValue();
+			Consumer.BATCH_SIZE = ((Number)get(json, "buffer.batch",100)).intValue();
+			
+			String mdcKeys = (String)get(json, "log.mdc",null);
+			if(!NullCheck.isNullOrEmpty(mdcKeys)){
+				String[] split = mdcKeys.split(",");
+				MDC_KEYS.addAll(Arrays.asList(split));
+			}
+			
+			SHOW_LOG_NAME = (Boolean)get(json, "log.showName",true);
+			SHOW_SHORT_LOG_NAME = (Boolean)get(json, "log.showShortName",false);
+			SHOW_DATE_TIME = (Boolean)get(json, "log.showDateTime",false);
+			SHOW_THREAD_NAME = (Boolean)get(json, "log.showThreadName",false);
+			DATE_TIME_FORMAT_STR = (String)get(json, "log.dateTimeFormat",null);
+			LEVEL_IN_BRACKETS = false;
+			WARN_LEVEL_STRING = "WARN";
+			
+			AppenderProperties.FILE_EXT_FORMAT = (String)get(json, "log.fileDateTimeExt",AppenderProperties.FILE_EXT_FORMAT);
+			
+			LOG_FILE = (String)get(json, "log.file","lightninglog.log");
+			AppenderProperties.FILE_THRESHOLD_LIMIT = ((Number)get(json, "log.fileSize",5242880)).longValue();
 		}
-		
-//		DEFAULT_LOG_LEVEL = stringToLevel(get(json, "loggers.root","info").toString());
-		Consumer.RINGBUFFER_LEN = ((Number)get(json, "buffer.ring",300)).intValue();
-		Consumer.BATCH_SIZE = ((Number)get(json, "buffer.batch",100)).intValue();
-		
-		SHOW_LOG_NAME = (Boolean)get(json, "log.showName",true);
-		SHOW_SHORT_LOG_NAME = (Boolean)get(json, "log.showShortName",false);
-		SHOW_DATE_TIME = (Boolean)get(json, "log.showDateTime",false);
-		SHOW_THREAD_NAME = (Boolean)get(json, "log.showThreadName",false);
-		DATE_TIME_FORMAT_STR = (String)get(json, "log.dateTimeFormat",null);
-		LEVEL_IN_BRACKETS = false;
-		WARN_LEVEL_STRING = "WARN";
-		
-		AppenderProperties.FILE_EXT_FORMAT = (String)get(json, "log.fileDateTimeExt",AppenderProperties.FILE_EXT_FORMAT);
-		
-		LOG_FILE = (String)get(json, "log.file","System.err");
-		AppenderProperties.FILE_THRESHOLD_LIMIT = ((Number)get(json, "log.fileSize",5242880)).longValue();
+		createProducer(json);
+		registerMXBean(0);
+	}
+
+	private static void createProducer(final Map<String, Object> json) {
 		try {
-			LOG_PRODUCER = new Producer<String>(new StringConverter(), getAppenders(json));
+			LOG_PRODUCER = new Producer<String>(new StringConverter(), getAppenders(json, "file"));
 			Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
 				
 				@Override
@@ -1263,23 +1249,22 @@ public final class AsyncLogger implements Logger {
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
-		
-		registerMXBean(0);
-		
 	}
 
 	@SuppressWarnings("unchecked")
-	private static Collection<Appender> getAppenders(Map<String, Object> json) throws IOException {
-		
-		Object object = get(json, "appenders", null );
+	private static Collection<Appender> getAppenders(Map<String, Object> json, String defaultAppenders) throws IOException {
 		Collection<String> split = null;
-		if( object instanceof Collection ){
-			split = (Collection<String>)object;
-		}else{
-			split = (Collection<String>) convert( (Map<String, String>) get(json, "appenders", null ));
+		
+		if (json!=null) {
+			Object object = get(json, "appenders", null);
+			if (object instanceof Collection) {
+				split = (Collection<String>) object;
+			} else {
+				split = (Collection<String>) convert((Map<String, String>) get(json, "appenders", null));
+			} 
 		}
-		if(split==null || split.size()==0)
-			split = Arrays.asList("rollingfile,console".split(","));
+		if(NullCheck.isNullOrEmpty(split))
+			split = Arrays.asList(defaultAppenders.split(","));
 		
 		Collection<Appender> lws = new DoublyLinkedList<Appender>();
 		for(String s:split){
