@@ -4,8 +4,9 @@
 package org.arivu.datastructure.primitive;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
 
-import org.arivu.utils.lock.AtomicWFLock;
+import org.arivu.utils.lock.AtomicWFReentrantLock;
 
 
 /**
@@ -14,7 +15,7 @@ import org.arivu.utils.lock.AtomicWFLock;
  */
 public final class DoublyLinkedListLong  {
 //	static final AtomicLock cas = new AtomicLock();
-	static final AtomicWFLock cas = new AtomicWFLock();
+//	static final AtomicWFLock cas = new AtomicWFLock();
 	/**
 	 * 
 	 */
@@ -27,23 +28,29 @@ public final class DoublyLinkedListLong  {
 	
 	
 	AtomicInteger size;
-	
+	Lock cas;
 	/**
 	 * @param cas TODO
 	 * 
 	 */
 	public DoublyLinkedListLong() {
-		this(Long.MIN_VALUE,new AtomicInteger(0));
+		this(new AtomicWFReentrantLock());
+	}
+	
+	DoublyLinkedListLong(Lock cas) {
+		this(Long.MIN_VALUE,new AtomicInteger(0), cas);
 	}
 	
 	/**
 	 * @param size TODO
+	 * @param cas TODO
 	 * @param obj
 	 */
-	private DoublyLinkedListLong(long t, AtomicInteger size) {
+	private DoublyLinkedListLong(long t, AtomicInteger size, Lock cas) {
 		super();
 		this.obj = t;
 		this.size = size;
+		this.cas = cas;
 	}
 
 	/**
@@ -258,7 +265,7 @@ public final class DoublyLinkedListLong  {
 	
 	public boolean add(long e) {
 		if(e!=Long.MIN_VALUE){
-			addLeft(new DoublyLinkedListLong(e, size));
+			addLeft(new DoublyLinkedListLong(e, size, cas));
 			return true;
 		}else{
 			return false;

@@ -250,7 +250,7 @@ public class DoublyLinkedStackTest {
 		final DoublyLinkedStack<String> list = new DoublyLinkedStack<String>(false,CompareStrategy.EQUALS);
 		
 		final int reqPerThread = 100;
-		final int noOfThreads = 10;
+		final int noOfThreads = 500;
 		final ExecutorService exe = Executors.newFixedThreadPool(noOfThreads);
 		final AtomicInteger c = new AtomicInteger(noOfThreads);
 		final CountDownLatch start = new CountDownLatch(1);
@@ -267,13 +267,17 @@ public class DoublyLinkedStackTest {
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
-					final DoublyLinkedStack<String> tlist = new DoublyLinkedStack<String>(false,CompareStrategy.EQUALS);
-					for( int i=0;i<reqPerThread;i++ ){
-						final String valueOf = String.valueOf(initialValue-cnt.getAndDecrement());
-						list.push(valueOf);
-						tlist.push(valueOf);
+					try {
+						final DoublyLinkedStack<String> tlist = new DoublyLinkedStack<String>(false,CompareStrategy.EQUALS);
+						for( int i=0;i<reqPerThread;i++ ){
+							final String valueOf = String.valueOf(initialValue-cnt.getAndDecrement());
+							list.push(valueOf);
+							tlist.push(valueOf);
+						}
+						list.removeAll(tlist);
+					} catch (Throwable e) {
+						e.printStackTrace();
 					}
-					list.removeAll(tlist);
 //					System.out.println("Remaining count "+c.get());
 					if( c.decrementAndGet()<=0 ){
 						end.countDown();

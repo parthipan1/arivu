@@ -32,55 +32,6 @@ public final class DoublyLinkedSet<T> implements Set<T>, Queue<T> {
 	CompareStrategy compareStrategy;
 	Lock cas;
 
-	static final class Ref {
-		final DoublyLinkedSet<?> set;
-		final Object obj;
-
-		/**
-		 * @param set
-		 */
-		Ref(DoublyLinkedSet<?> set) {
-			super();
-			this.set = set;
-			this.obj = set.obj;
-		}
-
-		/**
-		 * @param obj
-		 */
-		public Ref(Object obj) {
-			super();
-			this.set = null;
-			this.obj = obj;
-		}
-
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + ((obj == null) ? 0 : obj.hashCode());
-			return result;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			Ref other = (Ref) obj;
-			if (this.obj == null) {
-				if (other.obj != null)
-					return false;
-			} else if (!this.obj.equals(other.obj))
-				return false;
-			return true;
-		}
-
-	}
-
 	final Btree binaryTree;
 
 	/**
@@ -804,4 +755,65 @@ final class Counter {
 	int get() {
 		return cnt;
 	}
+}
+final class Ref {
+	final DoublyLinkedSet<?> set;
+	final DoublyLinkedStack<?> st;
+	final Object obj;
+
+	/**
+	 * @param set
+	 */
+	Ref(DoublyLinkedSet<?> set) {
+		super();
+		this.set = set;
+		this.obj = set.obj;
+		this.st = null;
+	}
+	
+	/**
+	 * @param stack
+	 */
+	Ref(DoublyLinkedStack<?> stack) {
+		super();
+		this.set = null;
+		this.obj = stack.obj;
+		this.st = stack;
+	}
+	
+	/**
+	 * @param obj
+	 */
+	public Ref(Object obj) {
+		super();
+		this.set = null;
+		this.obj = obj;
+		this.st = null;
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((obj == null) ? 0 : obj.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Ref other = (Ref) obj;
+		if (this.obj == null) {
+			if (other.obj != null)
+				return false;
+		} else if (!this.obj.equals(other.obj))
+			return false;
+		return true;
+	}
+
 }

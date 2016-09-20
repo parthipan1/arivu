@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.locks.Lock;
 
-import org.arivu.utils.lock.AtomicWFLock;
+import org.arivu.utils.lock.AtomicWFReentrantLock;
 
 /**
  * @author P
@@ -34,7 +34,7 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 	CompareStrategy compareStrategy;
 	final boolean set;
 
-	
+	final Btree binaryTree;
 	/**
 	 * @param col
 	 */
@@ -47,7 +47,7 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 	 * 
 	 */
 	public DoublyLinkedStack() {
-		this(null, new Counter(), false, CompareStrategy.REF, new AtomicWFLock());
+		this( false, CompareStrategy.REF);
 	}
 
 	/**
@@ -55,9 +55,17 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 	 * @param compareStrategy
 	 */
 	DoublyLinkedStack(boolean set, CompareStrategy compareStrategy) {
-		this(null, new Counter(), set, compareStrategy, new AtomicWFLock());
+		this(set, compareStrategy, new AtomicWFReentrantLock());
 	}
 
+	/**
+	 * @param set
+	 * @param compareStrategy
+	 */
+	DoublyLinkedStack(boolean set, CompareStrategy compareStrategy, Lock cas) {
+		this(null, new Counter(), set, compareStrategy, cas, new Btree(cas, CompareStrategy.EQUALS));
+	}
+	
 	/**
 	 * @param size
 	 *            TODO
@@ -67,15 +75,17 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 	 *            TODO
 	 * @param cas
 	 *            TODO
+	 * @param binaryTree TODO
 	 * @param obj
 	 */
-	private DoublyLinkedStack(T t, Counter size, boolean set, CompareStrategy compareStrategy, Lock cas) {
+	private DoublyLinkedStack(T t, Counter size, boolean set, CompareStrategy compareStrategy, Lock cas, Btree binaryTree) {
 		super();
 		this.obj = t;
 		this.size = size;
 		this.set = set;
 		this.compareStrategy = compareStrategy;
 		this.cas = cas;
+		this.binaryTree = binaryTree;
 	}
 
 	/**
@@ -92,6 +102,7 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 		l.lock();
 		left = this;
 		right = this;
+		this.binaryTree.clear();
 		size.set(0);
 		l.unlock();
 	}
@@ -131,13 +142,19 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 		if (isEmpty()) {
 			return null;
 		} else {
+			Lock l = this.cas;
+			l.lock();
 			DoublyLinkedStack<T> ref = top;
 			top = ref.left;
 
 			if (ref != this)
 				ref.remove();
 
-			return ref.obj;
+			T obj2 = ref.obj;
+			
+			l.unlock();
+			
+			return obj2;
 		}
 	}
 
@@ -146,10 +163,13 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 		if (set && contains(e)) {
 			return e;
 		}
+		Lock l = this.cas;
+		l.lock();
 		DoublyLinkedStack<T> ref = top;
-		DoublyLinkedStack<T> ref1 = new DoublyLinkedStack<T>(e, size, false, compareStrategy, cas);
+		DoublyLinkedStack<T> ref1 = new DoublyLinkedStack<T>(e, size, false, compareStrategy, cas, binaryTree);
 		top.addRight(ref1);
 		top = ref1;
+		l.unlock();
 		return ref.obj;
 	}
 
@@ -187,6 +207,7 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 		if (r != null) {
 			Lock l = this.cas;
 			l.lock();
+			this.binaryTree.add(new Ref(r));
 			if (size!=null) {
 				size.incrementAndGet();
 			}
@@ -269,6 +290,7 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 		size = null;
 		cas = null;
 		compareStrategy = null;
+		this.binaryTree.remove(new Ref(obj));
 		l.unlock();
 		return obj;
 	}
@@ -343,12 +365,14 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 		Lock l = this.cas;
 		l.lock();
 		search = searchRef(o);
-		l.unlock();
 		if (search != null) {
 			search.remove();
+			l.unlock();
 			return true;
-		} else
+		} else{
+			l.unlock();
 			return false;
+		}
 	}
 
 	@Override
@@ -458,24 +482,31 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 	 * @param obj
 	 * @return
 	 */
+	@SuppressWarnings("unchecked")
 	DoublyLinkedStack<T> searchRef(final Object o) {
-		DoublyLinkedStack<T> ref = this.right;
-		while (ref != null) {
-			if (ref == this) {
-				break;
-			}
-			if (o instanceof String) {
-				if (ref.obj != null && CompareStrategy.EQUALS.compare(ref.obj, o)) {
-					return ref;
-				}
-			} else {
-				if (ref.obj != null && compareStrategy.compare(ref.obj, o)) {
-					return ref;
-				}
-			}
-			ref = ref.right;
-		}
-		return null;
+		Object object = this.binaryTree.get(new Ref(o));
+		if (object == null)
+			return null;
+		else
+			return (DoublyLinkedStack<T>) ((Ref) object).st;
+		
+//		DoublyLinkedStack<T> ref = this.right;
+//		while (ref != null) {
+//			if (ref == this) {
+//				break;
+//			}
+//			if (o instanceof String) {
+//				if (ref.obj != null && CompareStrategy.EQUALS.compare(ref.obj, o)) {
+//					return ref;
+//				}
+//			} else {
+//				if (ref.obj != null && compareStrategy.compare(ref.obj, o)) {
+//					return ref;
+//				}
+//			}
+//			ref = ref.right;
+//		}
+//		return null;
 	}
 	// @Override
 	// public T set(int index, T element) {

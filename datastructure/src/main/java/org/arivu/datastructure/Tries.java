@@ -4,8 +4,10 @@
 package org.arivu.datastructure;
 
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
 
 import org.arivu.datastructure.primitive.DoublyLinkedSetInt;
+import org.arivu.utils.lock.AtomicWFReentrantLock;
 
 
 /**
@@ -19,12 +21,14 @@ public final class Tries {
 		final char c;
 		boolean isLast = false;
 		final DoublyLinkedSet<Node> nodes = new DoublyLinkedSet<Tries.Node>();
-		final DoublyLinkedSetInt indexes = new DoublyLinkedSetInt();
-
-		public Node(char c, Node p) {
+		final DoublyLinkedSetInt indexes;
+		final Lock cas;
+		public Node(char c, Node p, Lock cas) {
 			super();
 			this.c = c;
 			this.parent = p;
+			this.cas = cas;
+			this.indexes = new DoublyLinkedSetInt(cas);
 		}
 
 		Node search(final char ic) {
@@ -42,14 +46,17 @@ public final class Tries {
 		}
 
 		Node add(final char ic, int idx) {
+			cas.lock();
 			Node search = search(ic);
 			if (search == null) {
-				Node nn = new Node(ic, this);
+				Node nn = new Node(ic, this, cas);
 				nn.indexes.add(idx);
 				nodes.add(nn);
+				cas.unlock();
 				return nn;
 			} else {
 				search.indexes.add(idx);
+				cas.unlock();
 				return search;
 			}
 		}
@@ -66,7 +73,7 @@ public final class Tries {
 		}
 	}
 
-	final Node ROOT = new Node(' ', null);
+	final Node ROOT = new Node(' ', null, new AtomicWFReentrantLock());
 
 	public Tries() {
 		super();

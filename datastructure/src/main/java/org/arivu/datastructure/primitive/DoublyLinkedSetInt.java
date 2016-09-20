@@ -4,8 +4,9 @@
 package org.arivu.datastructure.primitive;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
 
-import org.arivu.utils.lock.AtomicWFLock;
+import org.arivu.utils.lock.AtomicWFReentrantLock;
 
 
 /**
@@ -14,7 +15,7 @@ import org.arivu.utils.lock.AtomicWFLock;
  */
 public final class DoublyLinkedSetInt {
 //	static final AtomicLock cas = new AtomicLock();
-	static final AtomicWFLock cas = new AtomicWFLock();
+//	static final AtomicWFLock cas = new AtomicWFLock();
 	/**
 	 * 
 	 */
@@ -28,23 +29,28 @@ public final class DoublyLinkedSetInt {
 	
 //	volatile int size = 0;
 	AtomicInteger size;
-	
+	Lock cas;
 	/**
 	 * @param cas TODO
 	 * 
 	 */
 	public DoublyLinkedSetInt() {
-		this(Integer.MIN_VALUE,new AtomicInteger(0));
+		this(new AtomicWFReentrantLock());
 	}
 	
+	public DoublyLinkedSetInt(Lock cas) {
+		this(Integer.MIN_VALUE,new AtomicInteger(0), cas);
+	}
 	/**
 	 * @param size TODO
+	 * @param cas TODO
 	 * @param obj
 	 */
-	private DoublyLinkedSetInt(int t, AtomicInteger size) {
+	private DoublyLinkedSetInt(int t, AtomicInteger size, Lock cas) {
 		super();
 		this.obj = t;
 		this.size = size;
+		this.cas = cas;
 	}
 
 	/**
@@ -261,7 +267,7 @@ public final class DoublyLinkedSetInt {
 //		if(e!=null){
 			DoublyLinkedSetInt search = search(e);
 			if( search == null ){
-				addLeft(new DoublyLinkedSetInt(e, size));
+				addLeft(new DoublyLinkedSetInt(e, size, cas));
 				return true;
 			}else{
 				return false;
