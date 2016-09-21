@@ -167,9 +167,10 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 		l.lock();
 		DoublyLinkedStack<T> ref1 = new DoublyLinkedStack<T>(e, size, false, compareStrategy, cas, binaryTree);
 		DoublyLinkedStack<T> ref = top;
-		do{
+//		do{
 		ref = top;
-		}while(ref.addRight(ref1, l)==null);
+		ref.addRight(ref1, l);
+//		}while(ref.addRight(ref1, l)==null);
 		
 		top = ref1;
 		l.unlock();

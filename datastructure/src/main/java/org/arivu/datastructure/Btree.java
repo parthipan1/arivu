@@ -95,7 +95,7 @@ public final class Btree implements Serializable {
 			if (this.leaf) {
 				LinkedReference ref = refs[arr[level]];
 				if (ref == null) {
-					ref = new LinkedReference();//DoublyLinkedList<Object>(compareStrategy, dummyLock);
+					ref = new LinkedReference(compareStrategy, this.cas);//DoublyLinkedList<Object>(compareStrategy, dummyLock);
 					refs[arr[level]] = ref;
 				}
 				add = ((LinkedReference) ref).add(obj,null);
@@ -402,7 +402,7 @@ final class LinkedReference {
 	volatile LinkedReference read = null;
 	
 	Lock lock = null;
-	
+	CompareStrategy compareStrategy;
 	String id;
 	
 //	public LinkedReference(int size, boolean addLock) {
@@ -437,18 +437,23 @@ final class LinkedReference {
 	}
 	
 	/**
+	 * @param compareStrategy TODO
 	 * 
 	 */
-	public LinkedReference() {
-		this(null);
+	LinkedReference(CompareStrategy compareStrategy, Lock lock) {
+		this(null, compareStrategy, lock);
 	}
 
 	/**
+	 * @param compareStrategy TODO
+	 * @param lock TODO
 	 * @param obj
 	 */
-	public LinkedReference(Object t) {
+	private LinkedReference(Object t, CompareStrategy compareStrategy, Lock lock) {
 		super();
 		this.obj = t;
+		this.lock = lock;
+		this.compareStrategy = compareStrategy;
 	}
 
 	/**
@@ -504,18 +509,14 @@ final class LinkedReference {
 	LinkedReference search(final Object o, final Direction direction){
 		LinkedReference ref = this;
 		while (ref != null) {
-			if( o instanceof String){
-				if(o.equals(ref.obj)){
+//			if( o instanceof String){
+//				if(o.equals(ref.obj)){
+//					return ref;
+//				}
+//			}else{
+				if(this.compareStrategy.compare(ref.obj, o) ){
 					return ref;
 				}
-			}else{
-//				if(ref.obj==o){
-				if(CompareStrategy.EQUALS.compare(ref.obj, o) ){
-					return ref;
-				}
-			}
-//			if(ref.obj!=null && ref.obj==o){
-//				return ref;
 //			}
 			
 			ref = direction.get(ref);
@@ -536,14 +537,14 @@ final class LinkedReference {
 			if (garbage!=null) {
 				LinkedReference newref = garbage.remove(Direction.right);
 				if (newref == null) {
-					newref = new LinkedReference(t);
+					newref = new LinkedReference(t, compareStrategy, lock);
 				} else {
 					newref.obj = t;
 				}
 				add(newref, Direction.left);
 				return true;
 			}else{
-				add(new LinkedReference(t), Direction.left);
+				add(new LinkedReference(t, compareStrategy, lock), Direction.left);
 				return true;
 			}
 		}
@@ -557,11 +558,14 @@ final class LinkedReference {
 	 */
 	private LinkedReference add(final LinkedReference l,final Direction direction) {
 		if (l != null) {
+			Lock lk = lock;
+			lk.lock();
 			direction.getOther().set(l, this);
 			final LinkedReference tl = direction.get(this);
 			direction.set(this, l);
 			direction.set(l, tl);
 			direction.getOther().set(tl, l);
+			lk.unlock();
 		}
 		return l;
 	}
@@ -590,10 +594,16 @@ final class LinkedReference {
 	 */
 	Object remove() {
 		Object o = obj;
+		Lock l = lock;
+		l.lock();
 		Direction.right.set(left, right);
 		Direction.left.set(right, left);
 		Direction.right.set(this, null);
 		Direction.left.set(this, null);
+		lock = null;
+		compareStrategy = null;
+		obj = null;
+		l.unlock();
 		return o;
 	}
 
