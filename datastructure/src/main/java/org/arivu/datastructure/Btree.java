@@ -24,7 +24,7 @@ public final class Btree implements Serializable {
 
 	private static final Lock dummyLock = new NoLock();
 	
-	private static final long MAX_RANGE = (long) (Integer.MAX_VALUE) + 1l;
+//	private static final long MAX_RANGE = (long) (Integer.MAX_VALUE) + 1l;
 	
 	private static final int DEFAULT_BASEPOWER = 2;
 	/**
@@ -250,7 +250,11 @@ public final class Btree implements Serializable {
 
 	private int[] getPath(final int hashCode2) {
 		int[] ret = new int[height];
-		long hashCode = (long) hashCode2 + MAX_RANGE;
+//		long hashCode = (long) hashCode2 + MAX_RANGE;
+		int hashCode = hashCode2;
+		
+//		if(hashCode<0)
+//			hashCode = -1*hashCode;
 
 		for (int i = height-1; i >= 0; i--) {
 			ret[i] = (int) (hashCode & baseMask);
