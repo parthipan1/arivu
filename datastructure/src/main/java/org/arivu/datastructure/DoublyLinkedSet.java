@@ -759,6 +759,7 @@ final class Counter {
 final class Ref {
 	final DoublyLinkedSet<?> set;
 	final DoublyLinkedStack<?> st;
+	final DoublyLinkedList<?> lst;
 	final Object obj;
 
 	/**
@@ -769,8 +770,20 @@ final class Ref {
 		this.set = set;
 		this.obj = set.obj;
 		this.st = null;
+		this.lst = null;
 	}
 	
+	/**
+	 * @param stack
+	 */
+	Ref(DoublyLinkedList<?> lst) {
+		super();
+		this.set = null;
+		this.obj = lst.obj;
+		this.st = null;
+		this.lst = lst;
+	}
+
 	/**
 	 * @param stack
 	 */
@@ -779,6 +792,7 @@ final class Ref {
 		this.set = null;
 		this.obj = stack.obj;
 		this.st = stack;
+		this.lst = null;
 	}
 	
 	/**
@@ -789,6 +803,7 @@ final class Ref {
 		this.set = null;
 		this.obj = obj;
 		this.st = null;
+		this.lst = null;
 	}
 
 	@Override
