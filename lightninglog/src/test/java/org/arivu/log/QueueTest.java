@@ -62,7 +62,7 @@ public class QueueTest {
 	 */
 	@Test
 	public void testRunParallel_Null() throws IOException {//,new RollingFileAppender("logs"+File.separator+"test.log")
-		Collection<Appender> appenders = new ArrayList<Appender>(Arrays.asList(new Appender[]{Appenders.no.get("logs"+File.separator+"testp.log")})) ;//,new ConsoleAppender()
+		Collection<Appender> appenders = new ArrayList<Appender>(Arrays.asList(new Appender[]{Appenders.no.get("logs"+File.separator+"testp")})) ;//,new ConsoleAppender()
 		final Producer<String> logProducer = new Producer<String>(new StringConverter(), appenders);
 		
 		final int reqPerThread = 2000;//0000;//000;
@@ -110,7 +110,7 @@ public class QueueTest {
 
 	@Test
 	public void testRunSerial_FileMax() throws IOException {//,new RollingFileAppender("logs"+File.separator+"test.log")
-		Collection<Appender> appenders = new ArrayList<Appender>(Arrays.asList(new Appender[]{Appenders.zip.get("logs"+File.separator+"testsm.log")})) ;//,new ConsoleAppender()
+		Collection<Appender> appenders = new ArrayList<Appender>(Arrays.asList(new Appender[]{Appenders.zip.get("logs"+File.separator+"testsm")})) ;//,new ConsoleAppender()
 		final Producer<String> logProducer = new Producer<String>(new StringConverter(), appenders);
 		
 		final int reqPerThread = 1000*1000*100;//0000;//000;
@@ -167,7 +167,7 @@ public class QueueTest {
 			final int reqPerThread = 1000000;
 			final int noOfThreads = 100;
 
-			Collection<Appender> appenders = new ArrayList<Appender>(Arrays.asList(new Appender[]{Appenders.zip.get("logs"+File.separator+"testpm.log")})) ;//,new ConsoleAppender()
+			Collection<Appender> appenders = new ArrayList<Appender>(Arrays.asList(new Appender[]{Appenders.zip.get("logs"+File.separator+"testpm")})) ;//,new ConsoleAppender()
 			final Producer<String> logProducer = new Producer<String>(new StringConverter(), appenders);
 			
 			final ExecutorService exe = Executors.newFixedThreadPool(noOfThreads);
@@ -214,7 +214,7 @@ public class QueueTest {
 
 	@Test
 	public void testRunSerial_Null() throws IOException {//,new RollingFileAppender("logs"+File.separator+"test.log")
-		Collection<Appender> appenders = new ArrayList<Appender>(Arrays.asList(new Appender[]{Appenders.no.get("logs"+File.separator+"tests.log")})) ;//,new ConsoleAppender()
+		Collection<Appender> appenders = new ArrayList<Appender>(Arrays.asList(new Appender[]{Appenders.no.get("logs"+File.separator+"tests")})) ;//,new ConsoleAppender()
 		final Producer<String> logProducer = new Producer<String>(new StringConverter(), appenders);
 		
 		final int noOfThreads = 1000000;
@@ -234,7 +234,7 @@ public class QueueTest {
 		 */
 		@Test
 		public void testRunParallel_File() throws IOException {//,new RollingFileAppender("logs"+File.separator+"test.log")
-			Collection<Appender> appenders = new ArrayList<Appender>(Arrays.asList(new Appender[]{Appenders.zip.get("logs"+File.separator+"testp.log")})) ;//,new ConsoleAppender()
+			Collection<Appender> appenders = new ArrayList<Appender>(Arrays.asList(new Appender[]{Appenders.zip.get("logs"+File.separator+"testp")})) ;//,new ConsoleAppender()
 			final Producer<String> logProducer = new Producer<String>(new StringConverter(), appenders);
 			
 			final int reqPerThread = 2000;//0000;//000;
@@ -282,7 +282,7 @@ public class QueueTest {
 
 	@Test
 	public void testRunSerial_File() throws IOException {//,new RollingFileAppender("logs"+File.separator+"test.log")
-		Collection<Appender> appenders = new ArrayList<Appender>(Arrays.asList(new Appender[]{Appenders.zip.get("logs"+File.separator+"tests.log")})) ;//,new ConsoleAppender()
+		Collection<Appender> appenders = new ArrayList<Appender>(Arrays.asList(new Appender[]{Appenders.zip.get("logs"+File.separator+"tests")})) ;//,new ConsoleAppender()
 		final Producer<String> logProducer = new Producer<String>(new StringConverter(), appenders);
 		
 		final int noOfThreads = 1000000;
@@ -298,7 +298,7 @@ public class QueueTest {
 
 	@Test
 	public void testRunSerial_NullMax() throws IOException {//,new RollingFileAppender("logs"+File.separator+"test.log")
-		Collection<Appender> appenders = new ArrayList<Appender>(Arrays.asList(new Appender[]{Appenders.no.get("logs"+File.separator+"tests.log")})) ;//,new ConsoleAppender()
+		Collection<Appender> appenders = new ArrayList<Appender>(Arrays.asList(new Appender[]{Appenders.no.get("logs"+File.separator+"tests")})) ;//,new ConsoleAppender()
 		final Producer<String> logProducer = new Producer<String>(new StringConverter(), appenders);
 		
 		final int reqPerThread = 1000*1000*100;//0000;//000;
@@ -352,7 +352,7 @@ public class QueueTest {
 		 */
 		@Test
 		public void testRunParallel_NullMax() throws IOException {//,new RollingFileAppender("logs"+File.separator+"test.log")
-			Collection<Appender> appenders = new ArrayList<Appender>(Arrays.asList(new Appender[]{Appenders.no.get("logs"+File.separator+"testp.log")})) ;//,new ConsoleAppender()
+			Collection<Appender> appenders = new ArrayList<Appender>(Arrays.asList(new Appender[]{Appenders.no.get("logs"+File.separator+"testp")})) ;//,new ConsoleAppender()
 			final Producer<String> logProducer = new Producer<String>(new StringConverter(), appenders);
 			
 			final int reqPerThread = 1000000;//0000;//000;
