@@ -164,8 +164,8 @@ public class QueueTest {
 		 */
 		@Test
 		public void testRunParallel_FileMax() throws IOException {//,new RollingFileAppender("logs"+File.separator+"test.log")
-			final int reqPerThread = 1000000;
-			final int noOfThreads = 100;
+			final int reqPerThread = 200000;
+			final int noOfThreads = 500;
 
 			Collection<Appender> appenders = new ArrayList<Appender>(Arrays.asList(new Appender[]{Appenders.zip.get("logs"+File.separator+"testpm")})) ;//,new ConsoleAppender()
 			final Producer<String> logProducer = new Producer<String>(new StringConverter(), appenders);
@@ -355,8 +355,8 @@ public class QueueTest {
 			Collection<Appender> appenders = new ArrayList<Appender>(Arrays.asList(new Appender[]{Appenders.no.get("logs"+File.separator+"testp")})) ;//,new ConsoleAppender()
 			final Producer<String> logProducer = new Producer<String>(new StringConverter(), appenders);
 			
-			final int reqPerThread = 1000000;//0000;//000;
-			final int noOfThreads = 100;
+			final int reqPerThread = 200000;//0000;//000;
+			final int noOfThreads = 500;
 			final ExecutorService exe = Executors.newFixedThreadPool(noOfThreads);
 			final AtomicInteger c = new AtomicInteger(noOfThreads);
 			final CountDownLatch start = new CountDownLatch(1);
