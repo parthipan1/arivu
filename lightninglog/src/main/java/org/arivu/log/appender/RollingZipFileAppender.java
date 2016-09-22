@@ -29,12 +29,13 @@ final class RollingZipFileAppender extends ZipFileAppender {
 				if (RollingFileAppender.FILE_THRESHOLD_LIMIT <= fileSize) {
 					fileSize = 0;
 					file.renameTo(new File(
-							getFileName(fileName, false) +"_" + new SimpleDateFormat(FileAppender.FILE_EXT_FORMAT).format(new Date()) + "_" 
+							getFileName(fileName, false, ".zip") +"_" + new SimpleDateFormat(FileAppender.FILE_EXT_FORMAT).format(new Date()) + "_" 
 									+ (sizeFiles++) + ".zip"));
 					out.close();
-					file = new File(getFileName(fileName, true));
+					file = new File(getFileName(fileName, true, ".zip"));
 					out = new ZipOutputStream(new FileOutputStream(file));
-					ZipEntry e = new ZipEntry("lightninglog.log");
+					ZipEntry e = new ZipEntry(getFileName(fileName, false, ".zip")
+							 +"_"+ new SimpleDateFormat(FileAppender.FILE_EXT_FORMAT).format(new Date()) + ".log");
 					out.putNextEntry(e);
 				}
 			} catch (IOException e) {

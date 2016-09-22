@@ -38,7 +38,7 @@ class ZipFileAppender implements Appender {
 	
 	public ZipFileAppender(String fileName) throws IOException {
 		super();
-		this.fileName = getFileName(fileName, true);
+		this.fileName = getFileName(fileName, true, ".zip");
 
 		file = new File(this.fileName);
 		if (!file.exists()) {
@@ -47,7 +47,8 @@ class ZipFileAppender implements Appender {
 		this.fileSize = file.length();
 		if (file.canWrite()){
 			out = new ZipOutputStream(new FileOutputStream(file));
-			ZipEntry e = new ZipEntry("lightninglog.log");
+			ZipEntry e = new ZipEntry(getFileName(fileName, false, ".zip")
+					 +"_"+ new SimpleDateFormat(FileAppender.FILE_EXT_FORMAT).format(new Date()) + ".log");
 			out.putNextEntry(e);
 		}
 		else
@@ -62,12 +63,13 @@ class ZipFileAppender implements Appender {
 			try {
 				if (checkDay(date)) {
 					fileSize = 0;
-					file.renameTo(new File(getFileName(fileName, false)
+					file.renameTo(new File(getFileName(fileName, false, ".zip")
 							+ new SimpleDateFormat(FileAppender.FILE_EXT_FORMAT).format(lastUpdated) + ".zip"));
 					out.close();
-					file = new File(getFileName(fileName, false));
+					file = new File(getFileName(fileName, true, ".zip"));
 					out = new ZipOutputStream(new FileOutputStream(file));
-					ZipEntry e = new ZipEntry("lightninglog.log");
+					ZipEntry e = new ZipEntry(getFileName(fileName, false, ".zip")
+							 +"_"+ new SimpleDateFormat(FileAppender.FILE_EXT_FORMAT).format(new Date()) + ".log");
 					out.putNextEntry(e);
 					lastUpdated = date;
 				}
@@ -109,14 +111,14 @@ class ZipFileAppender implements Appender {
 		out.close();
 	}
 	
-	String getFileName(final String f, boolean add) {
+	String getFileName(final String f, boolean add, String ext) {
 		if (add) {
-			if (f.endsWith(".zip"))
+			if (f.endsWith(ext))
 				return f;
 			else
-				return f + ".zip";
+				return f + ext;
 		}else{
-			return f.replace(".zip", "");
+			return f.replace(ext, "");
 		}
 	}
 }
