@@ -19,31 +19,21 @@ final class RollingFileAppender extends FileAppender {
 	
 	public RollingFileAppender(String fileName) throws IOException {
 		super(fileName);
-		
 	}
-
-	String getFileName(String fileName) {
-		return fileName+"_"+ new SimpleDateFormat(FILE_EXT_FORMAT).format(new Date()) + ".log";
-	}
-
+	
 	@Override
 	public void append(String log) {
-//		try {
-//		fileSize += log.getBytes("UTF-8").length;
-////			fileSize += log.length();//getBytes("UTF-8").length;
-//		} catch (UnsupportedEncodingException e) {
-//			e.printStackTrace();
-//		}
 		if(FILE_THRESHOLD_LIMIT<=fileSize){
 			lock.lock();
 			try {
 				if(FILE_THRESHOLD_LIMIT<=fileSize){
 					fileSize=0;
+					file.renameTo(new File(
+							getFileName(fileName, false) +"_" + new SimpleDateFormat(FileAppender.FILE_EXT_FORMAT).format(new Date())+ "_"
+									+ (sizeFiles++) + ".log"));
 					oWriter.close();
-//					outchannel.close();
-					file = new File(getFileName(fileName));
+					file = new File(getFileName(fileName, true));
 					oWriter = new PrintWriter(new java.io.FileWriter(file, true), true);
-//					outchannel = Channels.newChannel(new FileOutputStream(file,true));
 				}
 			} catch (IOException e) {
 				throw new RuntimeException(e);

@@ -14,7 +14,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.arivu.log.Appender;
-import org.arivu.utils.lock.AtomicWFLock;
+import org.arivu.utils.lock.AtomicWFReentrantLock;
 
 /**
  * @author P
@@ -30,26 +30,28 @@ class ZipFileAppender implements Appender {
 	
 	volatile long fileSize = 0;
 	
+	volatile int sizeFiles = 1;
+	
 	Date lastUpdated = null;
 	
-	final Lock lock = new AtomicWFLock();
+	final Lock lock = new AtomicWFReentrantLock();
 	
 	public ZipFileAppender(String fileName) throws IOException {
 		super();
-		this.fileName = fileName;
+		this.fileName = getFileName(fileName, true);
 
-		file = new File(fileName);
+		file = new File(this.fileName);
 		if (!file.exists()) {
 			file.createNewFile();
 		}
 		this.fileSize = file.length();
 		if (file.canWrite()){
 			out = new ZipOutputStream(new FileOutputStream(file));
-			ZipEntry e = new ZipEntry(fileName);
+			ZipEntry e = new ZipEntry("lightninglog.log");
 			out.putNextEntry(e);
 		}
 		else
-			throw new IOException("Unable to write to file "+fileName);
+			throw new IOException("Unable to write to file "+this.fileName);
 	}
 	
 	@Override
@@ -60,12 +62,12 @@ class ZipFileAppender implements Appender {
 			try {
 				if (checkDay(date)) {
 					fileSize = 0;
-					file.renameTo(new File(getFileName(fileName)
+					file.renameTo(new File(getFileName(fileName, false)
 							+ new SimpleDateFormat(FileAppender.FILE_EXT_FORMAT).format(lastUpdated) + ".zip"));
 					out.close();
-					file = new File(getFileName(fileName));
+					file = new File(getFileName(fileName, false));
 					out = new ZipOutputStream(new FileOutputStream(file));
-					ZipEntry e = new ZipEntry(fileName);
+					ZipEntry e = new ZipEntry("lightninglog.log");
 					out.putNextEntry(e);
 					lastUpdated = date;
 				}
@@ -107,7 +109,14 @@ class ZipFileAppender implements Appender {
 		out.close();
 	}
 	
-	String getFileName(final String f) {
-		return f+".zip";
+	String getFileName(final String f, boolean add) {
+		if (add) {
+			if (f.endsWith(".zip"))
+				return f;
+			else
+				return f + ".zip";
+		}else{
+			return f.replace(".zip", "");
+		}
 	}
 }
