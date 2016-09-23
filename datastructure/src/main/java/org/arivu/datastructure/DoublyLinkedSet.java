@@ -720,6 +720,10 @@ public final class DoublyLinkedSet<T> implements Set<T>, Queue<T> {
 	// }
 }
 
+/**
+ * @author P
+ *
+ */
 enum CompareStrategy {
 	REF, EQUALS {
 
@@ -741,6 +745,10 @@ enum CompareStrategy {
 
 }
 
+/**
+ * @author P
+ *
+ */
 final class Counter {
 	volatile int cnt = 0;
 
@@ -760,6 +768,10 @@ final class Counter {
 		return cnt;
 	}
 }
+/**
+ * @author P
+ *
+ */
 final class Ref {
 	final DoublyLinkedSet<?> set;
 	final DoublyLinkedStack<?> st;

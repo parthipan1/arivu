@@ -29,34 +29,34 @@ public final class Graph implements Serializable {
 
 		final Set<Object> source;
 
-		/**
-		 * 
-		 */
-		public CyclicException(Set<Object> source) {
-			super();
-			this.source = source;
-		}
-
-		/**
-		 * @param message
-		 * @param cause
-		 * @param enableSuppression
-		 * @param writableStackTrace
-		 */
-		public CyclicException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace,
-				Set<Object> source) {
-			super(message, cause, enableSuppression, writableStackTrace);
-			this.source = source;
-		}
-
-		/**
-		 * @param message
-		 * @param cause
-		 */
-		public CyclicException(String message, Throwable cause, Set<Object> source) {
-			super(message, cause);
-			this.source = source;
-		}
+//		/**
+//		 * 
+//		 */
+//		public CyclicException(Set<Object> source) {
+//			super();
+//			this.source = source;
+//		}
+//
+//		/**
+//		 * @param message
+//		 * @param cause
+//		 * @param enableSuppression
+//		 * @param writableStackTrace
+//		 */
+//		public CyclicException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace,
+//				Set<Object> source) {
+//			super(message, cause, enableSuppression, writableStackTrace);
+//			this.source = source;
+//		}
+//
+//		/**
+//		 * @param message
+//		 * @param cause
+//		 */
+//		public CyclicException(String message, Throwable cause, Set<Object> source) {
+//			super(message, cause);
+//			this.source = source;
+//		}
 
 		/**
 		 * @param message
@@ -66,13 +66,13 @@ public final class Graph implements Serializable {
 			this.source = source;
 		}
 
-		/**
-		 * @param cause
-		 */
-		public CyclicException(Throwable cause, Set<Object> source) {
-			super(cause);
-			this.source = source;
-		}
+//		/**
+//		 * @param cause
+//		 */
+//		public CyclicException(Throwable cause, Set<Object> source) {
+//			super(cause);
+//			this.source = source;
+//		}
 
 		public Set<Object> getSource() {
 			return source;

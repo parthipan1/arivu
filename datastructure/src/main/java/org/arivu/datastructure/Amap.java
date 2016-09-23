@@ -224,7 +224,13 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 		return entries;
 	}
 
-	static final class AnEntry<K, V> implements Entry<K, V>, Serializable {
+	/**
+	 * @author P
+	 *
+	 * @param <K>
+	 * @param <V>
+	 */
+	private static final class AnEntry<K, V> implements Entry<K, V>, Serializable {
 
 		/**
 		 * 
@@ -235,6 +241,11 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 		V v;
 		Btree tree;
 
+		/**
+		 * @param k
+		 * @param v
+		 * @param tree
+		 */
 		AnEntry(K k, V v, Btree tree) {
 			super();
 			this.k = k;

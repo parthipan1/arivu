@@ -172,11 +172,19 @@ public final class Threadlocal<T> {
 		}
 	}
 
+	/**
+	 * @author P
+	 *
+	 * @param <T>
+	 */
 	private static final class Ref<T> {
 		private final T t;
 		volatile long time = System.currentTimeMillis();
 
-		public Ref(T t) {
+		/**
+		 * @param t
+		 */
+		Ref(T t) {
 			super();
 			this.t = t;
 		};
@@ -192,11 +200,19 @@ public final class Threadlocal<T> {
 
 	}
 
+	/**
+	 * @author P
+	 *
+	 */
 	private static final class Trigger {
 		private final Runnable trigger;
 		private final long onceInMiliSecs;
 		private volatile long last = System.currentTimeMillis();
 
+		/**
+		 * @param trigger
+		 * @param onceInMiliSecs
+		 */
 		Trigger(Runnable trigger, long onceInMiliSecs) {
 			super();
 			this.trigger = trigger;
