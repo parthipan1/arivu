@@ -10,6 +10,9 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.locks.Lock;
+
+import org.arivu.utils.lock.AtomicWFReentrantLock;
 
 /**
  * @author P
@@ -21,8 +24,21 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 	 */
 	private static final long serialVersionUID = -997810275912377568L;
 
-	final Btree binaryTree = new Btree();
+	final Btree binaryTree;
 
+	/**
+	 */
+	public Amap() {
+		this.binaryTree = new Btree(new AtomicWFReentrantLock());
+	}
+	
+	/**
+	 * @param lock
+	 */
+	Amap(Lock lock) {
+		this.binaryTree = new Btree(lock);
+	}
+	
 	V nullValue;
 	volatile int nc = 0;
 
@@ -77,7 +93,7 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 	public V put(final K key, final V value) {
 
 		if (key == null) {
-			binaryTree.root.cas.lock();
+			binaryTree.cas.lock();
 			if (value == null) {
 				nc = 0;
 				this.nullValue = value;
@@ -85,7 +101,7 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 				nc = 1;
 				this.nullValue = value;
 			}
-			binaryTree.root.cas.unlock();
+			binaryTree.cas.unlock();
 			return nullValue;
 		} else if (value == null) {
 			binaryTree.remove(getKeyWrap(key));
@@ -112,11 +128,11 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 			if (nullValue == null) {
 				return null;
 			} else {
-				binaryTree.root.cas.lock();
+				binaryTree.cas.lock();
 				nc = 0;
 				V value = this.nullValue;
 				this.nullValue = null;
-				binaryTree.root.cas.unlock();
+				binaryTree.cas.unlock();
 				return value;
 			}
 		}
@@ -146,14 +162,14 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 	Future<?> submitClear;
 	@Override
 	public void clear() {
-		binaryTree.root.cas.lock();
+		binaryTree.cas.lock();
 		if (nc == 1) {
 			nc = 0;
 			nullValue = null;
 		}
 		final Collection<Object> all = binaryTree.getAll();
 		binaryTree.clear();
-		binaryTree.root.cas.unlock();
+		binaryTree.cas.unlock();
 		final ExecutorService exe = Executors.newFixedThreadPool(1);
 		submitClear = exe.submit(new Runnable() {
 

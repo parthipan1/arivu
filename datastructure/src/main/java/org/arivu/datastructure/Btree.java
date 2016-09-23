@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.concurrent.locks.Lock;
 
 import org.arivu.utils.lock.AtomicWFReentrantLock;
-//import org.arivu.utils.lock.NoLock;
 
 /**
  * @author P
@@ -22,32 +21,29 @@ public final class Btree implements Serializable {
 	 */
 	private static final long serialVersionUID = -6344951761380914875L;
 
-//	private static final Lock dummyLock = new NoLock();
-	
-//	private static final long MAX_RANGE = (long) (Integer.MAX_VALUE) + 1l;
-	
 	private static final int DEFAULT_BASEPOWER = 2;
 	/**
 	 * @author P
 	 *
 	 */
-	static final class Node {
+	private static final class Node {
 		final int order;
 		Lock cas;
 		final boolean leaf;
 		final LinkedReference[] refs;
 		final Node[] nodes;
 		CompareStrategy compareStrategy;
-//		volatile int idx = 0;
 		final Counter counter = new Counter();
 		Node parent;
+		
 		/**
 		 * @param order
+		 * @param cas
 		 * @param leaf
-		 *            TODO
-		 * @param parent TODO
+		 * @param compareStrategy
+		 * @param parent
 		 */
-		public Node(int order, Lock cas, boolean leaf, CompareStrategy compareStrategy, Node parent) {
+		Node(int order, Lock cas, boolean leaf, CompareStrategy compareStrategy, Node parent) {
 			super();
 			this.compareStrategy = compareStrategy;
 			this.leaf = leaf;
@@ -222,7 +218,7 @@ public final class Btree implements Serializable {
 	private final int base;
 	private final int height;
 	private final long baseMask;
-	
+	final Lock cas;
 	/**
 	 * @param order
 	 */
@@ -230,18 +226,33 @@ public final class Btree implements Serializable {
 		this(basePower, new AtomicWFReentrantLock(), CompareStrategy.EQUALS);
 	}
 
+	/**
+	 * 
+	 */
 	public Btree() {
 		this(DEFAULT_BASEPOWER);
 	}
 
+	/**
+	 * @param lock
+	 */
 	Btree(Lock lock) {
 		this(DEFAULT_BASEPOWER, lock, CompareStrategy.EQUALS);
 	}
 
+	/**
+	 * @param lock
+	 * @param compareStrategy
+	 */
 	Btree(Lock lock, CompareStrategy compareStrategy) {
 		this(DEFAULT_BASEPOWER, lock, compareStrategy);
 	}
 
+	/**
+	 * @param basePower
+	 * @param lock
+	 * @param compareStrategy
+	 */
 	Btree(int basePower, Lock lock, CompareStrategy compareStrategy) {
 		super();
 		if(basePower<=0||basePower>4){
@@ -251,20 +262,15 @@ public final class Btree implements Serializable {
 		this.height = 32/base;
 		this.baseMask = ((long) Math.pow(2, base) - 1);
 		this.root = new Node((int)this.baseMask+1, lock, false, compareStrategy, null);
+		this.cas = lock;
 	}
 
 	private int[] getPath(Object obj) {
 		return getPath(obj.hashCode());
 	}
 
-	private int[] getPath(final int hashCode2) {
+	private int[] getPath(int hashCode) {
 		int[] ret = new int[height];
-//		long hashCode = (long) hashCode2 + MAX_RANGE;
-		int hashCode = hashCode2;
-		
-//		if(hashCode<0)
-//			hashCode = -1*hashCode;
-
 		for (int i = height-1; i >= 0; i--) {
 			ret[i] = (int) (hashCode & baseMask);
 

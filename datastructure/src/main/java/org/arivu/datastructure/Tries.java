@@ -16,12 +16,34 @@ import org.arivu.utils.lock.AtomicWFReentrantLock;
  */
 public final class Tries {
 
-	static final class Node {
+	/**
+	 * @author P
+	 *
+	 */
+	private static final class Node {
+		/**
+		 * 
+		 */
 		final Node parent;
+		/**
+		 * 
+		 */
 		final char c;
+		/**
+		 * 
+		 */
 		boolean isLast = false;
+		/**
+		 * 
+		 */
 		final DoublyLinkedSet<Node> nodes = new DoublyLinkedSet<Tries.Node>();
+		/**
+		 * 
+		 */
 		final DoublyLinkedSetInt indexes;
+		/**
+		 * 
+		 */
 		final Lock cas;
 		public Node(char c, Node p, Lock cas) {
 			super();

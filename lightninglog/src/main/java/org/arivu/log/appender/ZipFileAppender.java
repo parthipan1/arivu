@@ -56,7 +56,7 @@ class ZipFileAppender implements Appender {
 	}
 	
 	@Override
-	public void append(String log) {
+	public void append(final String log) {
 		Date date = new Date();
 		if( lastUpdated!=null && checkDay(date)){
 			lock.lock();
@@ -81,7 +81,7 @@ class ZipFileAppender implements Appender {
 		}
 		lock.lock();
 		try {
-			byte[] data = log.getBytes();
+			final byte[] data = log.getBytes();
 			
 			out.write(data, 0, data.length);
 			out.flush();

@@ -34,8 +34,9 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 	CompareStrategy compareStrategy;
 	Lock cas;
 	final Btree binaryTree;
+	
 	/**
-	 * 
+	 * @param col
 	 */
 	public DoublyLinkedList(Collection<T> col) {
 		this();
@@ -49,10 +50,17 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 		this(CompareStrategy.REF);
 	}
 	
+	/**
+	 * @param compareStrategy
+	 */
 	DoublyLinkedList(CompareStrategy compareStrategy) {
 		this(compareStrategy, new AtomicWFReentrantLock());
 	}
 	
+	/**
+	 * @param compareStrategy
+	 * @param lock
+	 */
 	DoublyLinkedList(CompareStrategy compareStrategy,Lock lock) {
 		this(null, new Counter(),compareStrategy, lock, new Btree(lock, CompareStrategy.EQUALS));
 	}
