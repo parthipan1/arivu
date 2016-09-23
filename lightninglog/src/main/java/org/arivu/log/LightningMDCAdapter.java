@@ -71,7 +71,11 @@ public class LightningMDCAdapter implements MDCAdapter {
 	 */
 	@Override
 	public Map<String, String> getCopyOfContextMap() {
-		return Collections.unmodifiableMap(mdc.get()) ;
+		Map<String, String> map = mdc.get();
+		
+		if(map==null)
+			return map;
+		else return Collections.unmodifiableMap(map) ;
 	}
 
 	/* (non-Javadoc)
@@ -80,7 +84,7 @@ public class LightningMDCAdapter implements MDCAdapter {
 	@Override
 	public void setContextMap(Map<String, String> contextMap) {
 		if( contextMap!=null ){
-			Map<String, String> map = mdc.get();
+			Map<String, String> map = mdc.get(null);
 			if(map!=null)
 				map.putAll(contextMap);
 		}
