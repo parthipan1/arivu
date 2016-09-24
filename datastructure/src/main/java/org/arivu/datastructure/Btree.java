@@ -114,10 +114,9 @@ public final class Btree implements Serializable {
 
 		Object find(final Object obj, final int level, final int[] arr) {
 			if (this.leaf) {
-//				@SuppressWarnings("unchecked")
-				final LinkedReference ref = (LinkedReference) refs[arr[level]];
+				final LinkedReference ref = refs[arr[level]];
 				if (ref != null) {
-					final LinkedReference search = ref.search(obj,Direction.left);
+					final LinkedReference search = ref.search(obj);
 					if (search != null)
 						return search.obj;
 				}
@@ -138,7 +137,7 @@ public final class Btree implements Serializable {
 					return null;
 				}
 				cas.lock();
-				final LinkedReference search = ref.search(obj,Direction.left);
+				final LinkedReference search = ref.search(obj);
 				if (search == null) {
 					cas.unlock();
 					return null;
@@ -447,17 +446,16 @@ final class LinkedReference {
 	}
 	
 	/**
-	 * @param direction TODO
 	 * @param obj
 	 * @return
 	 */
-	LinkedReference search(final Object o, final Direction direction){
-		LinkedReference ref = direction.get(this);
+	LinkedReference search(final Object o){
+		LinkedReference ref = this.left;//direction.get(this);
 		while (ref != null || ref != this ) {
 			if(this.compareStrategy.compare(ref.obj, o) ){
 				return ref;
 			}
-			ref = direction.get(ref);
+			ref = ref.left;//direction.get(ref);
 		}
 		return null;
 	}
