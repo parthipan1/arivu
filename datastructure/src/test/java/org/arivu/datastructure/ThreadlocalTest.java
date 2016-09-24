@@ -3,6 +3,7 @@
  */
 package org.arivu.datastructure;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -140,6 +141,7 @@ public class ThreadlocalTest {
 			System.err.println(msg);
 		}
 		assertTrue("Failed in || run test exp::0 got::" + threadlocal.size(), threadlocal.size() == 0);
+		assertTrue("Failed in || run test empty::true got::" + threadlocal.isEmpty(), threadlocal.isEmpty() );
 	}
 
 //	/**
@@ -150,22 +152,204 @@ public class ThreadlocalTest {
 //		fail("Not yet implemented");
 //	}
 //
-//	/**
-//	 * Test method for {@link org.arivu.datastructure.Threadlocal#evict()}.
-//	 */
-//	@Test
-//	public void testEvict() {
-//		fail("Not yet implemented");
-//	}
-//
-//	/**
-//	 * Test method for {@link org.arivu.datastructure.Threadlocal#clearAll()}.
-//	 */
-//	@Test
-//	public void testClearAll() {
-//		fail("Not yet implemented");
-//	}
-//
+	/**
+	 * Test method for {@link org.arivu.datastructure.Threadlocal#evict()}.
+	 * @throws InterruptedException 
+	 */
+	@Test
+	public void testEvict() throws InterruptedException {
+		final AtomicInteger create = new  AtomicInteger(0);
+		int threshold = 100;
+		final Threadlocal<String> threadlocal = new Threadlocal<String>(new Threadlocal.Factory<String>(){
+
+			@Override
+			public String create(Map<String, Object> params) {
+				create.incrementAndGet();
+				return create.toString();
+			}
+			
+		},threshold); 
+		
+		assertTrue(threadlocal.get(null)!=null);
+
+		assertTrue("Failed in || run test exp::1 got::" + threadlocal.size(), threadlocal.size() == 1);
+		assertFalse("Failed in || run test empty::false got::" + threadlocal.isEmpty(), threadlocal.isEmpty() );
+		assertTrue("Failed in || run test exp::1 got::" + threadlocal.getAll(), threadlocal.getAll().size() == 1);
+		
+		Thread.sleep(threshold+10);
+		
+		threadlocal.evict();
+		
+		assertTrue(threadlocal.get()==null);
+		
+		assertTrue("Failed in || run test exp::0 got::" + threadlocal.size(), threadlocal.size() == 0);
+		assertTrue("Failed in || run test empty::true got::" + threadlocal.isEmpty(), threadlocal.isEmpty() );
+		assertTrue("Failed in || run test exp::0 got::" + threadlocal.getAll(), threadlocal.getAll().size() == 0);		
+	}
+
+	static class Something implements AutoCloseable{
+
+		@Override
+		public void close() throws Exception {
+		}
+		
+	}
+	
+	/**
+	 * Test method for {@link org.arivu.datastructure.Threadlocal#evict()}.
+	 * @throws InterruptedException 
+	 */
+	@Test
+	public void testEvict_Case1() throws InterruptedException {
+		final AtomicInteger create = new  AtomicInteger(0);
+		int threshold = 100;
+		final Threadlocal<Something> threadlocal = new Threadlocal<Something>(new Threadlocal.Factory<Something>(){
+
+			@Override
+			public Something create(Map<String, Object> params) {
+				create.incrementAndGet();
+				return new Something();
+			}
+			
+		},threshold); 
+		
+		assertTrue(threadlocal.get(null)!=null);
+
+		assertTrue("Failed in || run test exp::1 got::" + threadlocal.size(), threadlocal.size() == 1);
+		assertFalse("Failed in || run test empty::false got::" + threadlocal.isEmpty(), threadlocal.isEmpty() );
+		assertTrue("Failed in || run test exp::1 got::" + threadlocal.getAll(), threadlocal.getAll().size() == 1);
+		
+		Thread.sleep(threshold+10);
+		
+		assertTrue(threadlocal.get()==null);
+		
+		assertTrue("Failed in || run test exp::0 got::" + threadlocal.size(), threadlocal.size() == 0);
+		assertTrue("Failed in || run test empty::true got::" + threadlocal.isEmpty(), threadlocal.isEmpty() );
+		assertTrue("Failed in || run test exp::0 got::" + threadlocal.getAll(), threadlocal.getAll().size() == 0);		
+	}
+	
+	
+	/**
+	 * Test method for {@link org.arivu.datastructure.Threadlocal#evict()}.
+	 * @throws InterruptedException 
+	 */
+	@Test
+	public void testEvict_Case2() throws InterruptedException {
+		final AtomicInteger create = new  AtomicInteger(0);
+		int threshold = 100;
+		final Threadlocal<String> threadlocal = new Threadlocal<String>(new Threadlocal.Factory<String>(){
+
+			@Override
+			public String create(Map<String, Object> params) {
+				create.incrementAndGet();
+				return create.toString();
+			}
+			
+		},threshold); 
+		
+		assertTrue(threadlocal.get(null)!=null);
+
+		assertTrue("Failed in || run test exp::1 got::" + threadlocal.size(), threadlocal.size() == 1);
+		assertFalse("Failed in || run test empty::false got::" + threadlocal.isEmpty(), threadlocal.isEmpty() );
+		assertTrue("Failed in || run test exp::1 got::" + threadlocal.getAll(), threadlocal.getAll().size() == 1);
+		
+		assertTrue(threadlocal.get()!=null);
+		
+		Thread.sleep(threshold+10);
+
+		assertTrue(threadlocal.get()==null);
+
+		assertTrue("Failed in || run test exp::0 got::" + threadlocal.size(), threadlocal.size() == 0);
+		assertTrue("Failed in || run test empty::true got::" + threadlocal.isEmpty(), threadlocal.isEmpty() );
+		assertTrue("Failed in || run test exp::0 got::" + threadlocal.getAll(), threadlocal.getAll().size() == 0);		
+	}
+	
+	/**
+	 * Test method for {@link org.arivu.datastructure.Threadlocal#evict()}.
+	 * @throws InterruptedException 
+	 */
+	@Test
+	public void testEvict_Case3() throws InterruptedException {
+		final AtomicInteger create = new  AtomicInteger(0);
+		int threshold = 100;
+		final Threadlocal<String> threadlocal = new Threadlocal<String>(new Threadlocal.Factory<String>(){
+
+			@Override
+			public String create(Map<String, Object> params) {
+				create.incrementAndGet();
+				return create.toString();
+			}
+			
+		},threshold); 
+		
+		assertTrue(threadlocal.getAndTrigger(null)==null);
+	}
+	
+	/**
+	 * Test method for {@link org.arivu.datastructure.Threadlocal#clearAll()}.
+	 * @throws InterruptedException 
+	 */
+	@Test
+	public void testClearAll() throws InterruptedException {
+		final AtomicInteger create = new  AtomicInteger(0);
+		final Threadlocal<String> threadlocal = new Threadlocal<String>(new Threadlocal.Factory<String>(){
+
+			@Override
+			public String create(Map<String, Object> params) {
+				create.incrementAndGet();
+				return create.toString();
+			}
+			
+		}); 
+		
+		final int reqPerThread = 1;
+		final int noOfThreads = 1;
+		final Queue<Future<Integer>> listFuture = new DoublyLinkedList<Future<Integer>>();
+		final ExecutorService exe = Executors.newFixedThreadPool(noOfThreads);
+		final AtomicInteger c = new AtomicInteger(noOfThreads);
+		final CountDownLatch start = new CountDownLatch(1);
+		final CountDownLatch end = new CountDownLatch(1);
+
+		assertTrue(threadlocal.get(null)!=null);
+		
+		for (int j = 1; j <= noOfThreads; j++) {
+			final Callable<Integer> task = getTask(threadlocal, reqPerThread, c, start, end);
+			listFuture.add(exe.submit(task));
+		}
+
+		start.countDown();
+		try {
+			end.await();
+		} catch (InterruptedException e1) {
+			e1.printStackTrace();
+		}
+
+		Future<Integer> poll = null;
+		while ((poll = listFuture.poll()) != null) {
+			try {
+				poll.get();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} catch (ExecutionException e) {
+				e.printStackTrace();
+				fail("failed in parallel run!");
+			}
+		}
+		exe.shutdownNow();
+		if (!exe.awaitTermination(100, TimeUnit.MICROSECONDS)) {
+			String msg = "Still waiting after 100ms: calling System.exit(0)...";
+			System.err.println(msg);
+		}
+		assertTrue("Failed in || run test exp::1 got::" + threadlocal.size(), threadlocal.size() == 1);
+		assertFalse("Failed in || run test empty::false got::" + threadlocal.isEmpty(), threadlocal.isEmpty() );
+		assertTrue("Failed in || run test exp::1 got::" + threadlocal.getAll(), threadlocal.getAll().size() == 1);
+		
+		threadlocal.close();
+		
+		assertTrue("Failed in || run test exp::0 got::" + threadlocal.size(), threadlocal.size() == 0);
+		assertTrue("Failed in || run test empty::true got::" + threadlocal.isEmpty(), threadlocal.isEmpty() );
+		assertTrue("Failed in || run test exp::0 got::" + threadlocal.getAll(), threadlocal.getAll().size() == 0);
+	}
 //	/**
 //	 * Test method for {@link org.arivu.datastructure.Threadlocal#getAll()}.
 //	 */

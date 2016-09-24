@@ -92,6 +92,34 @@ public class AmapTest {
 		map.remove("test");
 		get = map.get("test");
 		assertTrue("Failed on get ", get == null);
+		
+		map.put("test", "test");
+		get = map.get("test");
+		assertTrue("Failed on get exp:: test got::" + get, "test".equals(get));
+		map.put("test", null);
+		get = map.get("test");
+		assertTrue("Failed on get ", get == null);
+		
+		get = map.get(null);
+		assertTrue("Failed on get ", get == null);
+		
+		map.put(null, "1");
+		get = map.get(null);
+		assertTrue("Failed on get ", "1".equals(get));
+		map.put(null, null);
+		get = map.get(null);
+		assertTrue("Failed on get ", get == null);
+		
+		
+		map.put("test", "test");
+		get = map.get("test");
+		assertTrue("Failed on get exp:: test got::" + get, "test".equals(get));
+		map.put("test", "test1");
+		get = map.get("test");
+		assertTrue("Failed on get exp:: test got::" + get, "test1".equals(get));
+		
+		assertTrue("Failed on get exp:: test keySet :: size", map.keySet().size() == map.size());
+		
 	}
 	//
 	// @Test
@@ -104,17 +132,35 @@ public class AmapTest {
 	// fail("Not yet implemented");
 	// }
 	//
-	// @Test
-	// public void testPutAll() {
-	// fail("Not yet implemented");
-	// }
-	//
-	// @Test
-	// public void testClear() {
-	// fail("Not yet implemented");
-	// }
-	//
-	// @Test
+	 @Test
+	 public void testPutAll() {
+		Amap<String, String> map = new Amap<String, String>();
+		String get = map.get("test");
+		assertTrue("Failed on get ", get == null);
+		map.put("test", "test");
+		assertTrue(map.size()==1);
+		
+		Amap<String, String> map2 = new Amap<String, String>(map);
+		assertTrue(map2.size()==1);
+	 }
+	 
+	
+	 @Test
+	 public void testClear() {
+		Amap<String, String> map = new Amap<String, String>();
+		String get = map.get("test");
+		assertTrue("Failed on get ", get == null);
+		map.put(null, "test");
+		assertTrue(map.size()==1);
+		map.clear();
+		assertTrue(map.size()==0);
+		map.put(null, null);
+		assertTrue(map.size()==0);
+		map.remove(null);
+		assertTrue(map.size()==0);
+	 }
+
+	 // @Test
 	// public void testKeySet() {
 	// fail("Not yet implemented");
 	// }

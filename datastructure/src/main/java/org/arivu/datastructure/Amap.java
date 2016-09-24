@@ -28,8 +28,15 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 
 	/**
 	 */
+	public Amap(Map<? extends K, ? extends V> m) {
+		this(new AtomicWFReentrantLock());
+		putAll(m);
+	}
+	
+	/**
+	 */
 	public Amap() {
-		this.binaryTree = new Btree(new AtomicWFReentrantLock());
+		this(new AtomicWFReentrantLock());
 	}
 	
 	/**

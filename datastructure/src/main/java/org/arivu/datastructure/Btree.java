@@ -94,7 +94,7 @@ public final class Btree implements Serializable {
 					ref = new LinkedReference(compareStrategy, this.cas);//DoublyLinkedList<Object>(compareStrategy, dummyLock);
 					refs[arr[level]] = ref;
 				}
-				add = ((LinkedReference) ref).add(obj,null);
+				add = ((LinkedReference) ref).add(obj);
 			} else {
 				Node n = nodes[arr[level]];
 				if (n == null) {
@@ -431,16 +431,16 @@ final class LinkedReference {
 //		
 //	}
 
-	boolean isEmptyRing(){
-		LinkedReference ref = this;
-		while (ref != null) {
-			if(ref.obj!=null){
-				return false;
-			}
-			ref = ref.right;
-		}
-		return true;
-	}
+//	boolean isEmptyRing(){
+//		LinkedReference ref = this;
+//		while (ref != null) {
+//			if(ref.obj!=null){
+//				return false;
+//			}
+//			ref = ref.right;
+//		}
+//		return true;
+//	}
 	
 	/**
 	 * @param compareStrategy TODO
@@ -462,37 +462,37 @@ final class LinkedReference {
 		this.compareStrategy = compareStrategy;
 	}
 
-	/**
-	 * 
-	 */
-	void clear() {
-		left = this;
-		right = this;
-	}
+//	/**
+//	 * 
+//	 */
+//	void clear() {
+//		left = this;
+//		right = this;
+//	}
 
-	/**
-	 * @return
-	 */
-	boolean isEmpty() {
-		return size(false, Direction.left)==0;
-	}
+//	/**
+//	 * @return
+//	 */
+//	boolean isEmpty() {
+//		return size(false, Direction.left)==0;
+//	}
 
-	/**
-	 * @param rwLock TODO
-	 * @return
-	 */
-	Object poll(final LinkedReference garbage,final Direction dir) {
-		LinkedReference removeRight = remove(dir);
-		if (removeRight != null) {
-			Object obj2 = removeRight.obj;
-			removeRight.obj = null;
-			if(garbage!=null){
-				garbage.add(removeRight, Direction.left);
-			}
-			return obj2;
-		}
-		return null;
-	}
+//	/**
+//	 * @param rwLock TODO
+//	 * @return
+//	 */
+//	Object poll(final LinkedReference garbage,final Direction dir) {
+//		LinkedReference removeRight = remove(dir);
+//		if (removeRight != null) {
+//			Object obj2 = removeRight.obj;
+//			removeRight.obj = null;
+//			if(garbage!=null){
+//				garbage.add(removeRight, Direction.left);
+//			}
+//			return obj2;
+//		}
+//		return null;
+//	}
 
 	/**
 	 * @return
@@ -538,21 +538,10 @@ final class LinkedReference {
 	 * @param rwLock TODO
 	 * @return
 	 */
-	boolean add(final Object t,final LinkedReference garbage) {
+	boolean add(final Object t) {
 		if (t != null){
-			if (garbage!=null) {
-				LinkedReference newref = garbage.remove(Direction.right);
-				if (newref == null) {
-					newref = new LinkedReference(t, compareStrategy, lock);
-				} else {
-					newref.obj = t;
-				}
-				add(newref, Direction.left);
-				return true;
-			}else{
-				add(new LinkedReference(t, compareStrategy, lock), Direction.left);
-				return true;
-			}
+			add(new LinkedReference(t, compareStrategy, lock), Direction.left);
+			return true;
 		}
 		return false;
 	}
@@ -576,24 +565,24 @@ final class LinkedReference {
 		return l;
 	}
 
-	/**
-	 * @param direction TODO
-	 * @return
-	 */
-	Object[] toArray(final Direction direction) {
-		List<Object> subl = new DoublyLinkedList<Object>();
-		LinkedReference ref = direction.get(this);//this.right;
-		while (ref != null) {
-			if (ref == this) {
-				break;
-			}
-			if (ref.obj!=null) {
-				subl.add(ref.obj);
-			}
-			ref = direction.get(ref);//ref.right;
-		}
-		return subl.toArray();
-	}
+//	/**
+//	 * @param direction TODO
+//	 * @return
+//	 */
+//	Object[] toArray(final Direction direction) {
+//		List<Object> subl = new DoublyLinkedList<Object>();
+//		LinkedReference ref = direction.get(this);//this.right;
+//		while (ref != null) {
+//			if (ref == this) {
+//				break;
+//			}
+//			if (ref.obj!=null) {
+//				subl.add(ref.obj);
+//			}
+//			ref = direction.get(ref);//ref.right;
+//		}
+//		return subl.toArray();
+//	}
 
 	/**
 	 * 
