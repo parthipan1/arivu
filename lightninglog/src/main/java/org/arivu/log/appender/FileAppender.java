@@ -32,7 +32,7 @@ class FileAppender implements Appender {
 	
 	volatile int sizeFiles = 1;
 	
-	Date lastUpdated = null;
+	Calendar lastUpdated = null;
 	
 	final Lock lock = new AtomicWFReentrantLock();//new ReentrantLock(true);
 	
@@ -54,14 +54,26 @@ class FileAppender implements Appender {
 	
 	@Override
 	public void append(String log) {
-		Date date = new Date();
+		dayRollover();
+		lock.lock();
+		try {
+			oWriter.println(log);
+			fileSize = file.length();
+		}finally {
+			lock.unlock();
+		}
+	}
+
+	private final void dayRollover() {
+		final Calendar date = Calendar.getInstance();
+		date.setTime(new Date());
 		if( lastUpdated!=null && checkDay(date)){
 			lock.lock();
 			try {
 				if (checkDay(date)) {
 					fileSize = 0;
 					file.renameTo(new File(getFileName(fileName, false)
-							+ new SimpleDateFormat(FILE_EXT_FORMAT).format(lastUpdated) + ".log"));
+							+ new SimpleDateFormat(FILE_EXT_FORMAT).format(lastUpdated.getTime()) + ".log"));
 					oWriter.close();
 					file = new File(getFileName(fileName, true));
 					oWriter = new PrintWriter(new java.io.FileWriter(file, true), true);
@@ -73,29 +85,14 @@ class FileAppender implements Appender {
 				lock.unlock();
 			}
 		}
-		lock.lock();
-		try {
-			oWriter.println(log);
-			fileSize = file.length();
-		}finally {
-			lock.unlock();
-		}
 	}
 
-	private boolean checkDay(Date date) {
-		Calendar calendar1 = Calendar.getInstance();
-	    calendar1.setTime(date);
-	    Calendar calendar2 = Calendar.getInstance();
-	    calendar2.setTime(lastUpdated);
-	    boolean sameYear = calendar1.get(Calendar.YEAR) == calendar2.get(Calendar.YEAR);
-	    boolean sameMonth = calendar1.get(Calendar.MONTH) == calendar2.get(Calendar.MONTH);
-	    boolean sameDay = calendar1.get(Calendar.DAY_OF_MONTH) == calendar2.get(Calendar.DAY_OF_MONTH);
-	    return sameDay && sameMonth && sameYear;
+	private final boolean checkDay(final Calendar date) {
+	    return date.get(Calendar.HOUR_OF_DAY) < lastUpdated.get(Calendar.HOUR_OF_DAY) ; 
 	}
 
 	@Override
 	public void close() throws Exception {
-//		outchannel.close();
 		oWriter.close();
 	}
 	

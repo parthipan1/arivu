@@ -23,7 +23,7 @@ public final class Threadlocal<T> {
 	}
 
 	final Factory<T> factory;
-	final Map<String, Ref<T>> threadLocal = new Amap<String, Ref<T>>();
+	final Map<Object, Ref<T>> threadLocal = new Amap<Object, Ref<T>>();
 	final Trigger trigger;
 	final long threshold;
 	final Thread hook = new Thread(new Runnable() {
@@ -71,11 +71,13 @@ public final class Threadlocal<T> {
 		remove(getId());
 	}
 
-	private String getId() {
-		return String.valueOf(Thread.currentThread().hashCode());
+	private Object getId() {
+//		return String.valueOf(Thread.currentThread().hashCode());
+//		return Thread.currentThread().getName();
+		return Thread.currentThread().hashCode();
 	}
 
-	public void remove(final String id) {
+	public void remove(final Object id) {
 		Ref<T> remove = threadLocal.remove(id);
 		if (remove != null)
 			close(remove);
@@ -84,13 +86,13 @@ public final class Threadlocal<T> {
 	public void set(T t) {
 		remove();
 		if (t != null) {
-			final String id = getId();
+			final Object id = getId();
 			threadLocal.put(id, new Ref<T>(t));
 		}
 	}
 
 	public T get(Map<String, Object> params) {
-		final String id = getId();
+		final Object id = getId();
 		Ref<T> ref = threadLocal.get(id);
 		if (ref == null) {
 			ref = new Ref<T>(factory.create(params));
@@ -101,9 +103,10 @@ public final class Threadlocal<T> {
 		return getAndTrigger(ref);
 	}
 
-	T getAndTrigger(Ref<T> ref) {
+	T getAndTrigger(final Ref<T> ref) {
 		if (ref == null)
 			return null;
+		
 		final long ti = System.currentTimeMillis();
 
 		if (threshold > 0) {
@@ -120,17 +123,12 @@ public final class Threadlocal<T> {
 	}
 
 	public T get() {
-		final String id = getId();
-		Ref<T> ref = threadLocal.get(id);
-		if (ref != null) {
-			return getAndTrigger(ref);
-		}
-		return null;
+		return getAndTrigger(threadLocal.get(getId()));
 	}
 
 	public void evict() {
 		final long currentTimeMillis = System.currentTimeMillis();
-		for (final Entry<String, Ref<T>> e : threadLocal.entrySet()) {
+		for (final Entry<Object, Ref<T>> e : threadLocal.entrySet()) {
 			Ref<T> value = e.getValue();
 			if (value.isExpired(currentTimeMillis, threshold)) {
 				e.setValue(null);
@@ -163,7 +161,7 @@ public final class Threadlocal<T> {
 	}
 
 	private void closeAll() {
-		for (Entry<String, Ref<T>> e : threadLocal.entrySet()) {
+		for (Entry<Object, Ref<T>> e : threadLocal.entrySet()) {
 			Ref<T> value = e.getValue();
 			e.setValue(null);
 			close(value);

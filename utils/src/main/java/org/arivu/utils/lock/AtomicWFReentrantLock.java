@@ -44,13 +44,9 @@ public final class AtomicWFReentrantLock implements Lock {
 	public void lock() {
 		if (reentrant!=null ) {
 			try {
-				if(reentrant.isSame() ){
-					reentrant.acquire();
-				}else{
+				if(!reentrant.acquire() )
 					internalLock();
-				}
 			} catch (NullPointerException e) {
-//				e.printStackTrace();
 				internalLock();
 			}
 		}else{
@@ -158,8 +154,11 @@ final class Reentrant{
 //		System.out.println("Rentrant created! "+cnt);
 	}
 
-	void acquire(){
-		cnt.incrementAndGet();
+	boolean acquire(){
+		if(isSame()){
+			cnt.incrementAndGet();
+			return true;
+		}else return false;
 //		System.out.println("Rentrant acquired! "+cnt);
 	}
 

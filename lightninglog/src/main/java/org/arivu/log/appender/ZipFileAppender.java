@@ -32,7 +32,7 @@ class ZipFileAppender implements Appender {
 	
 	volatile int sizeFiles = 1;
 	
-	Date lastUpdated = null;
+	Calendar lastUpdated = null;
 	
 	final Lock lock = new AtomicWFReentrantLock();
 	
@@ -57,28 +57,7 @@ class ZipFileAppender implements Appender {
 	
 	@Override
 	public void append(final String log) {
-		Date date = new Date();
-		if( lastUpdated!=null && checkDay(date)){
-			lock.lock();
-			try {
-				if (checkDay(date)) {
-					fileSize = 0;
-					file.renameTo(new File(getFileName(fileName, false, ".zip")
-							+ new SimpleDateFormat(FileAppender.FILE_EXT_FORMAT).format(lastUpdated) + ".zip"));
-					out.close();
-					file = new File(getFileName(fileName, true, ".zip"));
-					out = new ZipOutputStream(new FileOutputStream(file));
-					ZipEntry e = new ZipEntry(getFileName(fileName, false, ".zip")
-							 +"_"+ new SimpleDateFormat(FileAppender.FILE_EXT_FORMAT).format(new Date()) + ".log");
-					out.putNextEntry(e);
-					lastUpdated = date;
-				}
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}finally {
-				lock.unlock();
-			}
-		}
+		dayRollover();
 		lock.lock();
 		try {
 			final byte[] data = log.getBytes();
@@ -95,15 +74,43 @@ class ZipFileAppender implements Appender {
 		}
 	}
 
-	private boolean checkDay(Date date) {
-		Calendar calendar1 = Calendar.getInstance();
-	    calendar1.setTime(date);
-	    Calendar calendar2 = Calendar.getInstance();
-	    calendar2.setTime(lastUpdated);
-	    boolean sameYear = calendar1.get(Calendar.YEAR) == calendar2.get(Calendar.YEAR);
-	    boolean sameMonth = calendar1.get(Calendar.MONTH) == calendar2.get(Calendar.MONTH);
-	    boolean sameDay = calendar1.get(Calendar.DAY_OF_MONTH) == calendar2.get(Calendar.DAY_OF_MONTH);
-	    return sameDay && sameMonth && sameYear;
+	private final void dayRollover() {
+		final Calendar date = Calendar.getInstance();
+		date.setTime(new Date());
+		if( lastUpdated!=null && checkDay(date)){
+			lock.lock();
+			try {
+				if (checkDay(date)) {
+					fileSize = 0;
+					file.renameTo(new File(getFileName(fileName, false, ".zip")
+							+ new SimpleDateFormat(FileAppender.FILE_EXT_FORMAT).format(lastUpdated.getTime()) + ".zip"));
+					out.close();
+					file = new File(getFileName(fileName, true, ".zip"));
+					out = new ZipOutputStream(new FileOutputStream(file));
+					ZipEntry e = new ZipEntry(getFileName(fileName, false, ".zip")
+							 +"_"+ new SimpleDateFormat(FileAppender.FILE_EXT_FORMAT).format(new Date()) + ".log");
+					out.putNextEntry(e);
+					lastUpdated = date;
+				}
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}finally {
+				lock.unlock();
+			}
+		}
+	}
+
+	private final boolean checkDay(final Calendar date) {
+		
+//		Calendar calendar1 = Calendar.getInstance();
+//	    calendar1.setTime(date);
+//	    Calendar calendar2 = Calendar.getInstance();
+//	    calendar2.setTime(lastUpdated);
+//	    boolean sameYear = calendar1.get(Calendar.YEAR) == calendar2.get(Calendar.YEAR);
+//	    boolean sameMonth = calendar1.get(Calendar.MONTH) == calendar2.get(Calendar.MONTH);
+//	    boolean sameDay = calendar1.get(Calendar.DAY_OF_MONTH) == calendar2.get(Calendar.DAY_OF_MONTH);
+//	    return sameDay && sameMonth && sameYear;
+	    return date.get(Calendar.HOUR_OF_DAY) < lastUpdated.get(Calendar.HOUR_OF_DAY) ; 
 	}
 
 	@Override
