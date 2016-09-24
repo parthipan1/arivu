@@ -143,7 +143,7 @@ public class LruCacheTest {
 		new LruCache<String, String>(null, 0);
 	}
 	
-	@Test(expected=IllegalArgumentException.class)
+	@Test
 	public void testConstructors2() {
 		LruCache<String, String> lruCache = new LruCache<String, String>(null, 1);
 		assertTrue(lruCache.cacheStrategy==CacheStrategy.TIME_MOST_RECENT);
