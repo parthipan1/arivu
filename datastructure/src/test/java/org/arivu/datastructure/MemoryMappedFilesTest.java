@@ -5,21 +5,18 @@ package org.arivu.datastructure;
 
 import static org.junit.Assert.assertTrue;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * @author P
  *
  */
-@Ignore
 public class MemoryMappedFilesTest {
 
 	/**
@@ -58,8 +55,8 @@ public class MemoryMappedFilesTest {
 	public void testAdd() throws IOException {
 		MemoryMappedFiles mmf = new MemoryMappedFiles();
 		
-		String one = "bin"+File.separator+"1.txt";
-		String two = "bin"+File.separator+"2.txt";
+		String one = "1.txt";
+		String two = "2.txt";
 		
 		assertTrue(mmf.size()==0);
 		
