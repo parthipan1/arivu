@@ -139,10 +139,10 @@ public final class AtomicWFReentrantLock implements Lock {
 	}
 }
 final class Reentrant{
-	final String id = getId();
+	final int id = getId();
 
-	static String getId() {
-		return String.valueOf(Thread.currentThread().hashCode());
+	static int getId() {
+		return Thread.currentThread().hashCode();
 	}
 	final AtomicLong cnt = new AtomicLong(1);
 	
@@ -169,6 +169,6 @@ final class Reentrant{
 	}
 	
 	boolean isSame(){
-		return id.equalsIgnoreCase(getId());
+		return id==getId() ;//id.equalsIgnoreCase(getId());
 	}
 }

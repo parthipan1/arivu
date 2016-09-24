@@ -170,7 +170,11 @@ abstract class AbstractDataSource implements DataSource {
 			this.cf = cf;
 		}
 		this.pool = usePool.create(factory);
-		Runtime.getRuntime().addShutdownHook(hook);
+		try {
+			Runtime.getRuntime().addShutdownHook(hook);
+		} catch (Throwable e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -480,13 +484,21 @@ abstract class AbstractDataSource implements DataSource {
 	public void destroy() {
 		networkExe.shutdownNow();
 		this.closed = true;
-		unregisterMXBean();
+		try {
+			unregisterMXBean();
+		} catch (Exception e1) {
+			System.err.println(e1.toString());
+		}
 		try {
 			pool.close();
 		} catch (Exception e) {
 			logger.error("Failed",e);
 		}
-		Runtime.getRuntime().removeShutdownHook(hook);
+		try {
+			Runtime.getRuntime().removeShutdownHook(hook);
+		} catch (Throwable e) {
+			System.err.println(e.toString());
+		}
 	}
 
 	public void close() {

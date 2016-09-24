@@ -196,8 +196,8 @@ public final class Producer<T> implements AutoCloseable {
 		threadlocal.get(null).consume(t,time);
 	}
 
-	String getThreadId() {
-		return String.valueOf(Thread.currentThread().hashCode());
+	Object getThreadId() {
+		return Thread.currentThread().hashCode();
 	}
 	
 	final Threadlocal<Consumer<T>> threadlocal = new Threadlocal<Consumer<T>>(new Factory<Consumer<T>>() {

@@ -169,33 +169,40 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 	Future<?> submitClear;
 	@Override
 	public void clear() {
+		if(isEmpty()) return;
+		
 		binaryTree.cas.lock();
-		if (nc == 1) {
-			nc = 0;
-			nullValue = null;
-		}
-		final Collection<Object> all = binaryTree.getAll();
-		binaryTree.clear();
-		binaryTree.cas.unlock();
-		final ExecutorService exe = Executors.newFixedThreadPool(1);
-		submitClear = exe.submit(new Runnable() {
-
-			@Override
-			public void run() {
-				try {
-					for (Object e : all) {
-						AnEntry<?, ?> e1 = (AnEntry<?, ?>) e;
-						e1.tree = null;
-					}
-				} finally {
-					if (submitClear != null) {
-						submitClear.cancel(true);
-						submitClear = null;
-					}
-					exe.shutdownNow();
-				}
+		try{
+			if (nc == 1) {
+				nc = 0;
+				nullValue = null;
 			}
-		});
+			final Collection<Object> all = binaryTree.getAll();
+			binaryTree.clear();
+			final ExecutorService exe = Executors.newFixedThreadPool(1);
+			submitClear = exe.submit(new Runnable() {
+				
+				@Override
+				public void run() {
+					try {
+						for (Object e : all) {
+							AnEntry<?, ?> e1 = (AnEntry<?, ?>) e;
+							e1.tree = null;
+						}
+					} finally {
+						if (submitClear != null) {
+							submitClear.cancel(true);
+							submitClear = null;
+						}
+						exe.shutdownNow();
+					}
+				}
+			});
+		}catch(Throwable t){
+			t.printStackTrace();
+		}finally{
+			binaryTree.cas.unlock();
+		}
 	}
 
 	@Override

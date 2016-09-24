@@ -100,7 +100,13 @@ public final class Threadlocal<T> {
 			// "+System.currentTimeMillis());
 			threadLocal.put(id, ref);
 		}
-		return getAndTrigger(ref);
+		T andTrigger = getAndTrigger(ref);
+		if(andTrigger==null){
+			ref = new Ref<T>(factory.create(params));
+			threadLocal.put(id, ref);
+			return ref.t;
+		}
+		return andTrigger;
 	}
 
 	T getAndTrigger(final Ref<T> ref) {
@@ -150,12 +156,13 @@ public final class Threadlocal<T> {
 		}
 		return all;
 	}
-
+//	volatile boolean closed = false; 
 	public void close() {
 		clearAll();
 		try {
 			Runtime.getRuntime().removeShutdownHook(hook);
 		} catch (Throwable e1) {
+//			e1.printStackTrace();
 			System.err.println(e1.toString());
 		}
 	}

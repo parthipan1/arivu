@@ -57,7 +57,7 @@ public final class Consumer<T> implements AutoCloseable {
 	/**
 	 * 
 	 */
-	private final String threadId;
+	private final Object threadId;
 	/**
 	 * 
 	 */

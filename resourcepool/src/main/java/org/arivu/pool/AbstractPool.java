@@ -5,12 +5,13 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Map;
+import java.util.concurrent.locks.Lock;
 
 import javax.management.InstanceAlreadyExistsException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
-import org.arivu.utils.lock.AtomicWFLock;
+import org.arivu.utils.lock.AtomicWFReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -452,7 +453,7 @@ abstract class AbstractPool<T> implements Pool<T> {
 	}
 
 //	final AtomicLock cas = new AtomicLock();
-	static final AtomicWFLock cas = new AtomicWFLock();
+	static final Lock cas = new AtomicWFReentrantLock();
 	
 	void nonBlockingRemove(final LinkedReference<T> lr) {
 		cas.lock();

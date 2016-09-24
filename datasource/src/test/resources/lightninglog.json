@@ -1,7 +1,7 @@
 {
 	"appenders":["zip"],
 	"loggers":{
-		"root":"debug",
+		"root":"info",
 		"org.arivu":"info"
 	},
 	"buffer":{
