@@ -71,19 +71,16 @@ public final class LruCache<K,V> {
 			case COUNT_MOST:
 				return COUNT_LEAST;
 			case COUNT_LEAST:
-				return COUNT_MOST;
 			default:
-				break;
+				return COUNT_MOST;
 			}
-			
-			return CacheStrategy.COUNT_MOST;
 		}
 	}
 
 	/**
 	 * 
 	 */
-	private final CacheStrategy cacheStrategy;
+	final CacheStrategy cacheStrategy;
 
 	/**
 	 * 
@@ -203,31 +200,31 @@ public final class LruCache<K,V> {
 		T t;
 		long tracker = 0;
 
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + ((t == null) ? 0 : t.hashCode());
-			return result;
-		}
-
-		@SuppressWarnings("rawtypes")
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			Tracker other = (Tracker) obj;
-			if (t == null) {
-				if (other.t != null)
-					return false;
-			} else if (!t.equals(other.t))
-				return false;
-			return true;
-		}
+//		@Override
+//		public int hashCode() {
+//			final int prime = 31;
+//			int result = 1;
+//			result = prime * result + ((t == null) ? 0 : t.hashCode());
+//			return result;
+//		}
+//
+//		@SuppressWarnings("rawtypes")
+//		@Override
+//		public boolean equals(Object obj) {
+//			if (this == obj)
+//				return true;
+//			if (obj == null)
+//				return false;
+//			if (getClass() != obj.getClass())
+//				return false;
+//			Tracker other = (Tracker) obj;
+//			if (t == null) {
+//				if (other.t != null)
+//					return false;
+//			} else if (!t.equals(other.t))
+//				return false;
+//			return true;
+//		}
 
 	}
 

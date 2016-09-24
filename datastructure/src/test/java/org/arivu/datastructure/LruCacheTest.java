@@ -1,7 +1,9 @@
 package org.arivu.datastructure;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import org.arivu.datastructure.LruCache.CacheStrategy;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -105,5 +107,45 @@ public class LruCacheTest {
 		assertTrue("Failed in size", cache.size()==0);
 	}
 
+	@Test
+	public void testRemove() {
+		LruCache<String, String> cache = new LruCache<String, String>(LruCache.CacheStrategy.COUNT_MOST, 2);
+		assertTrue("Failed in size", cache.size()==0);
+		
+		String one = "1";
+		String two = "2";
+		
+		cache.put(one, one);
+		cache.put(two, two);
+		assertTrue("Failed in size", cache.size()==2);
+		assertFalse("Failed in size", cache.isEmpty());
+		
+		cache.remove(one);
+		assertTrue("Failed in size", cache.size()==1);
+		cache.remove(two);
+		assertTrue("Failed in size", cache.size()==0);
+		assertTrue("Failed in size", cache.isEmpty());
+		cache.remove(null);
+		
+	}
 
+	@Test
+	public void testcacheStrategy() {
+		assertTrue(LruCache.CacheStrategy.COUNT_LEAST.other()==LruCache.CacheStrategy.COUNT_MOST);
+		assertTrue(LruCache.CacheStrategy.COUNT_MOST.other()==LruCache.CacheStrategy.COUNT_LEAST);
+		
+		assertTrue(LruCache.CacheStrategy.TIME_LEAST_RECENT.other()==LruCache.CacheStrategy.TIME_MOST_RECENT);
+		assertTrue(LruCache.CacheStrategy.TIME_MOST_RECENT.other()==LruCache.CacheStrategy.TIME_LEAST_RECENT);
+	}
+
+	@Test(expected=IllegalArgumentException.class)
+	public void testConstructors() {
+		new LruCache<String, String>(null, 0);
+	}
+	
+	@Test(expected=IllegalArgumentException.class)
+	public void testConstructors2() {
+		LruCache<String, String> lruCache = new LruCache<String, String>(null, 1);
+		assertTrue(lruCache.cacheStrategy==CacheStrategy.TIME_MOST_RECENT);
+	}
 }
