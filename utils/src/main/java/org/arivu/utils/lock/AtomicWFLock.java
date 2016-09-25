@@ -108,7 +108,7 @@ public final class AtomicWFLock implements Lock {
  * @param <T>
  */
 final class LinkedReference<T> {
-	static final AtomicLock lock = new AtomicLock();
+	Lock lock;
 
 	/**
 	 * 
@@ -124,15 +124,17 @@ final class LinkedReference<T> {
 	 * 
 	 */
 	public LinkedReference() {
-		this(null);
+		this(null, new AtomicLock());
 	}
 
 	/**
+	 * @param lock TODO
 	 * @param obj
 	 */
-	public LinkedReference(T t) {
+	private LinkedReference(T t, Lock lock) {
 		super();
 		this.obj = t;
+		this.lock = new AtomicLock();
 	}
 
 	/**
@@ -157,9 +159,10 @@ final class LinkedReference<T> {
 	 */
 	T poll(final Direction dir) {
 		LinkedReference<T> removeRef = null;
-		lock.lock();
+		Lock l = lock;
+		l.lock();
 		removeRef = remove(dir);
-		lock.unlock();
+		l.unlock();
 		if (removeRef != null) {
 			T obj2 = removeRef.obj;
 			removeRef.obj = null;
@@ -210,9 +213,10 @@ final class LinkedReference<T> {
 	 */
 	T add(final T t, Direction direction) {
 		if (t != null) {
-			lock.lock();
-			add(new LinkedReference<T>(t), direction);
-			lock.unlock();
+			Lock l = lock;
+			l.lock();
+			add(new LinkedReference<T>(t, l), direction);
+			l.unlock();
 		}
 		return t;
 	}
@@ -261,6 +265,7 @@ final class LinkedReference<T> {
 		Direction.left.set(right, left);
 		Direction.right.set(this, null);
 		Direction.left.set(this, null);
+		lock = null;
 	}
 
 	/**

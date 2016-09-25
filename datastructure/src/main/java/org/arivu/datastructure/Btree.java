@@ -450,12 +450,15 @@ final class LinkedReference {
 	 * @return
 	 */
 	LinkedReference search(final Object o){
-		LinkedReference ref = this.left;//direction.get(this);
+//		if(isEmpty()) return null;
+		
+		LinkedReference ref = this.right;
 		while (ref != null || ref != this ) {
 			if(this.compareStrategy.compare(ref.obj, o) ){
 				return ref;
+			}else{
+				ref = ref.right;
 			}
-			ref = ref.left;//direction.get(ref);
 		}
 		return null;
 	}

@@ -453,7 +453,7 @@ abstract class AbstractPool<T> implements Pool<T> {
 	}
 
 //	final AtomicLock cas = new AtomicLock();
-	static final Lock cas = new AtomicWFReentrantLock();
+	final Lock cas = new AtomicWFReentrantLock();
 	
 	void nonBlockingRemove(final LinkedReference<T> lr) {
 		cas.lock();
