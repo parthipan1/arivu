@@ -70,7 +70,7 @@ public final class DoublyLinkedSet<T> implements Set<T>, Queue<T> {
 	 * @param strategy
 	 * @param cas
 	 */
-	private DoublyLinkedSet(T t, Counter size, CompareStrategy strategy, Lock cas, Btree binaryTree) {
+	DoublyLinkedSet(T t, Counter size, CompareStrategy strategy, Lock cas, Btree binaryTree) {
 		super();
 		this.obj = t;
 		this.size = size;
