@@ -210,7 +210,12 @@ public class DoublyLinkedSetTest {
 		for(String s:set.toArray(new String[]{}))
 			sb.append(s);
 		
-		assertTrue("Failed in toArray!", (element1+element2+element3).equals(sb.toString()));	
+		assertTrue("Failed in toArray!", (element1+element2+element3).equals(sb.toString()));
+		
+		sb = new StringBuffer();
+		for(String s:set.toArray(new String[]{"1","2","3","4"}))
+			sb.append(s);
+//		System.out.println(" sb :: "+sb.toString());
 	}
 
 	/**
@@ -225,6 +230,8 @@ public class DoublyLinkedSetTest {
 		set.add(element1);
 		set.add(element2);
 		set.add(element3);
+		
+		assertFalse(set.add(null));
 		
 		StringBuffer sb = new StringBuffer();
 		for(String s:set.toArray(new String[]{}))
@@ -293,6 +300,7 @@ public class DoublyLinkedSetTest {
 			sb.append(s);
 		
 		assertTrue("Failed in containsAll", set.containsAll(set1));
+		assertFalse("Failed in containsAll", set.containsAll(null));
 		
 		set1.clear();
 		set1.add("four");
@@ -579,5 +587,48 @@ public class DoublyLinkedSetTest {
 		for( String s:set )
 			System.out.println("set Obj :: "+s);
 		assertTrue("Failed in || run test exp::"+initialValue+" got::"+set.size(), set.size()==0);
+	}
+	
+	@Test
+	public void testCompare(){
+		String one = new String("1");
+		String two = new String("1");
+		assertTrue(CompareStrategy.EQUALS.compare(one, two));
+		assertFalse(CompareStrategy.REF.compare(one, two));
+		assertTrue(CompareStrategy.REF.compare(one, one));
+		
+		assertTrue(CompareStrategy.EQUALS.compare(null, null));
+		assertTrue(CompareStrategy.REF.compare(null,null));
+		
+		assertFalse(CompareStrategy.EQUALS.compare(one, null));
+		assertFalse(CompareStrategy.REF.compare(one,null));
+		
+		assertFalse(CompareStrategy.EQUALS.compare(null, two));
+		assertFalse(CompareStrategy.REF.compare(null,two));
+	}
+	
+	@Test
+	public void testRefEquals(){
+		String one = new String("1");
+		String two = new String("2");
+		
+		Ref ref1 = new Ref(one);
+		Ref ref2 = new Ref(new DoublyLinkedSet<String>(one,null,null,null,null));
+		Ref ref3 = new Ref(one);
+		
+		Ref ref4 = new Ref((String)null);
+		Ref ref5 = new Ref(two);
+		
+		assertTrue(ref1.equals(ref1));
+		assertFalse(ref1.equals(null));
+		assertFalse(ref1.equals(new Object()));
+		assertTrue(ref1.equals(ref2));
+		assertTrue(ref1.equals(ref3));
+		
+		assertFalse(ref4.equals(ref1));
+		assertFalse(ref1.equals(ref5));
+		
+		assertTrue(ref4.hashCode()==0);
+		assertTrue(ref1.hashCode()==one.hashCode());
 	}
 }
