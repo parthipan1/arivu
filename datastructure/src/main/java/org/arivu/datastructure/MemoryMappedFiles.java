@@ -45,9 +45,9 @@ public final class MemoryMappedFiles {
 		} finally {
 			cas.unlock();
 		}
-		return mappedByteBuffer;
+		return copy(mappedByteBuffer);
 	}
-	
+
 	private MappedByteBuffer create(final String file) throws IOException {
 		final RandomAccessFile randomAccessFile = new RandomAccessFile(new File(file), "r");
 		try {
@@ -59,17 +59,17 @@ public final class MemoryMappedFiles {
 	}
 
 	public ByteBuffer getBytes(final String file) {
-		return bufferMap.get(file);
+		return copy(bufferMap.get(file));
 	}
-	
+
 	public String get(final String file) {
 		return convert(getBytes(file));
 	}
 
 	public ByteBuffer removeBytes(final String file) {
-		return bufferMap.remove(file);
+		return copy(bufferMap.remove(file));
 	}
-	
+
 	public String remove(final String file) {
 		return convert(removeBytes(file));
 	}
@@ -99,4 +99,18 @@ public final class MemoryMappedFiles {
 
 		return b.toString();
 	}
+
+	static ByteBuffer copy(final ByteBuffer original) {
+		if (original == null)
+			return null;
+		final ByteBuffer clone = (original.isDirect()) ? ByteBuffer.allocateDirect(original.capacity())
+				: ByteBuffer.allocate(original.capacity());
+		
+        original.rewind();//copy from the beginning
+        clone.put(original.asReadOnlyBuffer());
+        original.rewind();
+        clone.flip();
+        return clone;
+	}
+
 }

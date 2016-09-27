@@ -65,7 +65,7 @@ public class MemoryMappedFilesTest {
 		
 		assertTrue(mmf.size()==2);
 		
-		assertTrue("1".equals(mmf.get(one)));
+		assertTrue("Failed on add got :: "+mmf.get(one),"1".equals(mmf.get(one)));
 		assertTrue("2".equals(mmf.get(two)));
 		
 		mmf.remove(one);
