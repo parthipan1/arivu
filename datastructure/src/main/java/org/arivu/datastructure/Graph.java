@@ -120,7 +120,7 @@ public final class Graph implements Serializable {
 	 *
 	 * @param <T>
 	 */
-	private static final class Node<T extends Object> implements Serializable {
+	static final class Node<T extends Object> implements Serializable {
 		/**
 		 * 
 		 */
@@ -149,10 +149,7 @@ public final class Graph implements Serializable {
 		 */
 		@Override
 		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + ((obj == null) ? 0 : obj.hashCode());
-			return result;
+			return ((obj == null) ? 0 : obj.hashCode());
 		}
 
 		/*
@@ -254,7 +251,7 @@ public final class Graph implements Serializable {
 	 * @return
 	 * @throws CyclicException
 	 */
-	private boolean addInternal(final Object e, boolean resolve) throws CyclicException {
+	boolean addInternal(final Object e, boolean resolve) throws CyclicException {
 		if (e != null) {
 			Node<Object> node = getWrapper(e);
 			// final Node<Object> node = get(e, all, false);
@@ -415,7 +412,7 @@ public final class Graph implements Serializable {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	private static Node<Object> getWrapper(Object t) {
+	static Node<Object> getWrapper(Object t) {
 		if (t == null) {
 			return null;
 		} else if (t instanceof Node) {
@@ -483,7 +480,7 @@ public final class Graph implements Serializable {
 	 * @param add
 	 * @return
 	 */
-	private static Node<Object> get(Object p, DoublyLinkedSet<Node<Object>> tempAll, boolean add) {
+	static Node<Object> get(Object p, DoublyLinkedSet<Node<Object>> tempAll, boolean add) {
 		if (p != null) {
 			final DoublyLinkedSet<Node<Object>> search = tempAll.search(p);
 			if (search == null) {
@@ -547,18 +544,28 @@ public final class Graph implements Serializable {
 	/**
 	 * @param o
 	 * @return
+	 * @throws CyclicException 
 	 */
-	public boolean remove(final Object o) {
-		try {
-			if (o instanceof Node) {
-				return all.remove(o);
-			} else {
-				return all.remove(getWrapper((Object) o));
-			}
-		} catch (ClassCastException e) {
-			System.err.println(e.toString());
+	public boolean remove(final Object o) throws CyclicException {
+		boolean ret = false;
+//		try {
+			ret = removeInternal(o);
+			if(ret)
+				resolve();
+//		} catch (ClassCastException e) {
+//			System.err.println(e.toString());
+//		}
+		return ret;
+	}
+
+	boolean removeInternal(final Object o) {
+		boolean ret;
+		if (o instanceof Node) {
+			ret = all.remove(o);
+		} else {
+			ret = all.remove(getWrapper((Object) o));
 		}
-		return false;
+		return ret;
 	}
 
 	/**
@@ -589,13 +596,16 @@ public final class Graph implements Serializable {
 	/**
 	 * @param c
 	 * @return
+	 * @throws CyclicException 
 	 */
-	public boolean removeAll(final Collection<?> c) {
+	public boolean removeAll(final Collection<?> c) throws CyclicException {
 		boolean r = true;
 		if (c != null) {
 			for (Object e : c) {
-				r = r & remove(e);
+				r = r & removeInternal(e);
 			}
+			if(r)
+				resolve();
 		}
 		return r;
 	}
@@ -679,7 +689,7 @@ public final class Graph implements Serializable {
 	 * @param tresolved
 	 * @return
 	 */
-	private static String getStrt(Collection<Object> tresolved) {
+	static String getStrt(Collection<Object> tresolved) {
 		StringBuffer sb = new StringBuffer();
 
 		for (Object node : tresolved) {

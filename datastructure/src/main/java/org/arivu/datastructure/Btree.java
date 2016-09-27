@@ -405,8 +405,8 @@ final class LinkedReference {
 	 */
 	volatile LinkedReference left = this, right = this;
 
-	volatile LinkedReference write = null;
-	volatile LinkedReference read = null;
+//	volatile LinkedReference write = null;
+//	volatile LinkedReference read = null;
 
 	Lock lock = null;
 	CompareStrategy compareStrategy;
@@ -463,12 +463,13 @@ final class LinkedReference {
 		// if(isEmpty()) return null;
 
 		LinkedReference ref = this.right;
-		while (ref != null || ref != this) {
+		while (ref != null && ref.obj != null && ref != this) {
 			if (this.compareStrategy.compare(ref.obj, o)) {
 				return ref;
 			} else {
 				ref = ref.right;
 			}
+//			System.out.println(" search ref "+ref+" compareStrategy "+compareStrategy+" ref.obj "+ref.obj+" o "+o+" this "+this);
 		}
 		return null;
 	}

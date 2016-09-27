@@ -3,14 +3,18 @@
  */
 package org.arivu.datastructure;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import org.arivu.datastructure.Graph.Algo;
 import org.arivu.datastructure.Graph.CyclicException;
 import org.arivu.datastructure.Graph.Direction;
 import org.arivu.datastructure.Graph.Edges;
+import org.arivu.datastructure.Graph.Node;
 import org.arivu.datastructure.Graph.Visitor;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -172,12 +176,19 @@ public class GraphTest {
 
 		two.parents.add(one);
 
-		Graph graph = new Graph(new TestEdges());
-
+		TestEdges edges = new TestEdges();
+		Graph graph = new Graph(edges);
+		
+		assertTrue(graph.size()==0);
+		assertTrue(graph.isEmpty());
+		
 		graph.add(one);
 		graph.add(two);
 		graph.add(three);
-
+		graph.print();
+		
+		graph.resolve();
+		
 		assertTrue("Failed in max Level GOT :: " + graph.getMaxLevel(), graph.getMaxLevel() == 1);
 
 		assertTrue("Failed in resolve", graph.get(0).size() == 2);
@@ -186,7 +197,14 @@ public class GraphTest {
 		assertTrue("Failed in resolve", graph.get(0).contains(one));
 		assertTrue("Failed in resolve", graph.get(0).contains(three));
 		assertTrue("Failed in resolve", graph.get(1).contains(two));
-
+		
+		graph.setEdges(edges);
+		graph.resolve(edges);
+		assertTrue(graph.getEdges()==edges);
+		
+		graph.clear();
+		assertTrue(graph.size()==0);
+		assertTrue(graph.isEmpty());
 	}
 
 	@Test
@@ -215,27 +233,27 @@ public class GraphTest {
 
 	@Test(expected = CyclicException.class)
 	public void testAdd_Case3_Cyclic() throws CyclicException {
-		TestIdentity one = new TestIdentity("1");
-		TestIdentity two = new TestIdentity("2");
-		TestIdentity three = new TestIdentity("3");
-
-		one.children.add(two);
-		two.children.add(one);
-
-		Graph graph = new Graph(new TestEdges());
-
-		graph.add(one);
-		graph.add(two);
-		graph.add(three);
-
-		assertTrue("Failed in max Level", graph.getMaxLevel() == 1);
-
-		assertTrue("Failed in resolve", graph.get(0).size() == 2);
-		assertTrue("Failed in resolve", graph.get(1).size() == 1);
-
-		assertTrue("Failed in resolve", graph.get(0).contains(one));
-		assertTrue("Failed in resolve", graph.get(0).contains(three));
-		assertTrue("Failed in resolve", graph.get(1).contains(two));
+		try {
+			TestIdentity one = new TestIdentity("1");
+			TestIdentity two = new TestIdentity("2");
+			TestIdentity three = new TestIdentity("3");
+			one.children.add(two);
+			two.children.add(one);
+			Graph graph = new Graph(new TestEdges());
+			assertFalse(graph.add(null));
+			graph.add(one);
+			graph.add(two);
+			graph.add(three);
+			assertTrue("Failed in max Level", graph.getMaxLevel() == 1);
+			assertTrue("Failed in resolve", graph.get(0).size() == 2);
+			assertTrue("Failed in resolve", graph.get(1).size() == 1);
+			assertTrue("Failed in resolve", graph.get(0).contains(one));
+			assertTrue("Failed in resolve", graph.get(0).contains(three));
+			assertTrue("Failed in resolve", graph.get(1).contains(two));
+		} catch (CyclicException e) {
+			assertFalse(e.getSource().isEmpty());
+			throw e;
+		}
 	}
 
 	@Test
@@ -415,10 +433,16 @@ public class GraphTest {
 			}
 		};
 
-		graph.visit(a, visitor2, Direction.out, Algo.BFS, false);
+		// Direction.out , Algo.BFS - default
+		graph.visit(a, visitor2, null, null, false);
 		
 		assertTrue("Failed in bfs GOT :: "+buf2.toString()+" EXP :: adbce", buf2.toString().equals("adbce") );
 		
+		graph.visit(null, visitor2, null, null, false);
+		graph.visit(a, null, null, null, false);
+		graph.visit(null, null, null, null, false);
+		graph.visit(new TestIdentity("f"), visitor2, null, null, false);
+		graph.visit( Graph.getWrapper(new TestIdentity("f")) , visitor2, null, null, false);
 	}
 	
 	@Test
@@ -447,6 +471,8 @@ public class GraphTest {
 		graph.add(d);
 		// graph.print();
 		graph.add(e);
+		
+		assertFalse(graph.addInternal(null, true));
 //		 graph.print();
 
 		assertTrue("Failed in max Level", graph.getMaxLevel() == 4);
@@ -558,5 +584,103 @@ public class GraphTest {
 		
 	}
 	
+	@Test
+	public void testGetWrapper(){
+		assertTrue(Graph.getWrapper(null)==null);
+		Node<Object> wrapper = Graph.getWrapper("1");
+		assertTrue(Graph.getWrapper(wrapper)==wrapper);
+		
+		List<Object> asList = Arrays.asList(new Object[]{"1","2"});
+		String exp = "1,2";
+		
+		assertTrue(Graph.getStrt(asList).toString().equals(exp));
+		
+		List<Node<Object>> asListNode = new ArrayList<Graph.Node<Object>>();
+		for(Object o:asList)
+			asListNode.add(Graph.getWrapper(o));
+		
+		exp = "1::"+Integer.MIN_VALUE+",2::"+Integer.MIN_VALUE;
+		assertTrue(Graph.getStr(asListNode).toString().equals(exp));
+	}
 	
+	@Test
+	public void testRemove(){
+		TestIdentity one = new TestIdentity("1");
+		TestIdentity two = new TestIdentity("2");
+		TestIdentity three = new TestIdentity("3");
+
+		two.parents.add(one);
+
+		TestEdges edges = new TestEdges();
+		Graph graph = new Graph(edges);
+		
+		assertTrue(graph.size()==0);
+		assertTrue(graph.isEmpty());
+		
+		Collection<Object> all = new ArrayList<Object>();
+		all.add(one);
+		all.add(two);
+		all.add(three);
+		
+		try {
+			assertTrue(graph.addAll(all));
+		} catch (CyclicException e) {
+			fail("Failed on allAll");
+		}
+		assertFalse( graph.removeInternal(new TestIdentity("4")));
+		assertFalse( graph.removeInternal( Graph.getWrapper(new TestIdentity("4")) ));
+		
+		try {
+			assertTrue(graph.remove(one));
+		} catch (CyclicException e1) {
+			fail("Failed on remove");
+		}
+		
+		try {
+			assertTrue(graph.removeAll(all));
+		} catch (CyclicException e) {
+			fail("Failed on removeAll");
+		}
+	}
+	
+	@Test
+	public void testGetList(){
+		List<Object> asList = Arrays.asList(new Object[]{"1","2"});
+		
+		DoublyLinkedSet<Node<Object>> tempAll = new DoublyLinkedSet<Graph.Node<Object>>();
+		for(Object o:asList)
+			tempAll.add(Graph.getWrapper(o));
+		
+		assertTrue(Graph.get(null, tempAll, false)==null);
+		assertTrue(Graph.get("1", tempAll, false)!=null);
+		
+		assertTrue(Graph.get(Graph.getWrapper("1"), tempAll, false).obj.equals("1"));
+		assertTrue(Graph.get(Graph.getWrapper("2"), tempAll, false).obj.equals("2"));
+		
+		assertTrue(Graph.get("3", tempAll, false).obj.equals("3"));
+		assertTrue(tempAll.size()==2);
+		assertTrue(Graph.get("3", tempAll, true).obj.equals("3"));
+		assertTrue(tempAll.size()==3);
+		
+	}
+	
+	@Test
+	public void testNode(){
+		
+		Node<Object> nullWrapper = new Node<Object>(null);//Graph.getWrapper(null);
+		assertTrue(nullWrapper.hashCode()==0);
+		String t = "1";
+		Node<Object> wrapper = Graph.getWrapper(t);
+		assertTrue(wrapper.hashCode()==t.hashCode());
+		
+		assertTrue(wrapper.equals(wrapper));
+		assertFalse(wrapper.equals(null));
+		
+		assertFalse(nullWrapper.equals(wrapper));
+		
+		assertFalse(Graph.getWrapper("2").equals(wrapper));
+		
+		assertTrue(Graph.getWrapper("1").equals(wrapper));
+		
+	}
 }

@@ -94,12 +94,12 @@ public final class Threadlocal<T> {
 	public T get(Map<String, Object> params) {
 		final Object id = getId();
 		Ref<T> ref = threadLocal.get(id);
-		if (ref == null) {
-			ref = new Ref<T>(factory.create(params));
-			// System.out.println("get params Threadlocal id "+id+"
-			// "+System.currentTimeMillis());
-			threadLocal.put(id, ref);
-		}
+//		if (ref == null) {
+//			ref = new Ref<T>(factory.create(params));
+//			// System.out.println("get params Threadlocal id "+id+"
+//			// "+System.currentTimeMillis());
+//			threadLocal.put(id, ref);
+//		}
 		T andTrigger = getAndTrigger(ref);
 		if(andTrigger==null){
 			ref = new Ref<T>(factory.create(params));
