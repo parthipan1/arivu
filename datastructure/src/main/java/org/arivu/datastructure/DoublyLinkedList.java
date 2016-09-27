@@ -382,10 +382,7 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 			l.lock();
 			
 			DoublyLinkedList<T> ref = this.right;
-			while (ref != null) {
-				if (ref == this) {
-					break;
-				}
+			while (ref != null && ref != this ) {
 				if( !c.contains(ref.obj) ){
 					DoublyLinkedList<T> ll = ref;
 					ref = ref.left;
@@ -410,13 +407,10 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 			return null;
 	}
 
-	private DoublyLinkedList<T> getLinked(int index) {
+	DoublyLinkedList<T> getLinked(final int index) {
 		int idx = 0;
 		DoublyLinkedList<T> ref = this.right;
-		while (ref != null) {
-			if (ref == this) {
-				break;
-			}
+		while (ref != null && ref != this ) {
 			if(idx==index){
 				return ref;
 			}
@@ -426,7 +420,7 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 		return null;
 	}
 
-	private void validateIndex(int index) {
+	void validateIndex(int index) {
 		if( index >= size.get() || index < 0 ) throw new ArrayIndexOutOfBoundsException(index);
 	}
 
@@ -471,11 +465,8 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 	public int indexOf(Object o) {
 		int idx = 0;
 		DoublyLinkedList<T> ref = this.right;
-		while (ref != null) {
-			if (ref == this) {
-				break;
-			}
-			if(ref.obj==o){
+		while (ref != null && ref != this ) {
+			if(compareStrategy.compare(ref.obj, o)){
 				return idx;
 			}
 			ref = ref.right;
@@ -488,9 +479,9 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 	public int lastIndexOf(Object o) {
 		DoublyLinkedList<T> ref = this.left;
 		int idx = size.get()-1;
-		while (ref != null) {
-			if(ref==this)
-				break;
+		while ( ref != null && ref!=this ) {
+//			if(ref==this)
+//				break;
 			if (ref.obj == o) {
 				return idx;
 			}

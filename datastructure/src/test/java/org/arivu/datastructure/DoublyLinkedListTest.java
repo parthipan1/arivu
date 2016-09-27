@@ -2,6 +2,7 @@ package org.arivu.datastructure;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -549,6 +550,39 @@ public class DoublyLinkedListTest {
 			System.err.println(msg);
 		}
 		assertTrue("Failed in || run test exp::"+initialValue+" got::"+list.size(), list.size()==0);
+	}
+	
+	@Test
+	public void testValidateIndex() {
+		String element1 = "one";
+		String element2 = "two";
+		DoublyLinkedList<String> list = new DoublyLinkedList<String>();
+		list.add(element1);
+		list.offer(element2);
+		assertFalse(list.add(null));
+		assertTrue(list.peek().equals(element1));
+		assertTrue(list.indexOf(element1)==0);
+		int indexOf = list.indexOf("3");
+		assertTrue("Failed in indexOf -3 got "+indexOf+" exp -1",indexOf==-1);
+		try {
+			list.validateIndex(-1);
+			fail("Failed on ArrayIndexOutOfBoundsException -1");
+		} catch (ArrayIndexOutOfBoundsException e) {
+			assertTrue(e!=null);
+		}
+		
+		try {
+			list.validateIndex(2);
+			fail("Failed on ArrayIndexOutOfBoundsException 2");
+		} catch (ArrayIndexOutOfBoundsException e) {
+			assertTrue(e!=null);
+		}
+		
+		assertTrue(list.getLinked(2)==null);
+		assertTrue(list.remove(2)==null);
+		assertTrue(list.lastIndexOf("3")==-1);
+		assertFalse(list.remove("3"));
+		assertTrue(list.element()==null);
 	}
 	
 //	@Test
