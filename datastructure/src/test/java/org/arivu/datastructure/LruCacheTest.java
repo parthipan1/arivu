@@ -141,6 +141,12 @@ public class LruCacheTest {
 		
 		assertTrue(LruCache.CacheStrategy.TIME_LEAST_RECENT.other()==LruCache.CacheStrategy.TIME_MOST_RECENT);
 		assertTrue(LruCache.CacheStrategy.TIME_MOST_RECENT.other()==LruCache.CacheStrategy.TIME_LEAST_RECENT);
+		
+		assertTrue(LruCache.CacheStrategy.valueOf("COUNT_LEAST")==LruCache.CacheStrategy.COUNT_LEAST);
+		assertTrue(LruCache.CacheStrategy.valueOf("COUNT_MOST")==LruCache.CacheStrategy.COUNT_MOST);
+		assertTrue(LruCache.CacheStrategy.valueOf("TIME_LEAST_RECENT")==LruCache.CacheStrategy.TIME_LEAST_RECENT);
+		assertTrue(LruCache.CacheStrategy.valueOf("TIME_MOST_RECENT")==LruCache.CacheStrategy.TIME_MOST_RECENT);
+		assertTrue(LruCache.CacheStrategy.values().length==4);
 	}
 
 	@Test(expected=IllegalArgumentException.class)
@@ -160,10 +166,14 @@ public class LruCacheTest {
 		Tracker<String> t1 = countMost.create("1");
 		Tracker<String> t2 = countMost.create("2");
 		
+//		System.out.println(" t1 "+t1.tracker+" t2 "+t2.tracker+" 0");
+		
 		assertFalse(countMost.compare(t1, t2));
 		assertTrue(countMost.other().compare(t1, t2));
 		
+//		System.out.println(" t1 "+t1.tracker+" t2 "+t2.tracker+" 1");
 		countMost.access(t2);
+//		System.out.println(" t1 "+t1.tracker+" t2 "+t2.tracker+" 2");
 		
 		assertTrue(countMost.compare(t1, t2));
 		assertFalse(countMost.other().compare(t1, t2));
@@ -171,18 +181,26 @@ public class LruCacheTest {
 	}
 	
 	@Test
-	public void testCompare2() {
+	public void testCompare2() throws InterruptedException {
 		CacheStrategy timeMost = CacheStrategy.TIME_MOST_RECENT;
 		Tracker<String> t1 = timeMost.create("1");
+		Thread.sleep(10);
 		Tracker<String> t2 = timeMost.create("2");
 		
-		assertFalse(timeMost.compare(t1, t2));
-		assertTrue(timeMost.other().compare(t1, t2));
+//		System.out.println(" t1 "+t1.tracker+" t2 "+t2.tracker+" 0");
 		
+		assertTrue(timeMost.compare(t1, t2));
+		assertFalse(timeMost.other().compare(t1, t2));
+
+//		System.out.println(" t1 "+t1.tracker+" t2 "+t2.tracker+" 1");
+		Thread.sleep(10);
 		timeMost.other().access(t1);
+//		System.out.println(" t1 "+t1.tracker+" t2 "+t2.tracker+" 2");
 		
 		assertFalse(timeMost.compare(t1, t2));
 		assertTrue(timeMost.other().compare(t1, t2));
+		
+//		assertFalse(timeMost.other().compare(t2, t1));
 		
 	}
 }

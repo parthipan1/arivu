@@ -20,7 +20,7 @@ public final class Tries {
 	 * @author P
 	 *
 	 */
-	private static final class Node {
+	static final class Node {
 		/**
 		 * 
 		 */
@@ -136,7 +136,7 @@ public final class Tries {
 
 	int index = 0;
 
-	private Node search(final String prefix) {
+	Node search(final String prefix) {
 		char[] charArray = prefix.toCharArray();
 		Node n = ROOT;
 		for (char c : charArray) {
@@ -144,7 +144,7 @@ public final class Tries {
 			if (n == null)
 				break;
 		}
-		if (n.getPrefix().equals(prefix)) {
+		if (n!=null && n.getPrefix().equals(prefix)) {
 			return n;
 		} else {
 			return null;

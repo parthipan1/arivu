@@ -685,5 +685,9 @@ public class GraphTest {
 		assertTrue(Graph.Direction.valueOf("in")==Graph.Direction.in);
 		assertTrue(Graph.Direction.valueOf("out")==Graph.Direction.out);
 		assertTrue(Graph.Direction.values().length==2);
+		
+		assertTrue(Graph.Algo.valueOf("DFS")==Graph.Algo.DFS);
+		assertTrue(Graph.Algo.valueOf("BFS")==Graph.Algo.BFS);
+		assertTrue(Graph.Algo.values().length==2);
 	}
 }
