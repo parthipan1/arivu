@@ -175,12 +175,12 @@ public final class Threadlocal<T> {
 		}
 	}
 
-	private void close(Ref<T> value) {
+	void close(Ref<T> value) {
 		if (value != null && value.t != null && value.t instanceof AutoCloseable) {
 			try {
 				((AutoCloseable) value.t).close();
 			} catch (Exception e1) {
-				e1.printStackTrace();
+				System.err.println(e1.toString());
 			}
 		}
 	}
@@ -190,7 +190,7 @@ public final class Threadlocal<T> {
 	 *
 	 * @param <T>
 	 */
-	private static final class Ref<T> {
+	static final class Ref<T> {
 		private final T t;
 		volatile long time = System.currentTimeMillis();
 

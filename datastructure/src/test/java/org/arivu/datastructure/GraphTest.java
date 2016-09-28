@@ -682,5 +682,8 @@ public class GraphTest {
 		
 		assertTrue(Graph.getWrapper("1").equals(wrapper));
 		
+		assertTrue(Graph.Direction.valueOf("in")==Graph.Direction.in);
+		assertTrue(Graph.Direction.valueOf("out")==Graph.Direction.out);
+		assertTrue(Graph.Direction.values().length==2);
 	}
 }

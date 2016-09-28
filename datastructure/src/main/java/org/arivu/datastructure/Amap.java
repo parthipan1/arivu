@@ -190,10 +190,7 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 							e1.tree = null;
 						}
 					} finally {
-						if (submitClear != null) {
-							submitClear.cancel(true);
-							submitClear = null;
-						}
+						cancelSubmit();
 						exe.shutdownNow();
 					}
 				}
@@ -238,13 +235,20 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 		return entries;
 	}
 
+	void cancelSubmit() {
+		if (submitClear != null) {
+			submitClear.cancel(true);
+			submitClear = null;
+		}
+	}
+
 	/**
 	 * @author P
 	 *
 	 * @param <K>
 	 * @param <V>
 	 */
-	private static final class AnEntry<K, V> implements Entry<K, V>, Serializable {
+	static final class AnEntry<K, V> implements Entry<K, V>, Serializable {
 
 		/**
 		 * 
@@ -290,10 +294,10 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 
 		@Override
 		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + ((k == null) ? 0 : k.hashCode());
-			return result;
+//			final int prime = 31;
+//			int result = 1;
+//			result = prime * result + ((k == null) ? 0 : k.hashCode());
+			return ((k == null) ? 0 : k.hashCode());
 		}
 
 		@Override

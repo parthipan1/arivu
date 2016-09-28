@@ -27,7 +27,7 @@ public final class Btree implements Serializable {
 	 * @author P
 	 *
 	 */
-	private static final class Node {
+	 static final class Node {
 		final int order;
 		Lock cas;
 		final boolean leaf;
@@ -79,7 +79,7 @@ public final class Btree implements Serializable {
 			}
 		}
 
-		private void resetLeaves() {
+		void resetLeaves() {
 			for (int i = 0; i < this.refs.length; i++) {
 				this.refs[i] = null;
 			}

@@ -4,6 +4,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.arivu.datastructure.LruCache.CacheStrategy;
+import org.arivu.datastructure.LruCache.Tracker;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -37,6 +38,8 @@ public class LruCacheTest {
 		LruCache<String, String> cache = new LruCache<String, String>(LruCache.CacheStrategy.COUNT_MOST, 2);
 		assertTrue("Failed in size", cache.size()==0);
 		
+		assertTrue("Failed in remove", cache.remove()==null);
+		
 		String one = "1";
 		String two = "2";
 		String three = "3";
@@ -66,6 +69,8 @@ public class LruCacheTest {
 	public void testPut_Time() {
 		LruCache<String, String> cache = new LruCache<String, String>(LruCache.CacheStrategy.TIME_MOST_RECENT, 2);
 		assertTrue("Failed in size", cache.size()==0);
+		
+		assertTrue("Failed in remove", cache.remove()==null);
 		
 		String one = "1";
 		String two = "2";
@@ -147,5 +152,37 @@ public class LruCacheTest {
 	public void testConstructors2() {
 		LruCache<String, String> lruCache = new LruCache<String, String>(null, 1);
 		assertTrue(lruCache.cacheStrategy==CacheStrategy.TIME_MOST_RECENT);
+	}
+	
+	@Test
+	public void testCompare1() {
+		CacheStrategy countMost = CacheStrategy.COUNT_MOST;
+		Tracker<String> t1 = countMost.create("1");
+		Tracker<String> t2 = countMost.create("2");
+		
+		assertFalse(countMost.compare(t1, t2));
+		assertTrue(countMost.other().compare(t1, t2));
+		
+		countMost.access(t2);
+		
+		assertTrue(countMost.compare(t1, t2));
+		assertFalse(countMost.other().compare(t1, t2));
+		
+	}
+	
+	@Test
+	public void testCompare2() {
+		CacheStrategy timeMost = CacheStrategy.TIME_MOST_RECENT;
+		Tracker<String> t1 = timeMost.create("1");
+		Tracker<String> t2 = timeMost.create("2");
+		
+		assertFalse(timeMost.compare(t1, t2));
+		assertTrue(timeMost.other().compare(t1, t2));
+		
+		timeMost.other().access(t1);
+		
+		assertFalse(timeMost.compare(t1, t2));
+		assertTrue(timeMost.other().compare(t1, t2));
+		
 	}
 }

@@ -296,11 +296,11 @@ public final class Graph implements Serializable {
 
 		recursivelyResolve(all, head, Direction.out, 1, edges);
 
-		for (Node<Object> node : leg) {
-			if (node.level < 0) {
-				recursivelyResolve(all, node, Direction.in, getMaxLevel() + 1, edges);
-			}
-		}
+//		for (Node<Object> node : leg) {
+//			if (node.level < 0) {
+//				recursivelyResolve(all, node, Direction.in, getMaxLevel() + 1, edges);
+//			}
+//		}
 
 		// all = tempAll;
 
@@ -324,20 +324,20 @@ public final class Graph implements Serializable {
 		tset.clear();
 	}
 
-	/**
-	 * @param allNodes
-	 * @param startNode
-	 * @param direction
-	 * @param startLevel
-	 * @param edges
-	 * @throws CyclicException
-	 */
-	private static void recursivelyResolve(final DoublyLinkedSet<Node<Object>> allNodes, final Node<Object> startNode,
-			final Direction direction, int startLevel, Edges edges) throws CyclicException {
-		Set<Node<Object>> nodes = new DoublyLinkedSet<Graph.Node<Object>>();
-		nodes.add(startNode);
-		recursivelyResolve(allNodes, nodes, direction, startLevel, edges);
-	}
+//	/**
+//	 * @param allNodes
+//	 * @param startNode
+//	 * @param direction
+//	 * @param startLevel
+//	 * @param edges
+//	 * @throws CyclicException
+//	 */
+//	private static void recursivelyResolve(final DoublyLinkedSet<Node<Object>> allNodes, final Node<Object> startNode,
+//			final Direction direction, int startLevel, Edges edges) throws CyclicException {
+//		Set<Node<Object>> nodes = new DoublyLinkedSet<Graph.Node<Object>>();
+//		nodes.add(startNode);
+//		recursivelyResolve(allNodes, nodes, direction, startLevel, edges);
+//	}
 
 	/**
 	 * @param allNodes
@@ -365,21 +365,22 @@ public final class Graph implements Serializable {
 				if (children != null && children.size() > 0) {
 					for (Node<Object> wrapper : children) {
 						final DoublyLinkedSet<Node<Object>> search = allNodes.search(wrapper);
-						if (search != null) {
+						// TODO :: check if it is ok to comment out this condition.
+//						if (search != null) {
 							search.obj.level = startLevel;
 							// System.out.println(" setLevel
 							// "+search.obj.level+" "+search.obj.obj+"
 							// recursivelyResolve 1");
 							unresolved.add(search.obj);
-						} else {
-							allNodes.add(wrapper);
-							wrapper.level = startLevel;
-							unresolved.add(wrapper);
-							// System.out.println(" setLevel "+wrapper.level+"
-							// "+wrapper.obj+" recursivelyResolve 2 unresolved
-							// "+getStr(unresolved)+" allNodes ::
-							// "+getStr(allNodes));
-						}
+//						} else {
+//							allNodes.add(wrapper);
+//							wrapper.level = startLevel;
+//							unresolved.add(wrapper);
+//							// System.out.println(" setLevel "+wrapper.level+"
+//							// "+wrapper.obj+" recursivelyResolve 2 unresolved
+//							// "+getStr(unresolved)+" allNodes ::
+//							// "+getStr(allNodes));
+//						}
 					}
 				}
 			}

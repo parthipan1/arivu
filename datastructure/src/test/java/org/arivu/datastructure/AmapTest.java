@@ -16,6 +16,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.arivu.datastructure.Amap.AnEntry;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -169,11 +170,26 @@ public class AmapTest {
 	// public void testValues() {
 	// fail("Not yet implemented");
 	// }
-	//
-	// @Test
-	// public void testEntrySet() {
-	// fail("Not yet implemented");
-	// }
+	
+	 @Test
+	 public void testEntryHcAndEquals() {
+		 Amap<String,String> test = new Amap<String, String>();
+		 
+		 String key = (String)null;
+		 AnEntry<String, String> keyWrap2 = test.getKeyWrap(key);
+		 assertTrue(keyWrap2.hashCode()==0);
+		 AnEntry<String, String> keyWrap1 = test.getKeyWrap("1");
+		 assertTrue(keyWrap1.hashCode()=="1".hashCode());
+		 AnEntry<String, String> keyWrap3 = test.getKeyWrap("2");
+		 AnEntry<String, String> keyWrap4 = test.getKeyWrap("1");
+		 
+		 assertTrue(keyWrap1.equals(keyWrap1));
+		 assertFalse(keyWrap1.equals(null));
+		 assertFalse(keyWrap1.equals("1"));
+		 assertFalse(keyWrap2.equals(keyWrap1));
+		 assertFalse(keyWrap3.equals(keyWrap1));
+		 assertTrue(keyWrap4.equals(keyWrap1));
+	 }
 
 	/**
 	 * @throws InterruptedException 

@@ -4,6 +4,7 @@
 package org.arivu.datastructure;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
 
@@ -62,6 +63,7 @@ public class MemoryMappedFilesTest {
 		
 		mmf.add(one);
 		mmf.add(two);
+		mmf.add(one);
 		
 		assertTrue(mmf.size()==2);
 		
@@ -75,6 +77,13 @@ public class MemoryMappedFilesTest {
 		mmf.clear();
 		
 		assertTrue(mmf.get(two)==null);
+		
+		try {
+			mmf.add("3.txt");
+			fail("Failed to open 3.txt!");
+		} catch (IOException e) {
+			assertTrue(e!=null);
+		}
 	}
 
 //	/**

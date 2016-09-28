@@ -7,6 +7,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.Callable;
@@ -195,6 +196,15 @@ public class ThreadlocalTest {
 		
 	}
 	
+	static class SomethingExp implements AutoCloseable{
+
+		@Override
+		public void close() throws Exception {
+			throw new IOException("test Exp!");
+		}
+		
+	}
+	
 	/**
 	 * Test method for {@link org.arivu.datastructure.Threadlocal#evict()}.
 	 * @throws InterruptedException 
@@ -357,14 +367,38 @@ public class ThreadlocalTest {
 //	public void testGetAll() {
 //		fail("Not yet implemented");
 //	}
-//
-//	/**
-//	 * Test method for {@link org.arivu.datastructure.Threadlocal#close()}.
-//	 */
-//	@Test
-//	public void testClose() {
-//		fail("Not yet implemented");
-//	}
+
+	/**
+	 * Test method for {@link org.arivu.datastructure.Threadlocal#close()}.
+	 * @throws InterruptedException 
+	 */
+	@Test
+	public void testCloseExp() throws InterruptedException {
+		final AtomicInteger create = new  AtomicInteger(0);
+		int threshold = 100;
+		final Threadlocal<SomethingExp> threadlocal = new Threadlocal<SomethingExp>(new Threadlocal.Factory<SomethingExp>(){
+
+			@Override
+			public SomethingExp create(Map<String, Object> params) {
+				create.incrementAndGet();
+				return new SomethingExp();
+			}
+			
+		},threshold); 
+		
+		assertTrue(threadlocal.get(null)!=null);
+		assertTrue(threadlocal.get()!=null);
+		
+		Thread.sleep(threshold+5);
+		
+		assertTrue(threadlocal.get()==null);
+		
+		threadlocal.close(null);
+		Threadlocal.Ref<SomethingExp> value = new Threadlocal.Ref<SomethingExp>((SomethingExp)null);
+		threadlocal.close(value);
+		
+		threadlocal.close();
+	}
 	
 	private Callable<Integer> getTask(final Threadlocal<String> map, final int reqPerThread, final AtomicInteger c,
 			final CountDownLatch start, final CountDownLatch end) {

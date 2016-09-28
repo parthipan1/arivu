@@ -5,9 +5,12 @@ package org.arivu.datastructure;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
+import java.util.List;
 import java.util.concurrent.locks.Lock;
 
+import org.arivu.datastructure.Btree.Node;
 import org.arivu.utils.lock.AtomicWFReentrantLock;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -103,5 +106,76 @@ public class BtreeTest {
 		assertTrue(l.search("1")==null);
 		assertTrue(l.search("l")==l.left);
 		assertTrue(l.search("r")==l.right);
+	}
+	
+	@Test
+	public void testNodeLeaves() {
+		
+		Btree.Node n = new Btree.Node(2,new AtomicWFReentrantLock(),true,CompareStrategy.EQUALS,null);
+		n.add("1", 0, new int[]{0});
+		int cnt = 0;
+		for (int i = 0; i < n.refs.length; i++) {
+			if(n.refs[i] == null){
+				cnt++;
+			}
+		}
+		assertTrue(cnt==1);
+		n.resetLeaves();
+		cnt = 0;
+		for (int i = 0; i < n.refs.length; i++) {
+			if(n.refs[i] == null){
+				cnt++;
+			}
+		}
+		assertTrue(cnt==2);
+	}
+
+	@Test
+	public void testNodeLeavesRemove() {
+		
+		Btree.Node n = new Btree.Node(2,new AtomicWFReentrantLock(),true,CompareStrategy.EQUALS,null);
+		
+		List<Node> rns = new DoublyLinkedList<Btree.Node>();
+		
+		assertTrue(n.remove("1", 0, new int[]{0}, rns)==null);
+		
+		n.add("1", 0, new int[]{0});
+		
+		assertTrue(n.remove("2", 0, new int[]{0}, rns)==null);
+		assertFalse(n.remove("1", 0, new int[]{0}, rns)==null);
+		
+	}
+
+	@Test
+	public void testNodeDirection() {
+		assertTrue(Direction.valueOf("right")==Direction.right);
+		assertTrue(Direction.valueOf("left")==Direction.left);
+		assertTrue(Direction.values().length==2);
+	}
+	
+
+	@Test
+	public void testBtreeConstruction1() {
+		try {
+			new Btree(0);
+			fail("failed on powerbase 0");
+		} catch (IllegalArgumentException e) {
+			assertTrue(e!=null);
+		}
+		try {
+			new Btree(5);
+			fail("failed on powerbase 5");
+		} catch (IllegalArgumentException e) {
+			assertTrue(e!=null);
+		}
+		
+		Btree b = new Btree();
+		assertTrue(b.getHeight()==8);
+		assertTrue(b.remove(null)==null);
+		assertTrue(b.get(null)==null);
+		
+		assertTrue(b.size()==0);
+		b.add(null);
+		assertTrue(b.size()==0);
 	}
 }
