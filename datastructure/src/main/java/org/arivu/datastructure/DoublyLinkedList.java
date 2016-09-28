@@ -110,10 +110,16 @@ public final class DoublyLinkedList<T> implements List<T>,Queue<T> {
 	 */
 	@Override
 	public T poll(){
+		Lock l = this.cas;
+		l.lock();
 		DoublyLinkedList<T> removeRight = removeRight();
-		if(removeRight!=null)
+		if(removeRight!=null){
+			l.unlock();
 			return removeRight.obj;
-		return null;
+		}else{
+			l.unlock();
+			return null;
+		}
 	}
 	
 	/**
