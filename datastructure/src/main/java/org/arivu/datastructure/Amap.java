@@ -184,19 +184,21 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 				
 				@Override
 				public void run() {
-					try {
+//					try {
 						for (Object e : all) {
-							AnEntry<?, ?> e1 = (AnEntry<?, ?>) e;
-							e1.tree = null;
+//							if (e!=null) {
+								AnEntry<?, ?> e1 = (AnEntry<?, ?>) e;
+								e1.tree = null;
+//							}
 						}
-					} finally {
+//					} finally {
 						cancelSubmit();
 						exe.shutdownNow();
-					}
+//					}
 				}
 			});
-		}catch(Throwable t){
-			t.printStackTrace();
+//		}catch(Throwable t){
+//			t.printStackTrace();
 		}finally{
 			binaryTree.cas.unlock();
 		}

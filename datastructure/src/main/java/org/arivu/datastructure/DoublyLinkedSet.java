@@ -116,10 +116,16 @@ public final class DoublyLinkedSet<T> implements Set<T>, Queue<T> {
 	 */
 	@Override
 	public T poll() {
+		Lock l = cas;
+		l.lock();
 		DoublyLinkedSet<T> removeRight = removeRight();
-		if (removeRight != null)
+		if (removeRight != null){
+			l.unlock();
 			return removeRight.obj;
-		return null;
+		}else{
+			l.unlock();
+			return null;
+		}
 	}
 
 	/**
@@ -167,9 +173,10 @@ public final class DoublyLinkedSet<T> implements Set<T>, Queue<T> {
 				if (tl != null)
 					tl.right = l;
 
-				if (right == this) {
-					right = l;
-				}
+//				TODO: check to see if we don't get any null pointer exp
+//				if (right == this) {
+//					right = l;
+//				}
 			}
 
 			lo.unlock();
@@ -212,10 +219,16 @@ public final class DoublyLinkedSet<T> implements Set<T>, Queue<T> {
 	 */
 	@Override
 	public T remove() {
+		Lock l = cas;
+		l.lock();
 		DoublyLinkedSet<T> removeRight = removeRight();
-		if (removeRight != null)
+		if (removeRight != null){
+			l.unlock();
 			return removeRight.obj;
-		return null;
+		}else{
+			l.unlock();
+			return null;
+		}
 	}
 
 	T removeRef() {

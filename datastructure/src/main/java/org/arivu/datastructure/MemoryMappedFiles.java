@@ -49,11 +49,18 @@ public final class MemoryMappedFiles {
 	}
 
 	private MappedByteBuffer create(final String file) throws IOException {
-		final RandomAccessFile randomAccessFile = new RandomAccessFile(new File(file), "r");
+		RandomAccessFile randomAccessFile = null;
 		try {
+			randomAccessFile = new RandomAccessFile(new File(file), "r");
 			final FileChannel fileChannel = randomAccessFile.getChannel();
 			return fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size());
 		} finally {
+			closeFile(randomAccessFile);
+		}
+	}
+
+	void closeFile(RandomAccessFile randomAccessFile) throws IOException {
+		if (randomAccessFile != null) {
 			randomAccessFile.close();
 		}
 	}
@@ -103,14 +110,16 @@ public final class MemoryMappedFiles {
 	static ByteBuffer copy(final ByteBuffer original) {
 		if (original == null)
 			return null;
-		final ByteBuffer clone = (original.isDirect()) ? ByteBuffer.allocateDirect(original.capacity())
-				: ByteBuffer.allocate(original.capacity());
-		
-        original.rewind();//copy from the beginning
-        clone.put(original.asReadOnlyBuffer());
-        original.rewind();
-        clone.flip();
-        return clone;
+		// final ByteBuffer clone = (original.isDirect()) ?
+		// ByteBuffer.allocateDirect(original.capacity())
+		// : ByteBuffer.allocate(original.capacity());
+
+		final ByteBuffer clone = ByteBuffer.allocateDirect(original.capacity());
+		original.rewind();// copy from the beginning
+		clone.put(original.asReadOnlyBuffer());
+		original.rewind();
+		clone.flip();
+		return clone;
 	}
 
 }

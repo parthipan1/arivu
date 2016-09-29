@@ -84,6 +84,8 @@ public class MemoryMappedFilesTest {
 		} catch (IOException e) {
 			assertTrue(e!=null);
 		}
+		
+		mmf.closeFile(null);
 	}
 
 //	/**

@@ -631,4 +631,56 @@ public class DoublyLinkedSetTest {
 		assertTrue(ref4.hashCode()==0);
 		assertTrue(ref1.hashCode()==one.hashCode());
 	}
+	
+	@Test
+	public void testSize1() {
+		DoublyLinkedSet<String> set = new DoublyLinkedSet<String>();
+		assertTrue("Failed in clear", set.isEmpty());
+		assertTrue("Failed in clear", set.size()==0);
+		set.size = null;
+		assertTrue("Failed in clear", set.size()==0);
+	}
+	
+	@Test
+	public void testSize2() {
+		
+		DoublyLinkedSet<String> set = new DoublyLinkedSet<String>();
+		String element1 = "one";
+		String element2 = "two";
+		String element3 = "three";
+		
+		set.offer(element1);
+		set.offer(element2);
+		set.offer(element3);
+		
+		DoublyLinkedSet<String> set1 = new DoublyLinkedSet<String>();
+		assertTrue("Failed in clear", set1.isEmpty());
+		assertTrue("Failed in clear", set1.size()==0);
+		
+		assertTrue(set1.remove()==null);
+		
+		DoublyLinkedSet<String> set2 = new DoublyLinkedSet<String>(set);
+		
+		assertFalse("Failed in clear", set2.isEmpty());
+		assertTrue("Failed in clear", set2.size()==set.size());
+		
+	}
+	
+	@Test
+	public void testSize3() {
+		
+		DoublyLinkedSet<String> set1 = new DoublyLinkedSet<String>();
+		assertTrue("Failed in clear", set1.isEmpty());
+		assertTrue("Failed in clear", set1.size()==0);
+		set1.cas = null;
+		assertFalse(set1.remove("test"));
+		
+	}
+	
+	@Test
+	public void testCompareStrategy() {
+		assertTrue(CompareStrategy.valueOf("REF")==CompareStrategy.REF);
+		assertTrue(CompareStrategy.valueOf("EQUALS")==CompareStrategy.EQUALS);
+		assertTrue(CompareStrategy.values().length ==2);
+	}
 }
