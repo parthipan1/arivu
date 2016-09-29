@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -168,6 +169,10 @@ public class DoublyLinkedListTest {
 			sb.append(s);
 		
 		assertTrue("Failed in Iterator!", (element1+element2).equals(sb.toString()));
+		
+		sb = new StringBuffer();
+		for(String s:list.toArray(new String[]{"1","2","3","4"}))
+			sb.append(s);
 	}
 
 	@Test
@@ -239,6 +244,9 @@ public class DoublyLinkedListTest {
 		
 		list1.add(element3);
 		assertFalse("Failed on contains", list.containsAll(list1));
+		
+		assertFalse(list.containsAll(null));
+		assertFalse(list.containsAll(new DoublyLinkedList<String>()));
 	}
 
 	@Test
@@ -307,6 +315,9 @@ public class DoublyLinkedListTest {
 		assertFalse("Failed in clear", list.isEmpty());
 		assertTrue("Failed in clear", list.size()==3);
 		
+		assertFalse(list.removeAll(null));
+		assertFalse(list.removeAll(new DoublyLinkedList<String>()));
+		
 		list.removeAll(list1);
 		
 		assertTrue("Failed in clear", list.isEmpty());
@@ -336,6 +347,13 @@ public class DoublyLinkedListTest {
 		
 		assertFalse("Failed in clear", list.isEmpty());
 		assertTrue("Failed in clear", list.size()==3);
+		
+		list1.clear();
+		list1.add(element1);
+		
+		list.retainAll(list1);
+		assertFalse("Failed in clear", list.isEmpty());
+		assertTrue("Failed in clear", list.size()==1);
 	}
 
 	@Test
@@ -398,7 +416,7 @@ public class DoublyLinkedListTest {
 		
 		list.add(0, element4);
 		
-		assertTrue("Failed in get!", element4.equals(list.get(0)));
+		assertTrue("Failed in get! "+list.get(0), element4.equals(list.get(0)));
 		assertTrue("Failed in get!", element1.equals(list.get(1)));
 		assertTrue("Failed in get!", element2.equals(list.get(2)));
 		assertTrue("Failed in get!", element3.equals(list.get(3)));
@@ -585,20 +603,136 @@ public class DoublyLinkedListTest {
 		assertTrue(list.element()==null);
 	}
 	
+	@Test
+	public void testAddAll() {
+		String element1 = "one";
+		String element2 = "two";
+		DoublyLinkedList<String> list1 = new DoublyLinkedList<String>();
+		list1.add(element1);
+		list1.add(element2);
+		assertFalse("Failed in clear", list1.isEmpty());
+		assertTrue("Failed in clear", list1.size()==2);
+
+		DoublyLinkedList<String> list = new DoublyLinkedList<String>();
+		
+		assertFalse(list.addAll(null));
+		assertFalse(list.addAll( new DoublyLinkedList<String>()));
+		
+		assertTrue(list.addAll(list1));
+		
+		StringBuffer sb = new StringBuffer();
+		for(Object s:list.toArray())
+			sb.append(s);
+		
+		assertTrue("Failed in Iterator!", (element1+element2).equals(sb.toString()));
+	}
+	
+	@Test
+	public void testAddAllIndex() {
+		String element1 = "one";
+		String element2 = "two";
+		DoublyLinkedList<String> list1 = new DoublyLinkedList<String>();
+		list1.add(element1);
+		list1.add(element2);
+		assertFalse("Failed in clear", list1.isEmpty());
+		assertTrue("Failed in clear", list1.size()==2);
+
+		DoublyLinkedList<String> list = new DoublyLinkedList<String>();
+		
+		assertFalse(list.addAll(0,null));
+		assertFalse(list.addAll(0,new DoublyLinkedList<String>()));
+		
+		assertTrue(list.addAll(0,list1));
+		
+		StringBuffer sb = new StringBuffer();
+		for(Object s:list.toArray())
+			sb.append(s);
+		
+		assertTrue("Failed in Iterator!", (element1+element2).equals(sb.toString()));
+	}
+	
 //	@Test
-//	public void testListIterator() {
-//		fail("Not yet implemented");
+//	public void testRemoveAll() {
+//		String element1 = "one";
+//		String element2 = "two";
+//		DoublyLinkedList<String> list1 = new DoublyLinkedList<String>();
+//		list1.add(element1);
+//		list1.add(element2);
+//		assertFalse("Failed in clear", list1.isEmpty());
+//		assertTrue("Failed in clear", list1.size()==2);
+//
+//		DoublyLinkedList<String> list = new DoublyLinkedList<String>();
+//		
+//		assertFalse(list.addAll(null));
+//		assertFalse(list.addAll( new DoublyLinkedList<String>()));
+//		
+//		assertTrue(list.addAll(list1));
+//		
+//		StringBuffer sb = new StringBuffer();
+//		for(Object s:list.toArray())
+//			sb.append(s);
+//		
+//		assertTrue("Failed in Iterator!", (element1+element2).equals(sb.toString()));
 //	}
+	
+	@Test
+	public void testListIterator() {
+		String element1 = "one";
+		String element2 = "two";
+		DoublyLinkedList<String> list1 = new DoublyLinkedList<String>();
+		list1.add(element1);
+		list1.add(element2);
+		
+		ListIterator<String> listIterator = list1.listIterator();
+		while(listIterator.hasNext()){
+			System.out.println(listIterator.next());
+		}
+		listIterator = list1.listIterator(0);
+		while(listIterator.hasNext()){
+			System.out.println(listIterator.next());
+		}
+	}
+	
 //
 //	@Test
 //	public void testListIteratorInt() {
 //		fail("Not yet implemented");
 //	}
 //
-//	@Test
-//	public void testSubList() {
-//		fail("Not yet implemented");
-//	}
+	@Test
+	public void testSubList() {
+		String element1 = "one";
+		String element2 = "two";
+		String element3 = "three";
+		DoublyLinkedList<String> list = new DoublyLinkedList<String>();
+		list.add(element1);
+		list.add(element2);
+		list.add(element3);
+		
+		try {
+			list.subList(-1, 0);
+			fail("Failed on index!");
+		} catch (ArrayIndexOutOfBoundsException e) {
+			assertTrue(e!=null);
+		}
+
+		try {
+			list.subList(1, 3);
+			fail("Failed on index!");
+		} catch (ArrayIndexOutOfBoundsException e) {
+			assertTrue(e!=null);
+		}
+		
+		try {
+			list.subList(1, 0);
+			fail("Failed on index!");
+		} catch (ArrayIndexOutOfBoundsException e) {
+			assertTrue(e!=null);
+		}
+		
+		List<String> subList = list.subList(1, 2);
+		assertTrue(subList.size()==2);
+	}
 //
 //	@Test
 //	public void testOffer() {
