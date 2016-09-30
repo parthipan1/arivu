@@ -163,7 +163,7 @@ public final class Threadlocal<T> {
 			Runtime.getRuntime().removeShutdownHook(hook);
 		} catch (Throwable e1) {
 //			e1.printStackTrace();
-			System.err.println(e1.toString());
+//			System.err.println(e1.toString());
 		}
 	}
 

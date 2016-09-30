@@ -497,7 +497,7 @@ abstract class AbstractDataSource implements DataSource {
 		try {
 			Runtime.getRuntime().removeShutdownHook(hook);
 		} catch (Throwable e) {
-			System.err.println(e.toString());
+//			System.err.println(e.toString());
 		}
 	}
 

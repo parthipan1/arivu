@@ -894,7 +894,7 @@ public final class LightningLogger implements Logger {
 			try {
 				ManagementFactory.getPlatformMBeanServer().unregisterMBean(new ObjectName(beanNameStr));
 			} catch (Exception e) {
-				e.printStackTrace();
+//				e.printStackTrace();
 				System.err.println(e.toString());
 			}
 		}
