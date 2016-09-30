@@ -12,6 +12,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.locks.Lock;
 
+import org.arivu.utils.NullCheck;
 import org.arivu.utils.lock.AtomicWFReentrantLock;
 
 /**
@@ -172,36 +173,32 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 		if(isEmpty()) return;
 		
 		binaryTree.cas.lock();
-		try{
+//		try{
 			if (nc == 1) {
 				nc = 0;
 				nullValue = null;
 			}
 			final Collection<Object> all = binaryTree.getAll();
 			binaryTree.clear();
-			final ExecutorService exe = Executors.newFixedThreadPool(1);
-			submitClear = exe.submit(new Runnable() {
-				
-				@Override
-				public void run() {
-//					try {
+			binaryTree.cas.unlock();
+			if (!NullCheck.isNullOrEmpty(all)) {
+				final ExecutorService exe = Executors.newFixedThreadPool(1);
+				submitClear = exe.submit(new Runnable() {
+
+					@Override
+					public void run() {
 						for (Object e : all) {
-//							if (e!=null) {
-								AnEntry<?, ?> e1 = (AnEntry<?, ?>) e;
-								e1.tree = null;
-//							}
+							AnEntry<?, ?> e1 = (AnEntry<?, ?>) e;
+							e1.tree = null;
 						}
-//					} finally {
 						cancelSubmit();
 						exe.shutdownNow();
-//					}
-				}
-			});
-//		}catch(Throwable t){
-//			t.printStackTrace();
-		}finally{
-			binaryTree.cas.unlock();
-		}
+					}
+				});
+			}
+//		}finally{
+			
+//		}
 	}
 
 	@Override

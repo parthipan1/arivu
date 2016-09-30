@@ -505,8 +505,6 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 		DoublyLinkedList<T> ref = this.left;
 		int idx = size.get() - 1;
 		while (ref != null && ref != this) {
-			// if(ref==this)
-			// break;
 			if (compareStrategy.compare(o, ref.obj)) {
 				return idx;
 			}
@@ -515,37 +513,47 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 		}
 		return -1;
 	}
-
 	@Override
 	public ListIterator<T> listIterator() {
-		final DoublyLinkedList<T> ref = this.right;
+		final DoublyLinkedList<T> that = this;
+		final DoublyLinkedList<T> refR = this.right;
+		final DoublyLinkedList<T> refL = this.left;
 		return new ListIterator<T>() {
-			DoublyLinkedList<T> cursor = ref;
+			Direction dir = Direction.right;
+			DoublyLinkedList<T> cursor = refR;
 			int idx = 0;
 
 			@Override
 			public boolean hasNext() {
-				return !(cursor == ref.left);
+				boolean b = cursor != refR.left;
+				if(!b) 
+					previous();
+				return b;
 			}
 
 			@Override
 			public T next() {
 				T t = cursor.obj;
 				cursor = cursor.right;
-				idx++;
+				idx = nextIndex();
+				dir = Direction.right;
 				return t;
 			}
 
 			@Override
 			public boolean hasPrevious() {
-				return !(cursor == ref);
+				boolean b = cursor != refL.right;
+				if(!b) 
+					next();
+				return b;
 			}
 
 			@Override
 			public T previous() {
 				T t = cursor.obj;
 				cursor = cursor.left;
-				idx--;
+				idx = previousIndex();
+				dir = Direction.left;
 				return t;
 			}
 
@@ -561,9 +569,18 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 
 			@Override
 			public void remove() {
-				DoublyLinkedList<T> tref = cursor.right;
-				cursor.removeRef();
-				cursor = tref;
+				if(cursor!=that){
+					DoublyLinkedList<T> tref = null;
+					if(dir==Direction.right)
+						tref = cursor.right;
+					else
+						tref = cursor.left;
+					cursor.removeRef();
+					cursor = tref;
+				}else{
+//					cursor = that;
+//					cursor.removeRight();
+				}
 			}
 
 			@Override
@@ -579,36 +596,47 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 	}
 
 	@Override
-	public ListIterator<T> listIterator(int index) {
+	public ListIterator<T> listIterator(final int index) {
 		validateIndex(index);
-		final DoublyLinkedList<T> ref = getLinked(index);
+		final DoublyLinkedList<T> that = this;
+		final DoublyLinkedList<T> refR = this.right;
+		final DoublyLinkedList<T> refL = this.left;
 		return new ListIterator<T>() {
-			DoublyLinkedList<T> cursor = ref;
+			Direction dir = Direction.right;
+			DoublyLinkedList<T> cursor = getLinked(index);;
 			int idx = 0;
 
 			@Override
 			public boolean hasNext() {
-				return !(cursor == ref.left);
+				boolean b = cursor != refR.left;
+				if(!b) 
+					previous();
+				return b;
 			}
 
 			@Override
 			public T next() {
 				T t = cursor.obj;
-				cursor = cursor.left;
-				idx++;
+				cursor = cursor.right;
+				idx = nextIndex();
+				dir = Direction.right;
 				return t;
 			}
 
 			@Override
 			public boolean hasPrevious() {
-				return !(cursor == ref.right);
+				boolean b = cursor != refL.right;
+				if(!b) 
+					next();
+				return b;
 			}
 
 			@Override
 			public T previous() {
 				T t = cursor.obj;
-				cursor = cursor.right;
-				idx--;
+				cursor = cursor.left;
+				idx = previousIndex();
+				dir = Direction.left;
 				return t;
 			}
 
@@ -624,9 +652,20 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 
 			@Override
 			public void remove() {
-				DoublyLinkedList<T> tref = cursor.right;
-				cursor.removeRef();
-				cursor = tref;
+				if(cursor!=that){
+					DoublyLinkedList<T> tref = null;
+					
+					if(dir==Direction.right)
+						tref = cursor.right;
+					else
+						tref = cursor.left;
+					
+					cursor.removeRef();
+					cursor = tref;
+				}else{
+					cursor = that;
+					cursor.removeRight();
+				}
 			}
 
 			@Override
@@ -639,6 +678,64 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 				cursor.add(e);
 			}
 		};
+//		final DoublyLinkedList<T> ref = getLinked(index);
+//		return new ListIterator<T>() {
+//			DoublyLinkedList<T> cursor = ref;
+//			int idx = 0;
+//
+//			@Override
+//			public boolean hasNext() {
+//				return !(cursor == ref.left);
+//			}
+//
+//			@Override
+//			public T next() {
+//				T t = cursor.obj;
+//				cursor = cursor.left;
+//				idx++;
+//				return t;
+//			}
+//
+//			@Override
+//			public boolean hasPrevious() {
+//				return !(cursor == ref.right);
+//			}
+//
+//			@Override
+//			public T previous() {
+//				T t = cursor.obj;
+//				cursor = cursor.right;
+//				idx--;
+//				return t;
+//			}
+//
+//			@Override
+//			public int nextIndex() {
+//				return idx + 1;
+//			}
+//
+//			@Override
+//			public int previousIndex() {
+//				return idx - 1;
+//			}
+//
+//			@Override
+//			public void remove() {
+//				DoublyLinkedList<T> tref = cursor.right;
+//				cursor.removeRef();
+//				cursor = tref;
+//			}
+//
+//			@Override
+//			public void set(T e) {
+//				cursor.obj = e;
+//			}
+//
+//			@Override
+//			public void add(T e) {
+//				cursor.add(e);
+//			}
+//		};
 	}
 
 	@Override

@@ -677,20 +677,71 @@ public class DoublyLinkedListTest {
 	
 	@Test
 	public void testListIterator() {
-		String element1 = "one";
-		String element2 = "two";
-		DoublyLinkedList<String> list1 = new DoublyLinkedList<String>();
-		list1.add(element1);
-		list1.add(element2);
-		
-		ListIterator<String> listIterator = list1.listIterator();
+		DoublyLinkedList<Integer> list1 = new DoublyLinkedList<Integer>();
+		list1.add(23);
+		list1.add(98);
+        list1.add(29);
+        list1.add(71);
+        list1.add(5);
+		StringBuffer buf = new StringBuffer();
+		ListIterator<Integer> listIterator = list1.listIterator();
 		while(listIterator.hasNext()){
-			System.out.println(listIterator.next());
+			Integer next = listIterator.next();
+			buf.append(next);
+			listIterator.set(3);
+//			listIterator.add(next);
+//			listIterator.remove();
 		}
+//		System.out.println("next -> prev");
+//		listIterator.previous();
+		while(listIterator.hasPrevious()){
+			Integer previous = listIterator.previous();
+			buf.append(previous);
+			listIterator.set(3);
+//			listIterator.add(previous);
+//			listIterator.remove();
+        }
+		
 		listIterator = list1.listIterator(0);
 		while(listIterator.hasNext()){
-			System.out.println(listIterator.next());
+			Integer next = listIterator.next();
+			buf.append(next);
+			listIterator.set(3);
+//			listIterator.remove();
+//			listIterator.add(next);
 		}
+		while(listIterator.hasPrevious()){
+			Integer previous = listIterator.previous();
+			buf.append(previous);
+			listIterator.set(3);
+//			listIterator.remove();
+//			listIterator.add(previous);
+        }
+		
+//		listIterator = list1.listIterator();
+//		while(listIterator.hasNext()){
+//			Integer next = listIterator.next();
+//			buf.append(next);
+////			listIterator.set(3);
+////			listIterator.add(next);
+//			listIterator.remove();
+//		}
+//		assertTrue("list1 size "+list1.size(),list1.size()==1);
+//		
+//		list1.add(23);
+//		list1.add(98);
+//        list1.add(29);
+//        list1.add(71);
+//        list1.add(5);
+//        listIterator = list1.listIterator(0);
+//		while(listIterator.hasNext()){
+//			Integer next = listIterator.next();
+//			buf.append(next);
+//			listIterator.set(3);
+//			listIterator.remove();
+////			listIterator.add(next);
+//		}
+//		assertTrue("list1 size "+list1.size(),list1.size()==1);
 	}
 	
 //
