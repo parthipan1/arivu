@@ -185,7 +185,7 @@ public class GraphTest {
 		graph.add(one);
 		graph.add(two);
 		graph.add(three);
-		graph.print();
+		assertTrue(graph.print()!=null);
 		
 		graph.resolve();
 		

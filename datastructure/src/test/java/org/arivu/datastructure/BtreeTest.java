@@ -61,9 +61,9 @@ public class BtreeTest {
 		LinkedReference ll = new LinkedReference(CompareStrategy.EQUALS, lock);
 		LinkedReference lr = new LinkedReference(CompareStrategy.EQUALS, lock);
 		
-		System.out.println(" l "+l);
-		System.out.println(" ll "+ll);
-		System.out.println(" lr "+lr);
+//		System.out.println(" l "+l);
+//		System.out.println(" ll "+ll);
+//		System.out.println(" lr "+lr);
 		
 		ll.obj = "l";
 		lr.obj = "r";

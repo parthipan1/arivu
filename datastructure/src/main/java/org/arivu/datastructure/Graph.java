@@ -654,13 +654,15 @@ public final class Graph implements Serializable {
 		return Collections.unmodifiableList(l);
 	}
 
-	void print() {
+	String print() {
+		final StringBuffer b = new StringBuffer();
 		int m = getMaxLevel();
 		for (int i = 0; i <= m; i++) {
-			System.out.println("LEVEL ****** " + i);
-			System.out.println("   " + getStrt(get(i)));
+			b.append("LEVEL ****** " + i).append("\n");
+			b.append("   " + getStrt(get(i))).append("\n");
 		}
-		System.out.println("COMPLETE ****** ");
+		b.append("COMPLETE ****** ").append("\n");
+		return b.toString();
 	}
 
 	@SuppressWarnings("unchecked")
