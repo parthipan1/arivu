@@ -29,9 +29,21 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 	 */
 	DoublyLinkedList<T> left = this, right = this;
 
+	/**
+	 * 
+	 */
 	Counter size;
+	/**
+	 * 
+	 */
 	CompareStrategy compareStrategy;
+	/**
+	 * 
+	 */
 	Lock cas;
+	/**
+	 * 
+	 */
 	final Btree binaryTree;
 
 	/**
@@ -80,9 +92,6 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 		this.binaryTree = binaryTree;
 	}
 
-	/**
-	 * 
-	 */
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -149,16 +158,11 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 			lo.lock();
 			if (size != null)
 				size.incrementAndGet();
-//			System.out.println("1 this "+this+" right "+right+" left "+left+" l "+l);
 			l.right = this;
 			DoublyLinkedList<T> tl = left;
 			this.left = l;
 			l.left = tl;
 			tl.right = l;
-//			System.out.println("2 this "+this+" right "+right+" left "+left);
-//			if (right == this) {
-//				right = l;
-//			}
 			this.binaryTree.add(new Ref(l));
 			lo.unlock();
 		}
@@ -176,24 +180,6 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 			return null;
 		else
 			return (DoublyLinkedList<T>) ((Ref) object).lst;
-		// DoublyLinkedList<T> ref = this.right;
-		// while (ref != null) {
-		// if (ref == this) {
-		// break;
-		// }
-		// if( o instanceof String){
-		// if(o.equals(ref.obj)){
-		// return ref;
-		// }
-		// }else{
-		//// if(ref.obj==o){
-		// if(this.compareStrategy.compare(ref.obj, o) ){
-		// return ref;
-		// }
-		// }
-		// ref = ref.right;
-		// }
-		// return null;
 	}
 
 	@Override
@@ -350,7 +336,7 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 	@Override
 	public boolean addAll(final int index, final Collection<? extends T> c) {
 		if (c != null && c.size() > 0) {
-			if(index==0&&size()==0){
+			if (index == 0 && size() == 0) {
 				return addAll(c);
 			}
 			validateIndex(index);
@@ -363,12 +349,6 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 			if (linked != null) {
 				for (T t : c)
 					ret = ret & linked.add(t);
-//			} else {
-//				if(index==0){
-//					l.unlock();
-//					return false;
-//					return addAll(c);
-//				}
 			}
 
 			l.unlock();
@@ -423,15 +403,10 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 	public T get(int index) {
 		validateIndex(index);
 		DoublyLinkedList<T> ref = getLinked(index);
-//		if (ref != null)
-			return ref.obj;
-//		else
-//			return null;
+		return ref.obj;
 	}
 
 	DoublyLinkedList<T> getLinked(final int index) {
-//		if (index == 0)
-//			return this;
 		int idx = 0;
 		DoublyLinkedList<T> ref = this.right;
 		while (ref != null && ref != this) {
@@ -453,13 +428,9 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 	public T set(int index, T element) {
 		validateIndex(index);
 		DoublyLinkedList<T> ref = getLinked(index);
-//		if (ref != null) {
-			T obj2 = ref.obj;
-			ref.obj = element;
-			return obj2;
-//		} else {
-//			return null;
-//		}
+		T obj2 = ref.obj;
+		ref.obj = element;
+		return obj2;
 	}
 
 	@Override
@@ -513,6 +484,7 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 		}
 		return -1;
 	}
+
 	@Override
 	public ListIterator<T> listIterator() {
 		final DoublyLinkedList<T> that = this;
@@ -526,7 +498,7 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 			@Override
 			public boolean hasNext() {
 				boolean b = cursor != refR.left;
-				if(!b) 
+				if (!b)
 					previous();
 				return b;
 			}
@@ -543,7 +515,7 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 			@Override
 			public boolean hasPrevious() {
 				boolean b = cursor != refL.right;
-				if(!b) 
+				if (!b)
 					next();
 				return b;
 			}
@@ -569,17 +541,17 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 
 			@Override
 			public void remove() {
-				if(cursor!=that){
+				if (cursor != that) {
 					DoublyLinkedList<T> tref = null;
-					if(dir==Direction.right)
+					if (dir == Direction.right)
 						tref = cursor.right;
 					else
 						tref = cursor.left;
 					cursor.removeRef();
 					cursor = tref;
-				}else{
-//					cursor = that;
-//					cursor.removeRight();
+				} else {
+					// cursor = that;
+					// cursor.removeRight();
 				}
 			}
 
@@ -609,7 +581,7 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 			@Override
 			public boolean hasNext() {
 				boolean b = cursor != refR.left;
-				if(!b) 
+				if (!b)
 					previous();
 				return b;
 			}
@@ -626,7 +598,7 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 			@Override
 			public boolean hasPrevious() {
 				boolean b = cursor != refL.right;
-				if(!b) 
+				if (!b)
 					next();
 				return b;
 			}
@@ -652,17 +624,17 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 
 			@Override
 			public void remove() {
-				if(cursor!=that){
+				if (cursor != that) {
 					DoublyLinkedList<T> tref = null;
-					
-					if(dir==Direction.right)
+
+					if (dir == Direction.right)
 						tref = cursor.right;
 					else
 						tref = cursor.left;
-					
+
 					cursor.removeRef();
 					cursor = tref;
-				}else{
+				} else {
 					cursor = that;
 					cursor.removeRight();
 				}
@@ -678,74 +650,16 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 				cursor.add(e);
 			}
 		};
-//		final DoublyLinkedList<T> ref = getLinked(index);
-//		return new ListIterator<T>() {
-//			DoublyLinkedList<T> cursor = ref;
-//			int idx = 0;
-//
-//			@Override
-//			public boolean hasNext() {
-//				return !(cursor == ref.left);
-//			}
-//
-//			@Override
-//			public T next() {
-//				T t = cursor.obj;
-//				cursor = cursor.left;
-//				idx++;
-//				return t;
-//			}
-//
-//			@Override
-//			public boolean hasPrevious() {
-//				return !(cursor == ref.right);
-//			}
-//
-//			@Override
-//			public T previous() {
-//				T t = cursor.obj;
-//				cursor = cursor.right;
-//				idx--;
-//				return t;
-//			}
-//
-//			@Override
-//			public int nextIndex() {
-//				return idx + 1;
-//			}
-//
-//			@Override
-//			public int previousIndex() {
-//				return idx - 1;
-//			}
-//
-//			@Override
-//			public void remove() {
-//				DoublyLinkedList<T> tref = cursor.right;
-//				cursor.removeRef();
-//				cursor = tref;
-//			}
-//
-//			@Override
-//			public void set(T e) {
-//				cursor.obj = e;
-//			}
-//
-//			@Override
-//			public void add(T e) {
-//				cursor.add(e);
-//			}
-//		};
 	}
 
 	@Override
 	public List<T> subList(final int fromIndex, final int toIndex) {
 		validateIndex(toIndex);
 		validateIndex(fromIndex);
-		
-		if(fromIndex>toIndex)
+
+		if (fromIndex > toIndex)
 			throw new ArrayIndexOutOfBoundsException(fromIndex);
-		
+
 		List<T> subl = new DoublyLinkedList<T>();
 		DoublyLinkedList<T> ref = getLinked(fromIndex);
 		int idx = fromIndex;
