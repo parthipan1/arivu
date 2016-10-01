@@ -1166,6 +1166,22 @@ public final class LightningLogger implements Logger {
 		return retArr;
 	}
 
+	private static int getInt(final Map<String, Object> json, final String token, final int defailt) {
+		Object object = get(json, token, null);
+		if(object!=null){
+			if(object instanceof Number)
+				return ((Number)object).intValue();
+			else{
+				try {
+					return ((Double)Double.parseDouble(object.toString())).intValue();
+				} catch (NumberFormatException e) {
+					return defailt;
+				}
+			}
+		}
+		return defailt;
+	}
+	
 	@SuppressWarnings("unchecked")
 	private static Object get(final Map<String, Object> json, final String token, final Object defailt) {
 		final String[] split = split(token, ".");
@@ -1212,8 +1228,8 @@ public final class LightningLogger implements Logger {
 			if (loggers != null && loggers.size() > 0) {
 				ALL_LOGGER.putAll(loggers);
 			}
-			Consumer.RINGBUFFER_LEN = ((Number) get(json, "buffer.ring", 300)).intValue();
-			Consumer.BATCH_SIZE = ((Number) get(json, "buffer.batch", 100)).intValue();
+			Consumer.RINGBUFFER_LEN = getInt(json, "buffer.ring", 300);
+			Consumer.BATCH_SIZE = getInt(json, "buffer.batch", 100);
 
 			String mdcKeys = (String) get(json, "log.mdc", null);
 			if (!NullCheck.isNullOrEmpty(mdcKeys)) {
