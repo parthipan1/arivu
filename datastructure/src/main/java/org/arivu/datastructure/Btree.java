@@ -253,6 +253,7 @@ public final class Btree implements Serializable {
 //				else 
 				if(n.nodes==null) break;
 				n = (Node)n.nodes[arr[i]];
+				if(n==null) break;
 			}
 			
 			LinkedReference cref = nodes.right;

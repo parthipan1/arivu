@@ -905,22 +905,22 @@ public final class LightningLogger implements Logger {
 
 			@Override
 			public void setShowThreadName(boolean flag) {
-				SHOW_THREAD_NAME = flag;
+//				SHOW_THREAD_NAME = flag;
 			}
 
 			@Override
 			public void setShowLogShortName(boolean flag) {
-				SHOW_SHORT_LOG_NAME = flag;
+//				SHOW_SHORT_LOG_NAME = flag;
 			}
 
 			@Override
 			public void setShowLogName(boolean flag) {
-				SHOW_LOG_NAME = flag;
+//				SHOW_LOG_NAME = flag;
 			}
 
 			@Override
 			public void setShowDate(boolean flag) {
-				SHOW_DATE_TIME = flag;
+//				SHOW_DATE_TIME = flag;
 			}
 
 			@Override
@@ -962,19 +962,19 @@ public final class LightningLogger implements Logger {
 
 			@Override
 			public void setDateFormat(String format) {
-				if (format != null && "epoch".equalsIgnoreCase(format)) {
-					DATE_TIME_FORMAT_STR = null;
-				} else if (format != null) {
-					try {
-						new SimpleDateFormat(format).format(new Date(System.currentTimeMillis()));
-						DATE_TIME_FORMAT_STR = format;
-					} catch (Exception e) {
-						DATE_TIME_FORMAT_STR = null;
-						System.err.println("Bad date format " + format + "; set thru JMX!");
-					}
-				} else {
-					DATE_TIME_FORMAT_STR = null;
-				}
+//				if (format != null && "epoch".equalsIgnoreCase(format)) {
+//					DATE_TIME_FORMAT_STR = null;
+//				} else if (format != null) {
+//					try {
+//						new SimpleDateFormat(format).format(new Date(System.currentTimeMillis()));
+//						DATE_TIME_FORMAT_STR = format;
+//					} catch (Exception e) {
+//						DATE_TIME_FORMAT_STR = null;
+//						System.err.println("Bad date format " + format + "; set thru JMX!");
+//					}
+//				} else {
+//					DATE_TIME_FORMAT_STR = null;
+//				}
 			}
 
 			@Override
@@ -1035,28 +1035,6 @@ public final class LightningLogger implements Logger {
 			}
 		};
 	}
-
-	private static final String CONFIGURATION_FILE = "lightninglog.json";
-
-	private static final long START_TIME = System.currentTimeMillis();
-	private static final Map<String, String> ALL_LOGGER = new Amap<String, String>();
-	private static final List<String> MDC_KEYS = new DoublyLinkedList<String>();
-	private static final int LOG_LEVEL_TRACE = 00;
-	private static final int LOG_LEVEL_DEBUG = 10;
-	private static final int LOG_LEVEL_INFO = 20;
-	private static final int LOG_LEVEL_WARN = 30;
-	private static final int LOG_LEVEL_ERROR = 40;
-
-	// private final static int DEFAULT_LOG_LEVEL;
-	private static boolean SHOW_DATE_TIME;
-	private static String DATE_TIME_FORMAT_STR;
-	// private static DateFormat DATE_FORMATTER = null;
-	private static boolean SHOW_THREAD_NAME;
-	private static boolean SHOW_LOG_NAME;
-	private static boolean SHOW_SHORT_LOG_NAME;
-	public static String LOG_FILE;
-	private final static boolean LEVEL_IN_BRACKETS;
-	private final static String WARN_LEVEL_STRING;
 
 	private static String getEnv(String key, String dvalue) {
 		return System.getProperty(key, (System.getenv().get(key) == null ? dvalue : System.getenv().get(key)));
@@ -1204,6 +1182,28 @@ public final class LightningLogger implements Logger {
 
 		return defailt;
 	}
+
+	private static final String CONFIGURATION_FILE = "lightninglog.json";
+
+	private static final long START_TIME = System.currentTimeMillis();
+	private static final Map<String, String> ALL_LOGGER = new Amap<String, String>();
+	private static final List<String> MDC_KEYS = new DoublyLinkedList<String>();
+	private static final int LOG_LEVEL_TRACE = 00;
+	private static final int LOG_LEVEL_DEBUG = 10;
+	private static final int LOG_LEVEL_INFO = 20;
+	private static final int LOG_LEVEL_WARN = 30;
+	private static final int LOG_LEVEL_ERROR = 40;
+
+	// private final static int DEFAULT_LOG_LEVEL;
+	private static final boolean SHOW_DATE_TIME;
+	private static final String DATE_TIME_FORMAT_STR;
+	// private static DateFormat DATE_FORMATTER = null;
+	private static final boolean SHOW_THREAD_NAME;
+	private static final boolean SHOW_LOG_NAME;
+	private static final boolean SHOW_SHORT_LOG_NAME;
+	public static String LOG_FILE;
+	private final static boolean LEVEL_IN_BRACKETS;
+	private final static String WARN_LEVEL_STRING;
 
 	static {
 		final Map<String, Object> json = loadProperties();
