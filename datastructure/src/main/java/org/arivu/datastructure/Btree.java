@@ -243,12 +243,15 @@ public final class Btree implements Serializable {
 			Node n = root;
 			for( int i=0;i<=arr.length-2;i++ ){
 				if(n.counter.decrementAndGet()==0){
-					if(i==arr.length-2){
-						resetNodes((Node)n.nodes[arr[i]]);
-					}else{
+//					if(i==arr.length-2){
+//						resetNodes((Node)n.nodes[arr[i]]);
+//					}else{
 						nodes.add(n);	
-					}
+//					}
 				}
+//				if(n==null) break;
+//				else 
+				if(n.nodes==null) break;
 				n = (Node)n.nodes[arr[i]];
 			}
 			
@@ -482,6 +485,7 @@ final class LinkedReference {
 	 */
 	Object remove() {
 		Object o = obj;
+		if(lock==null) return null;
 		Lock l = lock;
 		l.lock();
 		Direction.right.set(left, right);
