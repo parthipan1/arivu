@@ -86,7 +86,7 @@ class ZipFileAppender implements Appender {
 							+ new SimpleDateFormat(FileAppender.FILE_EXT_FORMAT).format(lastUpdated.getTime()) + ".zip"));
 					out.close();
 					file = new File(getFileName(fileName, true, ".zip"));
-					out = new ZipOutputStream(new FileOutputStream(file));
+					out = new ZipOutputStream(new FileOutputStream(file,true));
 					ZipEntry e = new ZipEntry(getFileName(fileName, false, ".zip")
 							 +"_"+ new SimpleDateFormat(FileAppender.FILE_EXT_FORMAT).format(new Date()) + ".log");
 					out.putNextEntry(e);

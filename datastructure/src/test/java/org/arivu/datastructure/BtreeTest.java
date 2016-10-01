@@ -7,10 +7,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.util.List;
 import java.util.concurrent.locks.Lock;
 
-import org.arivu.datastructure.Btree.Node;
 import org.arivu.utils.lock.AtomicWFReentrantLock;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -112,7 +110,7 @@ public class BtreeTest {
 	public void testNodeLeaves() {
 		
 		Btree.Node n = new Btree.Node(2,new AtomicWFReentrantLock(),true,CompareStrategy.EQUALS,null);
-		n.add("1", 0, new int[]{0});
+		n.add("1", new int[]{0});
 		int cnt = 0;
 		for (int i = 0; i < n.refs.length; i++) {
 			if(n.refs[i] == null){
@@ -121,13 +119,14 @@ public class BtreeTest {
 		}
 		assertTrue(cnt==1);
 		n.resetLeaves();
-		cnt = 0;
-		for (int i = 0; i < n.refs.length; i++) {
-			if(n.refs[i] == null){
-				cnt++;
-			}
-		}
-		assertTrue(cnt==2);
+		assertTrue(n.refs==null);
+//		cnt = 0;
+//		for (int i = 0; i < n.refs.length; i++) {
+//			if(n.refs[i] == null){
+//				cnt++;
+//			}
+//		}
+//		assertTrue(cnt==2);
 	}
 
 	@Test
@@ -135,14 +134,14 @@ public class BtreeTest {
 		
 		Btree.Node n = new Btree.Node(2,new AtomicWFReentrantLock(),true,CompareStrategy.EQUALS,null);
 		
-		List<Node> rns = new DoublyLinkedList<Btree.Node>();
+//		List<Node> rns = new DoublyLinkedList<Btree.Node>();
 		
-		assertTrue(n.remove("1", 0, new int[]{0}, rns)==null);
+		assertTrue(n.remove("1", new int[]{0})==null);
 		
-		n.add("1", 0, new int[]{0});
+		n.add("1", new int[]{0});
 		
-		assertTrue(n.remove("2", 0, new int[]{0}, rns)==null);
-		assertFalse(n.remove("1", 0, new int[]{0}, rns)==null);
+		assertTrue(n.remove("2", new int[]{0})==null);
+		assertFalse(n.remove("1", new int[]{0})==null);
 		
 	}
 

@@ -5,7 +5,6 @@ package org.arivu.datastructure;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.locks.Lock;
 
 import org.arivu.utils.lock.AtomicWFReentrantLock;
@@ -30,12 +29,12 @@ public final class Btree implements Serializable {
 	 static final class Node {
 		final int order;
 		Lock cas;
-		final boolean leaf;
-		final LinkedReference[] refs;
-		final Node[] nodes;
+//		final boolean leaf;
+		LinkedReference[] refs;
+		Node[] nodes;
 		CompareStrategy compareStrategy;
 		final Counter counter = new Counter();
-		Node parent;
+//		Node parent;
 
 		/**
 		 * @param order
@@ -47,10 +46,10 @@ public final class Btree implements Serializable {
 		Node(int order, Lock cas, boolean leaf, CompareStrategy compareStrategy, Node parent) {
 			super();
 			this.compareStrategy = compareStrategy;
-			this.leaf = leaf;
+//			this.leaf = leaf;
 			this.order = order;
 			this.cas = cas;
-			this.parent = parent;
+//			this.parent = parent;
 			if (leaf) {
 				this.refs = new LinkedReference[order];
 				this.nodes = null;
@@ -68,124 +67,141 @@ public final class Btree implements Serializable {
 		}
 
 		private void resetNodes() {
-			for (int i = 0; i < this.nodes.length; i++) {
-				if (this.nodes[i] != null) {
-					Node n = this.nodes[i];
-					this.nodes[i] = null;
-					n.parent = null;
-					n.cas = null;
-					n.compareStrategy = null;
+			if (this.nodes!=null) {
+				for (int i = 0; i < this.nodes.length; i++) {
+					if (this.nodes[i] != null) {
+						Node n = this.nodes[i];
+						this.nodes[i] = null;
+						//					n.parent = null;
+						n.cas = null;
+						n.compareStrategy = null;
+					}
 				}
+				this.nodes = null;
 			}
 		}
 
 		void resetLeaves() {
-			for (int i = 0; i < this.refs.length; i++) {
-				this.refs[i] = null;
+			if (this.refs!=null) {
+				for (int i = 0; i < this.refs.length; i++) {
+					this.refs[i] = null;
+				}
+				this.refs = null;
 			}
 		}
 
-		// @SuppressWarnings("unchecked")
-		boolean add(final Object obj, final int level, final int[] arr) {
-			boolean add = false;
-			cas.lock();
-			if (this.leaf) {
-				LinkedReference ref = refs[arr[level]];
-				if (ref == null) {
-					ref = new LinkedReference(compareStrategy, this.cas);// DoublyLinkedList<Object>(compareStrategy,
-																			// dummyLock);
-					refs[arr[level]] = ref;
+		boolean add(final Object obj, final int[] arr) {
+			final Lock l = cas;
+			l.lock();
+			final LinkedReference nodes = new LinkedReference(compareStrategy, this.cas);
+			Node n = this;
+			nodes.add(n);
+			for( int i=0;i<=arr.length-2;i++ ){
+				if (n.nodes == null) {
+					n.nodes = new Node[order];
 				}
-				add = ((LinkedReference) ref).add(obj);
-			} else {
-				Node n = nodes[arr[level]];
-				if (n == null) {
-					n = new Node(order, cas, level == arr.length - 2, compareStrategy, Node.this);
-					nodes[arr[level]] = n;
+				Node n1 = n.nodes[arr[i]];
+				if (n1 == null) {
+					n1 = new Node(order, cas, i == arr.length - 2, compareStrategy, Node.this);
+					n.nodes[arr[i]] = n1;
 				}
-				add = n.add(obj, level + 1, arr);
+				n = n1;
+				nodes.add(n);
 			}
-
-			if (add)
-				this.counter.incrementAndGet();
-
-			cas.unlock();
-
+			
+			if(n.refs==null){
+				n.refs = new LinkedReference[order];
+			}
+			
+			LinkedReference ref = n.refs[arr[arr.length-1]];
+			if (ref == null) {
+				ref = new LinkedReference(compareStrategy, this.cas);
+				n.refs[arr[arr.length-1]] = ref;
+			}
+			final boolean add = ((LinkedReference) ref).add(obj);
+			
+			if(add){
+				LinkedReference cref = nodes.right;
+				while (cref != null && cref.obj != null && cref != nodes) {
+					((Node)cref.obj).counter.incrementAndGet();
+					cref = cref.right;
+				}
+			}
+			l.unlock();
 			return add;
 		}
-
-		Object find(final Object obj, final int level, final int[] arr) {
-			if (this.leaf) {
-				final LinkedReference ref = refs[arr[level]];
-				if (ref != null) {
-					final LinkedReference search = ref.search(obj);
-					if (search != null)
-						return search.obj;
+		
+		LinkedReference findLeaf(final Object obj, final int[] arr){
+			Node n = this;
+			for( int i=0;i<=arr.length-2;i++ ){
+				if (n.nodes == null) {
+					return null;
 				}
-			} else {
-				final Node n = nodes[arr[level]];
-				if (n != null) {
-					return n.find(obj, level + 1, arr);
+				n = n.nodes[arr[i]];
+				if (n == null) {
+					return null;
 				}
+			}
+			if( n.refs == null ) return null;
+			else return n.refs[arr[arr.length-1]];
+		} 
+		
+		Object find(final Object obj, final int[] arr) {
+			final LinkedReference ref = findLeaf(obj, arr);//n.refs[arr[arr.length-1]];
+			if (ref != null) {
+				final LinkedReference search = ref.search(obj);
+				if (search != null)
+					return search.obj;
 			}
 			return null;
 		}
 
-		Object remove(final Object obj, final int level, final int[] arr, List<Node> rns) {
-			if (this.leaf) {
-				// @SuppressWarnings("unchecked")
-				final LinkedReference ref = (LinkedReference) refs[arr[level]];
-				if (ref == null) {
-					return null;
-				}
-				cas.lock();
-				final LinkedReference search = ref.search(obj);
-				if (search == null) {
-					cas.unlock();
-					return null;
-				} else {
-					final Object removeRef = search.remove();
-					int cnt = this.counter.decrementAndGet();
-					if (cnt == 0) {
-						if (level > 0 && parent != null) {
-							rns.add(parent.nodes[arr[level - 1]]);
-							parent.nodes[arr[level - 1]] = null;
-						} else {
-							resetLeaves();
-						}
-					} else {
-						if (ref.isEmpty()) {
-							refs[arr[level]] = null;
-						}
-					}
-					cas.unlock();
-					return removeRef;
-				}
-			} else {
-				final Node n = nodes[arr[level]];
-				if (n == null) {
-					return null;
-				}
-				cas.lock();
-				Object remove = n.remove(obj, level + 1, arr, rns);
-				if (remove != null && this.counter.decrementAndGet() == 0) {
-					if (level > 0 && parent != null) {
-						rns.add(parent.nodes[arr[level - 1]]);
-						parent.nodes[arr[level - 1]] = null;
-					} else {
-						resetNodes();
-					}
-					// nodes[arr[level]] = null;
-				}
-				cas.unlock();
-				return remove;
+		Object remove(final Object obj, final int[] arr) {
+			Object removeRef = null;
+			LinkedReference ref = findLeaf(obj, arr);
+			if (ref == null) {
+				return removeRef;
 			}
+			
+			final LinkedReference search = ref.search(obj);
+			if (search == null) {
+				return null;
+			} else {
+				final Lock l = cas;
+				l.lock();
+				final LinkedReference nodes = new LinkedReference(compareStrategy, this.cas);
+				removeRef = search.remove();
+				Node n = this;
+				for( int i=0;i<=arr.length-2;i++ ){
+					if(n.counter.decrementAndGet()==0){
+						if(i==arr.length-2){
+							n.nodes[arr[i]].resetLeaves();
+						}else{
+							nodes.add(n);	
+						}
+					}
+					n = n.nodes[arr[i]];
+				}
+				
+				LinkedReference cref = nodes.right;
+				while (cref != null && cref.obj != null && cref != nodes) {
+					((Node)cref.obj).resetNodes();
+					cref = cref.right;
+				}
+				
+				l.unlock();
+			}
+			
+			return removeRef;
 		}
-
+		
 		// @SuppressWarnings("unchecked")
 		Collection<Object> getAll() {
 			Collection<Object> list = new DoublyLinkedList<Object>();
 			if (this.nodes == null) {
+				if(this.refs==null){
+					return list;
+				}
 				for (final LinkedReference n : this.refs) {
 					if (n != null) {
 						LinkedReference ref = n;
@@ -290,8 +306,7 @@ public final class Btree implements Serializable {
 	public void add(final Object obj) {
 		if (obj == null)
 			return;
-		int[] path = getPath(obj);
-		root.add(obj, 0, path);
+		root.add(obj, getPath(obj));
 		// System.out.println(this+" bt add "+obj+" path "+con(path));
 	}
 
@@ -299,14 +314,14 @@ public final class Btree implements Serializable {
 		if (obj == null)
 			return null;
 		// System.out.println(this+" bt remove "+obj);
-		List<Node> rns = new DoublyLinkedList<Node>();
-		Object remove = root.remove(obj, 0, getPath(obj), rns);
-		for (Node n : rns) {
-			n.parent = null;
-			n.cas = null;
-			n.compareStrategy = null;
-		}
-		rns.clear();
+//		List<Node> rns = new DoublyLinkedList<Node>();
+		Object remove = root.remove(obj, getPath(obj));
+//		for (Node n : rns) {
+////			n.parent = null;
+//			n.cas = null;
+//			n.compareStrategy = null;
+//		}
+//		rns.clear();
 		return remove;
 	}
 
@@ -314,7 +329,7 @@ public final class Btree implements Serializable {
 		if (obj == null)
 			return null;
 		int[] path = getPath(obj);
-		Object find = root.find(obj, 0, path);
+		Object find = root.find(obj, path);
 		// System.out.println(this+" bt search "+obj+" find "+find+" path
 		// "+con(path));
 		return find;
