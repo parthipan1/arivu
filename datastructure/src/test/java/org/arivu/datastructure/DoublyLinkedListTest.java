@@ -682,9 +682,10 @@ public class DoublyLinkedListTest {
 		list1.add(98);
         list1.add(29);
         list1.add(71);
-        list1.add(5);
+//        list1.add(5);
 		StringBuffer buf = new StringBuffer();
 		ListIterator<Integer> listIterator = list1.listIterator();
+		listIterator.add(5);
 		while(listIterator.hasNext()){
 			Integer next = listIterator.next();
 			buf.append(next);
@@ -735,8 +736,9 @@ public class DoublyLinkedListTest {
 		list1.add(98);
         list1.add(29);
         list1.add(71);
-        list1.add(5);
+//        list1.add(5);
         listIterator = list1.listIterator(0);
+        listIterator.add(5);
 		while(listIterator.hasNext()){
 			Integer next = listIterator.next();
 			buf.append(next);
@@ -744,7 +746,7 @@ public class DoublyLinkedListTest {
 			listIterator.remove();
 //			listIterator.add(next);
 		}
-		assertTrue("list1 size "+list1.size(),list1.size()==0);
+		assertTrue("list1 size "+list1.size(),list1.size()==1);
 	}
 	
 //
