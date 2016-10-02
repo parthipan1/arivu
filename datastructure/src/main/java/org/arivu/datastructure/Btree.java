@@ -29,7 +29,8 @@ public final class Btree implements Serializable {
 	 */
 	 static final class Node {
 		Object[] nodes;
-		final Counter counter = new Counter();
+//		final Counter counter = new Counter();
+		volatile int cnt = 0;
 	}
 
 	final Node root;
@@ -109,7 +110,7 @@ public final class Btree implements Serializable {
 	}
 
 	public int size() {
-		return root.counter.get();
+		return root.cnt;//counter.get();
 	}
 
 	public void add(final Object obj) {
@@ -147,7 +148,7 @@ public final class Btree implements Serializable {
 	void clear(final Node node) {
 		cas.lock();
 		resetNodes(node);
-		node.counter.set(0);
+		node.cnt=0;//counter.set(0);
 		cas.lock();
 	}
 
@@ -192,7 +193,7 @@ public final class Btree implements Serializable {
 		if(add){
 			LinkedReference cref = nodes.right;
 			while (cref != null && cref.obj != null && cref != nodes) {
-				((Node)cref.obj).counter.incrementAndGet();
+				((Node)cref.obj).cnt++;//counter.incrementAndGet();
 				cref = cref.right;
 			}
 		}
@@ -242,7 +243,7 @@ public final class Btree implements Serializable {
 			removeRef = search.remove();
 			Node n = root;
 			for( int i=0;i<=arr.length-2;i++ ){
-				if(n.counter.decrementAndGet()==0){
+				if(--n.cnt==0){//counter.decrementAndGet()
 //					if(i==arr.length-2){
 //						resetNodes((Node)n.nodes[arr[i]]);
 //					}else{

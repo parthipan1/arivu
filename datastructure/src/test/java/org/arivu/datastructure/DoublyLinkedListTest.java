@@ -523,7 +523,7 @@ public class DoublyLinkedListTest {
 	public void testRunParallel() throws IOException, InterruptedException {
 		final List<String> list = new DoublyLinkedList<String>();
 		
-		final int reqPerThread = 100;
+		final int reqPerThread = 2000;
 		final int noOfThreads = 500;
 		final ExecutorService exe = Executors.newFixedThreadPool(noOfThreads);
 		final AtomicInteger c = new AtomicInteger(noOfThreads);
@@ -718,30 +718,33 @@ public class DoublyLinkedListTest {
 //			listIterator.add(previous);
         }
 		
-//		listIterator = list1.listIterator();
-//		while(listIterator.hasNext()){
-//			Integer next = listIterator.next();
-//			buf.append(next);
-////			listIterator.set(3);
-////			listIterator.add(next);
-//			listIterator.remove();
-//		}
-//		assertTrue("list1 size "+list1.size(),list1.size()==1);
-//		
-//		list1.add(23);
-//		list1.add(98);
-//        list1.add(29);
-//        list1.add(71);
-//        list1.add(5);
-//        listIterator = list1.listIterator(0);
-//		while(listIterator.hasNext()){
-//			Integer next = listIterator.next();
-//			buf.append(next);
+		listIterator = list1.listIterator();
+		while(listIterator.hasNext()){
+			Integer next = listIterator.next();
+			buf.append(next);
+//			System.out.println(next);
 //			listIterator.set(3);
-//			listIterator.remove();
-////			listIterator.add(next);
-//		}
-//		assertTrue("list1 size "+list1.size(),list1.size()==1);
+//			listIterator.add(next);
+//			System.out.println("Before size "+list1.size());
+			listIterator.remove();
+//			System.out.println("After size "+list1.size());
+		}
+		assertTrue("list1 size "+list1.size(),list1.size()==0);
+//		
+		list1.add(23);
+		list1.add(98);
+        list1.add(29);
+        list1.add(71);
+        list1.add(5);
+        listIterator = list1.listIterator(0);
+		while(listIterator.hasNext()){
+			Integer next = listIterator.next();
+			buf.append(next);
+//			listIterator.set(3);
+			listIterator.remove();
+//			listIterator.add(next);
+		}
+		assertTrue("list1 size "+list1.size(),list1.size()==0);
 	}
 	
 //

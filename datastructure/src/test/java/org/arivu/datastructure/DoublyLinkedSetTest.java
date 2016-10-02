@@ -535,7 +535,7 @@ public class DoublyLinkedSetTest {
 	public void testRunParallel() throws IOException, InterruptedException {
 		final DoublyLinkedSet<String> set = new DoublyLinkedSet<String>();//new CopyOnWriteArraySet<String>();//
 		
-		final int reqPerThread = 100;
+		final int reqPerThread = 2000;
 		final int noOfThreads = 500;
 		final ExecutorService exe = Executors.newFixedThreadPool(noOfThreads);
 		final AtomicInteger c = new AtomicInteger(noOfThreads);

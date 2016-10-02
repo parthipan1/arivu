@@ -318,7 +318,7 @@ public class DoublyLinkedStackTest {
 	public void testRunParallel() throws IOException, InterruptedException {
 		final DoublyLinkedStack<String> list = new DoublyLinkedStack<String>(false,CompareStrategy.EQUALS);
 		
-		final int reqPerThread = 100;
+		final int reqPerThread = 2000;
 		final int noOfThreads = 500;
 		final ExecutorService exe = Executors.newFixedThreadPool(noOfThreads);
 		final AtomicInteger c = new AtomicInteger(noOfThreads);
