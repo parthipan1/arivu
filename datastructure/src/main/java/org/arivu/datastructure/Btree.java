@@ -161,7 +161,7 @@ public final class Btree implements Serializable {
 		}
 	}
 
-	Object search(final Object[] arr, final Object obj) {
+	Object searchArr(final Object[] arr, final Object obj) {
 		if (arr == null)
 			return null;
 		for (int i = 0; i < arr.length; i++) {
@@ -173,7 +173,7 @@ public final class Btree implements Serializable {
 		return null;
 	}
 
-	Object remove(final Object[] arr, final Object obj) {
+	Object removeArr(final Object[] arr, final Object obj) {
 		if (arr == null)
 			return null;
 		for (int i = 0; i < arr.length; i++) {
@@ -186,7 +186,7 @@ public final class Btree implements Serializable {
 		return null;
 	}
 	
-	boolean add(final Object[] arr, final Object obj) {
+	boolean addArr(final Object[] arr, final Object obj) {
 		int idx = -1;
 		for (int i = 0; i < arr.length; i++) {
 			Object object = arr[i];
@@ -230,7 +230,7 @@ public final class Btree implements Serializable {
 			ref = new Object[order];//new LinkedReference(compareStrategy);// , this.cas
 			n.nodes[arr[arr.length - 1]] = ref;
 		}
-		final boolean add = add(ref, obj);//((LinkedReference) ref).add(obj);
+		final boolean add = addArr(ref, obj);//((LinkedReference) ref).add(obj);
 
 		if (add) {
 			LinkedReference cref = nodes.right;
@@ -269,7 +269,7 @@ public final class Btree implements Serializable {
 	Object find(final Object obj, final int[] arr) {
 		final Object[] ref = findLeaf(obj, arr, null);
 		if (ref != null) {
-			final Object search = search(ref, obj);//ref.search(obj);
+			final Object search = searchArr(ref, obj);//ref.search(obj);
 //			if (search != null)
 				return search;
 		}
@@ -284,7 +284,7 @@ public final class Btree implements Serializable {
 			return null;
 		}
 
-		final Object search = remove(ref, obj);//ref.search(obj);
+		final Object search = removeArr(ref, obj);//ref.search(obj);
 		if (search == null) {
 			return null;
 		} else {

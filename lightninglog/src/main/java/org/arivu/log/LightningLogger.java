@@ -903,25 +903,25 @@ public final class LightningLogger implements Logger {
 	private static LoggerMXBean getLoggerMXBean() {
 		return new LoggerMXBean() {
 
-			@Override
-			public void setShowThreadName(boolean flag) {
-//				SHOW_THREAD_NAME = flag;
-			}
-
-			@Override
-			public void setShowLogShortName(boolean flag) {
-//				SHOW_SHORT_LOG_NAME = flag;
-			}
-
-			@Override
-			public void setShowLogName(boolean flag) {
-//				SHOW_LOG_NAME = flag;
-			}
-
-			@Override
-			public void setShowDate(boolean flag) {
-//				SHOW_DATE_TIME = flag;
-			}
+//			@Override
+//			public void setShowThreadName(boolean flag) {
+////				SHOW_THREAD_NAME = flag;
+//			}
+//
+//			@Override
+//			public void setShowLogShortName(boolean flag) {
+////				SHOW_SHORT_LOG_NAME = flag;
+//			}
+//
+//			@Override
+//			public void setShowLogName(boolean flag) {
+////				SHOW_LOG_NAME = flag;
+//			}
+//
+//			@Override
+//			public void setShowDate(boolean flag) {
+////				SHOW_DATE_TIME = flag;
+//			}
 
 			@Override
 			public void setLogLevel(String logger, String level) {
@@ -960,22 +960,22 @@ public final class LightningLogger implements Logger {
 				}
 			}
 
-			@Override
-			public void setDateFormat(String format) {
-//				if (format != null && "epoch".equalsIgnoreCase(format)) {
-//					DATE_TIME_FORMAT_STR = null;
-//				} else if (format != null) {
-//					try {
-//						new SimpleDateFormat(format).format(new Date(System.currentTimeMillis()));
-//						DATE_TIME_FORMAT_STR = format;
-//					} catch (Exception e) {
-//						DATE_TIME_FORMAT_STR = null;
-//						System.err.println("Bad date format " + format + "; set thru JMX!");
-//					}
-//				} else {
-//					DATE_TIME_FORMAT_STR = null;
-//				}
-			}
+//			@Override
+//			public void setDateFormat(String format) {
+////				if (format != null && "epoch".equalsIgnoreCase(format)) {
+////					DATE_TIME_FORMAT_STR = null;
+////				} else if (format != null) {
+////					try {
+////						new SimpleDateFormat(format).format(new Date(System.currentTimeMillis()));
+////						DATE_TIME_FORMAT_STR = format;
+////					} catch (Exception e) {
+////						DATE_TIME_FORMAT_STR = null;
+////						System.err.println("Bad date format " + format + "; set thru JMX!");
+////					}
+////				} else {
+////					DATE_TIME_FORMAT_STR = null;
+////				}
+//			}
 
 			@Override
 			public boolean getShowThreadName() {

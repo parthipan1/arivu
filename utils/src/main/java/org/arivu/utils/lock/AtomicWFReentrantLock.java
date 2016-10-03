@@ -19,48 +19,35 @@ public final class AtomicWFReentrantLock implements Lock {
 	final LinkedReference<CountDownLatch> waits = new LinkedReference<CountDownLatch>();
 
 	final AtomicBoolean cas = new AtomicBoolean(false);
-	
+
 	volatile Reentrant reentrant = null;
-	
-//	volatile boolean shutdown = false;
+
 	/**
 	 * 
 	 */
 	public AtomicWFReentrantLock() {
 		super();
-//		try {
-//			Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-//				@Override
-//				public void run() {
-//					shutdown = true;
-//					releaseAllWait();
-//				}
-//			}));
-//		} catch (Exception e) {
-//		}
 	}
 
 	@Override
 	public void lock() {
-		if (reentrant!=null ) {
+		if (reentrant != null) {
 			try {
-				if(!reentrant.acquire() )
+				if (!reentrant.acquire())
 					internalLock();
 			} catch (NullPointerException e) {
 				internalLock();
 			}
-		}else{
+		} else {
 			internalLock();
 		}
 	}
 
 	private void internalLock() {
-//		if (!shutdown) {
-			while (!cas.compareAndSet(false, true)) {
-				waitForSignal();
-			}
-			reentrant = new Reentrant();
-//		}
+		while (!cas.compareAndSet(false, true)) {
+			waitForSignal();
+		}
+		reentrant = new Reentrant();
 	}
 
 	private void waitForSignal() {
@@ -76,18 +63,14 @@ public final class AtomicWFReentrantLock implements Lock {
 
 	@Override
 	public void unlock() {
-		if (reentrant!=null ){
+		if (reentrant != null) {
 			try {
 				if (reentrant.release()) {
 					reentrant = null;
 					cas.set(false);
 					releaseAWait();
 				} else {
-					//				System.err.println("Lock unlock called with out lock,"+Reentrant.getId());
 				}
-				//		}else{
-				//			throw new RuntimeException("Lock unlock called with out lock");
-				//			System.err.println("Lock unlock called with out lock,"+Reentrant.getId());
 			} catch (NullPointerException e) {
 			}
 		}
@@ -106,7 +89,7 @@ public final class AtomicWFReentrantLock implements Lock {
 			poll.countDown();
 		}
 	}
-	
+
 	@Override
 	public void lockInterruptibly() throws InterruptedException {
 
@@ -121,7 +104,7 @@ public final class AtomicWFReentrantLock implements Lock {
 
 	@Override
 	public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
-		if (unit!=null) {
+		if (unit != null) {
 			long nanos = unit.toNanos(time);
 			do {
 				if (tryLock())
@@ -138,37 +121,36 @@ public final class AtomicWFReentrantLock implements Lock {
 		throw new RuntimeException("Unsupported function!");
 	}
 }
-final class Reentrant{
+
+final class Reentrant {
 	final int id = getId();
 
 	static int getId() {
 		return Thread.currentThread().hashCode();
 	}
+
 	final AtomicLong cnt = new AtomicLong(1);
-	
+
 	/**
 	 * 
 	 */
-	public Reentrant() {
+	Reentrant() {
 		super();
-//		System.out.println("Rentrant created! "+cnt);
 	}
 
-	boolean acquire(){
-		if(isSame()){
+	boolean acquire() {
+		if (isSame()) {
 			cnt.incrementAndGet();
 			return true;
-		}else return false;
-//		System.out.println("Rentrant acquired! "+cnt);
+		} else
+			return false;
 	}
 
-	boolean release(){
-		boolean b = cnt.decrementAndGet() == 0l;
-//		System.out.println("Rentrant released! "+b+" "+cnt);
-		return b;
+	boolean release() {
+		return cnt.decrementAndGet() == 0l;
 	}
-	
-	boolean isSame(){
-		return id==getId() ;//id.equalsIgnoreCase(getId());
+
+	boolean isSame() {
+		return id == getId();
 	}
 }
