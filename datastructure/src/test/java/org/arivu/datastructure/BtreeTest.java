@@ -138,12 +138,12 @@ public class BtreeTest {
 		
 //		List<Node> rns = new DoublyLinkedList<Btree.Node>();
 		
-		assertTrue(bt.remove("1", new int[]{0})==null);
+		assertTrue(bt.removeObj("1", new int[]{0})==null);
 		
-		bt.add("1", new int[]{0});
+		bt.addObj("1", new int[]{0});
 		
-		assertTrue(bt.remove("2", new int[]{0})==null);
-		assertFalse(bt.remove("1", new int[]{0})==null);
+		assertTrue(bt.removeObj("2", new int[]{0})==null);
+		assertFalse(bt.removeObj("1", new int[]{0})==null);
 		
 	}
 

@@ -523,8 +523,8 @@ public class DoublyLinkedListTest {
 	public void testRunParallel() throws IOException, InterruptedException {
 		final List<String> list = new DoublyLinkedList<String>();
 		
-		final int reqPerThread = 2000;
-		final int noOfThreads = 500;
+		final int reqPerThread = ThreadCounts.noOfRequests/ThreadCounts.maxThreads;
+		final int noOfThreads = ThreadCounts.maxThreads;
 		final ExecutorService exe = Executors.newFixedThreadPool(noOfThreads);
 		final AtomicInteger c = new AtomicInteger(noOfThreads);
 		final CountDownLatch start = new CountDownLatch(1);

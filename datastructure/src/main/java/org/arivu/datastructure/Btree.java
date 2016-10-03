@@ -7,6 +7,7 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.concurrent.locks.Lock;
 
+import org.arivu.utils.NullCheck;
 import org.arivu.utils.lock.AtomicWFReentrantLock;
 import org.arivu.utils.lock.NoLock;
 
@@ -117,14 +118,14 @@ public final class Btree implements Serializable {
 	public void add(final Object obj) {
 		if (obj == null)
 			return;
-		add(obj, getPath(obj));
+		addObj(obj, getPath(obj));
 		// System.out.println(this+" bt add "+obj+" path "+con(path));
 	}
 
 	public Object remove(final Object obj) {
 		if (obj == null)
 			return null;
-		Object remove = remove(obj, getPath(obj));
+		Object remove = removeObj(obj, getPath(obj));
 		return remove;
 	}
 
@@ -132,7 +133,7 @@ public final class Btree implements Serializable {
 		if (obj == null)
 			return null;
 		int[] path = getPath(obj);
-		Object find = find(obj, path);
+		Object find = findObj(obj, path);
 		// System.out.println(this+" bt search "+obj+" find "+find+" path
 		// "+con(path));
 		return find;
@@ -162,25 +163,25 @@ public final class Btree implements Serializable {
 	}
 
 	Object searchArr(final Object[] arr, final Object obj) {
-		if (arr == null)
-			return null;
-		for (int i = 0; i < arr.length; i++) {
-			Object object = arr[i];
-			if (object != null && this.compareStrategy.compare(obj, object)) {
-				return object;
+		if(!NullCheck.isNullOrEmpty(arr)){
+			for (int i = 0; i < arr.length; i++) {
+				Object object = arr[i];
+				if (object != null && this.compareStrategy.compare(obj, object)) {
+					return object;
+				}
 			}
 		}
 		return null;
 	}
 
 	Object removeArr(final Object[] arr, final Object obj) {
-		if (arr == null)
-			return null;
-		for (int i = 0; i < arr.length; i++) {
-			Object object = arr[i];
-			if (object != null && this.compareStrategy.compare(obj, object)) {
-				arr[i] = null;
-				return object;
+		if(!NullCheck.isNullOrEmpty(arr)){
+			for (int i = 0; i < arr.length; i++) {
+				Object object = arr[i];
+				if (object != null && this.compareStrategy.compare(obj, object)) {
+					arr[i] = null;
+					return object;
+				}
 			}
 		}
 		return null;
@@ -201,7 +202,7 @@ public final class Btree implements Serializable {
 		return true;
 	}
 
-	boolean add(final Object obj, final int[] arr) {
+	boolean addObj(final Object obj, final int[] arr) {
 		final Lock l = cas;
 		l.lock();
 		final LinkedReference nodes = new LinkedReference(compareStrategy);// ,
@@ -266,7 +267,7 @@ public final class Btree implements Serializable {
 			return (Object[]) n.nodes[arr[arr.length - 1]];
 	}
 
-	Object find(final Object obj, final int[] arr) {
+	Object findObj(final Object obj, final int[] arr) {
 		final Object[] ref = findLeaf(obj, arr, null);
 		if (ref != null) {
 			final Object search = searchArr(ref, obj);//ref.search(obj);
@@ -276,7 +277,7 @@ public final class Btree implements Serializable {
 		return null;
 	}
 
-	Object remove(final Object obj, final int[] arr) {
+	Object removeObj(final Object obj, final int[] arr) {
 //		Object removeRef = null;
 		final LinkedReference nodes = new LinkedReference(compareStrategy);
 		Object[] ref = findLeaf(obj, arr, nodes);

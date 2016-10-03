@@ -662,6 +662,8 @@ public class GraphTest {
 		assertTrue(Graph.get("3", tempAll, true).obj.equals("3"));
 		assertTrue(tempAll.size()==3);
 		
+		assertFalse(Graph.getWrapper("1").equals("1"));
+		
 	}
 	
 	@Test
