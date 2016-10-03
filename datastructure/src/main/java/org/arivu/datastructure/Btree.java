@@ -151,7 +151,7 @@ public final class Btree implements Serializable {
 	void clear(final Node node) {
 		cas.lock();
 		resetNodes(node);
-		node.cnt = 0;// counter.set(0);
+//		node.cnt = 0;// counter.set(0);
 		size = 0;
 		cas.lock();
 	}
@@ -176,16 +176,32 @@ public final class Btree implements Serializable {
 		return null;
 	}
 
-	static int getSize(final Object[] arr) {
+	static class Sh{
+		final int cnt;
+		final int[] arrIdx;
+		/**
+		 * @param cnt
+		 * @param arrIdx
+		 */
+		Sh(int cnt, int[] arrIdx) {
+			super();
+			this.cnt = cnt;
+			this.arrIdx = arrIdx;
+		}
+		
+	}
+	
+	static Sh getSize(final Object[] arr) {
 		if (!NullCheck.isNullOrEmpty(arr)) {
 			int c = 0;
+			int[] arrIdx = new int[arr.length];
 			for (int i = 0; i < arr.length; i++) {
 				if (arr[i] != null)
-					c++;
+					arrIdx[c++]=i;
 			}
-			return c;
+			return new Sh(c, arrIdx);
 		}
-		return 0;
+		return new Sh(0, null);
 	}
 
 	Object removeArr(final Object[] arr, final Object obj) {
