@@ -687,9 +687,10 @@ public class DoublyLinkedListTest {
 		ListIterator<Integer> listIterator = list1.listIterator();
 		listIterator.add(5);
 		while(listIterator.hasNext()){
+			listIterator.set(3);
 			Integer next = listIterator.next();
 			buf.append(next);
-			listIterator.set(3);
+//			System.out.println(next);
 //			listIterator.add(next);
 //			listIterator.remove();
 		}
@@ -698,7 +699,8 @@ public class DoublyLinkedListTest {
 		while(listIterator.hasPrevious()){
 			Integer previous = listIterator.previous();
 			buf.append(previous);
-			listIterator.set(3);
+//			System.out.println(previous);
+//			listIterator.set(3);
 //			listIterator.add(previous);
 //			listIterator.remove();
         }
@@ -707,31 +709,33 @@ public class DoublyLinkedListTest {
 		while(listIterator.hasNext()){
 			Integer next = listIterator.next();
 			buf.append(next);
-			listIterator.set(3);
+//			System.out.println(next);
+//			listIterator.set(3);
 //			listIterator.remove();
 //			listIterator.add(next);
 		}
 		while(listIterator.hasPrevious()){
 			Integer previous = listIterator.previous();
+//			System.out.println(previous);
 			buf.append(previous);
-			listIterator.set(3);
+//			listIterator.set(3);
 //			listIterator.remove();
 //			listIterator.add(previous);
         }
-		
+//		
 		listIterator = list1.listIterator();
 		while(listIterator.hasNext()){
-			Integer next = listIterator.next();
-			buf.append(next);
+			listIterator.remove();
+//			Integer next = listIterator.next();
+//			buf.append(next);
 //			System.out.println(next);
 //			listIterator.set(3);
 //			listIterator.add(next);
 //			System.out.println("Before size "+list1.size());
-			listIterator.remove();
 //			System.out.println("After size "+list1.size());
 		}
 		assertTrue("list1 size "+list1.size(),list1.size()==0);
-//		
+////		
 		list1.add(23);
 		list1.add(98);
         list1.add(29);
@@ -740,13 +744,33 @@ public class DoublyLinkedListTest {
         listIterator = list1.listIterator(0);
         listIterator.add(5);
 		while(listIterator.hasNext()){
-			Integer next = listIterator.next();
-			buf.append(next);
-//			listIterator.set(3);
 			listIterator.remove();
+//			Integer next = listIterator.next();
+//			buf.append(next);
+//			listIterator.set(3);
 //			listIterator.add(next);
 		}
-		assertTrue("list1 size "+list1.size(),list1.size()==1);
+		assertTrue("list1 size "+list1.size(),list1.size()==0);
+////		
+////		list1.clear();
+		list1.add(23);
+		list1.add(98);
+        list1.add(29);
+        list1.add(71);
+        list1.add(5);
+		listIterator = list1.listIterator(4);
+		while(listIterator.hasPrevious()){
+//			System.out.println("Before size "+list1.size());
+			listIterator.remove();
+//			System.out.println("After size "+list1.size());
+//			Integer previous = listIterator.previous();
+//			buf.append(previous);
+//			System.out.println(previous);
+//			listIterator.set(3);
+//			listIterator.add(next);
+		}
+		listIterator.remove();
+		assertTrue("list1 size "+list1.size(),list1.size()==0);
 	}
 	
 //

@@ -488,76 +488,87 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 	@Override
 	public ListIterator<T> listIterator() {
 		final DoublyLinkedList<T> that = this;
-		final DoublyLinkedList<T> refR = this.right;
-//		final DoublyLinkedList<T> refL = this.left;
+		return getListIterator(that,that.right,0);
+	}
+
+	ListIterator<T> getListIterator(final DoublyLinkedList<T> that,final DoublyLinkedList<T> cur,final int index) {
 		return new ListIterator<T>() {
-			Direction dir = Direction.right;
-			DoublyLinkedList<T> cursor = refR;
-			int idx = 0;
+//			Direction dir = Direction.right;
+//			DoublyLinkedList<T> cursor = cur;
+			int idx = index;
 
 			@Override
 			public boolean hasNext() {
-				boolean b = cursor != that;
-				if (!b)
-					previous();
-				return b;
+//				boolean b = cursor != that;
+//				if (!b)
+//					previous();
+//				return b;
+				return idx>=0 && idx<that.size(); 
 			}
 
 			@Override
 			public T next() {
-				T t = cursor.obj;
-				cursor = cursor.right;
-				idx = nextIndex();
-				dir = Direction.right;
-				return t;
+//				T t = cursor.obj;
+//				cursor = cursor.right;
+//				idx = nextIndex();
+//				dir = Direction.right;
+				return that.get(nextIndex());
 			}
 
 			@Override
 			public boolean hasPrevious() {
-				boolean b = cursor != that;
-				if (!b)
-					next();
-				return b;
+//				boolean b = cursor != that;
+//				if (!b)
+//					next();
+//				return b;
+				return idx>0 && idx<=that.size(); 
 			}
 
 			@Override
 			public T previous() {
-				T t = cursor.obj;
-				cursor = cursor.left;
-				idx = previousIndex();
-				dir = Direction.left;
-				return t;
+//				T t = cursor.obj;
+//				cursor = cursor.left;
+//				idx = previousIndex();
+////				dir = Direction.left;
+//				return t;
+				return that.get(previousIndex());
 			}
 
 			@Override
 			public int nextIndex() {
-				return idx + 1;
+				return idx++;
 			}
 
 			@Override
 			public int previousIndex() {
-				return idx - 1;
+				return --idx;
 			}
 
 			@Override
 			public void remove() {
-				DoublyLinkedList<T> tref = null;
-				if (dir == Direction.right)
-					tref = cursor.left;
-				else
-					tref = cursor.right;
-				if( tref == that) tref = tref.right;
-				tref.removeRef();
+//				DoublyLinkedList<T> tref = null;
+//				if (dir == Direction.right)
+//					tref = cursor.left;
+//				else
+//					tref = cursor.right;
+//				if( tref == that) tref = tref.right;
+//				tref.removeRef();
+				that.remove(idx);
+				if(idx>0 && idx==size()){
+					previousIndex();
+				}
 			}
 
 			@Override
 			public void set(T e) {
-				cursor.obj = e;
+//				cursor.obj = e;
+				that.set(idx, e);
 			}
 
 			@Override
 			public void add(T e) {
-				cursor.add(e);
+//				cursor.add(e);
+				that.add(idx, e);
 			}
 		};
 	}
@@ -566,78 +577,7 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 	public ListIterator<T> listIterator(final int index) {
 		validateIndex(index);
 		final DoublyLinkedList<T> that = this;
-//		final DoublyLinkedList<T> refR = this.right;
-//		final DoublyLinkedList<T> refL = this.left;
-		return new ListIterator<T>() {
-			Direction dir = Direction.right;
-			DoublyLinkedList<T> cursor = getLinked(index);
-			int idx = index;
-
-			@Override
-			public boolean hasNext() {
-				boolean b = cursor != that;
-				if (!b)
-					previous();
-				return b;
-			}
-
-			@Override
-			public T next() {
-				T t = cursor.obj;
-				cursor = cursor.right;
-				idx = nextIndex();
-				dir = Direction.right;
-				return t;
-			}
-
-			@Override
-			public boolean hasPrevious() {
-				boolean b = cursor != that;
-				if (!b)
-					next();
-				return b;
-			}
-
-			@Override
-			public T previous() {
-				T t = cursor.obj;
-				cursor = cursor.left;
-				idx = previousIndex();
-				dir = Direction.left;
-				return t;
-			}
-
-			@Override
-			public int nextIndex() {
-				return idx + 1;
-			}
-
-			@Override
-			public int previousIndex() {
-				return idx - 1;
-			}
-
-			@Override
-			public void remove() {
-				DoublyLinkedList<T> tref = null;
-				if (dir == Direction.right)
-					tref = cursor.left;
-				else
-					tref = cursor.right;
-				if( tref == that) tref = tref.right;
-				tref.removeRef();
-			}
-
-			@Override
-			public void set(T e) {
-				cursor.obj = e;
-			}
-
-			@Override
-			public void add(T e) {
-				cursor.add(e);
-			}
-		};
+		return getListIterator(that,getLinked(index),index);
 	}
 
 	@Override

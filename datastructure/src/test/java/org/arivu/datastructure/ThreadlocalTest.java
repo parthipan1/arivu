@@ -19,6 +19,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.arivu.datastructure.Threadlocal.Trigger;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -447,5 +448,20 @@ public class ThreadlocalTest {
 			}
 		};
 		return task;
+	}
+	
+	@Test
+	public void testTrigger() throws InterruptedException{
+		Runnable r = new Runnable() {
+			
+			@Override
+			public void run() {
+				throw new RuntimeException("Test");
+			}
+		};
+		Trigger t = new Trigger(r, 1);
+		Thread.sleep(4);
+		t.trigger(System.currentTimeMillis());
+		
 	}
 }

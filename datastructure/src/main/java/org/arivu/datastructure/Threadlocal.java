@@ -217,7 +217,7 @@ public final class Threadlocal<T> {
 	 * @author P
 	 *
 	 */
-	private static final class Trigger {
+	static final class Trigger {
 		private final Runnable trigger;
 		private final long onceInMiliSecs;
 		private volatile long last = System.currentTimeMillis();
@@ -246,15 +246,19 @@ public final class Threadlocal<T> {
 						try {
 							trigger.run();
 						} finally {
-							if (tr != null) {
-								tr.cancel(true);
-								tr = null;
-							}
-							exe.shutdownNow();
+							close(exe);
 						}
 					}
 				});
 			}
+		}
+
+		void close(final ExecutorService exe) {
+			if (tr != null) {
+				tr.cancel(true);
+				tr = null;
+			}
+			exe.shutdownNow();
 		}
 
 	}

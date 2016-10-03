@@ -201,23 +201,21 @@ public final class Btree implements Serializable {
 		return add;
 	}
 	
-	LinkedReference findLeaf(final Object obj, final int[] arr){
+	LinkedReference findLeaf(final Object obj, final int[] arr, final LinkedReference path){
 		Node n = root;
 		for( int i=0;i<=arr.length-2;i++ ){
-			if (n.nodes == null) {
-				return null;
-			}
+			if (n == null) return null;
+			if(path!=null) path.add(n);
+			if (n.nodes == null) return null;
 			n = (Node)n.nodes[arr[i]];
-			if (n == null) {
-				return null;
-			}
 		}
+		if (n == null) return null;
 		if( n.nodes == null ) return null;
 		else return (LinkedReference) n.nodes[arr[arr.length-1]];
 	} 
 	
 	Object find(final Object obj, final int[] arr) {
-		final LinkedReference ref = findLeaf(obj, arr);
+		final LinkedReference ref = findLeaf(obj, arr, null);
 		if (ref != null) {
 			final LinkedReference search = ref.search(obj);
 			if (search != null)
@@ -228,7 +226,8 @@ public final class Btree implements Serializable {
 
 	Object remove(final Object obj, final int[] arr) {
 		Object removeRef = null;
-		LinkedReference ref = findLeaf(obj, arr);
+		final LinkedReference nodes = new LinkedReference(compareStrategy);
+		LinkedReference ref = findLeaf(obj, arr, nodes);
 		if (ref == null) {
 			return removeRef;
 		}
@@ -239,27 +238,25 @@ public final class Btree implements Serializable {
 		} else {
 			final Lock l = cas;
 			l.lock();
-			final LinkedReference nodes = new LinkedReference(compareStrategy);//, this.cas
 			removeRef = search.remove();
-			Node n = root;
-			for( int i=0;i<=arr.length-2;i++ ){
-				if(--n.cnt==0){//counter.decrementAndGet()
-//					if(i==arr.length-2){
-//						resetNodes((Node)n.nodes[arr[i]]);
-//					}else{
-						nodes.add(n);	
-//					}
-				}
+//			Node n = root;
+//			final LinkedReference nodes = new LinkedReference(compareStrategy);//, this.cas
+//			for( int i=0;i<=arr.length-2;i++ ){
+//				if(--n.cnt==0){
+//						nodes.add(n);	
+//				}
+////				if(n.nodes==null) break;
+//				n = (Node)n.nodes[arr[i]];
 //				if(n==null) break;
-//				else 
-				if(n.nodes==null) break;
-				n = (Node)n.nodes[arr[i]];
-				if(n==null) break;
-			}
+//			}
 			
 			LinkedReference cref = nodes.right;
 			while (cref != null && cref.obj != null && cref != nodes) {
-				resetNodes(((Node)cref.obj));
+				Node obj2 = (Node)cref.obj;
+				
+				if(--obj2.cnt==0)
+					resetNodes(obj2);
+				
 				cref = cref.right;
 			}
 			
@@ -487,7 +484,7 @@ final class LinkedReference {
 	 */
 	Object remove() {
 		Object o = obj;
-		if(lock==null) return null;
+//		if(lock==null) return null;
 		Lock l = lock;
 		l.lock();
 		Direction.right.set(left, right);
