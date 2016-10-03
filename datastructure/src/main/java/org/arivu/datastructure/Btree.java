@@ -205,9 +205,12 @@ public final class Btree implements Serializable {
 		Node n = root;
 		for( int i=0;i<=arr.length-2;i++ ){
 			if (n == null) return null;
-			if(path!=null) path.add(n);
-			if (n.nodes == null) return null;
-			n = (Node)n.nodes[arr[i]];
+			else{
+				if(path!=null) path.add(n);
+				final Object[] tnodes = n.nodes;
+				if (tnodes == null) return null;
+				else n = (Node) tnodes[arr[i]];
+			}
 		}
 		if (n == null) return null;
 		if( n.nodes == null ) return null;
