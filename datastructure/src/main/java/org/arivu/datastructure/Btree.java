@@ -30,7 +30,7 @@ public final class Btree implements Serializable {
 	 */
 	static final class Node {
 		Object[] nodes;
-		 volatile int cnt = 0;
+//		 volatile int cnt = 0;
 	}
 
 	final Node root;
@@ -176,32 +176,35 @@ public final class Btree implements Serializable {
 		return null;
 	}
 
-	static class Sh{
-		final int cnt;
-		final int[] arrIdx;
-		/**
-		 * @param cnt
-		 * @param arrIdx
-		 */
-		Sh(int cnt, int[] arrIdx) {
-			super();
-			this.cnt = cnt;
-			this.arrIdx = arrIdx;
-		}
-		
-	}
+//	static class Sh{
+//		final int cnt;
+//		final int[] arrIdx;
+//		/**
+//		 * @param cnt
+//		 * @param arrIdx
+//		 */
+//		Sh(int cnt, int[] arrIdx) {
+//			super();
+//			this.cnt = cnt;
+//			this.arrIdx = arrIdx;
+//		}
+//		
+//	}
 	
-	static Sh getSize(final Object[] arr) {
+	static int getSize(final Object[] arr) {
 		if (!NullCheck.isNullOrEmpty(arr)) {
 			int c = 0;
-			int[] arrIdx = new int[arr.length];
+//			int[] arrIdx = new int[arr.length];
 			for (int i = 0; i < arr.length; i++) {
 				if (arr[i] != null)
-					arrIdx[c++]=i;
+					c++;
+//					arrIdx[c++]=i;
 			}
-			return new Sh(c, arrIdx);
+//			return new Sh(c, arrIdx);
+			return c;
 		}
-		return new Sh(0, null);
+//		return new Sh(0, null);
+		return 0;
 	}
 
 	Object removeArr(final Object[] arr, final Object obj) {
@@ -274,16 +277,16 @@ public final class Btree implements Serializable {
 														// ref).add(obj);
 
 		if (add) {
-			LinkedReference cref = nodes.right;
-//			int c = 0;
-			while (cref != null && cref.obj != null && cref != nodes) {
-				Node obj2 = (Node) cref.obj;
-				obj2.cnt++;// counter.incrementAndGet();
-
-//				System.out
-//						.println("add Node size :: " + getSize(obj2.nodes) + " obj2 :: " + obj2 + " level :: " + (++c));
-				cref = cref.right;
-			}
+//			LinkedReference cref = nodes.right;
+////			int c = 0;
+//			while (cref != null && cref.obj != null && cref != nodes) {
+//				Node obj2 = (Node) cref.obj;
+//				obj2.cnt++;// counter.incrementAndGet();
+//
+////				System.out
+////						.println("add Node size :: " + getSize(obj2.nodes) + " obj2 :: " + obj2 + " level :: " + (++c));
+//				cref = cref.right;
+//			}
 //			System.out.println(" <----------- ----------> ");
 			size++;
 		}
@@ -361,15 +364,29 @@ public final class Btree implements Serializable {
 //				System.out.println(" <----------- ----------> ");
 //			}
 			
-			LinkedReference cref = nodes.left;
-			while (cref != null && cref.obj != null && cref != nodes) {
-				Node obj2 = (Node) cref.obj;
-
-				if (--obj2.cnt == 0)
-					resetNodes(obj2);
-
-				cref = cref.left;
+			if( getSize(ref) == 0 ){
+				int c = 0; 
+				LinkedReference cref = nodes.left;
+				while (cref != null && cref.obj != null && cref != nodes) {
+					Node obj2 = (Node) cref.obj;
+					
+					int size2 = getSize(obj2.nodes);
+					if( size2 == 1 ){
+						obj2.nodes[arr[c++]] = null;
+						obj2.nodes = null;
+//					}else if(size2.cnt==0)
+//						obj2.nodes = null;
+					}else{
+						break;
+					}
+					
+//				if (--obj2.cnt == 0)
+//					resetNodes(obj2);
+						
+						cref = cref.left;
+				}
 			}
+			
 			
 			size--;
 			l.unlock();

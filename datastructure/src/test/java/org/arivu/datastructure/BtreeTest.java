@@ -267,7 +267,7 @@ public class BtreeTest {
 
 		assertTrue(findLeaf.length == 16);
 
-		assertTrue(Btree.getSize(findLeaf).cnt == 16);
+		assertTrue(Btree.getSize(findLeaf) == 16);
 
 		TestAdd obj16 = new TestAdd("16");
 		
@@ -279,8 +279,8 @@ public class BtreeTest {
 
 		assertTrue(findLeaf.length == 32);
 
-		assertTrue(Btree.getSize(findLeaf).cnt == 17);
-		assertTrue(Btree.getSize(null).cnt == 0);
+		assertTrue(Btree.getSize(findLeaf) == 17);
+		assertTrue(Btree.getSize(null) == 0);
 	}
 	
 	@Test
@@ -313,7 +313,7 @@ public class BtreeTest {
 
 		assertTrue(findLeaf.length == 16);
 
-		assertTrue(Btree.getSize(findLeaf).cnt == 1);
+		assertTrue(Btree.getSize(findLeaf) == 1);
 
 	}
 	
@@ -361,7 +361,7 @@ public class BtreeTest {
 
 		assertTrue(findLeaf.length == 16);
 
-		assertTrue(Btree.getSize(findLeaf).cnt == 16);
+		assertTrue(Btree.getSize(findLeaf) == 16);
 
 		bt.remove(obj8);
 		
@@ -369,7 +369,7 @@ public class BtreeTest {
 
 		assertTrue(findLeaf.length == 16);
 
-		assertTrue(Btree.getSize(findLeaf).cnt == 15);
+		assertTrue(Btree.getSize(findLeaf) == 15);
 
 		bt.add(obj8);
 		
@@ -377,7 +377,7 @@ public class BtreeTest {
 
 		assertTrue(findLeaf.length == 16);
 
-		assertTrue(Btree.getSize(findLeaf).cnt == 16);
+		assertTrue(Btree.getSize(findLeaf) == 16);
 		
 		TestAdd obj16 = new TestAdd("16");
 		
@@ -389,8 +389,8 @@ public class BtreeTest {
 
 		assertTrue(findLeaf.length == 32);
 
-		assertTrue(Btree.getSize(findLeaf).cnt == 17);
-		assertTrue(Btree.getSize(null).cnt == 0);
+		assertTrue(Btree.getSize(findLeaf) == 17);
+		assertTrue(Btree.getSize(null) == 0);
 	}
 	
 
@@ -438,7 +438,7 @@ public class BtreeTest {
 
 		assertTrue(findLeaf.length == 16);
 
-		assertTrue(Btree.getSize(findLeaf).cnt == 16);
+		assertTrue(Btree.getSize(findLeaf) == 16);
 
 		bt.remove(obj8);
 		
@@ -446,7 +446,7 @@ public class BtreeTest {
 
 		assertTrue(findLeaf.length == 16);
 
-		assertTrue(Btree.getSize(findLeaf).cnt == 15);
+		assertTrue(Btree.getSize(findLeaf) == 15);
 
 		bt.add(obj8);
 		
@@ -454,7 +454,7 @@ public class BtreeTest {
 
 		assertTrue(findLeaf.length == 16);
 
-		assertTrue(Btree.getSize(findLeaf).cnt == 16);
+		assertTrue(Btree.getSize(findLeaf) == 16);
 		
 		TestAdd obj16 = new TestAdd("16");
 		
@@ -466,8 +466,8 @@ public class BtreeTest {
 
 		assertTrue(findLeaf.length == 32);
 
-		assertTrue(Btree.getSize(findLeaf).cnt == 17);
-		assertTrue(Btree.getSize(null).cnt == 0);
+		assertTrue(Btree.getSize(findLeaf) == 17);
+		assertTrue(Btree.getSize(null) == 0);
 	}
 	
 
