@@ -14,14 +14,6 @@ import java.util.concurrent.locks.Lock;
  */
 public final class AtomicLock implements Lock{
 	
-//	static final Threadlocal<AtomicBoolean> threadLocal = new Threadlocal<AtomicBoolean>(new Factory<AtomicBoolean>() {
-//
-//		@Override
-//		public AtomicBoolean create() {
-//			return new AtomicBoolean(false);
-//		}
-//	});
-	
 	final AtomicBoolean cas = new AtomicBoolean(false);
 	
 	

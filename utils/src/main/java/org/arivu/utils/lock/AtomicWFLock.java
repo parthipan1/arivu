@@ -24,12 +24,6 @@ public final class AtomicWFLock implements Lock {
 	 */
 	public AtomicWFLock() {
 		super();
-//		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-//			@Override
-//			public void run() {
-//				releaseAllWait();
-//			}
-//		}));
 	}
 
 	@Override
