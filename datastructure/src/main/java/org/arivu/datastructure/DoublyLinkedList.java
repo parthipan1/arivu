@@ -163,7 +163,13 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 			this.left = l;
 			l.left = tl;
 			tl.right = l;
-			this.binaryTree.add(new Ref(l));
+			final Ref obj2 = new Ref(l);
+			Object object = this.binaryTree.get(obj2);
+			if (object == null)
+				this.binaryTree.add(obj2);
+			else
+				((Ref) object).cnt++;
+			
 			lo.unlock();
 		}
 		return l;
@@ -208,7 +214,13 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 		right = null;
 		size = null;
 		compareStrategy = null;
-		this.binaryTree.remove(new Ref(obj));
+		final Ref obj2 = new Ref(obj);
+		final Object object = this.binaryTree.get(obj2);
+		if (object != null){
+			if(  --((Ref)object).cnt == 0)
+				this.binaryTree.remove(obj2);
+		}
+		
 		l.unlock();
 		return obj;
 	}

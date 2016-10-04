@@ -9,6 +9,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -533,7 +534,8 @@ public class DoublyLinkedSetTest {
 	 */
 	@Test
 	public void testRunParallel() throws IOException, InterruptedException {
-		final DoublyLinkedSet<String> set = new DoublyLinkedSet<String>();//new CopyOnWriteArraySet<String>();//
+//		final Set<String> set = new java.util.concurrent.CopyOnWriteArraySet<String>();//
+		final Set<String> set = new DoublyLinkedSet<String>();//
 		
 		final int reqPerThread = ThreadCounts.noOfRequests/ThreadCounts.maxThreads;
 		final int noOfThreads = ThreadCounts.maxThreads;
@@ -554,7 +556,8 @@ public class DoublyLinkedSetTest {
 						e.printStackTrace();
 					}
 					try {
-						final DoublyLinkedSet<String> tset = new DoublyLinkedSet<String>();
+//						final Set<String> tset = new java.util.concurrent.CopyOnWriteArraySet<String>();
+						final Set<String> tset = new DoublyLinkedSet<String>();
 						for( int i=0;i<reqPerThread;i++ ){
 							final String valueOf = String.valueOf(initialValue-cnt.getAndDecrement());
 							set.add(valueOf);

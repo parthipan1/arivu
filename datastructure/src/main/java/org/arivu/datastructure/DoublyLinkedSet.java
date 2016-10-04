@@ -791,6 +791,8 @@ final class Ref {
 	final DoublyLinkedList<?> lst;
 	final Object obj;
 
+	int cnt = 1;
+	
 	/**
 	 * @param set
 	 */

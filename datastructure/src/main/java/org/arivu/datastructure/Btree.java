@@ -107,10 +107,10 @@ public final class Btree implements Serializable {
 		return size;
 	}
 
-	public void add(final Object obj) {
+	public boolean add(final Object obj) {
 		if (obj == null)
-			return;
-		addObj(obj, getPathObj(obj));
+			return false;
+		return addObj(obj, getPathObj(obj));
 		// System.out.println(this+" bt add "+obj+" path "+con(path));
 	}
 

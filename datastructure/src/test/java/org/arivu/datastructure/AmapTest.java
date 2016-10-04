@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.Callable;
+//import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -196,9 +197,8 @@ public class AmapTest {
 	 */
 	@Test
 	public void testRunParallel() throws IOException, InterruptedException {
-		final Map<String, String> map = new Amap<String, String>();// new
-																	// CopyOnWriteArraySet<String>();//
-
+		final Map<String, String> map = new Amap<String, String>();//new java.util.concurrent.ConcurrentHashMap<String, String>();//
+		
 		final int reqPerThread = ThreadCounts.noOfRequests/ThreadCounts.maxThreads;
 		final int noOfThreads = ThreadCounts.maxThreads;
 		final Queue<Future<Integer>> listFuture = new DoublyLinkedList<Future<Integer>>();
