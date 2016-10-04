@@ -6,7 +6,6 @@ package org.arivu.utils.lock;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
@@ -129,7 +128,8 @@ final class Reentrant {
 		return Thread.currentThread().hashCode();
 	}
 
-	final AtomicLong cnt = new AtomicLong(1);
+//	final AtomicLong cnt = new AtomicLong(1);
+	volatile long cnt = 1l;//new AtomicLong(1);
 
 	/**
 	 * 
@@ -140,14 +140,16 @@ final class Reentrant {
 
 	boolean acquire() {
 		if (isSame()) {
-			cnt.incrementAndGet();
+//			cnt.incrementAndGet();
+			cnt++;
 			return true;
 		} else
 			return false;
 	}
 
 	boolean release() {
-		return cnt.decrementAndGet() == 0l;
+//		return cnt.decrementAndGet() == 0l;
+		return --cnt == 0l;
 	}
 
 	boolean isSame() {
