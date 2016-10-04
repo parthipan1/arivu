@@ -24,14 +24,6 @@ public final class Btree implements Serializable {
 
 	private static final int DEFAULT_BASEPOWER = 2;
 
-//	/**
-//	 * @author P
-//	 *
-//	 */
-//	static final class Node {
-//		Object[] nodes;
-//	}
-
 	final Object[] root;
 	private final int base;
 	private final int height;
@@ -81,16 +73,16 @@ public final class Btree implements Serializable {
 		if (basePower <= 0 || basePower > 4) {
 			throw new IllegalArgumentException("Invalid basePower " + basePower + " (between 1-4) specified!");
 		}
-		this.base = 1 << basePower;// (int) Math.pow(2, basePower);
+		this.base = 1 << basePower;
 		this.height = 32 / base;
-		this.order = 1 << base;// (int) Math.pow(2, base);
+		this.order = 1 << base;
 		this.baseMask = (order - 1);
 		this.compareStrategy = compareStrategy;
-		this.root = new Object[order];//new Node();
+		this.root = new Object[order];
 		this.cas = lock;
 	}
 
-	int[] getPath(Object obj) {
+	int[] getPathObj(final Object obj) {
 		return getPath(obj.hashCode());
 	}
 
@@ -118,25 +110,20 @@ public final class Btree implements Serializable {
 	public void add(final Object obj) {
 		if (obj == null)
 			return;
-		addObj(obj, getPath(obj));
+		addObj(obj, getPathObj(obj));
 		// System.out.println(this+" bt add "+obj+" path "+con(path));
 	}
 
 	public Object remove(final Object obj) {
 		if (obj == null)
 			return null;
-		Object remove = removeObj(obj, getPath(obj));
-		return remove;
+		return removeObj(obj, getPathObj(obj));
 	}
 
 	public Object get(final Object obj) {
 		if (obj == null)
 			return null;
-		int[] path = getPath(obj);
-		Object find = findObj(obj, path);
-		// System.out.println(this+" bt search "+obj+" find "+find+" path
-		// "+con(path));
-		return find;
+		return findObj(obj, getPathObj(obj));
 	}
 
 	public void clear() {
@@ -150,7 +137,6 @@ public final class Btree implements Serializable {
 	void clear(final Object[] node) {
 		cas.lock();
 		resetNodes(node);
-//		node.cnt = 0;// counter.set(0);
 		size = 0;
 		cas.lock();
 	}
@@ -159,7 +145,6 @@ public final class Btree implements Serializable {
 		if (node != null) {
 			for (int i = 0; i < node.length; i++)
 				node[i] = null;
-//			node = null;
 		}
 	}
 
@@ -175,34 +160,15 @@ public final class Btree implements Serializable {
 		return null;
 	}
 
-//	static class Sh{
-//		final int cnt;
-//		final int[] arrIdx;
-//		/**
-//		 * @param cnt
-//		 * @param arrIdx
-//		 */
-//		Sh(int cnt, int[] arrIdx) {
-//			super();
-//			this.cnt = cnt;
-//			this.arrIdx = arrIdx;
-//		}
-//		
-//	}
-	
 	static int getSize(final Object[] arr) {
 		if (!NullCheck.isNullOrEmpty(arr)) {
 			int c = 0;
-//			int[] arrIdx = new int[arr.length];
 			for (int i = 0; i < arr.length; i++) {
 				if (arr[i] != null)
 					c++;
-//					arrIdx[c++]=i;
 			}
-//			return new Sh(c, arrIdx);
 			return c;
 		}
-//		return new Sh(0, null);
 		return 0;
 	}
 
@@ -230,7 +196,6 @@ public final class Btree implements Serializable {
 					idx = i;
 			}
 		}
-		// System.out.println("addArr idx::"+idx+" obj::"+obj);
 		if (idx == -1) {
 			Object[] narr = new Object[arr.length + order];
 			System.arraycopy(arr, 0, narr, 0, arr.length);
@@ -245,8 +210,7 @@ public final class Btree implements Serializable {
 	boolean addObj(final Object obj, final int[] arr) {
 		final Lock l = cas;
 		l.lock();
-		final LinkedReference nodes = new LinkedReference(compareStrategy);// ,
-																			// this.cas
+		final LinkedReference nodes = new LinkedReference(compareStrategy);
 		Object[] n = root;
 		nodes.add(n);
 		for (int i = 0; i <= arr.length - 2; i++) {
@@ -255,7 +219,7 @@ public final class Btree implements Serializable {
 			}
 			Object[] n1 = (Object[]) n[arr[i]];
 			if (n1 == null) {
-				n1 = new Object[order];//new Node();
+				n1 = new Object[order];
 				n[arr[i]] = n1;
 			}
 			n = n1;
@@ -268,25 +232,12 @@ public final class Btree implements Serializable {
 
 		Object[] ref = (Object[]) n[arr[arr.length - 1]];
 		if (ref == null) {
-			ref = new Object[order];// new LinkedReference(compareStrategy);// ,
-									// this.cas
+			ref = new Object[order];
 			n[arr[arr.length - 1]] = ref;
 		}
-		final boolean add = addArr(ref, obj, n, arr);// ((LinkedReference)
-														// ref).add(obj);
+		final boolean add = addArr(ref, obj, n, arr);
 
 		if (add) {
-//			LinkedReference cref = nodes.right;
-////			int c = 0;
-//			while (cref != null && cref.obj != null && cref != nodes) {
-//				Node obj2 = (Node) cref.obj;
-//				obj2.cnt++;// counter.incrementAndGet();
-//
-////				System.out
-////						.println("add Node size :: " + getSize(obj2.nodes) + " obj2 :: " + obj2 + " level :: " + (++c));
-//				cref = cref.right;
-//			}
-//			System.out.println(" <----------- ----------> ");
 			size++;
 		}
 		l.unlock();
@@ -301,92 +252,50 @@ public final class Btree implements Serializable {
 			if (n == null)
 				return null;
 			else {
-				final Object[] tnodes = n;
-				if (tnodes == null)
-					return null;
-				else {
-					n = (Object[]) tnodes[arr[i]];
-					if (path != null && n != null)
-						path.add(n);
-				}
+				n = (Object[]) n[arr[i]];
+				if (path != null && n != null)
+					path.add(n);
 			}
 		}
 		if (n == null)
 			return null;
-//		if (n.nodes == null)
-//			return null;
 		else
 			return (Object[]) n[arr[arr.length - 1]];
 	}
 
 	Object findObj(final Object obj, final int[] arr) {
-		final Object[] ref = findLeaf(obj, arr, null);
-		if (ref != null) {
-			final Object search = searchArr(ref, obj);// ref.search(obj);
-			// if (search != null)
-			return search;
-		}
-		return null;
+		return searchArr(findLeaf(obj, arr, null), obj);
 	}
 
 	Object removeObj(final Object obj, final int[] arr) {
-//		Object removeRef = null;
 		final LinkedReference nodes = new LinkedReference(compareStrategy);
 		Object[] ref = findLeaf(obj, arr, nodes);
 		if (ref == null) {
 			return null;
 		}
 
-		final Object search = removeArr(ref, obj);//ref.search(obj);
+		final Object search = removeArr(ref, obj);// ref.search(obj);
 		if (search == null) {
 			return null;
 		} else {
 			final Lock l = cas;
 			l.lock();
 
-//			if( getSize(ref) == 0 ){
-//				int c = 0;
-//				LinkedReference cref = nodes.right;
-//				while (cref != null && cref.obj != null && cref != nodes) {
-//					Node obj2 = (Node) cref.obj;
-//					if(obj2.nodes[0] instanceof Node){
-//						
-//					}else{
-//						
-//						System.out.println("rem Node size :: "+getSize(obj2.nodes)+" childsize :: "+obj2.nodes[0]+"  obj2 :: "+obj2+" level :: "+(++c));
-//					}
-////					if (--obj2.cnt == 0)
-////						resetNodes(obj2);
-//
-//					cref = cref.right;
-//				}	
-//				System.out.println(" <----------- ----------> ");
-//			}
-			
-			if( getSize(ref) == 0 ){
-				int c = 0; 
+			if (getSize(ref) == 0) {
+				int c = 0;
 				LinkedReference cref = nodes.left;
 				while (cref != null && cref.obj != null && cref != nodes) {
-					Object[] obj2 = (Object[]) cref.obj;
-					
-					int size2 = getSize(obj2);
-					if( size2 == 1 ){
+					final Object[] obj2 = (Object[]) cref.obj;
+
+					if (getSize(obj2) == 1) {
 						obj2[arr[c++]] = null;
-//						obj2.nodes = null;
-//					}else if(size2.cnt==0)
-//						obj2.nodes = null;
-					}else{
+					} else {
 						break;
 					}
-					
-//				if (--obj2.cnt == 0)
-//					resetNodes(obj2);
-						
-						cref = cref.left;
+
+					cref = cref.left;
 				}
 			}
-			
-			
 			size--;
 			l.unlock();
 		}
@@ -399,91 +308,17 @@ public final class Btree implements Serializable {
 		if (node == null) {
 			return list;
 		} else {
-			for (Object n : node) {
+			for (final Object n : node) {
 				if (n != null) {
-					if (n instanceof Object[]){
-						Object[] arr = (Object[]) n;
-						list.addAll(getAll(arr));
-					}
-					else {
+					if (n instanceof Object[])
+						list.addAll(getAll((Object[]) n));
+					else
 						list.add(n);
-//						for (int i = 0; i < arr.length; i++) {
-//							if (arr[i] != null) {
-//								list.add(arr[i]);
-//							}
-//						}
-						// while (ref != null) {
-						// ref = Direction.left.get(ref);
-						// if (ref == n) {
-						// break;
-						// }
-						// list.add(ref.obj);
-						// }
-
-					}
 				}
 			}
 		}
 		return list;
 	}
-	// private static final String con(int[] a) {
-	// StringBuffer b = new StringBuffer();
-	//
-	// for (int i : a) {
-	// if (b.length() == 0)
-	// b.append(i);
-	// else
-	// b.append(",").append(i);
-	// }
-	//
-	// return b.toString();
-	// }
-	//
-	// public static void main(String[] args) {
-	//
-	// //System.out.println(con(getPath(Integer.MIN_VALUE)));
-	//
-	//// List<Integer> list = new ArrayList<Integer>();
-	//// list.add(0);
-	//// list.add(1);
-	//// list.add(4);
-	//// list.add(8);
-	//// list.add(9);
-	////
-	//// Collections.sort(list);
-	////
-	//// for (Integer i : list)
-	//// System.out.print(i);
-	//// //System.out.println();
-	////
-	//// //System.out.println("search 0 " + Collections.binarySearch(list, 0));
-	//// //System.out.println("search 1 " + Collections.binarySearch(list, 1));
-	//// //System.out.println("search 4 " + Collections.binarySearch(list, 4));
-	//// int idx = Collections.binarySearch(list, 3);
-	//// idx = -1 * (idx + 1);
-	//// //System.out.println("search 3 " + idx);
-	//
-	//// Object[] a = new Object[7];
-	////
-	//// a[0] = 3;
-	//// a[1] = 1;
-	//// a[2] = 2;
-	//// a[3] = 0;
-	////
-	//// for(Object o:a){
-	//// if(o!=null)
-	//// System.out.print(o.toString());
-	//// }
-	//// //System.out.println();
-	//// Arrays.sort(a, defaultComparator);
-	////
-	//// for(Object o:a){
-	//// if(o!=null)
-	//// System.out.print(o.toString());
-	//// }
-	//// //System.out.println();
-	// }
-	//
 }
 
 /**
@@ -502,9 +337,6 @@ final class LinkedReference {
 	 * 
 	 */
 	volatile LinkedReference left = this, right = this;
-
-	// volatile LinkedReference write = null;
-	// volatile LinkedReference read = null;
 
 	Lock lock = null;
 	CompareStrategy compareStrategy;
@@ -567,7 +399,6 @@ final class LinkedReference {
 	 * @return
 	 */
 	LinkedReference search(final Object o) {
-		// if(isEmpty()) return null;
 
 		LinkedReference ref = this.right;
 		while (ref != null && ref.obj != null && ref != this) {
@@ -621,7 +452,6 @@ final class LinkedReference {
 	 */
 	Object remove() {
 		Object o = obj;
-		// if(lock==null) return null;
 		Lock l = lock;
 		l.lock();
 		Direction.right.set(left, right);
@@ -635,33 +465,6 @@ final class LinkedReference {
 		return o;
 	}
 
-	// /**
-	// * @param includeNull TODO
-	// * @param direction TODO
-	// * @return
-	// */
-	// int size(final boolean includeNull, final Direction direction) {
-	// int cnt = 0;
-	// LinkedReference ref = direction.get(this);
-	// while (ref != null) {
-	// if (ref == this) {
-	// return cnt;
-	// }
-	// if (includeNull) {
-	// cnt++;
-	// }else{
-	// if (ref.obj != null) {
-	// cnt++;
-	// }
-	// }
-	// LinkedReference tref = ref;
-	// ref = direction.get(ref);
-	// if( tref == ref ) break;
-	//// System.out.println(" size ref "+ref+" left "+ref.left+" this "+this+"
-	// cnt "+cnt);
-	// }
-	// return cnt;
-	// }
 }
 
 enum Direction {
