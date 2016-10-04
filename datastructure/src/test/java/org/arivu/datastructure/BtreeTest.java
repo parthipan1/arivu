@@ -90,6 +90,8 @@ public class BtreeTest {
 
 		assertTrue(Direction.left.remove(null) == null);
 		assertTrue(Direction.left.remove(l) == ll);
+		
+		assertTrue(Btree.getAll(null).size()==0);
 
 	}
 
