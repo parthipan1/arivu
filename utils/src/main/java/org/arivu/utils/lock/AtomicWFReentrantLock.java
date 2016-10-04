@@ -83,12 +83,12 @@ public final class AtomicWFReentrantLock implements Lock {
 		}
 	}
 
-	void releaseAllWait() {
-		CountDownLatch poll = null;
-		while ((poll = waits.poll(Direction.right)) != null) {
-			poll.countDown();
-		}
-	}
+//	void releaseAllWait() {
+//		CountDownLatch poll = null;
+//		while ((poll = waits.poll(Direction.right)) != null) {
+//			poll.countDown();
+//		}
+//	}
 
 	@Override
 	public void lockInterruptibly() throws InterruptedException {

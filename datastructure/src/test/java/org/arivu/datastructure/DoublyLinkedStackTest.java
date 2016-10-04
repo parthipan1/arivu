@@ -363,8 +363,8 @@ public class DoublyLinkedStackTest {
 		}
 		exe.shutdownNow();
 		if (!exe.awaitTermination(100, TimeUnit.MICROSECONDS)) {
-			String msg = "Still waiting after 100ms: calling System.exit(0)...";
-			System.err.println(msg);
+//			String msg = "Still waiting after 100ms: calling System.exit(0)...";
+//			System.err.println(msg);
 		}
 		assertTrue("Failed in || run test exp::"+initialValue+" got::"+list.size(), list.size()==0);
 	}

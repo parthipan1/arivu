@@ -139,8 +139,8 @@ public class ThreadlocalTest {
 		}
 		exe.shutdownNow();
 		if (!exe.awaitTermination(100, TimeUnit.MICROSECONDS)) {
-			String msg = "Still waiting after 100ms: calling System.exit(0)...";
-			System.err.println(msg);
+//			String msg = "Still waiting after 100ms: calling System.exit(0)...";
+//			System.err.println(msg);
 		}
 		assertTrue("Failed in || run test exp::0 got::" + threadlocal.size(), threadlocal.size() == 0);
 		assertTrue("Failed in || run test empty::true got::" + threadlocal.isEmpty(), threadlocal.isEmpty() );
@@ -348,8 +348,8 @@ public class ThreadlocalTest {
 		}
 		exe.shutdownNow();
 		if (!exe.awaitTermination(100, TimeUnit.MICROSECONDS)) {
-			String msg = "Still waiting after 100ms: calling System.exit(0)...";
-			System.err.println(msg);
+//			String msg = "Still waiting after 100ms: calling System.exit(0)...";
+//			System.err.println(msg);
 		}
 		assertTrue("Failed in || run test exp::1 got::" + threadlocal.size(), threadlocal.size() == 1);
 		assertFalse("Failed in || run test empty::false got::" + threadlocal.isEmpty(), threadlocal.isEmpty() );

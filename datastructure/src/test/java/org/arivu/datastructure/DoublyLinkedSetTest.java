@@ -584,8 +584,8 @@ public class DoublyLinkedSetTest {
 		}
 		exe.shutdownNow();
 		if (!exe.awaitTermination(100, TimeUnit.MICROSECONDS)) {
-			String msg = "Still waiting after 100ms: calling System.exit(0)...";
-			System.err.println(msg);
+//			String msg = "Still waiting after 100ms: calling System.exit(0)...";
+//			System.err.println(msg);
 		}
 		for( String s:set )
 			System.out.println("set Obj :: "+s);
