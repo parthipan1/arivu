@@ -32,6 +32,9 @@ final class LinkedReference<T> {
 //	private Ref size;
 	final AtomicInteger size;
 	
+	T proxy;
+	volatile boolean released = false;
+	
 	/**
 	 * 
 	 */
@@ -40,6 +43,7 @@ final class LinkedReference<T> {
 		this.t = null;
 		this.state = null;
 		this.size = new AtomicInteger(0);
+		this.released = false;
 	}
 
 	/**

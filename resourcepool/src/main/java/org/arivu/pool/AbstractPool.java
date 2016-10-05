@@ -402,29 +402,33 @@ abstract class AbstractPool<T> implements Pool<T> {
 		if (lr == null)
 			return null;
 		if (lr.t instanceof AutoCloseable) {
-			return (T) Proxy.newProxyInstance(klass.getClassLoader(), new Class[] { klass }, new InvocationHandler() {
-				boolean released = false;
-
-				@Override
-				public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable {
-					final String methodName = method.getName();
-					logger.debug("Proxy methodName :: " + methodName + " " + lr.t.hashCode());
-					if ("close".equals(methodName)) {
-						released = true;
-						releaseLink(lr);
-						return Void.TYPE;
-					} else if ("toString".equals(methodName)) {
-						return lr.t.toString();
-					} else {
-						if (released)
-							throw new IllegalStateException("Resource " + lr.t.toString() + " already closed!");
-
-						lr.state.inc(IncType.GET);
-						return method.invoke(lr.t, args);
+			if( lr.proxy == null ){
+				lr.proxy = (T) Proxy.newProxyInstance(klass.getClassLoader(), new Class[] { klass }, new InvocationHandler() {
+					
+					@Override
+					public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable {
+						final String methodName = method.getName();
+						logger.debug("Proxy methodName :: " + methodName + " " + lr.t.hashCode());
+						if ("close".equals(methodName)) {
+							lr.released = true;
+							releaseLink(lr);
+							return Void.TYPE;
+						} else if ("toString".equals(methodName)) {
+							return lr.t.toString();
+						} else {
+							if (lr.released)
+								throw new IllegalStateException("Resource " + lr.t.toString() + " already closed!");
+							
+							lr.state.inc(IncType.GET);
+							return method.invoke(lr.t, args);
+						}
 					}
-				}
-
-			});
+					
+				});
+			}else{
+				lr.released = false;
+			}
+			return lr.proxy;
 		} else {
 			lr.state.inc(IncType.GET);
 			return lr.t;
@@ -456,6 +460,7 @@ abstract class AbstractPool<T> implements Pool<T> {
 			logger.debug("Closed resource! " + lr.t.hashCode());
 			nonBlockingRemove(lr);
 			factory.close(lr.t);
+			lr.proxy = null;
 		}
 	}
 

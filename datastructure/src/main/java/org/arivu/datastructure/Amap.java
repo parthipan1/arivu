@@ -172,15 +172,15 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 	public void clear() {
 		if(isEmpty()) return;
 		
-		binaryTree.cas.lock();
-//		try{
+		final Lock lock = binaryTree.cas;
+		lock.lock();
+		try{
 			if (nc == 1) {
 				nc = 0;
 				nullValue = null;
 			}
 			final Collection<Object> all = binaryTree.getAll();
 			binaryTree.clear();
-			binaryTree.cas.unlock();
 			if (!NullCheck.isNullOrEmpty(all)) {
 				final ExecutorService exe = Executors.newFixedThreadPool(1);
 				submitClear = exe.submit(new Runnable() {
@@ -196,9 +196,11 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 					}
 				});
 			}
-//		}finally{
-			
-//		}
+		}catch(Throwable  e){
+			e.printStackTrace();
+		}finally{
+			lock.unlock();
+		}
 	}
 
 	@Override

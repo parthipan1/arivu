@@ -113,7 +113,7 @@ public class TestPoolsSb {
 	@Test
 	public void test4ConcurrentPool() throws Exception {
 		final Pool<StringBuffer> pool = new ConcurrentPool<StringBuffer>(factory , StringBuffer.class);
-		testPool(nThreads, poolSize, reuseCount, lifeSpan, pool,  new Random(), poolSize, true, false);
+		testPool(nThreads, poolSize, reuseCount, lifeSpan, pool,  new Random(), poolSize, false, false);
 	}
 	
 	@Test
