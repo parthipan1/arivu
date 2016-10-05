@@ -128,7 +128,7 @@ final class LinkedReference<T> {
 	private LinkedReference(T t, Lock lock) {
 		super();
 		this.obj = t;
-		this.lock = new AtomicLock();
+		this.lock = lock;
 	}
 
 	/**

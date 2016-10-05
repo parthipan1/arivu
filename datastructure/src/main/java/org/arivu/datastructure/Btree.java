@@ -277,24 +277,26 @@ public final class Btree implements Serializable {
 		} else {
 			final Lock l = cas;
 			l.lock();
-
-			if (getSize(ref) == 0) {
-				int c = 0;
-				LinkedReference cref = nodes.left;
-				while (cref != null && cref.obj != null && cref != nodes) {
-					final Object[] obj2 = (Object[]) cref.obj;
-
-					if (getSize(obj2) == 1) {
-						obj2[arr[c++]] = null;
-					} else {
-						break;
+			try{
+				if (getSize(ref) == 0) {
+					int c = 0;
+					LinkedReference cref = nodes.left;
+					while (cref != null && cref.obj != null && cref != nodes) {
+						final Object[] obj2 = (Object[]) cref.obj;
+	
+						if (getSize(obj2) == 1) {
+							obj2[arr[c++]] = null;
+						} else {
+							break;
+						}
+	
+						cref = cref.left;
 					}
-
-					cref = cref.left;
 				}
+				size--;
+			}finally{
+				l.unlock();
 			}
-			size--;
-			l.unlock();
 		}
 
 		return search;

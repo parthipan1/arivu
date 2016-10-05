@@ -7,12 +7,9 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.locks.Lock;
 
-import org.arivu.utils.NullCheck;
 import org.arivu.utils.lock.AtomicWFReentrantLock;
 
 /**
@@ -172,35 +169,36 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 	public void clear() {
 		if(isEmpty()) return;
 		
-		final Lock lock = binaryTree.cas;
-		lock.lock();
-		try{
+//		try{
 			if (nc == 1) {
+				final Lock lock = binaryTree.cas;
+				lock.lock();
 				nc = 0;
 				nullValue = null;
+				lock.unlock();
 			}
-			final Collection<Object> all = binaryTree.getAll();
+//			final Collection<Object> all = binaryTree.getAll();
 			binaryTree.clear();
-			if (!NullCheck.isNullOrEmpty(all)) {
-				final ExecutorService exe = Executors.newFixedThreadPool(1);
-				submitClear = exe.submit(new Runnable() {
-
-					@Override
-					public void run() {
-						for (Object e : all) {
-							AnEntry<?, ?> e1 = (AnEntry<?, ?>) e;
-							e1.tree = null;
-						}
-						cancelSubmit();
-						exe.shutdownNow();
-					}
-				});
-			}
-		}catch(Throwable  e){
-			e.printStackTrace();
-		}finally{
-			lock.unlock();
-		}
+//			if (!NullCheck.isNullOrEmpty(all)) {
+//				final ExecutorService exe = Executors.newFixedThreadPool(1);
+//				submitClear = exe.submit(new Runnable() {
+//
+//					@Override
+//					public void run() {
+//						for (Object e : all) {
+//							AnEntry<?, ?> e1 = (AnEntry<?, ?>) e;
+//							e1.tree = null;
+//						}
+//						cancelSubmit();
+//						exe.shutdownNow();
+//					}
+//				});
+//			}
+//		}catch(Throwable  e){
+//			e.printStackTrace();
+//		}finally{
+//			lock.unlock();
+//		}
 	}
 
 	@Override
