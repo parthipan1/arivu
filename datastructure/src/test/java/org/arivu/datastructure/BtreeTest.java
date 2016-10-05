@@ -172,7 +172,7 @@ public class BtreeTest {
 		}
 
 		Btree b = new Btree();
-		assertTrue(b.getHeight() == 8);
+		assertTrue(b.getHeight() == 32 / (1 << Btree.DEFAULT_BASEPOWER));
 		assertTrue(b.remove(null) == null);
 		assertTrue(b.get(null) == null);
 
@@ -228,60 +228,63 @@ public class BtreeTest {
 	@Test
 	public void testBtreeAddExpand() {
 		Btree bt = new Btree();
-
+		
+		for(int i=0;i<bt.order;i++)
+			bt.add(new TestAdd(String.valueOf(i)));
+		
 		TestAdd obj0 = new TestAdd("0");
-		TestAdd obj1 = new TestAdd("1");
-		TestAdd obj2 = new TestAdd("2");
-		TestAdd obj3 = new TestAdd("3");
-		TestAdd obj4 = new TestAdd("4");
-		TestAdd obj5 = new TestAdd("5");
-		TestAdd obj6 = new TestAdd("6");
-		TestAdd obj7 = new TestAdd("7");
-		TestAdd obj8 = new TestAdd("8");
-		TestAdd obj9 = new TestAdd("9");
-		TestAdd obj10 = new TestAdd("10");
-		TestAdd obj11 = new TestAdd("11");
-		TestAdd obj12 = new TestAdd("12");
-		TestAdd obj13 = new TestAdd("13");
-		TestAdd obj14 = new TestAdd("14");
-		TestAdd obj15 = new TestAdd("15");
+//		TestAdd obj1 = new TestAdd("1");
+//		TestAdd obj2 = new TestAdd("2");
+//		TestAdd obj3 = new TestAdd("3");
+//		TestAdd obj4 = new TestAdd("4");
+//		TestAdd obj5 = new TestAdd("5");
+//		TestAdd obj6 = new TestAdd("6");
+//		TestAdd obj7 = new TestAdd("7");
+//		TestAdd obj8 = new TestAdd("8");
+//		TestAdd obj9 = new TestAdd("9");
+//		TestAdd obj10 = new TestAdd("10");
+//		TestAdd obj11 = new TestAdd("11");
+//		TestAdd obj12 = new TestAdd("12");
+//		TestAdd obj13 = new TestAdd("13");
+//		TestAdd obj14 = new TestAdd("14");
+//		TestAdd obj15 = new TestAdd("15");
+//
+//		bt.add(obj0);
+//		bt.add(obj1);
+//		bt.add(obj2);
+//		bt.add(obj3);
+//		bt.add(obj4);
+//		bt.add(obj5);
+//		bt.add(obj6);
+//		bt.add(obj7);
+//		bt.add(obj8);
+//		bt.add(obj9);
+//		bt.add(obj10);
+//		bt.add(obj11);
+//		bt.add(obj12);
+//		bt.add(obj13);
+//		bt.add(obj14);
+//		bt.add(obj15);
 
-		bt.add(obj0);
-		bt.add(obj1);
-		bt.add(obj2);
-		bt.add(obj3);
-		bt.add(obj4);
-		bt.add(obj5);
-		bt.add(obj6);
-		bt.add(obj7);
-		bt.add(obj8);
-		bt.add(obj9);
-		bt.add(obj10);
-		bt.add(obj11);
-		bt.add(obj12);
-		bt.add(obj13);
-		bt.add(obj14);
-		bt.add(obj15);
-
-		assertTrue(bt.size == 16);
+		assertTrue(bt.size == bt.order);
 
 		Object[] findLeaf = bt.findLeaf(obj0, bt.getPathObj(obj0), null);
 
-		assertTrue(findLeaf.length == 16);
+		assertTrue(findLeaf.length == bt.order);
 
-		assertTrue(Btree.getSize(findLeaf) == 16);
+		assertTrue(Btree.getSize(findLeaf) == bt.order);
 
-		TestAdd obj16 = new TestAdd("16");
+		TestAdd obj16 = new TestAdd(String.valueOf(bt.order));
 		
 		bt.add(obj16);
 
-		assertTrue(bt.size == 17);
+		assertTrue(bt.size == bt.order+1);
 
 		findLeaf = bt.findLeaf(obj0, bt.getPathObj(obj0), null);
 
-		assertTrue(findLeaf.length == 32);
+		assertTrue(findLeaf.length == bt.order*2);
 
-		assertTrue(Btree.getSize(findLeaf) == 17);
+		assertTrue(Btree.getSize(findLeaf) == bt.order+1);
 		assertTrue(Btree.getSize(null) == 0);
 	}
 	
@@ -313,7 +316,7 @@ public class BtreeTest {
 
 		Object[] findLeaf = bt.findLeaf(obj0, bt.getPathObj(obj0), null);
 
-		assertTrue(findLeaf.length == 16);
+		assertTrue(findLeaf.length == bt.order);
 
 		assertTrue(Btree.getSize(findLeaf) == 1);
 
@@ -323,75 +326,78 @@ public class BtreeTest {
 	public void testBtreeAddExpand_Case3() {
 		Btree bt = new Btree();
 
+		for(int i=0;i<bt.order;i++)
+			bt.add(new TestAdd(String.valueOf(i)));
+		
 		TestAdd obj0 = new TestAdd("0");
-		TestAdd obj1 = new TestAdd("1");
+//		TestAdd obj1 = new TestAdd("1");
 		TestAdd obj2 = new TestAdd("2");
-		TestAdd obj3 = new TestAdd("3");
-		TestAdd obj4 = new TestAdd("4");
-		TestAdd obj5 = new TestAdd("5");
-		TestAdd obj6 = new TestAdd("6");
-		TestAdd obj7 = new TestAdd("7");
-		TestAdd obj8 = new TestAdd("8");
-		TestAdd obj9 = new TestAdd("9");
-		TestAdd obj10 = new TestAdd("10");
-		TestAdd obj11 = new TestAdd("11");
-		TestAdd obj12 = new TestAdd("12");
-		TestAdd obj13 = new TestAdd("13");
-		TestAdd obj14 = new TestAdd("14");
-		TestAdd obj15 = new TestAdd("15");
+//		TestAdd obj3 = new TestAdd("3");
+//		TestAdd obj4 = new TestAdd("4");
+//		TestAdd obj5 = new TestAdd("5");
+//		TestAdd obj6 = new TestAdd("6");
+//		TestAdd obj7 = new TestAdd("7");
+//		TestAdd obj8 = new TestAdd("8");
+//		TestAdd obj9 = new TestAdd("9");
+//		TestAdd obj10 = new TestAdd("10");
+//		TestAdd obj11 = new TestAdd("11");
+//		TestAdd obj12 = new TestAdd("12");
+//		TestAdd obj13 = new TestAdd("13");
+//		TestAdd obj14 = new TestAdd("14");
+//		TestAdd obj15 = new TestAdd("15");
+//
+//		bt.add(obj0);
+//		bt.add(obj1);
+//		bt.add(obj2);
+//		bt.add(obj3);
+//		bt.add(obj4);
+//		bt.add(obj5);
+//		bt.add(obj6);
+//		bt.add(obj7);
+//		bt.add(obj8);
+//		bt.add(obj9);
+//		bt.add(obj10);
+//		bt.add(obj11);
+//		bt.add(obj12);
+//		bt.add(obj13);
+//		bt.add(obj14);
+//		bt.add(obj15);
 
-		bt.add(obj0);
-		bt.add(obj1);
-		bt.add(obj2);
-		bt.add(obj3);
-		bt.add(obj4);
-		bt.add(obj5);
-		bt.add(obj6);
-		bt.add(obj7);
-		bt.add(obj8);
-		bt.add(obj9);
-		bt.add(obj10);
-		bt.add(obj11);
-		bt.add(obj12);
-		bt.add(obj13);
-		bt.add(obj14);
-		bt.add(obj15);
-
-		assertTrue(bt.size == 16);
+		assertTrue(bt.size == bt.order);
 
 		Object[] findLeaf = bt.findLeaf(obj0, bt.getPathObj(obj0), null);
 
-		assertTrue(findLeaf.length == 16);
+		assertTrue(findLeaf.length == bt.order);
 
-		assertTrue(Btree.getSize(findLeaf) == 16);
+		assertTrue(Btree.getSize(findLeaf) == bt.order);
 
-		bt.remove(obj8);
+		bt.remove(obj2);
 		
 		findLeaf = bt.findLeaf(obj0, bt.getPathObj(obj0), null);
 
-		assertTrue(findLeaf.length == 16);
+		assertTrue(findLeaf.length == bt.order);
 
-		assertTrue(Btree.getSize(findLeaf) == 15);
+		assertTrue(Btree.getSize(findLeaf) == bt.order-1);
 
-		bt.add(obj8);
+		bt.add(obj2);
 		
 		findLeaf = bt.findLeaf(obj0, bt.getPathObj(obj0), null);
 
-		assertTrue(findLeaf.length == 16);
+		assertTrue(findLeaf.length == bt.order);
 
-		assertTrue(Btree.getSize(findLeaf) == 16);
+		assertTrue(Btree.getSize(findLeaf) == bt.order);
 		
-		TestAdd obj16 = new TestAdd("16");
+		TestAdd obj16 = new TestAdd(String.valueOf(bt.order));
 		
 		bt.add(obj16);
 
-		assertTrue(bt.size == 17);
+		assertTrue(bt.size == bt.order+1);
 
 		findLeaf = bt.findLeaf(obj0, bt.getPathObj(obj0), null);
 
-		assertTrue(findLeaf.length == 32);
+		assertTrue(findLeaf.length == bt.order*2);
 
-		assertTrue(Btree.getSize(findLeaf) == 17);
+		assertTrue(Btree.getSize(findLeaf) == bt.order+1);
 		assertTrue(Btree.getSize(null) == 0);
 	}
 	
@@ -400,75 +406,78 @@ public class BtreeTest {
 	public void testBtreeAddExpand_Case4() {
 		Btree bt = new Btree();
 
+		for(int i=0;i<bt.order;i++)
+			bt.add(new TestAdd(String.valueOf(i)));
+		
 		TestAdd obj0 = new TestAdd("0");
-		TestAdd obj1 = new TestAdd("1");
+//		TestAdd obj1 = new TestAdd("1");
 		TestAdd obj2 = new TestAdd("2");
-		TestAdd obj3 = new TestAdd("3");
-		TestAdd obj4 = new TestAdd("4");
-		TestAdd obj5 = new TestAdd("5");
-		TestAdd obj6 = new TestAdd("6");
-		TestAdd obj7 = new TestAdd("7");
-		TestAdd obj8 = new TestAdd("8");
-		TestAdd obj9 = new TestAdd("9");
-		TestAdd obj10 = new TestAdd("10");
-		TestAdd obj11 = new TestAdd("11");
-		TestAdd obj12 = new TestAdd("12");
-		TestAdd obj13 = new TestAdd("13");
-		TestAdd obj14 = new TestAdd("14");
-		TestAdd obj15 = new TestAdd("15");
+//		TestAdd obj3 = new TestAdd("3");
+//		TestAdd obj4 = new TestAdd("4");
+//		TestAdd obj5 = new TestAdd("5");
+//		TestAdd obj6 = new TestAdd("6");
+//		TestAdd obj7 = new TestAdd("7");
+//		TestAdd obj8 = new TestAdd("8");
+//		TestAdd obj9 = new TestAdd("9");
+//		TestAdd obj10 = new TestAdd("10");
+//		TestAdd obj11 = new TestAdd("11");
+//		TestAdd obj12 = new TestAdd("12");
+//		TestAdd obj13 = new TestAdd("13");
+//		TestAdd obj14 = new TestAdd("14");
+//		TestAdd obj15 = new TestAdd("15");
+//
+//		bt.add(obj0);
+//		bt.add(obj1);
+//		bt.add(obj2);
+//		bt.add(obj3);
+//		bt.add(obj4);
+//		bt.add(obj5);
+//		bt.add(obj6);
+//		bt.add(obj7);
+//		bt.add(obj8);
+//		bt.add(obj9);
+//		bt.add(obj10);
+//		bt.add(obj11);
+//		bt.add(obj12);
+//		bt.add(obj13);
+//		bt.add(obj14);
+//		bt.add(obj15);
 
-		bt.add(obj0);
-		bt.add(obj1);
-		bt.add(obj2);
-		bt.add(obj3);
-		bt.add(obj4);
-		bt.add(obj5);
-		bt.add(obj6);
-		bt.add(obj7);
-		bt.add(obj8);
-		bt.add(obj9);
-		bt.add(obj10);
-		bt.add(obj11);
-		bt.add(obj12);
-		bt.add(obj13);
-		bt.add(obj14);
-		bt.add(obj15);
-
-		assertTrue(bt.size == 16);
+		assertTrue(bt.size == bt.order);
 
 		Object[] findLeaf = bt.findLeaf(obj0, bt.getPathObj(obj0), null);
 
-		assertTrue(findLeaf.length == 16);
+		assertTrue(findLeaf.length == bt.order);
 
-		assertTrue(Btree.getSize(findLeaf) == 16);
+		assertTrue(Btree.getSize(findLeaf) == bt.order);
 
-		bt.remove(obj8);
+		bt.remove(obj2);
 		
 		findLeaf = bt.findLeaf(obj0, bt.getPathObj(obj0), null);
 
-		assertTrue(findLeaf.length == 16);
+		assertTrue(findLeaf.length == bt.order);
 
-		assertTrue(Btree.getSize(findLeaf) == 15);
+		assertTrue(Btree.getSize(findLeaf) == bt.order-1);
 
-		bt.add(obj8);
+		bt.add(obj2);
 		
 		findLeaf = bt.findLeaf(obj0, bt.getPathObj(obj0), null);
 
-		assertTrue(findLeaf.length == 16);
+		assertTrue(findLeaf.length == bt.order);
 
-		assertTrue(Btree.getSize(findLeaf) == 16);
+		assertTrue(Btree.getSize(findLeaf) == bt.order);
 		
-		TestAdd obj16 = new TestAdd("16");
+		TestAdd obj16 = new TestAdd(String.valueOf(bt.order));
 		
 		bt.add(obj16);
 
-		assertTrue(bt.size == 17);
+		assertTrue(bt.size == bt.order+1);
 
 		findLeaf = bt.findLeaf(obj0, bt.getPathObj(obj0), null);
 
-		assertTrue(findLeaf.length == 32);
+		assertTrue(findLeaf.length == bt.order*2);
 
-		assertTrue(Btree.getSize(findLeaf) == 17);
+		assertTrue(Btree.getSize(findLeaf) == bt.order+1);
 		assertTrue(Btree.getSize(null) == 0);
 	}
 	
