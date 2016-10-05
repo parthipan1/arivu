@@ -7,7 +7,6 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Future;
 import java.util.concurrent.locks.Lock;
 
 import org.arivu.utils.lock.AtomicWFReentrantLock;
@@ -164,7 +163,7 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 		}
 	}
 
-	Future<?> submitClear;
+//	Future<?> submitClear;
 	@Override
 	public void clear() {
 		if(isEmpty()) return;
@@ -234,12 +233,12 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 		return entries;
 	}
 
-	void cancelSubmit() {
-		if (submitClear != null) {
-			submitClear.cancel(true);
-			submitClear = null;
-		}
-	}
+//	void cancelSubmit() {
+//		if (submitClear != null) {
+//			submitClear.cancel(true);
+//			submitClear = null;
+//		}
+//	}
 
 	/**
 	 * @author P

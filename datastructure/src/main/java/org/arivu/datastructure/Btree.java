@@ -22,7 +22,7 @@ public final class Btree implements Serializable {
 	 */
 	private static final long serialVersionUID = -6344951761380914875L;
 
-	static final int DEFAULT_BASEPOWER = 1;
+	static final int DEFAULT_BASEPOWER = 2;
 
 	final Object[] root;
 	private final int base;

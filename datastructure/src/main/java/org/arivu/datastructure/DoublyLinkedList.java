@@ -83,7 +83,7 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 	 * @param binaryTree
 	 *            TODO
 	 */
-	private DoublyLinkedList(T t, Counter size, CompareStrategy compareStrategy, Lock cas, Btree binaryTree) {
+	DoublyLinkedList(T t, Counter size, CompareStrategy compareStrategy, Lock cas, Btree binaryTree) {
 		super();
 		this.obj = t;
 		this.size = size;

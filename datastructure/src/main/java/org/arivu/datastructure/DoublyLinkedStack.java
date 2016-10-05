@@ -79,7 +79,7 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 	 * @param binaryTree TODO
 	 * @param obj
 	 */
-	private DoublyLinkedStack(T t, Counter size, boolean set, CompareStrategy compareStrategy, Lock cas, Btree binaryTree) {
+	DoublyLinkedStack(T t, Counter size, boolean set, CompareStrategy compareStrategy, Lock cas, Btree binaryTree) {
 		super();
 		this.obj = t;
 		this.size = size;
