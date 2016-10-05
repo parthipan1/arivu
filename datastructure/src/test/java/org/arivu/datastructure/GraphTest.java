@@ -146,7 +146,7 @@ public class GraphTest {
 
 	/**
 	 * Test method for
-	 * {@link org.arivu.datastructure.Graph#add(org.arivu.datastructure.Graph.Identity)}
+	 * {@link org.arivu.datastructure.Graph#addObj(org.arivu.datastructure.Graph.Identity)}
 	 * .
 	 * 
 	 * @throws CyclicException

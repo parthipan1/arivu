@@ -212,7 +212,7 @@ public final class Btree implements Serializable {
 		l.lock();
 		final LinkedReference nodes = new LinkedReference(compareStrategy);
 		Object[] n = root;
-		nodes.add(n);
+		nodes.addObj(n);
 		for (int i = 0; i <= arr.length - 2; i++) {
 			Object[] n1 = (Object[]) n[arr[i]];
 			if (n1 == null) {
@@ -220,7 +220,7 @@ public final class Btree implements Serializable {
 				n[arr[i]] = n1;
 			}
 			n = n1;
-			nodes.add(n);
+			nodes.addObj(n);
 		}
 
 		Object[] ref = (Object[]) n[arr[arr.length - 1]];
@@ -244,14 +244,14 @@ public final class Btree implements Serializable {
 	Object[] findLeaf(final Object obj, final int[] arr, final LinkedReference path) {
 		Object[] n = root;
 		if (path != null)
-			path.add(n);
+			path.addObj(n);
 		for (int i = 0; i <= arr.length - 2; i++) {
 			if (n == null)
 				return null;
 			else {
 				n = (Object[]) n[arr[i]];
 				if (path != null && n != null)
-					path.add(n);
+					path.addObj(n);
 			}
 		}
 		if (n == null)
@@ -416,7 +416,7 @@ final class LinkedReference {
 	 *            TODO
 	 * @return
 	 */
-	boolean add(final Object t) {
+	boolean addObj(final Object t) {
 		if (t != null) {
 			add(new LinkedReference(t, compareStrategy, lock), Direction.left);
 			return true;

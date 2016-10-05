@@ -66,7 +66,7 @@ public class BtreeTest {
 		ll.obj = "l";
 		lr.obj = "r";
 
-		assertFalse(l.add(null));
+		assertFalse(l.addObj(null));
 		assertTrue(l.isEmpty());
 		assertTrue(Direction.left.remove(l) == null);
 		assertTrue(Direction.right.remove(l) == null);
@@ -99,8 +99,8 @@ public class BtreeTest {
 	public void testSearch() {
 		Lock lock = new AtomicWFReentrantLock();
 		LinkedReference l = new LinkedReference(CompareStrategy.EQUALS, lock);
-		l.add("r");
-		l.add("l");
+		l.addObj("r");
+		l.addObj("l");
 
 		assertTrue(l.search(null) == null);
 		assertTrue(l.search("1") == null);

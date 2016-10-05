@@ -82,13 +82,6 @@ public final class AtomicWFReentrantLock implements Lock {
 		}
 	}
 
-//	void releaseAllWait() {
-//		CountDownLatch poll = null;
-//		while ((poll = waits.poll(Direction.right)) != null) {
-//			poll.countDown();
-//		}
-//	}
-
 	@Override
 	public void lockInterruptibly() throws InterruptedException {
 
@@ -128,8 +121,7 @@ final class Reentrant {
 		return Thread.currentThread().hashCode();
 	}
 
-//	final AtomicLong cnt = new AtomicLong(1);
-	volatile long cnt = 1l;//new AtomicLong(1);
+	volatile long cnt = 1l;
 
 	/**
 	 * 
@@ -140,7 +132,6 @@ final class Reentrant {
 
 	boolean acquire() {
 		if (isSame()) {
-//			cnt.incrementAndGet();
 			cnt++;
 			return true;
 		} else
@@ -148,7 +139,6 @@ final class Reentrant {
 	}
 
 	boolean release() {
-//		return cnt.decrementAndGet() == 0l;
 		return --cnt == 0l;
 	}
 

@@ -790,7 +790,7 @@ final class Ref {
 	final DoublyLinkedStack<?> st;
 	final DoublyLinkedList<?> lst;
 	final Object obj;
-
+	final int hashcode;
 	int cnt = 1;
 	
 	/**
@@ -802,6 +802,10 @@ final class Ref {
 		this.obj = set.obj;
 		this.st = null;
 		this.lst = null;
+		if(this.obj==null)
+			this.hashcode = 0;
+		else
+			this.hashcode = this.obj.hashCode();
 	}
 	
 	/**
@@ -813,6 +817,10 @@ final class Ref {
 		this.obj = lst.obj;
 		this.st = null;
 		this.lst = lst;
+		if(this.obj==null)
+			this.hashcode = 0;
+		else
+			this.hashcode = this.obj.hashCode();
 	}
 
 	/**
@@ -824,6 +832,10 @@ final class Ref {
 		this.obj = stack.obj;
 		this.st = stack;
 		this.lst = null;
+		if(this.obj==null)
+			this.hashcode = 0;
+		else
+			this.hashcode = this.obj.hashCode();
 	}
 	
 	/**
@@ -835,11 +847,15 @@ final class Ref {
 		this.obj = obj;
 		this.st = null;
 		this.lst = null;
+		if(this.obj==null)
+			this.hashcode = 0;
+		else
+			this.hashcode = this.obj.hashCode();
 	}
 
 	@Override
 	public int hashCode() {
-		return ((obj == null) ? 0 : obj.hashCode());
+		return this.hashcode;
 	}
 
 	@Override
