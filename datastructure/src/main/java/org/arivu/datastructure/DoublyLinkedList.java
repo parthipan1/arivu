@@ -163,13 +163,15 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 			this.left = l;
 			l.left = tl;
 			tl.right = l;
+
 			final Ref obj2 = new Ref(l);
-			Object object = this.binaryTree.get(obj2);
+			final int[] pathObj = this.binaryTree.getPathObj(obj2);
+			final Object object = this.binaryTree.findObj(obj2, pathObj);
 			if (object == null)
-				this.binaryTree.add(obj2);
+				this.binaryTree.addObj(obj2, pathObj);
 			else
 				((Ref) object).cnt++;
-			
+
 			lo.unlock();
 		}
 		return l;
@@ -214,13 +216,13 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 		right = null;
 		size = null;
 		compareStrategy = null;
+
 		final Ref obj2 = new Ref(obj);
-		final Object object = this.binaryTree.get(obj2);
-		if (object != null){
-			if(  --((Ref)object).cnt == 0)
-				this.binaryTree.remove(obj2);
-		}
-		
+		final int[] pathObj = this.binaryTree.getPathObj(obj2);
+		final Object object = this.binaryTree.findObj(obj2, pathObj);
+		if (object != null && --((Ref) object).cnt == 0)
+			this.binaryTree.removeObj(obj2, pathObj);
+
 		l.unlock();
 		return obj;
 	}
@@ -500,49 +502,49 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 	@Override
 	public ListIterator<T> listIterator() {
 		final DoublyLinkedList<T> that = this;
-		return getListIterator(that,that.right,0);
+		return getListIterator(that, that.right, 0);
 	}
 
-	ListIterator<T> getListIterator(final DoublyLinkedList<T> that,final DoublyLinkedList<T> cur,final int index) {
+	ListIterator<T> getListIterator(final DoublyLinkedList<T> that, final DoublyLinkedList<T> cur, final int index) {
 		return new ListIterator<T>() {
-//			Direction dir = Direction.right;
-//			DoublyLinkedList<T> cursor = cur;
+			// Direction dir = Direction.right;
+			// DoublyLinkedList<T> cursor = cur;
 			int idx = index;
 
 			@Override
 			public boolean hasNext() {
-//				boolean b = cursor != that;
-//				if (!b)
-//					previous();
-//				return b;
-				return idx>=0 && idx<that.size(); 
+				// boolean b = cursor != that;
+				// if (!b)
+				// previous();
+				// return b;
+				return idx >= 0 && idx < that.size();
 			}
 
 			@Override
 			public T next() {
-//				T t = cursor.obj;
-//				cursor = cursor.right;
-//				idx = nextIndex();
-//				dir = Direction.right;
+				// T t = cursor.obj;
+				// cursor = cursor.right;
+				// idx = nextIndex();
+				// dir = Direction.right;
 				return that.get(nextIndex());
 			}
 
 			@Override
 			public boolean hasPrevious() {
-//				boolean b = cursor != that;
-//				if (!b)
-//					next();
-//				return b;
-				return idx>0 && idx<=that.size(); 
+				// boolean b = cursor != that;
+				// if (!b)
+				// next();
+				// return b;
+				return idx > 0 && idx <= that.size();
 			}
 
 			@Override
 			public T previous() {
-//				T t = cursor.obj;
-//				cursor = cursor.left;
-//				idx = previousIndex();
-////				dir = Direction.left;
-//				return t;
+				// T t = cursor.obj;
+				// cursor = cursor.left;
+				// idx = previousIndex();
+				//// dir = Direction.left;
+				// return t;
 				return that.get(previousIndex());
 			}
 
@@ -558,28 +560,28 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 
 			@Override
 			public void remove() {
-//				DoublyLinkedList<T> tref = null;
-//				if (dir == Direction.right)
-//					tref = cursor.left;
-//				else
-//					tref = cursor.right;
-//				if( tref == that) tref = tref.right;
-//				tref.removeRef();
+				// DoublyLinkedList<T> tref = null;
+				// if (dir == Direction.right)
+				// tref = cursor.left;
+				// else
+				// tref = cursor.right;
+				// if( tref == that) tref = tref.right;
+				// tref.removeRef();
 				that.remove(idx);
-				if(idx>0 && idx==size()){
+				if (idx > 0 && idx == size()) {
 					previousIndex();
 				}
 			}
 
 			@Override
 			public void set(T e) {
-//				cursor.obj = e;
+				// cursor.obj = e;
 				that.set(idx, e);
 			}
 
 			@Override
 			public void add(T e) {
-//				cursor.add(e);
+				// cursor.add(e);
 				that.add(idx, e);
 			}
 		};
@@ -589,7 +591,7 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 	public ListIterator<T> listIterator(final int index) {
 		validateIndex(index);
 		final DoublyLinkedList<T> that = this;
-		return getListIterator(that,getLinked(index),index);
+		return getListIterator(that, getLinked(index), index);
 	}
 
 	@Override
