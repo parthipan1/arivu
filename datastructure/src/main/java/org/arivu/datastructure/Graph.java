@@ -87,13 +87,13 @@ public final class Graph implements Serializable {
 	public interface Edges {
 		/**
 		 * @param obj
-		 * @return
+		 * @return Collection of Objects
 		 */
 		Collection<Object> in(Object obj);
 
 		/**
 		 * @param obj
-		 * @return
+		 * @return Collection of Objects
 		 */
 		Collection<Object> out(Object obj);
 	}
@@ -205,7 +205,7 @@ public final class Graph implements Serializable {
 	}
 
 	/**
-	 * @return
+	 * @return Edges
 	 */
 	public Edges getEdges() {
 		return edges;
@@ -219,22 +219,24 @@ public final class Graph implements Serializable {
 	}
 
 	/**
-	 * @return
+	 * @return size of the graph
 	 */
 	public int size() {
 		return all.size();
 	}
 
 	/**
-	 * @return
+	 * @return boolean isEmpty flag.
 	 */
 	public boolean isEmpty() {
 		return all.isEmpty();
 	}
 
 	/**
+	 * Added a object to the graph path.
+	 * 
 	 * @param e
-	 * @return
+	 * @return boolean
 	 * @throws CyclicException
 	 */
 	public boolean add(final Object e) throws CyclicException {
@@ -544,18 +546,13 @@ public final class Graph implements Serializable {
 
 	/**
 	 * @param o
-	 * @return
+	 * @return boolean
 	 * @throws CyclicException 
 	 */
 	public boolean remove(final Object o) throws CyclicException {
-		boolean ret = false;
-//		try {
-			ret = removeInternal(o);
-			if(ret)
-				resolve();
-//		} catch (ClassCastException e) {
-//			System.err.println(e.toString());
-//		}
+		boolean ret = removeInternal(o);
+		if(ret)
+			resolve();
 		return ret;
 	}
 
@@ -571,7 +568,7 @@ public final class Graph implements Serializable {
 
 	/**
 	 * @param c
-	 * @return
+	 * @return boolean
 	 * @throws CyclicException
 	 */
 	public boolean addAll(final Collection<? extends Object> c) throws CyclicException {
@@ -596,7 +593,7 @@ public final class Graph implements Serializable {
 
 	/**
 	 * @param c
-	 * @return
+	 * @return boolean remove collection.
 	 * @throws CyclicException 
 	 */
 	public boolean removeAll(final Collection<?> c) throws CyclicException {
@@ -619,7 +616,7 @@ public final class Graph implements Serializable {
 	}
 
 	/**
-	 * @return
+	 * @return max graph level.
 	 */
 	public int getMaxLevel() {
 		int ml = 0;
@@ -632,7 +629,7 @@ public final class Graph implements Serializable {
 
 	/**
 	 * @param level
-	 * @return
+	 * @return Collection of Objects at that level.
 	 */
 	public Collection<Object> get(final int level) {
 		final List<Object> l = new DoublyLinkedList<Object>();

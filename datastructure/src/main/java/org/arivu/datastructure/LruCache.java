@@ -125,9 +125,9 @@ public final class LruCache<K,V> {
 	}
 
 	/**
-	 * get from cache.
+	 * Get from cache.
 	 * 
-	 * @param Key
+	 * @param key
 	 * @return V
 	 */
 	public V get(K key) {
@@ -178,7 +178,7 @@ public final class LruCache<K,V> {
 	}
 
 	/**
-	 * @param Key
+	 * @param key
 	 * @return boolean
 	 */
 	public boolean remove(K key) {
