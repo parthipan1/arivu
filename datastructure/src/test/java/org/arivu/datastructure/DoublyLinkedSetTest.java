@@ -9,6 +9,8 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -639,7 +641,59 @@ public class DoublyLinkedSetTest {
 			System.out.println("set Obj :: " + s);
 		assertTrue("Failed in || run test exp::" + initialValue + " got::" + set.size(), set.size() == 0);
 	}
+	
+	/**
+	 * @throws InterruptedException
+	 */
+	@Test
+	public void testRunParallel_Queue() throws IOException, InterruptedException {
+		final Queue<String> queue = new DoublyLinkedSet<String>();
 
+		final List<String> out = new DoublyLinkedList<String>();
+		
+		final int noOfThreads = 10;
+		final ExecutorService exe = Executors.newFixedThreadPool(noOfThreads);
+		final AtomicInteger c = new AtomicInteger(noOfThreads);
+		final CountDownLatch start = new CountDownLatch(1);
+		final CountDownLatch end = new CountDownLatch(1);
+		for (int j = 1; j <= noOfThreads; j++) {
+			queue.add(String.valueOf(j));
+			exe.submit(new Runnable() {
+
+				@Override
+				public void run() {
+					try {
+						start.await();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					String p = null;
+					while( (p=queue.poll())!=null ){
+						out.add(p);
+					}
+					if(c.decrementAndGet()==1){
+						end.countDown();
+					}
+				}
+			});
+		}
+
+		start.countDown();
+		try {
+			end.await();
+		} catch (InterruptedException e1) {
+			e1.printStackTrace();
+		}
+		exe.shutdownNow();
+		if (!exe.awaitTermination(100, TimeUnit.MICROSECONDS)) {
+			// String msg = "Still waiting after 100ms: calling
+			// System.exit(0)...";
+			// System.err.println(msg);
+		}
+		assertTrue("Failed in || run test exp::0 got::" + queue.size(), queue.size() == 0);
+		assertTrue("Failed in || run test exp::"+noOfThreads+" got::" + out.size(), out.size() == noOfThreads);
+	}
+	
 	@Test
 	public void testCompare() {
 		String one = new String("1");

@@ -291,7 +291,7 @@ public class BtreeTest {
 //		bt.add(obj14);
 //		bt.add(obj15);
 
-		assertTrue(bt.size == bt.order);
+		assertTrue(bt.size() == bt.order);
 
 		Object[] findLeaf = bt.findLeaf(obj0, bt.getPathObj(obj0), null);
 
@@ -303,7 +303,7 @@ public class BtreeTest {
 		
 		bt.add(obj16);
 
-		assertTrue(bt.size == bt.order+1);
+		assertTrue(bt.size() == bt.order+1);
 
 		findLeaf = bt.findLeaf(obj0, bt.getPathObj(obj0), null);
 
@@ -337,7 +337,7 @@ public class BtreeTest {
 		bt.add(obj0);
 		bt.add(obj0);
 
-		assertTrue(bt.size == 1);
+		assertTrue(bt.size() == 1);
 
 		Object[] findLeaf = bt.findLeaf(obj0, bt.getPathObj(obj0), null);
 
@@ -388,7 +388,7 @@ public class BtreeTest {
 //		bt.add(obj14);
 //		bt.add(obj15);
 
-		assertTrue(bt.size == bt.order);
+		assertTrue(bt.size() == bt.order);
 
 		Object[] findLeaf = bt.findLeaf(obj0, bt.getPathObj(obj0), null);
 
@@ -416,7 +416,7 @@ public class BtreeTest {
 		
 		bt.add(obj16);
 
-		assertTrue(bt.size == bt.order+1);
+		assertTrue(bt.size() == bt.order+1);
 
 		findLeaf = bt.findLeaf(obj0, bt.getPathObj(obj0), null);
 
@@ -468,7 +468,7 @@ public class BtreeTest {
 //		bt.add(obj14);
 //		bt.add(obj15);
 
-		assertTrue(bt.size == bt.order);
+		assertTrue(bt.size() == bt.order);
 
 		Object[] findLeaf = bt.findLeaf(obj0, bt.getPathObj(obj0), null);
 
@@ -496,7 +496,7 @@ public class BtreeTest {
 		
 		bt.add(obj16);
 
-		assertTrue(bt.size == bt.order+1);
+		assertTrue(bt.size() == bt.order+1);
 
 		findLeaf = bt.findLeaf(obj0, bt.getPathObj(obj0), null);
 

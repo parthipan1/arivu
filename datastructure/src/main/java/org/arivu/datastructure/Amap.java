@@ -16,6 +16,15 @@ import org.arivu.utils.NullCheck;
 import org.arivu.utils.lock.AtomicWFReentrantLock;
 
 /**
+ * A hash table supporting full concurrency of retrievals and adjustable expected concurrency for updates. This class obeys the same functional specification as java.util.Hashtable, and includes versions of methods corresponding to each method of Hashtable. However, even though all operations are thread-safe, retrieval operations do not entail locking, and there is not any support for locking the entire table in a way that prevents all access. This class is fully interoperable with Hashtable in programs that rely on its thread safety but not on its synchronization details.
+ * Retrieval operations (including get) generally do not block. Retrievals reflect the results of the most recently completed update operations holding upon their onset. For aggregate operations such as putAll and clear, concurrent retrievals may reflect insertion or removal of all entries. Similarly, Iterators and Enumerations return elements reflecting the state of the hash table at the point of the iterator/enumeration. They do not throw java.util.ConcurrentModificationException. However, iterators are designed to be thread safe.
+ * This class and its views and iterators implement all of the optional methods of the java.util.Map and java.util.Iterator interfaces.
+ * This class does allow null to be used as a key or value.
+ * Parameters:
+ * <K> the type of keys maintained by this map
+ * <V> the type of mapped values
+ * Author(s):
+ * Mr P
  * @author P
  *
  */
@@ -30,7 +39,7 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 	/**
 	 */
 	public Amap(Map<? extends K, ? extends V> m) {
-		this(new AtomicWFReentrantLock());
+		this();
 		putAll(m);
 	}
 	
