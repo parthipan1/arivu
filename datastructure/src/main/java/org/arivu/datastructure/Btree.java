@@ -138,7 +138,7 @@ public final class Btree implements Serializable {
 		cas.lock();
 		resetNodes(node);
 		size = 0;
-		cas.lock();
+		cas.unlock();
 	}
 
 	void resetNodes(final Object[] node) {
