@@ -345,6 +345,37 @@ public class DoublyLinkedStackTest {
 		
 	}
 	
+
+	@Test
+	public void testEquals() {
+		String element1 = "one";
+		DoublyLinkedStack<String> list1 = new DoublyLinkedStack<String>(element1, null, false, null, null, null, null);
+		
+		DoublyLinkedStack<String> list2 = new DoublyLinkedStack<String>(null, null, false, null, null, null, null);
+		
+		DoublyLinkedStack<String> list3 = new DoublyLinkedStack<String>(element1, null, false, null, null, null, null);
+		
+		DoublyLinkedStack<String> list4 = new DoublyLinkedStack<String>(null, null, false, null, null, null, null);
+		
+		assertTrue(list1.equals(list1));
+		assertFalse(list1.equals(null));
+		assertFalse(list1.equals(element1));
+		assertFalse(list1.equals(list2));
+		assertFalse(list2.equals(list1));
+		assertTrue(list1.equals(list3));
+		assertTrue(list2.equals(list4));
+		
+		assertTrue(list2.hashCode()==0);
+		assertTrue(list1.hashCode()==element1.hashCode());
+		
+		list2.size = null;
+		assertTrue(list2.size()==0);
+		
+		list2.cas = null;
+		assertFalse(list2.remove(null));
+		assertTrue(list2.push(null)==null);
+	}
+	
 	/**
 	 * @throws InterruptedException 
 	 */

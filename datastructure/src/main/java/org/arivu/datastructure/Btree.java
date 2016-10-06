@@ -277,7 +277,7 @@ public final class Btree implements Serializable {
 		} else {
 			final Lock l = cas;
 			l.lock();
-			try{
+//			try{
 				if (getSize(ref) == 0) {
 					int c = 0;
 					LinkedRef cref = nodes.left;
@@ -294,9 +294,9 @@ public final class Btree implements Serializable {
 					}
 				}
 				size--;
-			}finally{
+//			}finally{
 				l.unlock();
-			}
+//			}
 		}
 
 		return search;

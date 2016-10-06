@@ -95,6 +95,31 @@ public class BtreeTest {
 
 	}
 
+
+	@Test
+	public void testLinkedRefEquals() {
+		String element1 = "one";
+		String element2 = null;
+		LinkedRef list1 = new LinkedRef(element1);
+		
+		LinkedRef list2 = new LinkedRef(element2);
+		
+		LinkedRef list3 = new LinkedRef(element1);
+		
+		LinkedRef list4 = new LinkedRef(element2);
+		
+		assertTrue(list1.equals(list1));
+		assertFalse(list1.equals(null));
+		assertFalse(list1.equals(element1));
+		assertFalse(list1.equals(list2));
+		assertFalse(list2.equals(list1));
+		assertTrue(list1.equals(list3));
+		assertTrue(list2.equals(list4));
+		
+		assertTrue(list2.hashCode()==0);
+		assertTrue(list1.hashCode()==element1.hashCode());
+	}
+	
 	@Test
 	public void testSearch() {
 		Lock lock = new AtomicWFReentrantLock();

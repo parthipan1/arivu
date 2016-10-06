@@ -70,6 +70,28 @@ public class DoublyLinkedSetTest {
 		assertTrue("Failed in clear", set.size() == 0);
 	}
 
+	@Test
+	public void testEquals() {
+		String element1 = "one";
+		DoublyLinkedSet<String> list1 = new DoublyLinkedSet<String>(element1, null, null, null, null);
+		
+		DoublyLinkedSet<String> list2 = new DoublyLinkedSet<String>(null, null, null, null, null);
+		
+		DoublyLinkedSet<String> list3 = new DoublyLinkedSet<String>(element1, null, null, null, null);
+		
+		DoublyLinkedSet<String> list4 = new DoublyLinkedSet<String>(null, null, null, null, null);
+		
+		assertTrue(list1.equals(list1));
+		assertFalse(list1.equals(null));
+		assertFalse(list1.equals(element1));
+		assertFalse(list1.equals(list2));
+		assertFalse(list2.equals(list1));
+		assertTrue(list1.equals(list3));
+		assertTrue(list2.equals(list4));
+		
+		assertTrue(list2.hashCode()==0);
+		assertTrue(list1.hashCode()==element1.hashCode());
+	}
 	/**
 	 * Test method for {@link org.arivu.datastructure.DoublyLinkedSet#isEmpty()}
 	 * .
