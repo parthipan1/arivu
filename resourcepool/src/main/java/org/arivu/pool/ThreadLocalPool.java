@@ -49,7 +49,7 @@ public final class ThreadLocalPool<T> extends AbstractPool<T> {
 		}
 	}  , -1);
 	
-//	private final ThreadLocal<LinkedReference<T>> threadlocals = new ThreadLocal<LinkedReference<T>>();
+//	private final ThreadLocal<LinkedRef<T>> threadlocals = new ThreadLocal<LinkedRef<T>>();
 	
 
 	/* (non-Javadoc)
@@ -70,7 +70,7 @@ public final class ThreadLocalPool<T> extends AbstractPool<T> {
 			lr = createNew(params, true);
 			threadlocals.set(lr);
 		}
-//		LinkedReference<T> lr = threadlocals.get(params);
+//		LinkedRef<T> lr = threadlocals.get(params);
 		return getProxyLinked(lr);
 	}
 
@@ -99,7 +99,7 @@ public final class ThreadLocalPool<T> extends AbstractPool<T> {
 				search.remove();
 			}
 			
-//			LinkedReference<T> linkedReference = threadlocals.get();
+//			LinkedRef<T> linkedReference = threadlocals.get();
 //			if( linkedReference != null )
 //				logger.debug("releaseLink close After close Thread "+Thread.currentThread().hashCode()+" get "+linkedReference.t.hashCode());
 //			else
@@ -115,9 +115,9 @@ public final class ThreadLocalPool<T> extends AbstractPool<T> {
 	public void clear() {
 		clearHead();
 //		super.clear();
-//		Collection<LinkedReference<T>> all = threadlocals.getAll();
+//		Collection<LinkedRef<T>> all = threadlocals.getAll();
 //		threadlocals.clearAll();
-//		for( LinkedReference<T> lr:all ){
+//		for( LinkedRef<T> lr:all ){
 //			logger.debug("close "+lr.t.hashCode());
 //			factory.close(lr.t);
 //		}

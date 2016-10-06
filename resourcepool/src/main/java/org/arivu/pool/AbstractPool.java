@@ -228,7 +228,7 @@ abstract class AbstractPool<T> implements Pool<T> {
 //	 * @param params
 //	 * @return
 //	 */
-//	final void exclusive(final LinkedReference<T> ref){
+//	final void exclusive(final LinkedRef<T> ref){
 //		while( !cas.compareAndSet(false, true) ){}
 //		ref.remove();
 //		cas.set(false);

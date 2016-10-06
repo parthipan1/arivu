@@ -228,14 +228,14 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 				this.binaryTree.addObj(r, pathObj);
 			else {
 				((DoublyLinkedStack<T>) object).cnt++;
-				LinkedReference lref = new LinkedReference(String.valueOf(r.hashCode()));
+				LinkedRef lref = new LinkedRef(String.valueOf(r.hashCode()));
 				Object object2 = this.dupTree.get(lref);
 				if (object2 == null) {
 					lref.addObj(r);
 					lref.addObj(object);
 					this.dupTree.add(lref);
 				} else {
-					lref = (LinkedReference) object2;
+					lref = (LinkedRef) object2;
 					lref.addObj(r);
 				}
 			}
@@ -300,12 +300,12 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 				this.binaryTree.removeObj(this, pathObj);
 				
 			} else {
-				LinkedReference lref = (LinkedReference) this.dupTree
-						.get(new LinkedReference(String.valueOf(this.hashCode())));
-				LinkedReference search = lref.search(this);
+				LinkedRef lref = (LinkedRef) this.dupTree
+						.get(new LinkedRef(String.valueOf(this.hashCode())));
+				LinkedRef search = lref.search(this);
 				search.remove();
 				if (dupCnt > 1) {
-					LinkedReference ref = lref.right;
+					LinkedRef ref = lref.right;
 					while (ref != null && ref.obj != null && ref != lref) {
 						((DoublyLinkedStack<T>) ref.obj).cnt = dupCnt;
 						ref = ref.right;
@@ -313,7 +313,7 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 					this.binaryTree.removeObj(this, pathObj);
 					this.binaryTree.addObj(lref.right.obj, pathObj);
 				}else if(dupCnt==1){
-					this.dupTree.remove(new LinkedReference(String.valueOf(this.hashCode())));
+					this.dupTree.remove(new LinkedRef(String.valueOf(this.hashCode())));
 				}
 			}
 

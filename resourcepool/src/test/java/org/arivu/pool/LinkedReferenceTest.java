@@ -55,14 +55,14 @@ public class LinkedReferenceTest {
 //		final String twoStr = "2";
 //		final String threeStr = "3";
 //		
-//		final LinkedReference<String> head = new LinkedReference<String>(headStr);
-//		head.addRight(new LinkedReference<String>(oneStr));
-//		head.addRight(new LinkedReference<String>(twoStr));
-//		head.addRight(new LinkedReference<String>(threeStr));
+//		final LinkedRef<String> head = new LinkedRef<String>(headStr);
+//		head.addRight(new LinkedRef<String>(oneStr));
+//		head.addRight(new LinkedRef<String>(twoStr));
+//		head.addRight(new LinkedRef<String>(threeStr));
 //		
 //		StringBuffer buf = new StringBuffer();
 //		
-//		LinkedReference<String> ref = head;
+//		LinkedRef<String> ref = head;
 //		do{
 //			buf.append(ref.t);
 //			ref = ref.left;
@@ -148,12 +148,12 @@ public class LinkedReferenceTest {
 //		final String twoStr = "2";
 //		final String threeStr = "3";
 //		
-//		final LinkedReference<String> head = new LinkedReference<String>(headStr);
-//		LinkedReference<String> oneRef = new LinkedReference<String>(oneStr);
+//		final LinkedRef<String> head = new LinkedRef<String>(headStr);
+//		LinkedRef<String> oneRef = new LinkedRef<String>(oneStr);
 //		head.add(oneRef);
-//		LinkedReference<String> twoRef = new LinkedReference<String>(twoStr);
+//		LinkedRef<String> twoRef = new LinkedRef<String>(twoStr);
 //		head.add(twoRef);
-//		LinkedReference<String> threeRef = new LinkedReference<String>(threeStr);
+//		LinkedRef<String> threeRef = new LinkedRef<String>(threeStr);
 //		head.add(threeRef);
 //		
 //		assertTrue("Failed on searchAvailable!", head.searchAvailable()==null);

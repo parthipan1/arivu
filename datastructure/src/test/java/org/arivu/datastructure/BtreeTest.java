@@ -55,9 +55,9 @@ public class BtreeTest {
 		assertTrue(Direction.left.get(null) == null);
 		assertTrue(Direction.right.get(null) == null);
 		Lock lock = new AtomicWFReentrantLock();
-		LinkedReference l = new LinkedReference(CompareStrategy.EQUALS, lock);
-		LinkedReference ll = new LinkedReference(CompareStrategy.EQUALS, lock);
-		LinkedReference lr = new LinkedReference(CompareStrategy.EQUALS, lock);
+		LinkedRef l = new LinkedRef(CompareStrategy.EQUALS, lock);
+		LinkedRef ll = new LinkedRef(CompareStrategy.EQUALS, lock);
+		LinkedRef lr = new LinkedRef(CompareStrategy.EQUALS, lock);
 
 		// System.out.println(" l "+l);
 		// System.out.println(" ll "+ll);
@@ -98,7 +98,7 @@ public class BtreeTest {
 	@Test
 	public void testSearch() {
 		Lock lock = new AtomicWFReentrantLock();
-		LinkedReference l = new LinkedReference(CompareStrategy.EQUALS, lock);
+		LinkedRef l = new LinkedRef(CompareStrategy.EQUALS, lock);
 		l.addObj("r");
 		l.addObj("l");
 

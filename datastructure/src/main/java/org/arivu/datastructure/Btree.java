@@ -210,7 +210,7 @@ public final class Btree implements Serializable {
 	boolean addObj(final Object obj, final int[] arr) {
 		final Lock l = cas;
 		l.lock();
-		final LinkedReference nodes = new LinkedReference(compareStrategy);
+		final LinkedRef nodes = new LinkedRef(compareStrategy);
 		Object[] n = root;
 		nodes.addObj(n);
 		for (int i = 0; i <= arr.length - 2; i++) {
@@ -241,7 +241,7 @@ public final class Btree implements Serializable {
 		}
 	}
 
-	Object[] findLeaf(final Object obj, final int[] arr, final LinkedReference path) {
+	Object[] findLeaf(final Object obj, final int[] arr, final LinkedRef path) {
 		Object[] n = root;
 		if (path != null)
 			path.addObj(n);
@@ -265,7 +265,7 @@ public final class Btree implements Serializable {
 	}
 
 	Object removeObj(final Object obj, final int[] arr) {
-		final LinkedReference nodes = new LinkedReference(compareStrategy);
+		final LinkedRef nodes = new LinkedRef(compareStrategy);
 		final Object[] ref = findLeaf(obj, arr, nodes);
 		if (ref == null) {
 			return null;
@@ -280,7 +280,7 @@ public final class Btree implements Serializable {
 			try{
 				if (getSize(ref) == 0) {
 					int c = 0;
-					LinkedReference cref = nodes.left;
+					LinkedRef cref = nodes.left;
 					while (cref != null && cref.obj != null && cref != nodes) {
 						final Object[] obj2 = (Object[]) cref.obj;
 	
@@ -326,7 +326,7 @@ public final class Btree implements Serializable {
  * @author P
  *
  */
-final class LinkedReference {
+final class LinkedRef {
 	/**
 	 * 
 	 */
@@ -335,7 +335,7 @@ final class LinkedReference {
 	/**
 	 * 
 	 */
-	volatile LinkedReference left = this, right = this;
+	volatile LinkedRef left = this, right = this;
 
 	Lock lock = null;
 	CompareStrategy compareStrategy;
@@ -344,7 +344,7 @@ final class LinkedReference {
 	/**
 	 * 
 	 */
-	LinkedReference(String id) {
+	LinkedRef(String id) {
 		this(CompareStrategy.REF);
 		this.id = id;
 	}
@@ -354,7 +354,7 @@ final class LinkedReference {
 	 *            TODO
 	 * 
 	 */
-	LinkedReference(CompareStrategy compareStrategy) {
+	LinkedRef(CompareStrategy compareStrategy) {
 		this(null, compareStrategy, new NoLock());
 	}
 
@@ -363,7 +363,7 @@ final class LinkedReference {
 	 *            TODO
 	 * 
 	 */
-	LinkedReference(CompareStrategy compareStrategy, Lock lock) {
+	LinkedRef(CompareStrategy compareStrategy, Lock lock) {
 		this(null, compareStrategy, lock);
 	}
 
@@ -374,7 +374,7 @@ final class LinkedReference {
 	 *            TODO
 	 * @param obj
 	 */
-	private LinkedReference(Object t, CompareStrategy compareStrategy, Lock lock) {
+	private LinkedRef(Object t, CompareStrategy compareStrategy, Lock lock) {
 		super();
 		this.obj = t;
 		this.lock = lock;
@@ -391,8 +391,8 @@ final class LinkedReference {
 	/**
 	 * @return
 	 */
-	LinkedReference remove(final Direction dir) {
-		final LinkedReference r = dir.get(this);
+	LinkedRef remove(final Direction dir) {
+		final LinkedRef r = dir.get(this);
 		if (r == this || r == null) {
 			return null;
 		} else {
@@ -405,9 +405,9 @@ final class LinkedReference {
 	 * @param obj
 	 * @return
 	 */
-	LinkedReference search(final Object o) {
+	LinkedRef search(final Object o) {
 
-		LinkedReference ref = this.right;
+		LinkedRef ref = this.right;
 		while (ref != null && ref.obj != null && ref != this) {
 			if (this.compareStrategy.compare(ref.obj, o)) {
 				return ref;
@@ -428,7 +428,7 @@ final class LinkedReference {
 	 */
 	boolean addObj(final Object t) {
 		if (t != null) {
-			add(new LinkedReference(t, compareStrategy, lock), Direction.left);
+			add(new LinkedRef(t, compareStrategy, lock), Direction.left);
 			return true;
 		}
 		return false;
@@ -440,12 +440,12 @@ final class LinkedReference {
 	 *            TODO
 	 * @return
 	 */
-	private LinkedReference add(final LinkedReference l, final Direction direction) {
+	private LinkedRef add(final LinkedRef l, final Direction direction) {
 		if (l != null) {
 			Lock lk = lock;
 			lk.lock();
 			direction.getOther().set(l, this);
-			final LinkedReference tl = direction.get(this);
+			final LinkedRef tl = direction.get(this);
 			direction.set(this, l);
 			direction.set(l, tl);
 			direction.getOther().set(tl, l);
@@ -485,7 +485,7 @@ final class LinkedReference {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		LinkedReference other = (LinkedReference) obj;
+		LinkedRef other = (LinkedRef) obj;
 		if (id == null) {
 			if (other.id != null)
 				return false;
@@ -500,7 +500,7 @@ enum Direction {
 	left {
 
 		@Override
-		LinkedReference get(final LinkedReference ref) {
+		LinkedRef get(final LinkedRef ref) {
 			if (ref == null) {
 				return null;
 			} else {
@@ -509,7 +509,7 @@ enum Direction {
 		}
 
 		@Override
-		void set(final LinkedReference ref, final LinkedReference next) {
+		void set(final LinkedRef ref, final LinkedRef next) {
 			if (ref != null && next != null) {
 				ref.left = next;
 			}
@@ -518,7 +518,7 @@ enum Direction {
 	},
 	right;
 
-	LinkedReference get(final LinkedReference ref) {
+	LinkedRef get(final LinkedRef ref) {
 		if (ref == null) {
 			return null;
 		} else {
@@ -526,13 +526,13 @@ enum Direction {
 		}
 	}
 
-	void set(final LinkedReference ref, final LinkedReference next) {
+	void set(final LinkedRef ref, final LinkedRef next) {
 		if (ref != null && next != null) {
 			ref.right = next;
 		}
 	}
 
-	LinkedReference remove(final LinkedReference ref) {
+	LinkedRef remove(final LinkedRef ref) {
 		if (ref == null) {
 			return null;
 		} else {

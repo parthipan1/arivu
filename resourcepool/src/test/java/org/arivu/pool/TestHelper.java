@@ -114,43 +114,61 @@ public class TestHelper {
 
 	private Callable<Integer> getTask(final Pool<Resource> pool, final CountDownLatch start, final AtomicInteger f,
 			final CountDownLatch end) {
-		return new Callable<Integer>() {
-
-			@Override
-			public Integer call() throws Exception {
-				final int id = f.decrementAndGet();
-				try {
-					start.await();
-					Resource connection = null;
-					Map<String, Object> params = new Amap<String, Object>();
-					params.put("rc", id);
-					while ((connection = pool.get(params)) == null) {
-						try {
-							if (connection == null)
-								Thread.sleep(100);
-						} catch (Exception e) {
-						}
-					}
-
-					try {
-						connection.perform();
-					} finally {
-						connection.close();
-					}
-				} catch (Throwable e) {
-					System.out.println("Failed with err :: " + e);
-					e.printStackTrace();
-				} finally {
-					if (id == 0) {
-						end.countDown();
-					}
-				}
-
-				return id;
-			}
-		};
+		return new TestResult(pool, start, f, end);
 	}
 
+}
+class TestResult implements Callable<Integer>{
+	final Pool<Resource> pool;
+	final CountDownLatch start;
+	final AtomicInteger f;
+	final CountDownLatch end;
+	/**
+	 * @param pool
+	 * @param start
+	 * @param f
+	 * @param end
+	 */
+	TestResult(Pool<Resource> pool, CountDownLatch start, AtomicInteger f, CountDownLatch end) {
+		super();
+		this.pool = pool;
+		this.start = start;
+		this.f = f;
+		this.end = end;
+	}
+	@Override
+	public Integer call() throws Exception {
+		final int id = f.decrementAndGet();
+		try {
+			start.await();
+			Resource connection = null;
+			Map<String, Object> params = new Amap<String, Object>();
+			params.put("rc", id);
+			while ((connection = pool.get(params)) == null) {
+				try {
+					if (connection == null)
+						Thread.sleep(100);
+				} catch (Exception e) {
+				}
+			}
+
+			try {
+				connection.perform();
+			} finally {
+				connection.close();
+			}
+		} catch (Throwable e) {
+			System.out.println("Failed with err :: " + e);
+			e.printStackTrace();
+		} finally {
+			if (id == 0) {
+				end.countDown();
+			}
+		}
+
+		return id;
+	}
+	
 }
 
 interface Resource extends AutoCloseable {

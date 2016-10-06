@@ -172,45 +172,71 @@ public class TestPoolsSb {
 
 	private Callable<Integer> getTask(final Pool<StringBuffer> pool, final Random random, final CountDownLatch start,
 			final CountDownLatch end, final AtomicInteger f, final boolean nullCheck) {
-		return new Callable<Integer>() {
-
-			@Override
-			public Integer call() throws Exception {
-				final int id  = f.decrementAndGet();
-				try {
-					start.await();
-					StringBuffer sb = null;
-					if (nullCheck) {
-						while ((sb = pool.get(null)) == null) {
-							try {
-								if (sb == null)
-									if (random == null)
-										Thread.sleep(100);
-									else
-										Thread.sleep(random.nextInt(100));
-							} catch (Exception e) {
-								//									e.printStackTrace();
-							}
-						} 
-					}else{
-						sb = pool.get(null);
-					}
-					int a=(int)(Math.random()*1000);//random.nextInt(poolSize);
-					for(int i=0;i<10;i++){
-						sb.append((a+i));
-					}
-					values.add(String.valueOf(sb.hashCode()) );
-					pool.put(sb);
-				} catch (Throwable e) {
-					e.printStackTrace();
-				} finally {
-					if(id==0){
-						end.countDown();
-					}
-				}
-				return id;
-			}
-		};
+		return new CustomTestResult(pool, random, start, end, f, nullCheck, values);
 	}
 
+}
+class CustomTestResult implements Callable<Integer>{
+	final Pool<StringBuffer> pool;
+	final Random random;
+	final CountDownLatch start;
+	final CountDownLatch end;
+	final AtomicInteger f;
+	final boolean nullCheck;
+	final Collection<String> values;
+	/**
+	 * @param pool
+	 * @param random
+	 * @param start
+	 * @param end
+	 * @param f
+	 * @param nullCheck
+	 */
+	CustomTestResult(Pool<StringBuffer> pool, Random random, CountDownLatch start, CountDownLatch end,
+			AtomicInteger f, boolean nullCheck, Collection<String> values) {
+		super();
+		this.pool = pool;
+		this.random = random;
+		this.start = start;
+		this.end = end;
+		this.f = f;
+		this.nullCheck = nullCheck;
+		this.values = values;
+	}
+	@Override
+	public Integer call() throws Exception {
+		final int id  = f.decrementAndGet();
+		try {
+			start.await();
+			StringBuffer sb = null;
+			if (nullCheck) {
+				while ((sb = pool.get(null)) == null) {
+					try {
+						if (sb == null)
+							if (random == null)
+								Thread.sleep(100);
+							else
+								Thread.sleep(random.nextInt(100));
+					} catch (Exception e) {
+						//									e.printStackTrace();
+					}
+				} 
+			}else{
+				sb = pool.get(null);
+			}
+			int a=(int)(Math.random()*1000);//random.nextInt(poolSize);
+			for(int i=0;i<10;i++){
+				sb.append((a+i));
+			}
+			values.add(String.valueOf(sb.hashCode()) );
+			pool.put(sb);
+		} catch (Throwable e) {
+			e.printStackTrace();
+		} finally {
+			if(id==0){
+				end.countDown();
+			}
+		}
+		return id;
+	}
 }

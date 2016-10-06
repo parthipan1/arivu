@@ -32,7 +32,7 @@ final class LinkedReference<T> {
 	
 	String id;
 	
-//	public LinkedReference(int size, boolean addLock) {
+//	public LinkedRef(int size, boolean addLock) {
 //		super();
 //		this.obj = null;
 //		this.write = this;
@@ -43,7 +43,7 @@ final class LinkedReference<T> {
 //			this.lock = new AtomicWFReentrantLock();//new ReentrantLock(true);
 //		
 //		for(int i=1;i<size;i++){
-//			LinkedReference<T> l = new LinkedReference<T>();
+//			LinkedRef<T> l = new LinkedRef<T>();
 //			l.id = String.valueOf(i);
 //			if(addLock)
 //				l.lock = new AtomicWFReentrantLock();
