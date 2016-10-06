@@ -13,6 +13,7 @@ import java.util.Queue;
 import java.util.concurrent.locks.Lock;
 
 import org.arivu.utils.lock.AtomicWFReentrantLock;
+import org.arivu.utils.lock.NoLock;
 
 /**
  * @author P
@@ -46,6 +47,8 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 	 */
 	final Btree binaryTree;
 
+	Btree dupTree;
+
 	/**
 	 * @param col
 	 */
@@ -73,7 +76,7 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 	 * @param lock
 	 */
 	DoublyLinkedList(CompareStrategy compareStrategy, Lock lock) {
-		this(null, new Counter(), compareStrategy, lock, new Btree(lock, CompareStrategy.EQUALS));
+		this(null, new Counter(), compareStrategy, lock, new Btree(lock, CompareStrategy.EQUALS), new Btree(new NoLock(), CompareStrategy.EQUALS));
 	}
 
 	/**
@@ -82,14 +85,16 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 	 * @param cas
 	 * @param binaryTree
 	 *            TODO
+	 * @param dupTree TODO
 	 */
-	DoublyLinkedList(T t, Counter size, CompareStrategy compareStrategy, Lock cas, Btree binaryTree) {
+	DoublyLinkedList(T t, Counter size, CompareStrategy compareStrategy, Lock cas, Btree binaryTree, Btree dupTree) {
 		super();
 		this.obj = t;
 		this.size = size;
 		this.compareStrategy = compareStrategy;
 		this.cas = cas;
 		this.binaryTree = binaryTree;
+		this.dupTree = dupTree;
 	}
 
 	/*
@@ -102,6 +107,7 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 		Lock l = this.cas;
 		l.lock();
 		this.binaryTree.clear();
+		this.dupTree.clear();
 		left = this;
 		right = this;
 		size.set(0);
@@ -148,10 +154,13 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 		}
 	}
 
+	volatile int cnt = 1;
+
 	/**
 	 * @param l
 	 * @return
 	 */
+	@SuppressWarnings("unchecked")
 	DoublyLinkedList<T> addLeft(final DoublyLinkedList<T> l) {
 		if (l != null) {
 			Lock lo = this.cas;
@@ -164,13 +173,24 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 			l.left = tl;
 			tl.right = l;
 
-			final Ref obj2 = new Ref(l);
-			final int[] pathObj = this.binaryTree.getPathObj(obj2);
-			final Object object = this.binaryTree.findObj(obj2, pathObj);
+			// final Ref obj2 = new Ref(l);
+			final int[] pathObj = this.binaryTree.getPathObj(l);
+			final Object object = this.binaryTree.findObj(l, pathObj);
 			if (object == null)
-				this.binaryTree.addObj(obj2, pathObj);
-			else
-				((Ref) object).cnt++;
+				this.binaryTree.addObj(l, pathObj);
+			else {
+				((DoublyLinkedList<T>) object).cnt++;
+				LinkedReference lref = new LinkedReference(String.valueOf(l.hashCode()));
+				Object object2 = this.dupTree.get(lref);
+				if (object2 == null) {
+					lref.addObj(l);
+					lref.addObj(object);
+					this.dupTree.add(lref);
+				} else {
+					lref = (LinkedReference) object2;
+					lref.addObj(l);
+				}
+			}
 
 			lo.unlock();
 		}
@@ -183,11 +203,11 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 	 */
 	@SuppressWarnings("unchecked")
 	DoublyLinkedList<T> search(final Object o) {
-		Object object = this.binaryTree.get(new Ref(o));
+		Object object = this.binaryTree.get(new DoublyLinkedList<Object>(o, null, null, null, null, this.dupTree));
 		if (object == null)
 			return null;
 		else
-			return (DoublyLinkedList<T>) ((Ref) object).lst;
+			return (DoublyLinkedList<T>) (object);
 	}
 
 	@Override
@@ -198,6 +218,7 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 	/**
 	 * 
 	 */
+	@SuppressWarnings("unchecked")
 	T removeRef() {
 		Lock l = this.cas;
 		l.lock();
@@ -217,11 +238,32 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 		size = null;
 		compareStrategy = null;
 
-		final Ref obj2 = new Ref(obj);
-		final int[] pathObj = this.binaryTree.getPathObj(obj2);
-		final Object object = this.binaryTree.findObj(obj2, pathObj);
-		if (object != null && --((Ref) object).cnt == 0)
-			this.binaryTree.removeObj(obj2, pathObj);
+		final int[] pathObj = this.binaryTree.getPathObj(this);
+		final Object object = this.binaryTree.findObj(this, pathObj);
+		if (object != null) {
+
+			DoublyLinkedList<T> object3 = (DoublyLinkedList<T>) object;
+			int dupCnt = --object3.cnt;
+			if (dupCnt == 0) {
+				this.binaryTree.removeObj(this, pathObj);
+				this.dupTree.remove(new LinkedReference(String.valueOf(this.hashCode())));
+			} else {
+				LinkedReference lref = (LinkedReference) this.dupTree
+						.get(new LinkedReference(String.valueOf(this.hashCode())));
+				LinkedReference search = lref.search(this);
+				search.remove();
+				if (dupCnt > 1) {
+					LinkedReference ref = lref.right;
+					while (ref != null && ref.obj != null && ref != lref) {
+						((DoublyLinkedList<T>) ref.obj).cnt = dupCnt;
+						ref = ref.right;
+					}
+					this.binaryTree.removeObj(this, pathObj);
+					this.binaryTree.addObj(lref.right.obj, pathObj);
+				}
+			}
+
+		}
 
 		l.unlock();
 		return obj;
@@ -288,7 +330,7 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 	@Override
 	public boolean add(T e) {
 		if (e != null) {
-			addLeft(new DoublyLinkedList<T>(e, size, compareStrategy, cas, binaryTree));
+			addLeft(new DoublyLinkedList<T>(e, size, compareStrategy, cas, binaryTree, this.dupTree));
 			return true;
 		} else {
 			return false;
@@ -630,4 +672,28 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 	public T peek() {
 		return right.obj;
 	}
+
+	@Override
+	public int hashCode() {
+		return ((obj == null) ? 0 : obj.hashCode());
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		@SuppressWarnings("rawtypes")
+		DoublyLinkedList other = (DoublyLinkedList) obj;
+		if (this.obj == null) {
+			if (other.obj != null)
+				return false;
+		} else if (!this.obj.equals(other.obj))
+			return false;
+		return true;
+	}
+
 }

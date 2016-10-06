@@ -1,6 +1,8 @@
 package org.arivu.datastructure;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -16,6 +18,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 
 public class DoublyLinkedStackTest {
 
@@ -122,7 +125,7 @@ public class DoublyLinkedStackTest {
 		stack.push("one");
 		stack.push("one");
 		assertFalse("Failed in push", stack.isEmpty());
-		assertTrue("Failed in push", stack.size()==1);
+		assertTrue("Failed in push", stack.size()==2);
 		
 		assertTrue(stack.addRight(null, null)==null);
 		

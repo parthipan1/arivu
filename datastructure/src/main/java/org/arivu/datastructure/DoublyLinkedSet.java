@@ -152,7 +152,7 @@ public final class DoublyLinkedSet<T> implements Set<T>, Queue<T> {
 			if (size != null) {
 				size.incrementAndGet();
 			}
-			this.binaryTree.add(new Ref(l));
+			this.binaryTree.add(l);
 			// if(null==right && left == null ){
 			// left = l;
 			// right = l;
@@ -190,11 +190,11 @@ public final class DoublyLinkedSet<T> implements Set<T>, Queue<T> {
 	 */
 	@SuppressWarnings("unchecked")
 	DoublyLinkedSet<T> search(final Object o) {
-		Object object = this.binaryTree.get(new Ref(o));
+		Object object = this.binaryTree.get(new DoublyLinkedSet<Object>( o, null, null, null, null));
 		if (object == null)
 			return null;
 		else
-			return (DoublyLinkedSet<T>) ((Ref) object).set;
+			return (DoublyLinkedSet<T>) (object);
 		// DoublyLinkedSet<T> ref = this.right;
 		// while (ref != null) {
 		// if (ref == this) {
@@ -255,7 +255,7 @@ public final class DoublyLinkedSet<T> implements Set<T>, Queue<T> {
 		size = null;
 		cas = null;
 		compareStrategy = null;
-		this.binaryTree.remove(new Ref(obj));
+		this.binaryTree.remove(this);
 		l.unlock();
 		return obj;
 	}
@@ -707,30 +707,28 @@ public final class DoublyLinkedSet<T> implements Set<T>, Queue<T> {
 		return this.right.obj;
 	}
 
-	// @Override
-	// public int hashCode() {
-	// final int prime = 31;
-	// int result = 1;
-	// result = prime * result + ((obj == null) ? 0 : obj.hashCode());
-	// return result;
-	// }
-	//
-	// @Override
-	// public boolean equals(Object obj) {
-	// if (this == obj)
-	// return true;
-	// if (obj == null)
-	// return false;
-	// if (getClass() != obj.getClass())
-	// return false;
-	// DoublyLinkedSet other = (DoublyLinkedSet) obj;
-	// if (this.obj == null) {
-	// if (other.obj != null)
-	// return false;
-	// } else if (!this.obj.equals(other.obj))
-	// return false;
-	// return true;
-	// }
+	@Override
+	public int hashCode() {
+		return ((obj == null) ? 0 : obj.hashCode());
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		@SuppressWarnings("rawtypes")
+		DoublyLinkedSet other = (DoublyLinkedSet) obj;
+		if (this.obj == null) {
+			if (other.obj != null)
+				return false;
+		} else if (!this.obj.equals(other.obj))
+			return false;
+		return true;
+	}
 }
 
 /**
@@ -785,94 +783,94 @@ final class Counter {
  * @author P
  *
  */
-final class Ref {
-	final DoublyLinkedSet<?> set;
-	final DoublyLinkedStack<?> st;
-	final DoublyLinkedList<?> lst;
-	final Object obj;
-	final int hashcode;
-	int cnt = 1;
-	
-	/**
-	 * @param set
-	 */
-	Ref(DoublyLinkedSet<?> set) {
-		super();
-		this.set = set;
-		this.obj = set.obj;
-		this.st = null;
-		this.lst = null;
-		if(this.obj==null)
-			this.hashcode = 0;
-		else
-			this.hashcode = this.obj.hashCode();
-	}
-	
-	/**
-	 * @param stack
-	 */
-	Ref(DoublyLinkedList<?> lst) {
-		super();
-		this.set = null;
-		this.obj = lst.obj;
-		this.st = null;
-		this.lst = lst;
-		if(this.obj==null)
-			this.hashcode = 0;
-		else
-			this.hashcode = this.obj.hashCode();
-	}
-
-	/**
-	 * @param stack
-	 */
-	Ref(DoublyLinkedStack<?> stack) {
-		super();
-		this.set = null;
-		this.obj = stack.obj;
-		this.st = stack;
-		this.lst = null;
-		if(this.obj==null)
-			this.hashcode = 0;
-		else
-			this.hashcode = this.obj.hashCode();
-	}
-	
-	/**
-	 * @param obj
-	 */
-	public Ref(Object obj) {
-		super();
-		this.set = null;
-		this.obj = obj;
-		this.st = null;
-		this.lst = null;
-		if(this.obj==null)
-			this.hashcode = 0;
-		else
-			this.hashcode = this.obj.hashCode();
-	}
-
-	@Override
-	public int hashCode() {
-		return this.hashcode;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		Ref other = (Ref) obj;
-		if (this.obj == null) {
-			if (other.obj != null)
-				return false;
-		} else if (!this.obj.equals(other.obj))
-			return false;
-		return true;
-	}
-
-}
+//final class Ref {
+//	final DoublyLinkedSet<?> set;
+//	final DoublyLinkedStack<?> st;
+//	final DoublyLinkedList<?> lst;
+//	final Object obj;
+//	final int hashcode;
+//	int cnt = 1;
+//	
+//	/**
+//	 * @param set
+//	 */
+//	Ref(DoublyLinkedSet<?> set) {
+//		super();
+//		this.set = set;
+//		this.obj = set.obj;
+//		this.st = null;
+//		this.lst = null;
+//		if(this.obj==null)
+//			this.hashcode = 0;
+//		else
+//			this.hashcode = this.obj.hashCode();
+//	}
+//	
+//	/**
+//	 * @param stack
+//	 */
+//	Ref(DoublyLinkedList<?> lst) {
+//		super();
+//		this.set = null;
+//		this.obj = lst.obj;
+//		this.st = null;
+//		this.lst = lst;
+//		if(this.obj==null)
+//			this.hashcode = 0;
+//		else
+//			this.hashcode = this.obj.hashCode();
+//	}
+//
+//	/**
+//	 * @param stack
+//	 */
+//	Ref(DoublyLinkedStack<?> stack) {
+//		super();
+//		this.set = null;
+//		this.obj = stack.obj;
+//		this.st = stack;
+//		this.lst = null;
+//		if(this.obj==null)
+//			this.hashcode = 0;
+//		else
+//			this.hashcode = this.obj.hashCode();
+//	}
+//	
+//	/**
+//	 * @param obj
+//	 */
+//	public Ref(Object obj) {
+//		super();
+//		this.set = null;
+//		this.obj = obj;
+//		this.st = null;
+//		this.lst = null;
+//		if(this.obj==null)
+//			this.hashcode = 0;
+//		else
+//			this.hashcode = this.obj.hashCode();
+//	}
+//
+//	@Override
+//	public int hashCode() {
+//		return this.hashcode;
+//	}
+//
+//	@Override
+//	public boolean equals(Object obj) {
+//		if (this == obj)
+//			return true;
+//		if (obj == null)
+//			return false;
+//		if (getClass() != obj.getClass())
+//			return false;
+//		Ref other = (Ref) obj;
+//		if (this.obj == null) {
+//			if (other.obj != null)
+//				return false;
+//		} else if (!this.obj.equals(other.obj))
+//			return false;
+//		return true;
+//	}
+//
+//}

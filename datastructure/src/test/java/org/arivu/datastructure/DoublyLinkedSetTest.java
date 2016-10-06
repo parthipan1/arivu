@@ -636,53 +636,53 @@ public class DoublyLinkedSetTest {
 		assertFalse(CompareStrategy.REF.compare(null, two));
 	}
 
-	@Test
-	public void testRefEquals() {
-		String one = new String("1");
-		String two = new String("2");
-
-		Ref ref1 = new Ref(one);
-		Ref ref2 = new Ref(new DoublyLinkedSet<String>(one, null, null, null, null));
-		Ref ref3 = new Ref(one);
-
-		Ref ref4 = new Ref((String) null);
-		Ref ref5 = new Ref(two);
-
-		assertTrue(ref1.equals(ref1));
-		assertFalse(ref1.equals(null));
-		assertFalse(ref1.equals(new Object()));
-		assertTrue(ref1.equals(ref2));
-		assertTrue(ref1.equals(ref3));
-
-		assertFalse(ref4.equals(ref1));
-		assertFalse(ref1.equals(ref5));
-
-		assertTrue(ref4.hashCode() == 0);
-		assertTrue(ref1.hashCode() == one.hashCode());
-
-		Object obj = null;
-		Ref ref6 = new Ref(obj);
-		Ref ref7 = new Ref(new DoublyLinkedSet<Object>(obj, null, null, null, null));
-		Ref ref8 = new Ref(new DoublyLinkedList<Object>(obj, null, null, null, null));
-		Ref ref9 = new Ref(new DoublyLinkedStack<Object>(obj, null, false, null, null, null));
-
-		assertTrue(ref6.hashCode() == 0);
-		assertTrue(ref7.hashCode() == 0);
-		assertTrue(ref8.hashCode() == 0);
-		assertTrue(ref9.hashCode() == 0);
-
-		obj = "10";
-		ref6 = new Ref(obj);
-		ref7 = new Ref(new DoublyLinkedSet<Object>(obj, null, null, null, null));
-		ref8 = new Ref(new DoublyLinkedList<Object>(obj, null, null, null, null));
-		ref9 = new Ref(new DoublyLinkedStack<Object>(obj, null, false, null, null, null));
-
-		assertTrue(ref6.hashCode() == obj.hashCode());
-		assertTrue(ref7.hashCode() == obj.hashCode());
-		assertTrue(ref8.hashCode() == obj.hashCode());
-		assertTrue(ref9.hashCode() == obj.hashCode());
-
-	}
+//	@Test
+//	public void testRefEquals() {
+//		String one = new String("1");
+//		String two = new String("2");
+//
+//		Ref ref1 = new Ref(one);
+//		Ref ref2 = new Ref(new DoublyLinkedSet<String>(one, null, null, null, null));
+//		Ref ref3 = new Ref(one);
+//
+//		Ref ref4 = new Ref((String) null);
+//		Ref ref5 = new Ref(two);
+//
+//		assertTrue(ref1.equals(ref1));
+//		assertFalse(ref1.equals(null));
+//		assertFalse(ref1.equals(new Object()));
+//		assertTrue(ref1.equals(ref2));
+//		assertTrue(ref1.equals(ref3));
+//
+//		assertFalse(ref4.equals(ref1));
+//		assertFalse(ref1.equals(ref5));
+//
+//		assertTrue(ref4.hashCode() == 0);
+//		assertTrue(ref1.hashCode() == one.hashCode());
+//
+//		Object obj = null;
+//		Ref ref6 = new Ref(obj);
+//		Ref ref7 = new Ref(new DoublyLinkedSet<Object>(obj, null, null, null, null));
+//		Ref ref8 = new Ref(new DoublyLinkedList<Object>(obj, null, null, null, null));
+//		Ref ref9 = new Ref(new DoublyLinkedStack<Object>(obj, null, false, null, null, null));
+//
+//		assertTrue(ref6.hashCode() == 0);
+//		assertTrue(ref7.hashCode() == 0);
+//		assertTrue(ref8.hashCode() == 0);
+//		assertTrue(ref9.hashCode() == 0);
+//
+//		obj = "10";
+//		ref6 = new Ref(obj);
+//		ref7 = new Ref(new DoublyLinkedSet<Object>(obj, null, null, null, null));
+//		ref8 = new Ref(new DoublyLinkedList<Object>(obj, null, null, null, null));
+//		ref9 = new Ref(new DoublyLinkedStack<Object>(obj, null, false, null, null, null));
+//
+//		assertTrue(ref6.hashCode() == obj.hashCode());
+//		assertTrue(ref7.hashCode() == obj.hashCode());
+//		assertTrue(ref8.hashCode() == obj.hashCode());
+//		assertTrue(ref9.hashCode() == obj.hashCode());
+//
+//	}
 
 	@Test
 	public void testSize1() {
