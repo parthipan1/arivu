@@ -194,6 +194,36 @@ public class DoublyLinkedListTest {
 	}
 
 	@Test
+	public void testAddT_Dup() {
+		String element1 = "one";
+//		String element2 = "two";
+		DoublyLinkedList<String> list = new DoublyLinkedList<String>();
+		list.add(element1);
+		assertTrue(list.dupTree.size==0);
+		list.add(element1);
+		assertFalse("Failed in clear", list.isEmpty());
+		assertTrue("Failed in clear", list.size()==2);
+		assertTrue(list.dupTree.size==1);
+
+		StringBuffer sb = new StringBuffer();
+		for(Object s:list.toArray())
+			sb.append(s);
+		
+		assertTrue("Failed in Iterator!", (element1+element1).equals(sb.toString()));
+		
+		list.add(element1);
+		assertFalse("Failed in clear", list.isEmpty());
+		assertTrue("Failed in clear", list.size()==3);
+		assertTrue(list.dupTree.size==1);
+		
+		sb = new StringBuffer();
+		for(Object s:list.toArray())
+			sb.append(s);
+		
+		assertTrue("Failed in Iterator!", (element1+element1+element1).equals(sb.toString()));
+	}
+	
+	@Test
 	public void testRemoveObject() {
 		String element1 = "one";
 		String element2 = "two";
@@ -220,6 +250,33 @@ public class DoublyLinkedListTest {
 		
 	}
 
+	@Test
+	public void testRemoveObject_Dup() {
+		String element1 = "one";
+//		String element2 = "two";
+		DoublyLinkedList<String> list = new DoublyLinkedList<String>();
+		list.add(element1);
+		list.add(element1);
+		list.add(element1);
+		assertFalse("Failed in clear", list.isEmpty());
+		assertTrue("Failed in clear", list.size()==3);
+		assertTrue(list.dupTree.size==1);
+		
+		assertTrue(list.remove(element1));
+		assertTrue("Failed in clear", list.size()==2);
+		assertTrue(list.dupTree.size==1);
+
+		assertTrue(list.remove(element1));
+		assertTrue("Failed in clear", list.size()==1);
+		assertTrue(list.dupTree.size==0);
+		
+		assertTrue(list.remove(element1));
+		assertTrue("Failed in clear", list.size()==0);
+		
+		assertFalse(list.remove(element1));
+	}
+	
+	
 	@Test
 	public void testContainsAll() {
 		String element1 = "one";

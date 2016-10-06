@@ -251,16 +251,18 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 						.get(new LinkedRef(String.valueOf(this.hashCode())));
 				LinkedRef search = lref.search(this);
 				search.remove();
-				if (dupCnt > 1) {
+				if (dupCnt >= 1) {
 					LinkedRef ref = lref.right;
 					while (ref != null && ref.obj != null && ref != lref) {
 						((DoublyLinkedList<T>) ref.obj).cnt = dupCnt;
 						ref = ref.right;
 					}
-					this.binaryTree.removeObj(this, pathObj);
-					this.binaryTree.addObj(lref.right.obj, pathObj);
-				}else if(dupCnt==1){
-					this.dupTree.remove(new LinkedRef(String.valueOf(this.hashCode())));
+					if( object3 == this ){
+						this.binaryTree.removeObj(this, pathObj);
+						this.binaryTree.addObj(lref.right.obj, pathObj);
+					}
+					if(dupCnt==1)
+						this.dupTree.remove(new LinkedRef(String.valueOf(this.hashCode())));
 				}
 			}
 

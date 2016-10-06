@@ -314,6 +314,37 @@ public class DoublyLinkedStackTest {
 		assertTrue("Failed at getIndex 2 ", stack.lastIndexOf(element3)==2);
 	}
 	
+
+	@Test
+	public void testAdd_Dup() {
+		String element1 = "one";
+		
+		DoublyLinkedStack<String> stack = new DoublyLinkedStack<String>();
+		
+		assertTrue("Failed at getIndex 0 ", stack.size()==0);
+		stack.add(element1);
+		assertTrue("Failed at getIndex 0 ", stack.size()==1);
+		stack.add(element1);
+		assertTrue("Failed at getIndex 0 ", stack.size()==2);
+		assertTrue("Failed at getIndex 0 ", stack.dupTree.size==1);
+		stack.add(element1);
+
+		assertTrue("Failed at getIndex 0 ", stack.size()==3);
+		assertTrue("Failed at getIndex 0 ", stack.dupTree.size==1);
+		
+		stack.remove(element1);
+		assertTrue("Failed at getIndex 0 ", stack.size()==2);
+		assertTrue("Failed at getIndex 0 ", stack.dupTree.size==1);
+		
+		stack.remove(element1);
+		assertTrue("Failed at getIndex 0 ", stack.size()==1);
+		assertTrue("Failed at getIndex 0 ", stack.dupTree.size==0);
+		
+		stack.remove(element1);
+		assertTrue("Failed at getIndex 0 ", stack.size()==0);
+		
+	}
+	
 	/**
 	 * @throws InterruptedException 
 	 */
