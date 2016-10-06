@@ -125,7 +125,7 @@ public class DoublyLinkedStackTest {
 		stack.push("one");
 		stack.push("one");
 		assertFalse("Failed in push", stack.isEmpty());
-		assertTrue("Failed in push", stack.size()==2);
+		assertTrue("Failed in push", stack.size()==1);
 		
 		assertTrue(stack.addRight(null, null)==null);
 		
