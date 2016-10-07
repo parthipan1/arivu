@@ -5,6 +5,7 @@ package org.arivu.datastructure;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 
 import org.arivu.utils.NullCheck;
@@ -30,9 +31,11 @@ public final class Btree implements Serializable {
 	private final int baseMask;
 	final int order;
 	final Lock cas;
+	final Lock[] locks;
 	private final CompareStrategy compareStrategy;
 
-	volatile int size = 0;
+//	volatile int size = 0;
+	final AtomicInteger size = new AtomicInteger(0);
 
 	/**
 	 * @param order
@@ -80,6 +83,10 @@ public final class Btree implements Serializable {
 		this.compareStrategy = compareStrategy;
 		this.root = new Object[order];
 		this.cas = lock;
+		this.locks = new Lock[order];
+		for(int i=0;i<order;i++){
+			this.locks[i] = new AtomicWFReentrantLock();
+		}
 	}
 
 	int[] getPathObj(final Object obj) {
@@ -104,7 +111,7 @@ public final class Btree implements Serializable {
 	}
 
 	public int size() {
-		return size;
+		return size.get();
 	}
 
 	public boolean add(final Object obj) {
@@ -137,7 +144,7 @@ public final class Btree implements Serializable {
 	void clear(final Object[] node) {
 		cas.lock();
 		resetNodes(node);
-		size = 0;
+		size.set(0);// = 0;
 		cas.unlock();
 	}
 
@@ -208,7 +215,7 @@ public final class Btree implements Serializable {
 	}
 
 	boolean addObj(final Object obj, final int[] arr) {
-		final Lock l = cas;
+		final Lock l = this.locks[arr[0]];//cas;
 		l.lock();
 		final LinkedRef nodes = new LinkedRef(compareStrategy);
 		Object[] n = root;
@@ -228,13 +235,15 @@ public final class Btree implements Serializable {
 			ref = new Object[order];
 			n[arr[arr.length - 1]] = ref;
 			ref[0] = obj;
-			size++;
+//			size++;
+			size.incrementAndGet();
 			l.unlock();
 			return true;
 		}else{
 			final boolean add = addArr(ref, obj, n, arr);
 			if (add) 
-				size++;
+				size.incrementAndGet();
+//				size++;
 			
 			l.unlock();
 			return add;
@@ -275,7 +284,7 @@ public final class Btree implements Serializable {
 		if (search == null) {
 			return null;
 		} else {
-			final Lock l = cas;
+			final Lock l = this.locks[arr[0]];//cas;
 			l.lock();
 //			try{
 				if (getSize(ref) == 0) {
@@ -293,7 +302,8 @@ public final class Btree implements Serializable {
 						cref = cref.left;
 					}
 				}
-				size--;
+//				size--;
+				size.decrementAndGet();
 //			}finally{
 				l.unlock();
 //			}
