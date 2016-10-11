@@ -21,12 +21,12 @@ import org.slf4j.LoggerFactory;
 class TestDataSourcesHelper {
 	static final Logger logger = LoggerFactory.getLogger(TestDataSourcesHelper.class);
 
-	 int maxThreadsCnt = 500;
-	 int nThreads = 1000000;// 000;
-	 int poolSize = 625;
-	 int reuseCount = 2500;
-	 int lifeSpan = 30000;
-	 ExecutorService exe = null;
+	int maxThreadsCnt = 500;
+	int nThreads = 1000000;// 000;
+	int poolSize = 625;
+	int reuseCount = 2500;
+	int lifeSpan = 30000;
+	ExecutorService exe = null;
 
 	public void setUpBeforeClass() throws Exception {
 		exe = Executors.newFixedThreadPool(Math.min(maxThreadsCnt, nThreads));
@@ -37,7 +37,7 @@ class TestDataSourcesHelper {
 		if (!exe.awaitTermination(100, TimeUnit.MICROSECONDS)) {
 			String msg = "Still waiting after 100ms: calling System.exit(0)...";
 			logger.debug(msg);
-//			System.err.println(msg);
+			// System.err.println(msg);
 		}
 	}
 
@@ -65,10 +65,11 @@ class TestDataSourcesHelper {
 		logger.info(msg);
 		System.out.println(msg);
 		LightningLogger.flush();
-//		System.out.println("After Flush!");
+		// System.out.println("After Flush!");
 	}
 
-	void testDataSource(final AbstractDataSource ds, final int verifyCnt, final boolean checkMin) throws InterruptedException {
+	void testDataSource(final AbstractDataSource ds, final int verifyCnt, final boolean checkMin)
+			throws InterruptedException {
 		ds.setName("test");
 		ds.setMaxPoolSize(poolSize);
 		ds.setMaxReuseCount(reuseCount);
@@ -80,7 +81,7 @@ class TestDataSourcesHelper {
 		final AtomicInteger f = new AtomicInteger(nThreads);
 		final Random rd = new Random(System.currentTimeMillis());
 		Queue<Future<Integer>> listFuture = new DoublyLinkedList<Future<Integer>>();
-		
+
 		for (int i = 0; i < nThreads; i++) {
 			final Callable<Integer> r = getTask(ds, start, end, f, rd);
 			Future<Integer> submit = exe.submit(r);
@@ -88,52 +89,71 @@ class TestDataSourcesHelper {
 		}
 		start.countDown();
 		end.await();
-		
-//		for(Future<Integer> fu:listFuture)
-//			try {
-//				fu.get();
-//				fu.cancel(true);
-//			} catch (ExecutionException e) {
-//				e.printStackTrace();
-//			}
-		
+
+		// for(Future<Integer> fu:listFuture)
+		// try {
+		// fu.get();
+		// fu.cancel(true);
+		// } catch (ExecutionException e) {
+		// e.printStackTrace();
+		// }
+
 		listFuture.clear();
-		
+
 		assertTrue("Failed in allconnections! " + ds.getMaxPoolSize(), ds.getMaxPoolSize() <= verifyCnt);
 		ds.close();
 	}
 
 	private Callable<Integer> getTask(final AbstractDataSource ds, final CountDownLatch start, final CountDownLatch end,
 			final AtomicInteger f, final Random rd) {
-		final Callable<Integer> r = new Callable<Integer>() {
-
-			@Override
-			public Integer call() throws Exception {
-				final int id  = f.decrementAndGet();
-				try {
-					start.await();
-					int y = rd.nextInt(100);
-					long s = System.currentTimeMillis();
-					final Connection connection = ds.getConnection();
-					try {
-						connection.prepareStatement("test" + y);
-						logger.debug("Acquired(" + ((System.currentTimeMillis() - s)) + ") :: " + connection);
-					} finally {
-						connection.close();
-					}
-				} catch (Throwable e) {
-					System.out.println("failed with err :: "+e);
-				} finally {
-					logger.debug(" Remaining count " + f + " exe " + exe.isTerminated());
-					if(id==0){
-						end.countDown();
-					}
-				}
-				
-				return id;
-			}
-		};
-		return r;
+		return new TestResults(ds, start, end, f, rd, exe);
 	}
 
+}
+
+final class TestResults implements Callable<Integer> {
+	static final Logger logger = LoggerFactory.getLogger(TestResults.class);
+	final AbstractDataSource ds;
+	final CountDownLatch start;
+	final CountDownLatch end;
+	final AtomicInteger f;
+	final Random rd;
+	final ExecutorService exe;
+
+	TestResults(AbstractDataSource ds, CountDownLatch start, CountDownLatch end, AtomicInteger f, Random rd,
+			ExecutorService exe) {
+		super();
+		this.ds = ds;
+		this.start = start;
+		this.end = end;
+		this.f = f;
+		this.rd = rd;
+		this.exe = exe;
+	}
+
+	@Override
+	public Integer call() throws Exception {
+		final int id = f.decrementAndGet();
+		try {
+			start.await();
+			int y = rd.nextInt(100);
+			long s = System.currentTimeMillis();
+			final Connection connection = ds.getConnection();
+			try {
+				connection.prepareStatement("test" + y);
+				logger.debug("Acquired(" + ((System.currentTimeMillis() - s)) + ") :: " + connection);
+			} finally {
+				connection.close();
+			}
+		} catch (Throwable e) {
+			System.out.println("failed with err :: " + e);
+		} finally {
+			logger.debug(" Remaining count " + f + " exe " + exe.isTerminated());
+			if (id == 0) {
+				end.countDown();
+			}
+		}
+
+		return id;
+	}
 }
