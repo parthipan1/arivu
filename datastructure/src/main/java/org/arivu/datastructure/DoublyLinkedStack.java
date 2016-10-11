@@ -121,7 +121,7 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 	public int search(final Object o) {
 		int idx = 0;
 		DoublyLinkedStack<T> ref = this.right;
-		while (ref != null && ref != this) {
+		while ( ref != this) {//ref != null &&
 			if (compareStrategy.compare(ref.obj, o)) {
 				return idx;
 			}
@@ -223,15 +223,6 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 				return null;
 			ll.lock();
 
-			// final Ref obj2 = new Ref(r);
-			// final int[] pathObj = this.binaryTree.getPathObj(this);
-			// final Object object = this.binaryTree.findObj(this, pathObj);
-			// if (object == null)
-			// this.binaryTree.addObj(this, pathObj);
-			// else
-			// ((DoublyLinkedStack<T>) object).cnt++;
-			//
-
 			final int[] pathObj = this.binaryTree.getPathObj(r);
 			final Object object = this.binaryTree.findObj(r, pathObj);
 			if (object == null)
@@ -250,15 +241,15 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 				}
 			}
 
-			if (size != null) {
+//			if (size != null) {
 				size.incrementAndGet();
-			}
+//			}
 			r.left = this;
 			DoublyLinkedStack<T> tr = right;
 			this.right = r;
 			r.right = tr;
 
-			if (tr != null)
+//			if (tr != null)
 				tr.left = r;
 
 			ll.unlock();
@@ -302,7 +293,7 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 
 		final int[] pathObj = this.binaryTree.getPathObj(this);
 		final Object object = this.binaryTree.findObj(this, pathObj);
-		if (object != null) {
+//		if (object != null) {
 
 			DoublyLinkedStack<T> object3 = (DoublyLinkedStack<T>) object;
 			int dupCnt = --object3.cnt;
@@ -313,24 +304,24 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 				LinkedRef lref = (LinkedRef) this.dupTree.get(new LinkedRef(String.valueOf(this.hashCode())));
 				LinkedRef search = lref.search(this);
 				search.remove();
-				if (dupCnt >= 1) {
+//				if (dupCnt >= 1) {
 					LinkedRef ref = lref.right;
-					while (ref != null && ref.obj != null && ref != lref) {
+					while (  ref != lref) { //ref != null && ref.obj != null &&
 						((DoublyLinkedStack<T>) ref.obj).cnt = dupCnt;
 						ref = ref.right;
 					}
 
-					if ( object3 == this ) {
+//					if ( object3 == this ) {
 						this.binaryTree.removeObj(this, pathObj);
 						this.binaryTree.addObj(lref.right.obj, pathObj);
-					}
+//					}
 					if (dupCnt == 1)
 						this.dupTree.remove(new LinkedRef(String.valueOf(this.hashCode())));
 
-				}
+//				}
 			}
 
-		}
+//		}
 
 		DoublyLinkedStack<T> tleft = left, tright = right;
 		if (tleft != null)
@@ -491,7 +482,7 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 			l.lock();
 
 			DoublyLinkedStack<T> ref = this.right;
-			while (ref != null && ref != this) {
+			while (ref != this) {//ref != null &&
 				if (!c.contains(ref.obj)) {
 					DoublyLinkedStack<T> ll = ref;
 					ref = ref.left;
@@ -521,7 +512,7 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 	DoublyLinkedStack<T> getLinked(int index) {
 		int idx = 0;
 		DoublyLinkedStack<T> ref = this.right;
-		while (ref != null && ref != this) {
+		while (ref != this) {//ref != null && 
 			if (idx == index) {
 				return ref;
 			}
@@ -604,7 +595,7 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 	public int indexOf(final Object o) {
 		int idx = 0;
 		DoublyLinkedStack<T> ref = this.right;
-		while (ref != null && ref != this) {
+		while ( ref != this) {//ref != null &&
 			if (compareStrategy.compare(ref.obj, o)) {
 				return idx;
 			}
@@ -618,7 +609,7 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 	public int lastIndexOf(Object o) {
 		DoublyLinkedStack<T> ref = this.left;
 		int idx = size.get() - 1;
-		while (ref != null && ref != this) {
+		while (ref != this) {//ref != null &&
 			if (compareStrategy.compare(ref.obj, o)) {
 				return idx;
 			}

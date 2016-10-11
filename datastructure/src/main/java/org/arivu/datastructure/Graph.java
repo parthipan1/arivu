@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 
+import org.arivu.utils.NullCheck;
+
 /**
  * @author P
  *
@@ -421,7 +423,7 @@ public final class Graph implements Serializable {
 			Direction dir, boolean includeAll, Edges edges) {
 		DoublyLinkedSet<Node<Object>> set = new DoublyLinkedSet<Graph.Node<Object>>(CompareStrategy.EQUALS);
 		final Collection<? extends Object> cols = dir.get(node.obj, edges);
-		if (cols != null && cols.size() >= 0) {
+		if (!NullCheck.isNullOrEmpty(cols)) {
 			for (Object p : cols) {
 				final Node<Object> wrapper = get(p, tempAll, true);
 				if (wrapper != null) {
@@ -561,7 +563,7 @@ public final class Graph implements Serializable {
 	 */
 	public boolean removeAll(final Collection<?> c) throws CyclicException {
 		boolean r = true;
-		if (c != null) {
+		if (!NullCheck.isNullOrEmpty(c)) {
 			for (Object e : c) {
 				r = r & removeInternal(e);
 			}

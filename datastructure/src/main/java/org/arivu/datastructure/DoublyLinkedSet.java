@@ -11,6 +11,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 
+import org.arivu.utils.NullCheck;
 import org.arivu.utils.lock.AtomicWFReentrantLock;
 
 /**
@@ -94,7 +95,7 @@ public final class DoublyLinkedSet<T> implements Set<T>, Queue<T> {
 		left = this;
 		right = this;
 
-		if (size != null)
+//		if (size != null)
 			size.set(0);
 
 		this.binaryTree.clear();
@@ -133,7 +134,7 @@ public final class DoublyLinkedSet<T> implements Set<T>, Queue<T> {
 	 */
 	DoublyLinkedSet<T> removeRight() {
 		final DoublyLinkedSet<T> r = this.right;
-		if (r == this || r == null) {
+		if (r == this ) {//|| r == null
 			return null;
 		} else {
 			r.removeRef();
@@ -146,12 +147,12 @@ public final class DoublyLinkedSet<T> implements Set<T>, Queue<T> {
 	 * @return
 	 */
 	DoublyLinkedSet<T> addLeft(final DoublyLinkedSet<T> l) {
-		if (l != null) {
+//		if (l != null) {
 			Lock lo = this.cas;
 			lo.lock();
-			if (size != null) {
+//			if (size != null) {
 				size.incrementAndGet();
-			}
+//			}
 			this.binaryTree.add(l);
 			// if(null==right && left == null ){
 			// left = l;
@@ -170,7 +171,7 @@ public final class DoublyLinkedSet<T> implements Set<T>, Queue<T> {
 				this.left = l;
 				l.left = tl;
 
-				if (tl != null)
+//				if (tl != null)
 					tl.right = l;
 
 //				TODO: check to see if we don't get any null pointer exp
@@ -180,7 +181,7 @@ public final class DoublyLinkedSet<T> implements Set<T>, Queue<T> {
 			}
 
 			lo.unlock();
-		}
+//		}
 		return l;
 	}
 
@@ -240,16 +241,16 @@ public final class DoublyLinkedSet<T> implements Set<T>, Queue<T> {
 			left.right = left;
 			right.left = right;
 		} else {
-			if (tleft != null)
+//			if (tleft != null)
 				tleft.right = tright;
 
-			if (tright != null)
+//			if (tright != null)
 				tright.left = tleft;
 		}
 
-		if (size != null) {
+//		if (size != null) {
 			size.decrementAndGet();
-		}
+//		}
 		left = null;
 		right = null;
 		size = null;
@@ -367,7 +368,7 @@ public final class DoublyLinkedSet<T> implements Set<T>, Queue<T> {
 
 	@Override
 	public boolean containsAll(Collection<?> c) {
-		if (c != null && c.size() > 0) {
+		if (!NullCheck.isNullOrEmpty(c)) {
 			boolean ret = true;
 			Lock l = this.cas;
 			l.lock();
@@ -384,7 +385,7 @@ public final class DoublyLinkedSet<T> implements Set<T>, Queue<T> {
 
 	@Override
 	public boolean addAll(Collection<? extends T> c) {
-		if (c != null && c.size() > 0) {
+		if (!NullCheck.isNullOrEmpty(c)) {
 			boolean ret = true;
 			Lock l = this.cas;
 			l.lock();
@@ -416,7 +417,7 @@ public final class DoublyLinkedSet<T> implements Set<T>, Queue<T> {
 
 	@Override
 	public boolean removeAll(Collection<?> c) {
-		if (c != null && c.size() > 0) {
+		if (!NullCheck.isNullOrEmpty(c)) {
 			boolean ret = true;
 			Lock l = this.cas;
 			l.lock();
@@ -434,19 +435,19 @@ public final class DoublyLinkedSet<T> implements Set<T>, Queue<T> {
 	@Override
 	public boolean retainAll(Collection<?> c) {
 		boolean ret = false;
-		if (c != null && c.size() > 0) {
+		if (!NullCheck.isNullOrEmpty(c)) {
 			DoublyLinkedSet<T> ref = this.right;
-			while (ref != null) {
-				if (ref == this) {
-					break;
-				} else if (!c.contains(ref.obj)) {
+			while (ref != this) {
+//				if (ref == this) {
+//					break;
+//				} else 
+				if (!c.contains(ref.obj)) {
 					DoublyLinkedSet<T> ll = ref;
 					ref = ref.left;
 					ll.removeRef();
 					ret = true;
 				}
 				ref = ref.right;
-
 			}
 		}
 		return ret;
