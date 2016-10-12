@@ -87,15 +87,15 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public boolean containsValue(final Object value) {
-		Collection<Object> all = binaryTree.getAll();
+//		Collection<Object> all = binaryTree.getAll();
 		if( value != null ){
-			for (Object e : all) {
-				Entry<K, V> e1 = (Entry<K, V>) e;
-				if (value.equals(e1.getValue()))
-					return true;
-			}
+			return binaryTree.get(getKeyWrap(value)) != null;
+//			for (Object e : all) {
+//				Entry<K, V> e1 = (Entry<K, V>) e;
+//				if (value.equals(e1.getValue()))
+//					return true;
+//			}
 		}
 		return false;
 	}
