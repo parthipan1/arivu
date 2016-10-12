@@ -381,13 +381,13 @@ public class DoublyLinkedListTest {
 	public void testEquals() {
 		String element1 = "one";
 		DoublyLinkedList<String> list1 = new DoublyLinkedList<String>(element1, null, null, null, null, null);
-		
+
 		DoublyLinkedList<String> list2 = new DoublyLinkedList<String>(null, null, null, null, null, null);
-		
+
 		DoublyLinkedList<String> list3 = new DoublyLinkedList<String>(element1, null, null, null, null, null);
-		
+
 		DoublyLinkedList<String> list4 = new DoublyLinkedList<String>(null, null, null, null, null, null);
-		
+
 		assertTrue(list1.equals(list1));
 		assertFalse(list1.equals(null));
 		assertFalse(list1.equals(element1));
@@ -402,8 +402,14 @@ public class DoublyLinkedListTest {
 		String element1 = "one";
 		String element2 = "two";
 		String element3 = "three";
+		
 		DoublyLinkedList<String> list = new DoublyLinkedList<String>();
 
+		DoublyLinkedList<String> emptyList = new DoublyLinkedList<String>();
+		
+		assertFalse("Failed in retainAll null", list.retainAll(null));
+		assertFalse("Failed in retainAll empty", list.retainAll(emptyList));
+		
 		Collection<String> list1 = new ArrayList<String>();
 
 		list1.add(element1);
@@ -643,8 +649,6 @@ public class DoublyLinkedListTest {
 		assertTrue("Failed in || run test exp::" + initialValue + " got::" + list.size(), list.size() == 0);
 	}
 
-	
-
 	/**
 	 * @throws InterruptedException
 	 */
@@ -653,7 +657,7 @@ public class DoublyLinkedListTest {
 		final Queue<String> queue = new DoublyLinkedList<String>();
 
 		final List<String> out = new DoublyLinkedList<String>();
-		
+
 		final int noOfThreads = 10;
 		final ExecutorService exe = Executors.newFixedThreadPool(noOfThreads);
 		final AtomicInteger c = new AtomicInteger(noOfThreads);
@@ -671,10 +675,10 @@ public class DoublyLinkedListTest {
 						e.printStackTrace();
 					}
 					String p = null;
-					while( (p=queue.poll())!=null ){
+					while ((p = queue.poll()) != null) {
 						out.add(p);
 					}
-					if(c.decrementAndGet()==1){
+					if (c.decrementAndGet() == 1) {
 						end.countDown();
 					}
 				}
@@ -694,10 +698,9 @@ public class DoublyLinkedListTest {
 			// System.err.println(msg);
 		}
 		assertTrue("Failed in || run test exp::0 got::" + queue.size(), queue.size() == 0);
-		assertTrue("Failed in || run test exp::"+noOfThreads+" got::" + out.size(), out.size() == noOfThreads);
+		assertTrue("Failed in || run test exp::" + noOfThreads + " got::" + out.size(), out.size() == noOfThreads);
 	}
 
-	
 	@Test
 	public void testValidateIndex() {
 		String element1 = "one";
@@ -777,6 +780,14 @@ public class DoublyLinkedListTest {
 			sb.append(s);
 
 		assertTrue("Failed in Iterator!", (element1 + element2).equals(sb.toString()));
+
+		assertTrue(list.addAll(0, list1));
+
+		sb = new StringBuffer();
+		for (Object s : list.toArray())
+			sb.append(s);
+
+		assertTrue("Failed in Iterator!", (element1 + element2 + element1 + element2).equals(sb.toString()));
 	}
 
 	// @Test

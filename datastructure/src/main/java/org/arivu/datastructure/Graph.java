@@ -329,7 +329,7 @@ public final class Graph implements Serializable {
 			// "+getStr(cursor));
 			for (Node<Object> node : cursor) {
 				final Collection<Node<Object>> children = get(node, allNodes, direction, true, edges);
-				if (children != null && children.size() > 0) {
+				if (!NullCheck.isNullOrEmpty(children)) {
 					for (Node<Object> wrapper : children) {
 						final DoublyLinkedSet<Node<Object>> search = allNodes.search(wrapper);
 						// TODO :: check if it is ok to comment out this condition.
@@ -482,7 +482,7 @@ public final class Graph implements Serializable {
 			root.add(node);
 		}
 		final Collection<Node<Object>> children = get(node, tempAll, Direction.out, true, edges);
-		if (children != null && children.size() == 0) {
+		if (!NullCheck.isNullOrEmpty(children)) {
 //			if (children.size() == 0) {
 
 				if (node.level != 0)
@@ -548,7 +548,7 @@ public final class Graph implements Serializable {
 	 */
 	private boolean addAllInternal(final Collection<? extends Object> c, boolean resolve) throws CyclicException {
 		boolean r = true;
-		if (c != null) {
+		if (!NullCheck.isNullOrEmpty(c)) {
 			for (Object e : c) {
 				r = r & addInternal(e, resolve);
 			}
@@ -562,15 +562,17 @@ public final class Graph implements Serializable {
 	 * @throws CyclicException 
 	 */
 	public boolean removeAll(final Collection<?> c) throws CyclicException {
-		boolean r = true;
 		if (!NullCheck.isNullOrEmpty(c)) {
+			boolean r = true;
 			for (Object e : c) {
 				r = r & removeInternal(e);
 			}
 			if(r)
 				resolve();
+			return r;
+		}else{
+			return false;
 		}
-		return r;
 	}
 
 	/**
@@ -586,7 +588,7 @@ public final class Graph implements Serializable {
 	public int getMaxLevel() {
 		int ml = 0;
 		for (Node<Object> n : all) {
-			if (n != null)
+//			if (n != null)
 				ml = Math.max(ml, n.level);
 		}
 		return ml;
@@ -599,7 +601,7 @@ public final class Graph implements Serializable {
 	public Collection<Object> get(final int level) {
 		final List<Object> l = new DoublyLinkedList<Object>();
 		for (Node<Object> n : all) {
-			if (n != null && n.level == level) {
+			if (n.level == level) {//n != null &&
 				l.add(n.obj);
 			}
 		}
@@ -609,7 +611,7 @@ public final class Graph implements Serializable {
 	Collection<Node<Object>> getNodes(final int level) {
 		final List<Node<Object>> l = new DoublyLinkedList<Node<Object>>();
 		for (Node<Object> n : all) {
-			if (n != null && n.level == level) {
+			if (n.level == level) {//n != null && 
 				l.add(n);
 			}
 		}

@@ -215,7 +215,6 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 	 * @param random
 	 * @return
 	 */
-	@SuppressWarnings("unchecked")
 	DoublyLinkedStack<T> addRight(final DoublyLinkedStack<T> r, Lock l) {
 		if (r != null) {
 			Lock ll = this.cas;
@@ -223,23 +222,7 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 				return null;
 			ll.lock();
 
-			final int[] pathObj = this.binaryTree.getPathObj(r);
-			final Object object = this.binaryTree.findObj(r, pathObj);
-			if (object == null)
-				this.binaryTree.addObj(r, pathObj);
-			else {
-				((DoublyLinkedStack<T>) object).cnt++;
-				LinkedRef lref = new LinkedRef(String.valueOf(r.hashCode()));
-				Object object2 = this.dupTree.get(lref);
-				if (object2 == null) {
-					lref.addObj(r);
-					lref.addObj(object);
-					this.dupTree.add(lref);
-				} else {
-					lref = (LinkedRef) object2;
-					lref.addObj(r);
-				}
-			}
+			addBTree(r);
 
 //			if (size != null) {
 				size.incrementAndGet();
@@ -255,6 +238,27 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 			ll.unlock();
 		}
 		return r;
+	}
+
+	@SuppressWarnings("unchecked")
+	void addBTree(final DoublyLinkedStack<T> r) {
+		final int[] pathObj = this.binaryTree.getPathObj(r);
+		final Object object = this.binaryTree.findObj(r, pathObj);
+		if (object == null)
+			this.binaryTree.addObj(r, pathObj);
+		else {
+			((DoublyLinkedStack<T>) object).cnt++;
+			LinkedRef lref = new LinkedRef(String.valueOf(r.hashCode()));
+			Object object2 = this.dupTree.get(lref);
+			if (object2 == null) {
+				lref.addObj(r);
+				lref.addObj(object);
+				this.dupTree.add(lref);
+			} else {
+				lref = (LinkedRef) object2;
+				lref.addObj(r);
+			}
+		}
 	}
 
 	// /**
@@ -284,13 +288,30 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 		return removeRef();
 	}
 
-	@SuppressWarnings("unchecked")
 	private T removeRef() {
 		Lock l = this.cas;
 		l.lock();
 
-		// final Ref obj2 = new Ref(obj);
+		removeBtree();
 
+		DoublyLinkedStack<T> tleft = left, tright = right;
+//		if (tleft != null)
+			tleft.right = tright;
+//		if (tright != null)
+			tright.left = tleft;
+//		if (size != null)
+			size.decrementAndGet();
+		left = null;
+		right = null;
+		size = null;
+		cas = null;
+		compareStrategy = null;
+		l.unlock();
+		return obj;
+	}
+
+	@SuppressWarnings("unchecked")
+	void removeBtree() {
 		final int[] pathObj = this.binaryTree.getPathObj(this);
 		final Object object = this.binaryTree.findObj(this, pathObj);
 //		if (object != null) {
@@ -322,21 +343,6 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 			}
 
 //		}
-
-		DoublyLinkedStack<T> tleft = left, tright = right;
-		if (tleft != null)
-			tleft.right = tright;
-		if (tright != null)
-			tright.left = tleft;
-		if (size != null)
-			size.decrementAndGet();
-		left = null;
-		right = null;
-		size = null;
-		cas = null;
-		compareStrategy = null;
-		l.unlock();
-		return obj;
 	}
 
 	@Override

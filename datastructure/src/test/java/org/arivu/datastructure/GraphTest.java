@@ -612,7 +612,7 @@ public class GraphTest {
 		two.parents.add(one);
 
 		TestEdges edges = new TestEdges();
-		Graph graph = new Graph(edges);
+		final Graph graph = new Graph(edges);
 		
 		assertTrue(graph.size()==0);
 		assertTrue(graph.isEmpty());
@@ -627,11 +627,18 @@ public class GraphTest {
 		} catch (CyclicException e) {
 			fail("Failed on allAll");
 		}
-		assertFalse( graph.removeInternal(new TestIdentity("4")));
-		assertFalse( graph.removeInternal( Graph.getWrapper(new TestIdentity("4")) ));
+		TestIdentity four = new TestIdentity("4");
+		assertFalse( graph.removeInternal(four));
+		assertFalse( graph.removeInternal( Graph.getWrapper(four) ));
 		
 		try {
 			assertTrue(graph.remove(one));
+		} catch (CyclicException e1) {
+			fail("Failed on remove");
+		}
+		
+		try {
+			assertFalse(graph.remove(four));
 		} catch (CyclicException e1) {
 			fail("Failed on remove");
 		}
@@ -641,6 +648,15 @@ public class GraphTest {
 		} catch (CyclicException e) {
 			fail("Failed on removeAll");
 		}
+		
+		try {
+			assertFalse(graph.removeAll(null));
+			assertFalse(graph.removeAll(new ArrayList<Object>()));
+		} catch (CyclicException e) {
+			fail("Failed on removeAll");
+		}
+		
+		
 	}
 	
 	@Test

@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.Callable;
@@ -144,6 +145,8 @@ public class AmapTest {
 		
 		Amap<String, String> map2 = new Amap<String, String>(map);
 		assertTrue(map2.size()==1);
+		map.putAll(null);
+		map.putAll(new HashMap<String, String>());
 	 }
 	 
 	
