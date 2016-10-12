@@ -216,8 +216,8 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 	public void clear() {
 		if(isEmpty()) return;
 		
-		final Lock lock = binaryTree.cas;
-		lock.lock();
+//		final Lock lock = binaryTree.cas;
+//		lock.lock();
 //		try{
 //			if (nc == 1) {
 //				nc = 0;
@@ -244,7 +244,7 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 //		}catch(Throwable  e){
 //			e.printStackTrace();
 //		}finally{
-			lock.unlock();
+//			lock.unlock();
 //		}
 	}
 	

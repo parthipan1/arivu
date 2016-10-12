@@ -30,8 +30,8 @@ public final class Btree implements Serializable {
 	private final int height;
 	private final int baseMask;
 	final int order;
-	final Lock cas;
-	final Lock[] locks;
+//	final Lock cas;
+//	final Lock[] locks;
 	private final CompareStrategy compareStrategy;
 
 //	volatile int size = 0;
@@ -82,11 +82,11 @@ public final class Btree implements Serializable {
 		this.baseMask = (order - 1);
 		this.compareStrategy = compareStrategy;
 		this.root = new Object[order];
-		this.cas = lock;
-		this.locks = new Lock[order];
-		for(int i=0;i<order;i++){
-			this.locks[i] = new AtomicWFReentrantLock();
-		}
+//		this.cas = lock;
+//		this.locks = new Lock[order];
+//		for(int i=0;i<order;i++){
+//			this.locks[i] = new AtomicWFReentrantLock();
+//		}
 	}
 
 	int[] getPathObj(final Object obj) {
@@ -142,10 +142,10 @@ public final class Btree implements Serializable {
 	}
 
 	void clear(final Object[] node) {
-		cas.lock();
+//		cas.lock();
 		resetNodes(node);
 		size.set(0);// = 0;
-		cas.unlock();
+//		cas.unlock();
 	}
 
 	void resetNodes(final Object[] node) {
@@ -204,7 +204,7 @@ public final class Btree implements Serializable {
 			}
 		}
 		if (idx == -1) {
-			Object[] narr = new Object[arr.length + order];
+			Object[] narr = new Object[arr.length + 1];
 			System.arraycopy(arr, 0, narr, 0, arr.length);
 			narr[arr.length] = obj;
 			node[idxArr[idxArr.length - 1]] = narr;
@@ -215,8 +215,8 @@ public final class Btree implements Serializable {
 	}
 
 	boolean addObj(final Object obj, final int[] arr) {
-		final Lock l = this.locks[arr[0]];//cas;
-		l.lock();
+//		final Lock l = this.locks[arr[0]];//cas;
+//		l.lock();
 		final LinkedRef nodes = new LinkedRef(compareStrategy);
 		Object[] n = root;
 		nodes.addObj(n);
@@ -232,12 +232,12 @@ public final class Btree implements Serializable {
 
 		Object[] ref = (Object[]) n[arr[arr.length - 1]];
 		if (ref == null) {
-			ref = new Object[order];
+			ref = new Object[1];
 			n[arr[arr.length - 1]] = ref;
 			ref[0] = obj;
 //			size++;
 			size.incrementAndGet();
-			l.unlock();
+//			l.unlock();
 			return true;
 		}else{
 			final boolean add = addArr(ref, obj, n, arr);
@@ -245,7 +245,7 @@ public final class Btree implements Serializable {
 				size.incrementAndGet();
 //				size++;
 			
-			l.unlock();
+//			l.unlock();
 			return add;
 		}
 	}
@@ -284,8 +284,8 @@ public final class Btree implements Serializable {
 		if (search == null) {
 			return null;
 		} else {
-			final Lock l = this.locks[arr[0]];//cas;
-			l.lock();
+//			final Lock l = this.locks[arr[0]];//cas;
+//			l.lock();
 //			try{
 				if (getSize(ref) == 0) {
 					int c = 0;
@@ -305,7 +305,7 @@ public final class Btree implements Serializable {
 //				size--;
 				size.decrementAndGet();
 //			}finally{
-				l.unlock();
+//				l.unlock();
 //			}
 		}
 
