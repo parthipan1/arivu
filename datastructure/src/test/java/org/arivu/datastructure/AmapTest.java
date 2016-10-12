@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
@@ -186,12 +187,12 @@ public class AmapTest {
 		 Amap<String,String> test = new Amap<String, String>();
 		 
 		 String key = (String)null;
-		 AnEntry<String, String> keyWrap2 = test.getKeyWrap(key);
+		 AnEntry keyWrap2 = test.getKeyWrap(key);
 		 assertTrue(keyWrap2.hashCode()==0);
-		 AnEntry<String, String> keyWrap1 = test.getKeyWrap("1");
+		 AnEntry keyWrap1 = test.getKeyWrap("1");
 		 assertTrue(keyWrap1.hashCode()=="1".hashCode());
-		 AnEntry<String, String> keyWrap3 = test.getKeyWrap("2");
-		 AnEntry<String, String> keyWrap4 = test.getKeyWrap("1");
+		 AnEntry keyWrap3 = test.getKeyWrap("2");
+		 AnEntry keyWrap4 = test.getKeyWrap("1");
 		 
 		 assertTrue(keyWrap1.equals(keyWrap1));
 		 assertFalse(keyWrap1.equals(null));
@@ -206,7 +207,7 @@ public class AmapTest {
 	 */
 	@Test
 	public void testRunParallel() throws IOException, InterruptedException {
-		final Map<String, String> map = new Amap<String, String>();//new java.util.concurrent.ConcurrentHashMap<String, String>();//
+		final Amap<String, String> map = new Amap<String, String>();//new java.util.concurrent.ConcurrentHashMap<String, String>();//
 		
 		final int reqPerThread = ThreadCounts.noOfRequests/ThreadCounts.maxThreads;
 		final int noOfThreads = ThreadCounts.maxThreads;
@@ -248,6 +249,11 @@ public class AmapTest {
 //			String msg = "Still waiting after 100ms: calling System.exit(0)...";
 //			System.err.println(msg);
 		}
+		Collection<Object> values = map.binaryTree.getAll();
+		
+		for(Object o:values)
+			System.out.println("values :: "+o);
+		
 		assertTrue("Failed in || run test exp::0 got::" + map.size(), map.size() == 0);
 	}
 

@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 
 import org.arivu.utils.NullCheck;
@@ -38,7 +39,7 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 	private static final long serialVersionUID = -997810275912377568L;
 
 	final Btree binaryTree;
-
+	final AtomicInteger size = new AtomicInteger(0);
 	/**
 	 */
 	public Amap(Map<? extends K, ? extends V> m) {
@@ -60,11 +61,12 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 	}
 	
 	V nullValue;
-	volatile int nc = 0;
+//	volatile int nc = 0;
 
 	@Override
 	public int size() {
-		return binaryTree.size() + nc;
+//		return binaryTree.size() + nc;
+		return size.get();
 	}
 
 	@Override
@@ -72,9 +74,8 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 		return size() == 0;
 	}
 
-	@SuppressWarnings("unchecked")
-	AnEntry<K, V> getKeyWrap(final Object key) {
-		return new AnEntry<K, V>((K) key, null, null);
+	AnEntry getKeyWrap(final Object key) {
+		return new AnEntry(key, null, null);
 	}
 
 	@Override
@@ -119,30 +120,47 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 	public V put(final K key, final V value) {
 
 		if (key == null) {
-			binaryTree.cas.lock();
+//			binaryTree.cas.lock();
 			if (value == null) {
-				nc = 0;
+//				nc = 0;
+				if( this.nullValue!=null ){
+					size.decrementAndGet();
+				}
 				this.nullValue = value;
 			} else {
-				nc = 1;
+//				nc = 1;
+				if( this.nullValue==null ){
+					size.incrementAndGet();
+				}
 				this.nullValue = value;
 			}
-			binaryTree.cas.unlock();
+//			binaryTree.cas.unlock();
 			return nullValue;
 		} else if (value == null) {
-			binaryTree.remove(getKeyWrap(key));
+			Object remove = binaryTree.remove(getKeyWrap(key));
+			if(remove!=null)
+				size.decrementAndGet();
 			return value;
 		}
 
-		AnEntry<K, V> e = new AnEntry<K, V>(key, value, binaryTree);
+		AnEntry e = new AnEntry(key, value, binaryTree);
 		Object object = binaryTree.get(e);
 		if (object != null) {
-			@SuppressWarnings("unchecked")
-			java.util.Map.Entry<K, V> e1 = (java.util.Map.Entry<K, V>) object;
+//			@SuppressWarnings("unchecked")
+			AnEntry e1 = (AnEntry) object;
+//			binaryTree.cas.lock();
 			e1.setValue(value);
+//			binaryTree.cas.unlock();
 			return value;
 		} else {
+//			binaryTree.cas.lock();
 			binaryTree.add(e);
+			size.incrementAndGet();
+			
+			if( !key.equals(value) )
+				binaryTree.add(new AnEntry(e));
+			
+//			binaryTree.cas.unlock();
 			return value;
 		}
 	}
@@ -154,20 +172,28 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 			if (nullValue == null) {
 				return null;
 			} else {
-				binaryTree.cas.lock();
-				nc = 0;
+//				binaryTree.cas.lock();
+//				nc = 0;
+				if( this.nullValue!=null ){
+					size.decrementAndGet();
+				}
 				V value = this.nullValue;
 				this.nullValue = null;
-				binaryTree.cas.unlock();
+//				binaryTree.cas.unlock();
 				return value;
 			}
 		}
 
+//		binaryTree.cas.lock();
 		final Object object = binaryTree.remove(getKeyWrap(key));
 		if (object != null) {
-			java.util.Map.Entry<K, V> e = (java.util.Map.Entry<K, V>) object;
-			return e.getValue();
+			size.decrementAndGet();
+			AnEntry e = (AnEntry) object;
+			binaryTree.remove(e.inverted);
+//			binaryTree.cas.unlock();
+			return (V) e.getValue();
 		} else {
+//			binaryTree.cas.unlock();
 			return null;
 		}
 	}
@@ -193,12 +219,13 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 		final Lock lock = binaryTree.cas;
 		lock.lock();
 //		try{
-			if (nc == 1) {
-				nc = 0;
-				nullValue = null;
-			}
+//			if (nc == 1) {
+//				nc = 0;
+				this.nullValue = null;
+//			}
 			final Collection<Object> all = binaryTree.getAll();
 			binaryTree.clear();
+			this.size.set(0);
 			if (!NullCheck.isNullOrEmpty(all)) {
 				final ExecutorService exe = Executors.newFixedThreadPool(1);
 				submitClear = exe.submit(new Runnable() {
@@ -206,7 +233,7 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 					@Override
 					public void run() {
 						for (Object e : all) {
-							AnEntry<?, ?> e1 = (AnEntry<?, ?>) e;
+							AnEntry e1 = (AnEntry) e;
 							e1.tree = null;
 						}
 						cancelSubmit();
@@ -229,61 +256,104 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public Set<K> keySet() {
 		DoublyLinkedSet<K> keys = new DoublyLinkedSet<K>();
 		for (Object e : binaryTree.getAll()) {
-			@SuppressWarnings("unchecked")
-			Entry<K, V> e1 = (Entry<K, V>) e;
-			keys.add(e1.getKey());
+			AnEntry e1 = (AnEntry) e;
+			if( e1.inverse == null )
+				keys.add((K) e1.getKey());
 		}
 		return keys;
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public Collection<V> values() {
 		DoublyLinkedList<V> keys = new DoublyLinkedList<V>();
 		for (Object e : binaryTree.getAll()) {
-			@SuppressWarnings("unchecked")
-			Entry<K, V> e1 = (Entry<K, V>) e;
-			keys.add(e1.getValue());
+			AnEntry e1 = (AnEntry) e;
+			if( e1.inverse == null )
+				keys.add((V) e1.getValue());
 		}
 		return keys;
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public Set<java.util.Map.Entry<K, V>> entrySet() {
 		DoublyLinkedSet<Entry<K, V>> entries = new DoublyLinkedSet<Entry<K, V>>();
 		for (Object e : binaryTree.getAll()) {
-			@SuppressWarnings("unchecked")
-			Entry<K, V> e1 = (Entry<K, V>) e;
-			entries.add(e1);
+			AnEntry e1 = (AnEntry) e;
+			if( e1.inverse == null )
+				entries.add(new MapEntry<K, V>((K)e1.k,(V)e1.v));
 		}
 		return entries;
 	}
 
+	static final class MapEntry<K,V> implements Entry<K, V>{
+
+		final K k;
+		V v;
+		
+		/**
+		 * @param k
+		 * @param v
+		 */
+		public MapEntry(K k, V v) {
+			super();
+			this.k = k;
+			this.v = v;
+		}
+
+		@Override
+		public K getKey() {
+			return k;
+		}
+
+		@Override
+		public V getValue() {
+			return v;
+		}
+
+		@Override
+		public V setValue(V value) {
+			this.v = value; 
+			return value;
+		}
+		
+	}
+	
 	/**
 	 * @author P
 	 *
 	 * @param <K>
 	 * @param <V>
 	 */
-	static final class AnEntry<K, V> implements Entry<K, V>, Serializable {
+	static final class AnEntry implements Entry<Object, Object>, Serializable {
 
 		/**
 		 * 
 		 */
 		private static final long serialVersionUID = -5326227739123537044L;
 
-		final K k;
-		V v;
+		Object k = null;
+		Object v = null;
+		AnEntry inverted = null;
 		Btree tree;
 
+		AnEntry inverse = null;
+		AnEntry(AnEntry inverse){
+			this.inverse = inverse;
+			inverse.inverted = this;
+		}
+		
 		/**
 		 * @param k
 		 * @param v
 		 * @param tree
 		 */
-		AnEntry(K k, V v, Btree tree) {
+		AnEntry(Object k, Object v, Btree tree) {
 			super();
 			this.k = k;
 			this.v = v;
@@ -291,22 +361,34 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 		}
 
 		@Override
-		public K getKey() {
+		public Object getKey() {
 			return this.k;
 		}
 
 		@Override
-		public V getValue() {
+		public Object getValue() {
 			return this.v;
 		}
 
 		@Override
-		public V setValue(V value) {
-			V v1 = this.v;
-			this.v = value;
+		public Object setValue(Object value) {
+			Object v1 = this.v;
 			if (value == null && tree != null) {
 				tree.remove(AnEntry.this);
+				
+				if( inverted != null )
+					tree.remove(inverted);
+				
+				this.v = value;
 				tree=null;
+			}else if (value != null && tree != null && inverted != null ) {
+				tree.remove(inverted);
+				
+				this.v = value;
+				
+				tree.add(inverted);
+			}else{
+				this.v = value;
 			}
 			return v1;
 		}
@@ -316,7 +398,13 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 //			final int prime = 31;
 //			int result = 1;
 //			result = prime * result + ((k == null) ? 0 : k.hashCode());
-			return ((k == null) ? 0 : k.hashCode());
+			if(inverse==null){
+				Object k1 = k;
+				return ((k1 == null) ? 0 : k1.hashCode());
+			}else{
+				Object k1 = inverse.v;
+				return ((k1 == null) ? 0 : k1.hashCode());
+			}
 		}
 
 		@Override
@@ -327,14 +415,31 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 				return false;
 			if (getClass() != obj.getClass())
 				return false;
-			@SuppressWarnings("rawtypes")
+			
 			AnEntry other = (AnEntry) obj;
-			if (k == null) {
-				if (other.k != null)
+			Object k1 = k;
+			if(inverse!=null){
+				k1 = inverse.v;
+			}
+			
+			Object ok1 = other.k;
+			if(other.inverse!=null){
+				ok1 = other.inverse.v;
+			}
+			
+			if (k1 == null) {
+				if (ok1 != null)
 					return false;
-			} else if (!k.equals(other.k))
+			} else if (!k1.equals(ok1))
 				return false;
+			
+			
 			return true;
+		}
+
+		@Override
+		public String toString() {
+			return "AnEntry [k=" + k + ", v=" + v + ", inverted=" + inverted + "]";
 		}
 
 	}
