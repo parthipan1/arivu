@@ -72,6 +72,11 @@ public class AmapTest {
 		assertTrue("Failed on containsKey ", map.containsKey("test"));
 		map.remove("test");
 		assertFalse("Failed on containsKey ", map.containsKey("test"));
+		assertFalse("Failed on containsKey ", map.containsKey(null));
+		map.put(null, "test");
+		assertTrue("Failed on containsKey ", map.containsKey(null));
+		map.put(null, null);
+		assertFalse("Failed on containsKey ", map.containsKey(null));
 	}
 
 	@Test
@@ -82,6 +87,7 @@ public class AmapTest {
 		assertTrue("Failed on containsValue ", map.containsValue("test"));
 		map.remove("test");
 		assertFalse("Failed on containsValue ", map.containsValue("test"));
+		assertFalse("Failed on containsValue ", map.containsValue(null));
 	}
 
 	@Test

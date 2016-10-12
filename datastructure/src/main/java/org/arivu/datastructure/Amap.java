@@ -73,22 +73,28 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 	}
 
 	@SuppressWarnings("unchecked")
-	AnEntry<K, V> getKeyWrap(Object key) {
+	AnEntry<K, V> getKeyWrap(final Object key) {
 		return new AnEntry<K, V>((K) key, null, null);
 	}
 
 	@Override
-	public boolean containsKey(Object key) {
-		return binaryTree.get(getKeyWrap(key)) != null;
+	public boolean containsKey(final Object key) {
+		if(key==null&&nullValue!=null)
+			return true;
+		else
+			return binaryTree.get(getKeyWrap(key)) != null;
 	}
 
 	@Override
-	public boolean containsValue(Object value) {
-		for (Object e : binaryTree.getAll()) {
-			@SuppressWarnings("unchecked")
-			Entry<K, V> e1 = (Entry<K, V>) e;
-			if (value != null && value.equals(e1.getValue()))
-				return true;
+	@SuppressWarnings("unchecked")
+	public boolean containsValue(final Object value) {
+		Collection<Object> all = binaryTree.getAll();
+		if( value != null ){
+			for (Object e : all) {
+				Entry<K, V> e1 = (Entry<K, V>) e;
+				if (value.equals(e1.getValue()))
+					return true;
+			}
 		}
 		return false;
 	}
@@ -169,7 +175,7 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void putAll(Map<? extends K, ? extends V> m) {
-		if (m != null) {
+		if (!NullCheck.isNullOrEmpty(m)) {
 			@SuppressWarnings("rawtypes")
 			Set entrySet = m.entrySet();
 			for (Object o : entrySet) {
