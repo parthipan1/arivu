@@ -55,6 +55,6 @@ public final class AtomicLock implements Lock{
 
 	@Override
 	public Condition newCondition() {
-		throw new RuntimeException("Unsupported function!");
+		return new ACondition();
 	}
 }

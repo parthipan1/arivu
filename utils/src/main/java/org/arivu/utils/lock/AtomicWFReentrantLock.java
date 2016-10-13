@@ -3,6 +3,7 @@
  */
 package org.arivu.utils.lock;
 
+import java.util.Date;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -110,7 +111,7 @@ public final class AtomicWFReentrantLock implements Lock {
 
 	@Override
 	public Condition newCondition() {
-		throw new RuntimeException("Unsupported function!");
+		return new ACondition();
 	}
 }
 
@@ -145,4 +146,74 @@ final class Reentrant {
 	boolean isSame() {
 		return id == getId();
 	}
+}
+final class ACondition implements Condition{
+
+	CountDownLatch latch = null;
+	
+	@Override
+	public void await() throws InterruptedException {
+		if(latch!=null){
+			latch.await();
+			latch = null;
+		}else{
+			latch = new CountDownLatch(1);
+			latch.await();
+			latch = null;
+		}
+	}
+
+	@Override
+	public void awaitUninterruptibly() {
+		try {
+			await();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+
+	@Override
+	public long awaitNanos(long nanosTimeout) throws InterruptedException {
+		await(nanosTimeout, TimeUnit.NANOSECONDS);
+		return 0;
+	}
+
+	@Override
+	public boolean await(long time, TimeUnit unit) throws InterruptedException {
+		if(latch!=null){
+			latch.await(time,unit);
+			latch = null;
+		}else{
+			latch = new CountDownLatch(1);
+			latch.await(time,unit);
+			latch = null;
+		}
+		return false;
+	}
+
+	@Override
+	public boolean awaitUntil(Date deadline) throws InterruptedException {
+		if(deadline!=null){
+			long ms = deadline.getTime()-System.currentTimeMillis();
+			if(ms > 0){
+				return await(ms, TimeUnit.MILLISECONDS);
+			}
+		}
+		return false;
+	}
+
+	@Override
+	public void signal() {
+		if(latch!=null){
+			latch.countDown();
+		}
+	}
+
+	@Override
+	public void signalAll() {
+		if(latch!=null){
+			latch.countDown();
+		}
+	}
+	
 }

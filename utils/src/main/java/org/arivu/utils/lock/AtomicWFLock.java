@@ -92,7 +92,7 @@ public final class AtomicWFLock implements Lock {
 
 	@Override
 	public Condition newCondition() {
-		throw new RuntimeException("Unsupported function!");
+		return new ACondition();
 	}
 }
 
