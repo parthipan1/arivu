@@ -147,20 +147,16 @@ final class Reentrant {
 		return id == getId();
 	}
 }
-final class ACondition implements Condition{
 
-	CountDownLatch latch = null;
-	
+final class ACondition implements Condition {
+	final LinkedReference<CountDownLatch> waits = new LinkedReference<CountDownLatch>();
+
 	@Override
 	public void await() throws InterruptedException {
-		if(latch!=null){
-			latch.await();
-			latch = null;
-		}else{
-			latch = new CountDownLatch(1);
-			latch.await();
-			latch = null;
-		}
+		CountDownLatch wait = new CountDownLatch(1);
+		waits.add(wait, Direction.left);
+		wait.await();
+		wait = null;
 	}
 
 	@Override
@@ -180,22 +176,18 @@ final class ACondition implements Condition{
 
 	@Override
 	public boolean await(long time, TimeUnit unit) throws InterruptedException {
-		if(latch!=null){
-			latch.await(time,unit);
-			latch = null;
-		}else{
-			latch = new CountDownLatch(1);
-			latch.await(time,unit);
-			latch = null;
-		}
+		CountDownLatch wait = new CountDownLatch(1);
+		waits.add(wait, Direction.left);
+		wait.await(time, unit);
+		wait = null;
 		return false;
 	}
 
 	@Override
 	public boolean awaitUntil(Date deadline) throws InterruptedException {
-		if(deadline!=null){
-			long ms = deadline.getTime()-System.currentTimeMillis();
-			if(ms > 0){
+		if (deadline != null) {
+			long ms = deadline.getTime() - System.currentTimeMillis();
+			if (ms > 0) {
 				return await(ms, TimeUnit.MILLISECONDS);
 			}
 		}
@@ -204,16 +196,18 @@ final class ACondition implements Condition{
 
 	@Override
 	public void signal() {
-		if(latch!=null){
-			latch.countDown();
+		CountDownLatch poll = waits.poll(Direction.right);
+		if (poll != null) {
+			poll.countDown();
 		}
 	}
 
 	@Override
 	public void signalAll() {
-		if(latch!=null){
-			latch.countDown();
+		CountDownLatch poll = null;
+		while ((poll = waits.poll(Direction.right)) != null) {
+			poll.countDown();
 		}
 	}
-	
+
 }
