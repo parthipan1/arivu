@@ -7,6 +7,7 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -68,7 +69,7 @@ class TestDataSourcesHelper {
 		// System.out.println("After Flush!");
 	}
 
-	void testDataSource(final AbstractDataSource ds, final int verifyCnt, final boolean checkMin)
+	void testDataSource(final AbstractDataSource ds, final int verifyCnt, final boolean checkMin, boolean absoluteWait)
 			throws InterruptedException {
 		ds.setName("test");
 		ds.setMaxPoolSize(poolSize);
@@ -90,14 +91,15 @@ class TestDataSourcesHelper {
 		start.countDown();
 		end.await();
 
-		// for(Future<Integer> fu:listFuture)
-		// try {
-		// fu.get();
-		// fu.cancel(true);
-		// } catch (ExecutionException e) {
-		// e.printStackTrace();
-		// }
-
+		if (absoluteWait) {
+			for (Future<Integer> fu : listFuture)
+				try {
+					fu.get();
+					fu.cancel(true);
+				} catch (ExecutionException e) {
+					e.printStackTrace();
+				} 
+		}
 		listFuture.clear();
 
 		assertTrue("Failed in allconnections! " + ds.getMaxPoolSize(), ds.getMaxPoolSize() <= verifyCnt);

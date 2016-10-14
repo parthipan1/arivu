@@ -40,17 +40,17 @@ public class TestDataSourcesVeryLessPool {
 
 	@Test
 	public void testDefault() throws SQLException, InterruptedException {
-		helper.testDataSource(new DefaultDataSource(helper.factory), helper.poolSize, false);
+		helper.testDataSource(new DefaultDataSource(helper.factory), helper.poolSize, false, false);
 	}
 
 	@Test
 	public void testRequestScope() throws SQLException, InterruptedException {
-		helper.testDataSource(new RequestDataSource(helper.factory), helper.nThreads, false);
+		helper.testDataSource(new RequestDataSource(helper.factory), helper.nThreads, false, true);
 	}
 
 	@Test
 	public void testThreadLocal() throws SQLException, InterruptedException {
-		helper.testDataSource(new ThreadlocalDataSource(helper.factory), helper.nThreads, false);
+		helper.testDataSource(new ThreadlocalDataSource(helper.factory), helper.nThreads, false, true);
 	}
 
 }
