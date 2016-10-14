@@ -13,6 +13,10 @@ import org.arivu.utils.lock.AtomicWFReentrantLock;
 import org.arivu.utils.lock.NoLock;
 
 /**
+ * B tree implementation for faster concurrent read/write Objects. Heap memory
+ * segmented into buckets and each bucket will have Object[] storing the object.
+ * Hashcode is used to generate object addresses.
+ * 
  * @author P
  *
  */
@@ -30,28 +34,33 @@ public final class Btree implements Serializable {
 	private final int height;
 	private final int baseMask;
 	final int order;
-//	final Lock cas;
-//	final Lock[] locks;
+	// final Lock cas;
+	// final Lock[] locks;
 	private final CompareStrategy compareStrategy;
 
-//	volatile int size = 0;
+	// volatile int size = 0;
 	final AtomicInteger size = new AtomicInteger(0);
 
 	/**
+	 * Create B tree based on power value , higher the power faster the
+	 * performance. Power value can be with in 1-4. 
+	 * 
 	 * @param order
 	 */
-	public Btree(int basePower) {
+	Btree(int basePower) {
 		this(basePower, new AtomicWFReentrantLock(), CompareStrategy.EQUALS);
 	}
 
 	/**
-	 * 
+	 * Create B tree with default power 2 , with height 8.
 	 */
 	public Btree() {
 		this(DEFAULT_BASEPOWER);
 	}
 
 	/**
+	 * Create B tree with default power 2 , with height 8.
+	 * 
 	 * @param lock
 	 */
 	Btree(Lock lock) {
@@ -59,6 +68,8 @@ public final class Btree implements Serializable {
 	}
 
 	/**
+	 * Create B tree with default power 2 , with height 8.
+	 * 
 	 * @param lock
 	 * @param compareStrategy
 	 */
@@ -67,6 +78,8 @@ public final class Btree implements Serializable {
 	}
 
 	/**
+	 * Create B tree with default power 2 , with height 8.
+	 * 
 	 * @param basePower
 	 * @param lock
 	 * @param compareStrategy
@@ -82,11 +95,11 @@ public final class Btree implements Serializable {
 		this.baseMask = (order - 1);
 		this.compareStrategy = compareStrategy;
 		this.root = new Object[order];
-//		this.cas = lock;
-//		this.locks = new Lock[order];
-//		for(int i=0;i<order;i++){
-//			this.locks[i] = new AtomicWFReentrantLock();
-//		}
+		// this.cas = lock;
+		// this.locks = new Lock[order];
+		// for(int i=0;i<order;i++){
+		// this.locks[i] = new AtomicWFReentrantLock();
+		// }
 	}
 
 	int[] getPathObj(final Object obj) {
@@ -94,18 +107,147 @@ public final class Btree implements Serializable {
 	}
 
 	private int[] getPath(int hashCode) {
-		int[] ret = new int[height];
-		for (int i = height - 1; i >= 0; i--) {
-			ret[i] = (int) (hashCode & baseMask);
-
-			if (hashCode != 0)
-				hashCode = hashCode >>> base;
+		if (height == 8)
+			return getPath8(hashCode);
+		else if (height == 16)
+			return getPath16(hashCode);
+		else {
+			int[] ret = new int[height];
+			for (int i = height - 1; i >= 0; i--) {
+				ret[i] = (int) (hashCode & baseMask);
+				
+				if (hashCode != 0)
+					hashCode = hashCode >>> base;
+			}
+			// //System.out.println(" getPath act hashCode "+hashCode2+" ret
+			// "+con(ret));
+			return ret;
 		}
+	}
+	
+	private int[] getPath8(int hashCode) {
+		int[] ret = new int[] { 0, 0, 0, 0, 0, 0, 0, 0 };
+
+		if (hashCode == 0)
+			return ret;
+		ret[7] = (int) (hashCode & baseMask);
+		hashCode = hashCode >>> base;
+		if (hashCode == 0)
+			return ret;
+		ret[6] = (int) (hashCode & baseMask);
+		hashCode = hashCode >>> base;
+		if (hashCode == 0)
+			return ret;
+		ret[5] = (int) (hashCode & baseMask);
+		hashCode = hashCode >>> base;
+		if (hashCode == 0)
+			return ret;
+		ret[4] = (int) (hashCode & baseMask);
+		hashCode = hashCode >>> base;
+		if (hashCode == 0)
+			return ret;
+		ret[3] = (int) (hashCode & baseMask);
+		hashCode = hashCode >>> base;
+		if (hashCode == 0)
+			return ret;
+		ret[2] = (int) (hashCode & baseMask);
+		hashCode = hashCode >>> base;
+		if (hashCode == 0)
+			return ret;
+		ret[1] = (int) (hashCode & baseMask);
+		hashCode = hashCode >>> base;
+		if (hashCode == 0)
+			return ret;
+		ret[0] = (int) (hashCode & baseMask);
+
+		// for (int i = height - 1; i >= 0; i--) {
+		// ret[i] = (int) (hashCode & baseMask);
+		//
+		// if (hashCode != 0)
+		// hashCode = hashCode >>> base;
+		// }
 		// //System.out.println(" getPath act hashCode "+hashCode2+" ret
 		// "+con(ret));
 		return ret;
 	}
 
+	private int[] getPath16(int hashCode) {
+		int[] ret = new int[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+		if (hashCode == 0)
+			return ret;
+		ret[15] = (int) (hashCode & baseMask);
+		hashCode = hashCode >>> base;
+		if (hashCode == 0)
+			return ret;
+		ret[14] = (int) (hashCode & baseMask);
+		hashCode = hashCode >>> base;
+		if (hashCode == 0)
+			return ret;
+		ret[13] = (int) (hashCode & baseMask);
+		hashCode = hashCode >>> base;
+		if (hashCode == 0)
+			return ret;
+		ret[12] = (int) (hashCode & baseMask);
+		hashCode = hashCode >>> base;
+		if (hashCode == 0)
+			return ret;
+		ret[11] = (int) (hashCode & baseMask);
+		hashCode = hashCode >>> base;
+		if (hashCode == 0)
+			return ret;
+		ret[10] = (int) (hashCode & baseMask);
+		hashCode = hashCode >>> base;
+		if (hashCode == 0)
+			return ret;
+		ret[9] = (int) (hashCode & baseMask);
+		hashCode = hashCode >>> base;
+		if (hashCode == 0)
+			return ret;
+		ret[8] = (int) (hashCode & baseMask);
+		if (hashCode == 0)
+			return ret;
+		ret[7] = (int) (hashCode & baseMask);
+		hashCode = hashCode >>> base;
+		if (hashCode == 0)
+			return ret;
+		ret[6] = (int) (hashCode & baseMask);
+		hashCode = hashCode >>> base;
+		if (hashCode == 0)
+			return ret;
+		ret[5] = (int) (hashCode & baseMask);
+		hashCode = hashCode >>> base;
+		if (hashCode == 0)
+			return ret;
+		ret[4] = (int) (hashCode & baseMask);
+		hashCode = hashCode >>> base;
+		if (hashCode == 0)
+			return ret;
+		ret[3] = (int) (hashCode & baseMask);
+		hashCode = hashCode >>> base;
+		if (hashCode == 0)
+			return ret;
+		ret[2] = (int) (hashCode & baseMask);
+		hashCode = hashCode >>> base;
+		if (hashCode == 0)
+			return ret;
+		ret[1] = (int) (hashCode & baseMask);
+		hashCode = hashCode >>> base;
+		if (hashCode == 0)
+			return ret;
+		ret[0] = (int) (hashCode & baseMask);
+
+		// for (int i = height - 1; i >= 0; i--) {
+		// ret[i] = (int) (hashCode & baseMask);
+		//
+		// if (hashCode != 0)
+		// hashCode = hashCode >>> base;
+		// }
+		// //System.out.println(" getPath act hashCode "+hashCode2+" ret
+		// "+con(ret));
+		return ret;
+	}
+	
 	public int getHeight() {
 		return height;
 	}
@@ -142,10 +284,10 @@ public final class Btree implements Serializable {
 	}
 
 	void clear(final Object[] node) {
-//		cas.lock();
+		// cas.lock();
 		resetNodes(node);
 		size.set(0);// = 0;
-//		cas.unlock();
+		// cas.unlock();
 	}
 
 	void resetNodes(final Object[] node) {
@@ -215,8 +357,8 @@ public final class Btree implements Serializable {
 	}
 
 	boolean addObj(final Object obj, final int[] arr) {
-//		final Lock l = this.locks[arr[0]];//cas;
-//		l.lock();
+		// final Lock l = this.locks[arr[0]];//cas;
+		// l.lock();
 		final LinkedRef nodes = new LinkedRef(compareStrategy);
 		Object[] n = root;
 		nodes.addObj(n);
@@ -235,17 +377,17 @@ public final class Btree implements Serializable {
 			ref = new Object[1];
 			n[arr[arr.length - 1]] = ref;
 			ref[0] = obj;
-//			size++;
+			// size++;
 			size.incrementAndGet();
-//			l.unlock();
+			// l.unlock();
 			return true;
-		}else{
+		} else {
 			final boolean add = addArr(ref, obj, n, arr);
-			if (add) 
+			if (add)
 				size.incrementAndGet();
-//				size++;
-			
-//			l.unlock();
+			// size++;
+
+			// l.unlock();
 			return add;
 		}
 	}
@@ -284,29 +426,29 @@ public final class Btree implements Serializable {
 		if (search == null) {
 			return null;
 		} else {
-//			final Lock l = this.locks[arr[0]];//cas;
-//			l.lock();
-//			try{
-				if (getSize(ref) == 0) {
-					int c = 0;
-					LinkedRef cref = nodes.left;
-					while (cref != null && cref.obj != null && cref != nodes) {
-						final Object[] obj2 = (Object[]) cref.obj;
-	
-						if (getSize(obj2) == 1) {
-							obj2[arr[c++]] = null;
-						} else {
-							break;
-						}
-	
-						cref = cref.left;
+			// final Lock l = this.locks[arr[0]];//cas;
+			// l.lock();
+			// try{
+			if (getSize(ref) == 0) {
+				int c = 0;
+				LinkedRef cref = nodes.left;
+				while (cref != null && cref.obj != null && cref != nodes) {
+					final Object[] obj2 = (Object[]) cref.obj;
+
+					if (getSize(obj2) == 1) {
+						obj2[arr[c++]] = null;
+					} else {
+						break;
 					}
+
+					cref = cref.left;
 				}
-//				size--;
-				size.decrementAndGet();
-//			}finally{
-//				l.unlock();
-//			}
+			}
+			// size--;
+			size.decrementAndGet();
+			// }finally{
+			// l.unlock();
+			// }
 		}
 
 		return search;

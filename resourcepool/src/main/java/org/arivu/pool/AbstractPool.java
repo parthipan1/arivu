@@ -417,7 +417,7 @@ abstract class AbstractPool<T> implements Pool<T> {
 							return lr.t.toString();
 						} else {
 							if (lr.released)
-								throw new IllegalStateException("Resource " + lr.t.toString() + " already closed!");
+								throw new IllegalStateException("Resource Proxy " + lr.t.toString() + " already closed!");
 							
 							lr.state.inc(IncType.GET);
 							return method.invoke(lr.t, args);
