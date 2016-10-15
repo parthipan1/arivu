@@ -44,7 +44,7 @@ public class TestPoolsLessCnt {
 	@Test
 	public void test4ConcurrentPool() throws Exception {
 		final Pool<Resource> pool = new ConcurrentPool<Resource>(helper.factory , Resource.class);
-		helper.testPool(pool, helper.poolSize, true);
+		helper.testPool(pool, helper.poolSize, false);
 	}
 	
 //	@Test

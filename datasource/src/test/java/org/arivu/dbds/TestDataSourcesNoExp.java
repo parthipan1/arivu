@@ -40,7 +40,7 @@ public class TestDataSourcesNoExp {
 
 	@Test
 	public void testDefault() throws SQLException, InterruptedException {
-		helper.testDataSource(new DefaultDataSource(helper.factory), helper.poolSize, true, true);
+		helper.testDataSource(new DefaultDataSource(helper.factory), helper.poolSize, true, false);
 	}
 
 	@Test
