@@ -40,7 +40,7 @@ public class TestDataSourcesLessPool {
 
 	@Test
 	public void testDefault() throws SQLException, InterruptedException {
-		helper.testDataSource(new DefaultDataSource(helper.factory), helper.poolSize, true, false);
+		helper.testDataSource(new DefaultDataSource(helper.factory), helper.poolSize, true, true);
 	}
 
 	@Test
