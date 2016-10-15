@@ -66,6 +66,13 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 	}
 
 	/**
+	 * @param lock
+	 */
+	public DoublyLinkedList(Lock lock) {
+		this(CompareStrategy.REF,lock);
+	}
+	
+	/**
 	 * @param compareStrategy
 	 */
 	DoublyLinkedList(CompareStrategy compareStrategy) {
@@ -88,7 +95,7 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 	 *            TODO
 	 * @param dupTree TODO
 	 */
-	DoublyLinkedList(T t, Counter size, CompareStrategy compareStrategy, Lock cas, Btree binaryTree, Btree dupTree) {
+	private DoublyLinkedList(T t, Counter size, CompareStrategy compareStrategy, Lock cas, Btree binaryTree, Btree dupTree) {
 		super();
 		this.obj = t;
 		this.size = size;
@@ -96,6 +103,10 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 		this.cas = cas;
 		this.binaryTree = binaryTree;
 		this.dupTree = dupTree;
+	}
+
+	public Btree getBinaryTree() {
+		return binaryTree;
 	}
 
 	/*
@@ -709,4 +720,8 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 		return true;
 	}
 
+	public static <T> DoublyLinkedList<T> get(T t) {
+		return new DoublyLinkedList<T>(t, null, null, null, null, null);
+	}
+	
 }

@@ -1,7 +1,6 @@
 package org.arivu.pool;
 
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.arivu.datastructure.Threadlocal;
 import org.arivu.datastructure.Threadlocal.Factory;
@@ -33,19 +32,19 @@ public final class ThreadLocalPool<T> extends AbstractPool<T> {
 		super(factory, klass, maxPoolSize, maxReuseCount, lifeSpan);
 	}
 
-	private final AtomicInteger ps = new AtomicInteger(0);
+//	private final AtomicInteger ps = new AtomicInteger(0);
 	
 	/**
 	 * 
 	 */
-	private final Threadlocal<LinkedReference<T>> threadlocals = new Threadlocal<LinkedReference<T>>( new Factory<LinkedReference<T>>() {
+	private final Threadlocal<State<T>> threadlocals = new Threadlocal<State<T>>( new Factory<State<T>>() {
 
 		@Override
-		public LinkedReference<T> create(Map<String, Object> params) {
-			final LinkedReference<T> c = new LinkedReference<T>(factory.create(params), ps);
-			logger.debug("Factory create "+c.state.t.hashCode()+" Thread "+Thread.currentThread().hashCode());
+		public State<T> create(Map<String, Object> params) {
+			final State<T> state = new State<T>(factory.create(params));
+			logger.debug("Factory create "+state.t.hashCode()+" Thread "+Thread.currentThread().hashCode());
 //			System.out.println("Factory create "+c.t.hashCode()+" Thread "+Thread.currentThread().hashCode());
-			return c;
+			return state;
 		}
 	}  , -1);
 	
@@ -65,7 +64,7 @@ public final class ThreadLocalPool<T> extends AbstractPool<T> {
 	 */
 	@Override
 	public T get(Map<String, Object> params) {
-		LinkedReference<T> lr = threadlocals.get(params);
+		State<T> lr = threadlocals.get(params);
 		if(lr==null){
 			lr = createNew(params, true);
 			threadlocals.set(lr);
@@ -86,18 +85,19 @@ public final class ThreadLocalPool<T> extends AbstractPool<T> {
 	 * @see org.arivu.pool.AbstractPool#releaseLink(org.arivu.pool.AbstractPool.LinkedReference)
 	 */
 	@Override
-	void releaseLink(LinkedReference<T> ref) {
+	void releaseLink(State<T> state) {
 //		logger.debug("release "+ref.t.hashCode());
-		if( ref!=null && ref.state.checkExp(1, maxPoolSize, maxReuseCount, lifeSpan, idleTimeout) ){
+		if( state!=null && state.checkExp(1, maxPoolSize, maxReuseCount, lifeSpan, idleTimeout) ){
 //			logger.debug("releaseLink close "+ref.t.hashCode()+" Thread "+Thread.currentThread().hashCode());
 			threadlocals.remove();
 //			logger.debug("releaseLink close After remove Thread "+Thread.currentThread().hashCode());
-			factory.close(ref.state.t);
+			factory.close(state.t);
 			
-			LinkedReference<T> search = head.search(ref.state.t);
-			if(search!=null){
-				search.remove();
-			}
+			list.remove(state);
+//			LinkedReference<T> search = head.search(ref.state.t);
+//			if(search!=null){
+//				search.remove();
+//			}
 			
 //			LinkedRef<T> linkedReference = threadlocals.get();
 //			if( linkedReference != null )

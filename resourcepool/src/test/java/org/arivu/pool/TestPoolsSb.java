@@ -21,10 +21,12 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 //@Ignore
 public class TestPoolsSb {
-
+	static final Logger logger = LoggerFactory.getLogger(TestPoolsSb.class);
 	static final int nThreads = 100;
 	static final int poolSize = 2;
 	static final int reuseCount = -1;
@@ -159,6 +161,15 @@ public class TestPoolsSb {
 			start.countDown();
 			end.await();
 			
+			Future<Integer> poll = null;
+			while((poll=listFuture.poll())!=null){
+				try {
+					logger.debug(" Completed :: "+poll.get());
+					poll.cancel(true);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
 			listFuture.clear();
 			assertTrue(pool.getMaxPoolSize()<=verifyCnt);
 			assertTrue(pool.getMaxPoolSize()<=noOfCreate.get());

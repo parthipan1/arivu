@@ -380,13 +380,13 @@ public class DoublyLinkedListTest {
 	@Test
 	public void testEquals() {
 		String element1 = "one";
-		DoublyLinkedList<String> list1 = new DoublyLinkedList<String>(element1, null, null, null, null, null);
+		DoublyLinkedList<String> list1 = DoublyLinkedList.get(element1);
+		String element2 = null;
+		DoublyLinkedList<String> list2 = DoublyLinkedList.get(element2);
 
-		DoublyLinkedList<String> list2 = new DoublyLinkedList<String>(null, null, null, null, null, null);
+		DoublyLinkedList<String> list3 = DoublyLinkedList.get(element1);
 
-		DoublyLinkedList<String> list3 = new DoublyLinkedList<String>(element1, null, null, null, null, null);
-
-		DoublyLinkedList<String> list4 = new DoublyLinkedList<String>(null, null, null, null, null, null);
+		DoublyLinkedList<String> list4 = DoublyLinkedList.get(element2);
 
 		assertTrue(list1.equals(list1));
 		assertFalse(list1.equals(null));

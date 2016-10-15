@@ -27,37 +27,48 @@ public final class NoPool<T> extends AbstractPool<T> {
 		super(factory, klass, -1, maxReuseCount, lifeSpan);
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.arivu.pool.AbstractPool#get()
 	 */
 	@Override
 	public T get(final Map<String, Object> params) {
-		return getProxyLinked(createNew(params, true));
+		return getProxyLinked(createNew(params, false));
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.arivu.pool.AbstractPool#release(java.lang.AutoCloseable)
 	 */
 	@Override
 	public void put(T t) {
-		logger.debug("close " + t.hashCode());
-		factory.close(t);
-		final LinkedReference<T> ref = head.search(t);
-		if (ref!=null) {
-			nonBlockingRemove(ref);
+		if (t != null) {
+			logger.debug("close " + t.hashCode());
+			factory.close(t);
+//			@SuppressWarnings("unchecked")
+//			DoublyLinkedList<State<T>> dll = (DoublyLinkedList<State<T>>) list.getBinaryTree()
+//					.get(DoublyLinkedList.get(new State<T>(t)));
+//			if (dll != null) {
+//				closeExpConn(dll.element());
+//			 }
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see org.arivu.pool.AbstractPool#releaseLink(org.arivu.pool.LinkedReference)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * org.arivu.pool.AbstractPool#releaseLink(org.arivu.pool.LinkedReference)
 	 */
 	@Override
-	void releaseLink(final LinkedReference<T> ref) {
-		if (ref!=null) {
-			logger.debug("close " + ref.state.t.hashCode());
-			factory.close(ref.state.t);
-			nonBlockingRemove(ref);
+	void releaseLink(final State<T> state) {
+		if (state != null) {
+			logger.debug("close " + state.t.hashCode());
+			factory.close(state.t);
+			nonBlockingRemove(state);
 		}
 	}
-	
+
 }
