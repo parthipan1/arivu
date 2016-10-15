@@ -15,7 +15,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.arivu.datastructure.DoublyLinkedList;
-import org.arivu.log.LightningLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +64,7 @@ class TestDataSourcesHelper {
 				+ " millisecs! ";
 		logger.info(msg);
 		System.out.println(msg);
-		LightningLogger.flush();
+//		LightningLogger.flush();
 		// System.out.println("After Flush!");
 	}
 
