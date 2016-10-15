@@ -54,8 +54,8 @@ public final class NoPool<T> extends AbstractPool<T> {
 	@Override
 	void releaseLink(final LinkedReference<T> ref) {
 		if (ref!=null) {
-			logger.debug("close " + ref.t.hashCode());
-			factory.close(ref.t);
+			logger.debug("close " + ref.state.t.hashCode());
+			factory.close(ref.state.t);
 			nonBlockingRemove(ref);
 		}
 	}

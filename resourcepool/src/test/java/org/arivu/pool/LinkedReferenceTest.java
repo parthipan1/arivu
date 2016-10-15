@@ -88,7 +88,7 @@ public class LinkedReferenceTest {
 		
 		LinkedReference<String> ref = head;
 		do{
-			buf.append(ref.t);
+			buf.append(ref.state.t);
 			ref = ref.left;
 		}while(ref!=head);
 		
@@ -199,7 +199,7 @@ public class LinkedReferenceTest {
 		
 		LinkedReference<String> ref = head;
 		do{
-			buf.append(ref.t);
+			buf.append(ref.state.t);
 			ref = ref.left;
 		}while(ref!=head);
 		
@@ -210,7 +210,7 @@ public class LinkedReferenceTest {
 		buf = new StringBuffer();
 		ref = head;
 		do{
-			buf.append(ref.t);
+			buf.append(ref.state.t);
 			ref = ref.left;
 		}while(ref!=head);
 		string = headStr+threeStr+twoStr;
@@ -221,7 +221,7 @@ public class LinkedReferenceTest {
 		buf = new StringBuffer();
 		ref = head;
 		do{
-			buf.append(ref.t);
+			buf.append(ref.state.t);
 			ref = ref.left;
 		}while(ref!=head);
 		string = headStr+twoStr;

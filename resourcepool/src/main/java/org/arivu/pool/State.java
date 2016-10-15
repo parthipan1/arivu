@@ -3,11 +3,13 @@
  */
 package org.arivu.pool;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * @author P
  *
  */
-final class State {
+final class State<T> {
 	/**
 	 * 
 	 */
@@ -25,6 +27,19 @@ final class State {
 	 * 
 	 */
 	IncType type = IncType.RELEASE;
+
+	final AtomicBoolean available = new AtomicBoolean(false);
+	
+	volatile boolean released = false;
+	
+	final T t;
+	T proxy;
+	
+	public State(T t) {
+		super();
+		this.t = t;
+		this.released = false;
+	}
 
 	/**
 	 * @param type

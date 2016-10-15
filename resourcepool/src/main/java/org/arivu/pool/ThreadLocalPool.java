@@ -43,7 +43,7 @@ public final class ThreadLocalPool<T> extends AbstractPool<T> {
 		@Override
 		public LinkedReference<T> create(Map<String, Object> params) {
 			final LinkedReference<T> c = new LinkedReference<T>(factory.create(params), ps);
-			logger.debug("Factory create "+c.t.hashCode()+" Thread "+Thread.currentThread().hashCode());
+			logger.debug("Factory create "+c.state.t.hashCode()+" Thread "+Thread.currentThread().hashCode());
 //			System.out.println("Factory create "+c.t.hashCode()+" Thread "+Thread.currentThread().hashCode());
 			return c;
 		}
@@ -92,9 +92,9 @@ public final class ThreadLocalPool<T> extends AbstractPool<T> {
 //			logger.debug("releaseLink close "+ref.t.hashCode()+" Thread "+Thread.currentThread().hashCode());
 			threadlocals.remove();
 //			logger.debug("releaseLink close After remove Thread "+Thread.currentThread().hashCode());
-			factory.close(ref.t);
+			factory.close(ref.state.t);
 			
-			LinkedReference<T> search = head.search(ref.t);
+			LinkedReference<T> search = head.search(ref.state.t);
 			if(search!=null){
 				search.remove();
 			}

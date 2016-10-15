@@ -3,7 +3,6 @@
  */
 package org.arivu.pool;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -14,15 +13,15 @@ final class LinkedReference<T> {
 	/**
 	 * 
 	 */
-	final T t;
+//	final T t;
 	/**
 	 * 
 	 */
-	final State state;
+	final State<T> state;
 	/**
 	 * 
 	 */
-	final AtomicBoolean available = new AtomicBoolean(false);
+//	final AtomicBoolean available = new AtomicBoolean(false);
 
 	/**
 	 * 
@@ -32,18 +31,18 @@ final class LinkedReference<T> {
 //	private Ref size;
 	final AtomicInteger size;
 	
-	T proxy;
-	volatile boolean released = false;
+//	T proxy;
+//	volatile boolean released = false;
 	
 	/**
 	 * 
 	 */
 	public LinkedReference() {
 		super();
-		this.t = null;
+//		this.t = null;
 		this.state = null;
 		this.size = new AtomicInteger(0);
-		this.released = false;
+//		this.released = false;
 	}
 
 	/**
@@ -51,8 +50,8 @@ final class LinkedReference<T> {
 	 */
 	public LinkedReference(T t,AtomicInteger size) {
 		super();
-		this.t = t;
-		this.state = new State();
+//		this.t = t;
+		this.state = new State<T>(t);
 		this.size = size;
 	}
 
@@ -130,13 +129,13 @@ final class LinkedReference<T> {
 	LinkedReference<T> search(final T t) {
 		LinkedReference<T> ref = this.right;
 		while (ref != null) {
-			if (ref.t == t) {
+			if (ref.state.t == t) {
 				return ref;
 			}
 			ref = ref.right;
 			if (ref == null) {
 				return null;
-			} else if (ref.t == null) {
+			} else if (ref.state == null) {
 				break;
 			} else if (ref == this) {
 				break;

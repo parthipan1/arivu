@@ -203,11 +203,11 @@ abstract class AbstractPool<T> implements Pool<T> {
 		
 		LinkedReference<T> ref = head.right;
 		while (ref != null) {
-			if( ref.t!=null && ref.available.compareAndSet(true, false) ){
+			if( ref.state!=null && ref.state.available.compareAndSet(true, false) ){
 				return ref;
 			}
 			ref = ref.right;
-			if (ref == null || ref.t == null || ref == head) {
+			if (ref == null || ref.state == null || ref == head) {
 				break;
 			}
 		}
@@ -221,7 +221,7 @@ abstract class AbstractPool<T> implements Pool<T> {
 	 */
 	boolean add(LinkedReference<T> t) {
 		if (t != null) {
-			t.available.set(true); 
+			t.state.available.set(true); 
 		}
 		return true;
 	}
@@ -253,7 +253,7 @@ abstract class AbstractPool<T> implements Pool<T> {
 			if (poll.state.checkExp(head.size(), maxPoolSize, maxReuseCount, lifeSpan, idleTimeout)) {
 				closeExpConn(poll);// (poll);
 			} else {
-				logger.debug("reuse resource! " + poll.t.hashCode());
+				logger.debug("reuse resource! " + poll.state.t.hashCode());
 				return getProxyLinked(poll);
 			}
 		}
@@ -324,7 +324,7 @@ abstract class AbstractPool<T> implements Pool<T> {
 		if (addFlag) {
 			head.add(lr);
 		}
-		logger.debug("Created new Resource " + lr.t.hashCode() + " total(" + head.size() + "," + maxPoolSize + ")maxPoolSize");//
+		logger.debug("Created new Resource " + lr.state.t.hashCode() + " total(" + head.size() + "," + maxPoolSize + ")maxPoolSize");//
 		return lr;
 	}
 
@@ -407,37 +407,37 @@ abstract class AbstractPool<T> implements Pool<T> {
 	final T getProxyLinked(final LinkedReference<T> lr) {
 		if (lr == null)
 			return null;
-		if (lr.t instanceof AutoCloseable) {
-			if( lr.proxy == null ){
-				lr.proxy = (T) Proxy.newProxyInstance(klass.getClassLoader(), new Class[] { klass }, new InvocationHandler() {
+		if (lr.state.t instanceof AutoCloseable) {
+			if( lr.state.proxy == null ){
+				lr.state.proxy = (T) Proxy.newProxyInstance(klass.getClassLoader(), new Class[] { klass }, new InvocationHandler() {
 					
 					@Override
 					public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable {
 						final String methodName = method.getName();
-						logger.debug("Proxy methodName :: " + methodName + " " + lr.t.hashCode());
+						logger.debug("Proxy methodName :: " + methodName + " " + lr.state.t.hashCode());
 						if ("close".equals(methodName)) {
-							lr.released = true;
+							lr.state.released = true;
 							releaseLink(lr);
 							return Void.TYPE;
 						} else if ("toString".equals(methodName)) {
-							return lr.t.toString();
+							return lr.state.t.toString();
 						} else {
-							if (lr.released)
-								throw new IllegalStateException("Resource Proxy " + lr.t.toString() + " already closed!");
+							if (lr.state.released)
+								throw new IllegalStateException("Resource Proxy " + lr.state.t.toString() + " already closed!");
 							
 							lr.state.inc(IncType.GET);
-							return method.invoke(lr.t, args);
+							return method.invoke(lr.state.t, args);
 						}
 					}
 					
 				});
 			}else{
-				lr.released = false;
+				lr.state.released = false;
 			}
-			return lr.proxy;
+			return lr.state.proxy;
 		} else {
 			lr.state.inc(IncType.GET);
-			return lr.t;
+			return lr.state.t;
 		}
 	}
 
@@ -446,13 +446,13 @@ abstract class AbstractPool<T> implements Pool<T> {
 	 */
 	void releaseLink(final LinkedReference<T> ref) {
 		final boolean checkExp = ref.state.checkExp(head.size(), maxPoolSize, maxReuseCount, lifeSpan, idleTimeout);// checkExp(lr.t);
-		logger.debug("releaseLink resource! " + ref.t.hashCode() + " checkExp " + checkExp);
+		logger.debug("releaseLink resource! " + ref.state.t.hashCode() + " checkExp " + checkExp);
 		if (checkExp) {
 			closeExpConn(ref);
 		} else {
-			factory.clear(ref.t);
+			factory.clear(ref.state.t);
 			ref.state.inc(IncType.RELEASE);
-			logger.debug("Released resource! " + ref.t.hashCode());
+			logger.debug("Released resource! " + ref.state.t.hashCode());
 			add(ref);
 		}
 		signalOnRelease();
@@ -462,16 +462,14 @@ abstract class AbstractPool<T> implements Pool<T> {
 	 * @param lr
 	 */
 	final void closeExpConn(final LinkedReference<T> lr) {
-		if (lr != null && lr.t != null) {
-			logger.debug("Closed resource! " + lr.t.hashCode());
+		if (lr != null && lr.state != null) {
+			logger.debug("Closed resource! " + lr.state.t.hashCode());
 			nonBlockingRemove(lr);
-			factory.close(lr.t);
-			lr.proxy = null;
+			factory.close(lr.state.t);
+			lr.state.proxy = null;
 		}
 	}
 
-//	final AtomicLock cas = new AtomicLock();
-	
 	void nonBlockingRemove(final LinkedReference<T> lr) {
 		cas.lock();
 		head.size.decrementAndGet();
