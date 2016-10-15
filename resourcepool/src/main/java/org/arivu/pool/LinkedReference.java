@@ -129,7 +129,7 @@ final class LinkedReference<T> {
 	LinkedReference<T> search(final T t) {
 		LinkedReference<T> ref = this.right;
 		while (ref != null) {
-			if (ref.state.t == t) {
+			if ( ref.state !=null && ref.state.t == t) {
 				return ref;
 			}
 			ref = ref.right;
