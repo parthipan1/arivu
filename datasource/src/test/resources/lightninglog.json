@@ -1,5 +1,5 @@
 {
-	"appenders":["zip"],
+	"appenders":["file"],
 	"loggers":{
 		"root":"info",
 		"org.arivu":"info"
