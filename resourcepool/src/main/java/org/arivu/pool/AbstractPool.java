@@ -5,6 +5,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Map;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
 import javax.management.InstanceAlreadyExistsException;
@@ -71,7 +72,9 @@ abstract class AbstractPool<T> implements Pool<T> {
 	 */
 	int idleTimeout = -1;
 
+	final Lock cas = new AtomicWFReentrantLock();
 	
+	final Condition notEnough = cas.newCondition();
 	/**
 	 * 
 	 */
@@ -281,13 +284,14 @@ abstract class AbstractPool<T> implements Pool<T> {
 
 	}
 
-	final Synchronizer sync = new Synchronizer();
+//	final Synchronizer sync = new Synchronizer();
 
 	/**
 	 * @return
 	 */
 	boolean blockOnGet() {
-		sync.youShallNotPass();
+//		sync.youShallNotPass();
+		notEnough.awaitUninterruptibly();
 		return true;
 	}
 
@@ -295,14 +299,16 @@ abstract class AbstractPool<T> implements Pool<T> {
 	 * 
 	 */
 	void signalOnRelease() {
-		sync.youShallPass();
+//		sync.youShallPass();
+		notEnough.signal();
 	}
 
 	/**
 	 * 
 	 */
 	final void clearWaitQueue() {
-		sync.allShallPass();
+//		sync.allShallPass();
+		notEnough.signalAll();
 	}
 
 	/**
@@ -465,7 +471,6 @@ abstract class AbstractPool<T> implements Pool<T> {
 	}
 
 //	final AtomicLock cas = new AtomicLock();
-	final Lock cas = new AtomicWFReentrantLock();
 	
 	void nonBlockingRemove(final LinkedReference<T> lr) {
 		cas.lock();

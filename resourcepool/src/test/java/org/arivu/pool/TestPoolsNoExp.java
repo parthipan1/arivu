@@ -38,7 +38,7 @@ public class TestPoolsNoExp {
 	@Test
 	public void test4ConcurrentPool() throws Exception {
 		final Pool<Resource> pool = new ConcurrentPool<Resource>(helper.factory , Resource.class);
-		helper.testPool(pool, helper.poolSize, false);
+		helper.testPool(pool, helper.poolSize, true);
 	}
 		
 	@Test
