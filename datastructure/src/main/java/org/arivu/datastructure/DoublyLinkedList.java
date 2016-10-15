@@ -234,7 +234,7 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 	/**
 	 * 
 	 */
-	T removeRef() {
+	public T removeRef() {
 		Lock l = this.cas;
 		l.lock();
 		DoublyLinkedList<T> tleft = left, tright = right;

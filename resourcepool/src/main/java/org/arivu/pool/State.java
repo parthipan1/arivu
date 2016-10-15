@@ -28,17 +28,32 @@ final class State<T> {
 	 */
 	IncType type = IncType.RELEASE;
 
+	/**
+	 * 
+	 */
 	final AtomicBoolean available = new AtomicBoolean(false);
 	
-	volatile boolean released = false;
+	/**
+	 * 
+	 */
+	final AtomicBoolean released = new AtomicBoolean(false);
 	
+//	volatile boolean released = false;
+	
+	/**
+	 * 
+	 */
 	final T t;
+	
+	/**
+	 * 
+	 */
 	T proxy;
 	
 	public State(T t) {
 		super();
 		this.t = t;
-		this.released = false;
+//		this.released = false;
 	}
 
 	/**

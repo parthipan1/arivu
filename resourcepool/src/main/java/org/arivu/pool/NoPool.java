@@ -51,7 +51,9 @@ public final class NoPool<T> extends AbstractPool<T> {
 //			DoublyLinkedList<State<T>> dll = (DoublyLinkedList<State<T>>) list.getBinaryTree()
 //					.get(DoublyLinkedList.get(new State<T>(t)));
 //			if (dll != null) {
-//				closeExpConn(dll.element());
+//				State state = dll.removeRef();
+//				factory.close(state.t);
+//				state.proxy = null;
 //			 }
 		}
 	}
