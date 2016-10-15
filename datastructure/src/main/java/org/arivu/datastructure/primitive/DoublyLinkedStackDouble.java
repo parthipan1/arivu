@@ -31,7 +31,6 @@ public final  class DoublyLinkedStackDouble {
 	AtomicInteger size;
 	Lock cas;
 	/**
-	 * @param cas TODO
 	 * 
 	 */
 	public DoublyLinkedStackDouble() {
@@ -100,7 +99,7 @@ public final  class DoublyLinkedStackDouble {
 	}
 	
 	/**
-	 * @return
+	 * @return vDouble
 	 */
 	//@Override
 	public double poll(){

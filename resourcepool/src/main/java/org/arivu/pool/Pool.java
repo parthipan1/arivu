@@ -9,8 +9,8 @@ import java.util.Map;
  */
 public interface Pool<T> extends AutoCloseable{
 	/**
-	 * @param params TODO
-	 * @return
+	 * @param params
+	 * @return tObject
 	 */
 	T get(Map<String, Object> params);
 	
@@ -19,7 +19,7 @@ public interface Pool<T> extends AutoCloseable{
 	 */
 	void put(T t);
 	/**
-	 * @return
+	 * @return maxPoolSize
 	 */
 	int getMaxPoolSize();
 	/**
@@ -27,7 +27,7 @@ public interface Pool<T> extends AutoCloseable{
 	 */
 	void setMaxPoolSize(int size);
 	/**
-	 * @return
+	 * @return maxReuseCount
 	 */
 	int getMaxReuseCount();
 	/**
@@ -35,7 +35,7 @@ public interface Pool<T> extends AutoCloseable{
 	 */
 	void setMaxReuseCount(int cnt);
 	/**
-	 * @return
+	 * @return lifeSpan
 	 */
 	int getLifeSpan();
 	/**
@@ -43,7 +43,7 @@ public interface Pool<T> extends AutoCloseable{
 	 */
 	void setLifeSpan(int time);
 	/**
-	 * @return
+	 * @return idleTimeout
 	 */
 	int getIdleTimeout();
 	/**

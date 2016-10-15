@@ -31,7 +31,6 @@ public final  class DoublyLinkedStackLong {
 	AtomicInteger size;
 	Lock cas;
 	/**
-	 * @param writeLock TODO
 	 * 
 	 */
 	public DoublyLinkedStackLong() {
@@ -100,7 +99,7 @@ public final  class DoublyLinkedStackLong {
 	}
 	
 	/**
-	 * @return
+	 * @return vLong
 	 */
 	//@Override
 	public long poll(){

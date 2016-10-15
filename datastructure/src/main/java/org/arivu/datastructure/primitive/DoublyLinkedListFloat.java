@@ -31,7 +31,6 @@ public final class DoublyLinkedListFloat  {
 //	static final AtomicWFLock cas = new AtomicWFLock();
 	
 	/**
-	 * @param writeLock TODO
 	 * 
 	 */
 	public DoublyLinkedListFloat() {
@@ -76,9 +75,8 @@ public final class DoublyLinkedListFloat  {
 	}
 	
 	/**
-	 * @return
+	 * @return vFloat
 	 */
-	
 	public float poll(){
 		DoublyLinkedListFloat removeRight = removeRight();
 		if(removeRight!=null)

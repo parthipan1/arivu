@@ -6,7 +6,7 @@ package org.arivu.pool;
  */
 public interface PoolMXBean {
 	/**
-	 * @return
+	 * @return maxPoolSize
 	 */
 	int getMaxPoolSize();
 	/**
@@ -14,7 +14,7 @@ public interface PoolMXBean {
 	 */
 	void setMaxPoolSize(int size);
 	/**
-	 * @return
+	 * @return maxReuseCount
 	 */
 	int getMaxReuseCount();
 	/**
@@ -22,7 +22,7 @@ public interface PoolMXBean {
 	 */
 	void setMaxReuseCount(int cnt);
 	/**
-	 * @return
+	 * @return lifeSpan
 	 */
 	int getLifeSpan();
 	/**
@@ -30,7 +30,7 @@ public interface PoolMXBean {
 	 */
 	void setLifeSpan(int time);
 	/**
-	 * @return
+	 * @return idleTimeout
 	 */
 	int getIdleTimeout();
 	/**
@@ -38,7 +38,7 @@ public interface PoolMXBean {
 	 */
 	void setIdleTimeout(int idleTimeout);
 	/**
-	 * @return
+	 * @return orphanedTimeout
 	 */
 	long getOrphanedTimeout();
 	/**

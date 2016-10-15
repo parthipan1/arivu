@@ -31,7 +31,6 @@ public final class DoublyLinkedSetLong {
 	AtomicInteger size;
 	Lock cas;
 	/**
-	 * @param cas TODO
 	 * 
 	 */
 	public DoublyLinkedSetLong() {
@@ -76,9 +75,8 @@ public final class DoublyLinkedSetLong {
 	}
 	
 	/**
-	 * @return
+	 * @return vLong
 	 */
-	
 	public long poll(){
 		DoublyLinkedSetLong removeRight = removeRight();
 		if(removeRight!=null)

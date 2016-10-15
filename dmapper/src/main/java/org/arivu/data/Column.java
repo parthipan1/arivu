@@ -16,52 +16,52 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 public @interface Column {
 
     /**
-     * @return
+     * @return name
      */
     String name() default "";
 
     /**
-     * @return
+     * @return unique
      */
     boolean unique() default false;
 
     /**
-     * @return
+     * @return nullable
      */
     boolean nullable() default true;
 
     /**
-     * @return
+     * @return insertable
      */
     boolean insertable() default true;
 
     /**
-     * @return
+     * @return updatable
      */
     boolean updatable() default true;
 
     /**
-     * @return
+     * @return columnDefinition
      */
     String columnDefinition() default "";
 
     /**
-     * @return
+     * @return table
      */
     String table() default "";
 
     /**
-     * @return
+     * @return length
      */
     int length() default 255;
 
     /**
-     * @return
+     * @return precision
      */
     int precision() default 0;
 
     /**
-     * @return
+     * @return scale
      */
     int scale() default 0;
 }

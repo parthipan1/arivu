@@ -30,7 +30,6 @@ public final class DoublyLinkedListDouble  {
 //	static final AtomicLock cas = new AtomicLock();
 //	static final AtomicWFLock cas = new AtomicWFLock();
 	/**
-	 * @param writeLock TODO
 	 * 
 	 */
 	DoublyLinkedListDouble(Lock cas) {
@@ -74,9 +73,8 @@ public final class DoublyLinkedListDouble  {
 	}
 	
 	/**
-	 * @return
+	 * @return vDouble
 	 */
-	
 	public double poll(){
 		DoublyLinkedListDouble removeRight = removeRight();
 		if(removeRight!=null)

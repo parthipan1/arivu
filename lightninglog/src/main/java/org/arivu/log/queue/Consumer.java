@@ -225,7 +225,7 @@ public final class Consumer<T> implements AutoCloseable {
 	}
 
 	/**
-	 * @return
+	 * @return isEmpty
 	 */
 	public boolean isEmpty() {
 		for (int i = 0; i < buffer.length; i++) {

@@ -48,7 +48,7 @@ public class DataQuery {
 	/**
 	 * @param query
 	 * @param parameters
-	 * @return
+	 * @return rowMapList
 	 * @throws IllegalAccessException
 	 * @throws InvocationTargetException
 	 * @throws SQLException
@@ -85,7 +85,7 @@ public class DataQuery {
 	 * @param klass
 	 * @param annotation
 	 * @param identifier
-	 * @return
+	 * @return rowList
 	 * @throws IllegalAccessException
 	 * @throws InvocationTargetException
 	 * @throws InstantiationException
@@ -104,8 +104,7 @@ public class DataQuery {
 	/**
 	 * @param rows
 	 * @param klass
-	 * @param annotation
-	 * @return
+	 * @return rowList
 	 * @throws IllegalAccessException
 	 * @throws InvocationTargetException
 	 * @throws InstantiationException
@@ -125,12 +124,13 @@ public class DataQuery {
 	 * @param klass
 	 * @param annotation
 	 * @param identifier
-	 * @return
+	 * @param callback
+	 * @param executor
 	 */
 	public <T extends Annotation, R> void map(final Collection<Map<String, Object>> rows, final Class<R> klass,
 			final Class<T> annotation, final Identifier identifier,
 			final DBCallback<Collection<R>> callback,
-			Executor executor) {
+			final Executor executor) {
 		executor.execute(new Runnable() {
 
 			@Override
@@ -147,12 +147,11 @@ public class DataQuery {
 	/**
 	 * @param rows
 	 * @param klass
-	 * @param annotation
-	 * @param identifier
-	 * @return
+	 * @param callback
+	 * @param executor
 	 */
 	public <R> void map(final Collection<Map<String, Object>> rows, final Class<R> klass, final DBCallback<Collection<R>> callback,
-			Executor executor) {
+			final Executor executor) {
 		executor.execute(new Runnable() {
 
 			@Override

@@ -31,7 +31,6 @@ public final  class DoublyLinkedStackFloat {
 	AtomicInteger size;
 	Lock cas;
 	/**
-	 * @param cas TODO
 	 * 
 	 */
 	public DoublyLinkedStackFloat() {
@@ -100,7 +99,7 @@ public final  class DoublyLinkedStackFloat {
 	}
 	
 	/**
-	 * @return
+	 * @return vFloat
 	 */
 	//@Override
 	public float poll(){

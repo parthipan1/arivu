@@ -53,7 +53,7 @@ public final class RowMapper<T extends Annotation, R> {
 	 * @param annotationClass
 	 * @param identifier
 	 * @param returnClass
-	 * @return
+	 * @return rowObject
 	 * @throws IllegalArgumentException
 	 * @throws IllegalAccessException
 	 * @throws InvocationTargetException
@@ -70,7 +70,7 @@ public final class RowMapper<T extends Annotation, R> {
 	 * @param useCache
 	 * @param identifier
 	 * @param returnClass
-	 * @return
+	 * @return rowObject
 	 * @throws IllegalAccessException
 	 * @throws InvocationTargetException
 	 * @throws InstantiationException
@@ -189,7 +189,7 @@ public final class RowMapper<T extends Annotation, R> {
 	 * @param valueObject
 	 * @param annotationClass
 	 * @param identifier
-	 * @return
+	 * @return rowMap
 	 * @throws IllegalArgumentException
 	 * @throws IllegalAccessException
 	 * @throws InvocationTargetException
@@ -204,7 +204,7 @@ public final class RowMapper<T extends Annotation, R> {
 	 * @param annotationClass
 	 * @param useCache
 	 * @param identifier
-	 * @return
+	 * @return rowMap
 	 * @throws IllegalAccessException
 	 * @throws InvocationTargetException
 	 */

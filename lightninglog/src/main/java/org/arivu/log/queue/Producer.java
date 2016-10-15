@@ -241,9 +241,6 @@ public final class Producer<T> implements AutoCloseable {
 	/**
 	 * Completely flushed the log queue on all threads ( consumers)
 	 * 
-	 * @param parallel
-	 *            TODO
-	 * 
 	 * @throws Exception
 	 */
 	public void flush() throws Exception {

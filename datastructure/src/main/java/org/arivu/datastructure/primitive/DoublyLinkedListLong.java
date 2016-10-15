@@ -30,7 +30,6 @@ public final class DoublyLinkedListLong  {
 	AtomicInteger size;
 	Lock cas;
 	/**
-	 * @param cas TODO
 	 * 
 	 */
 	public DoublyLinkedListLong() {
@@ -75,9 +74,8 @@ public final class DoublyLinkedListLong  {
 	}
 	
 	/**
-	 * @return
+	 * @return vLong
 	 */
-	
 	public long poll(){
 		DoublyLinkedListLong removeRight = removeRight();
 		if(removeRight!=null)

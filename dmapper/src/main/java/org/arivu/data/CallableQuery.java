@@ -77,7 +77,7 @@ public class CallableQuery {
 	/**
 	 * @param query
 	 * @param parameters
-	 * @return
+	 * @return rowMapList
 	 * @throws SQLException
 	 * @throws IllegalAccessException
 	 * @throws InvocationTargetException

@@ -20,7 +20,6 @@ public final class NoPool<T> extends AbstractPool<T> {
 	/**
 	 * @param factory
 	 * @param klass
-	 * @param maxPoolSize
 	 * @param maxReuseCount
 	 * @param lifeSpan
 	 */

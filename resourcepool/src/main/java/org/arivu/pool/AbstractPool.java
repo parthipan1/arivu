@@ -540,7 +540,7 @@ abstract class AbstractPool<T> implements Pool<T> {
 	}
 
 	/**
-	 * @return
+	 * @return idleTimeout
 	 */
 	public final int getIdleTimeout() {
 		return idleTimeout;

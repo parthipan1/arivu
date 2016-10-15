@@ -31,7 +31,6 @@ public final class DoublyLinkedListInt  {
 	
 	Lock cas;
 	/**
-	 * @param cas TODO
 	 * 
 	 */
 	public DoublyLinkedListInt() {
@@ -75,9 +74,8 @@ public final class DoublyLinkedListInt  {
 	}
 	
 	/**
-	 * @return
+	 * @return vInt
 	 */
-	
 	public int poll(){
 		DoublyLinkedListInt removeRight = removeRight();
 		if(removeRight!=null)
