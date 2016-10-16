@@ -38,8 +38,6 @@ final class State<T> {
 	 */
 	final AtomicBoolean released = new AtomicBoolean(false);
 	
-//	volatile boolean released = false;
-	
 	/**
 	 * 
 	 */
@@ -69,26 +67,23 @@ final class State<T> {
 
 	/**
 	 * @param size
-	 * @param maxPoolSize
-	 * @param maxReuseCount
-	 * @param lifeSpan
-	 * @param idleTimeout
+	 * @param pool TODO
 	 * @return
 	 */
-	boolean checkExp(int size, int maxPoolSize, int maxReuseCount, int lifeSpan, int idleTimeout) {
+	boolean checkExp(final int size, final AbstractPool<?> pool) {
 		final long currentTimeMillis = System.currentTimeMillis();
-		return maxPoolSize > 0 && size > maxPoolSize || maxReuseCount > 0 && reuse >= maxReuseCount
-				|| lifeSpan > 0 && (currentTimeMillis - createTime) >= lifeSpan
-				|| idleTimeout > 0 && (currentTimeMillis - lastTime) >= idleTimeout;
+		return pool.maxPoolSize > 0 && size > pool.maxPoolSize || pool.maxReuseCount > 0 && reuse >= pool.maxReuseCount
+				|| pool.lifeSpan > 0 && (currentTimeMillis - createTime) >= pool.lifeSpan
+				|| pool.idleTimeout > 0 && (currentTimeMillis - lastTime) >= pool.idleTimeout;
 	}
 
-	/**
-	 * @param currentTimeMillis
-	 * @return
-	 */
-	boolean isOrphaned(final long currentTimeMillis, final long timeThreshold) {
-		return type == IncType.GET && (currentTimeMillis - lastTime) > timeThreshold;
-	}
+//	/**
+//	 * @param currentTimeMillis
+//	 * @return
+//	 */
+//	boolean isOrphaned(final long currentTimeMillis, final long timeThreshold) {
+//		return type == IncType.GET && (currentTimeMillis - lastTime) > timeThreshold;
+//	}
 
 	/*
 	 * (non-Javadoc)
@@ -102,10 +97,7 @@ final class State<T> {
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((t == null) ? 0 : t.hashCode());
-		return result;
+		return ((t == null) ? 0 : t.hashCode());
 	}
 
 	@Override

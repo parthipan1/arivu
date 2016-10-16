@@ -87,7 +87,7 @@ public final class ThreadLocalPool<T> extends AbstractPool<T> {
 	@Override
 	void releaseLink(State<T> state) {
 //		logger.debug("release "+ref.t.hashCode());
-		if( state!=null && state.checkExp(1, maxPoolSize, maxReuseCount, lifeSpan, idleTimeout) ){
+		if( state!=null && state.checkExp(1, this) ){
 //			logger.debug("releaseLink close "+ref.t.hashCode()+" Thread "+Thread.currentThread().hashCode());
 			threadlocals.remove();
 //			logger.debug("releaseLink close After remove Thread "+Thread.currentThread().hashCode());

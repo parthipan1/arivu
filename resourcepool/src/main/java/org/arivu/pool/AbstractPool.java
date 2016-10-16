@@ -216,29 +216,29 @@ abstract class AbstractPool<T> implements Pool<T> {
 //		return String.valueOf(t.hashCode());
 //	}
 
-	/**
-	 * @return
-	 */
-	State<T> poll() {
-		try {
-			for( State<T> state:list )
-				if(state.available.compareAndSet(true, false)) return state;
-		} catch (NullPointerException e) {
-			logger.error("Failed with poll::", e);
-		}
-		return null;
-	}
+//	/**
+//	 * @return
+//	 */
+//	State<T> poll() {
+//		try {
+//			for( State<T> state:list )
+//				if(state.available.compareAndSet(true, false)) return state;
+//		} catch (NullPointerException e) {
+//			logger.error("Failed with poll::", e);
+//		}
+//		return null;
+//	}
 
-	/**
-	 * @param t
-	 * @return
-	 */
-	boolean add(State<T> state) {
-		if (state != null) {
-			state.available.set(true); 
-		}
-		return true;
-	}
+//	/**
+//	 * @param t
+//	 * @return
+//	 */
+//	boolean add(State<T> state) {
+//		if (state != null) {
+//			state.available.set(true); 
+//		}
+//		return true;
+//	}
 
 	/*
 	 * (non-Javadoc)
@@ -250,15 +250,29 @@ abstract class AbstractPool<T> implements Pool<T> {
 		if (closed)
 			return null;
 
-		State<T> state = null;
-		
-		while ((state = poll()) != null) {
-			if (state.checkExp(list.size(), maxPoolSize, maxReuseCount, lifeSpan, idleTimeout)) {
-				closeExpConn(state);
-			} else {
-				return getProxyLinked(state);
-			}
+		try {
+			for(final State<T> state:list )
+				if(state.available.compareAndSet(true, false)){
+					if (state.checkExp(list.size(), this)) {
+						closeExpConn(state);
+					} else {
+						return getProxyLinked(state);
+					}
+				}
+		} catch (NullPointerException e) {
+			logger.error("Failed with poll::", e);
 		}
+		
+		
+//		State<T> state = null;
+//		
+//		while ((state = poll()) != null) {
+//			if (state.checkExp(list.size(), maxPoolSize, maxReuseCount, lifeSpan, idleTimeout)) {
+//				closeExpConn(state);
+//			} else {
+//				return getProxyLinked(state);
+//			}
+//		}
 		
 		cas.lock();
 		if ( maxPoolSize > 0 && list.size() < maxPoolSize) {
@@ -430,7 +444,7 @@ abstract class AbstractPool<T> implements Pool<T> {
 	 * @param ref
 	 */
 	void releaseLink(final State<T> state) {
-		final boolean checkExp = state.checkExp(list.size(), maxPoolSize, maxReuseCount, lifeSpan, idleTimeout);// checkExp(lr.t);
+		final boolean checkExp = state.checkExp(list.size(), this);// checkExp(lr.t);
 		logger.debug("releaseLink resource! " + state.t.hashCode() + " checkExp " + checkExp);
 		if (checkExp) {
 			closeExpConn(state);
@@ -438,7 +452,8 @@ abstract class AbstractPool<T> implements Pool<T> {
 			factory.clear(state.t);
 			state.inc(IncType.RELEASE);
 			logger.debug("Released resource! " + state.t.hashCode());
-			add(state);
+//			add(state);
+			state.available.set(true);
 		}
 		signalOnRelease();
 	}
@@ -449,15 +464,16 @@ abstract class AbstractPool<T> implements Pool<T> {
 	final void closeExpConn(final State<T> state) {
 		if (state != null) {
 			logger.debug("Closed resource! " + state.t.hashCode());
-			nonBlockingRemove(state);
+//			nonBlockingRemove(state);
+			list.remove(state);
 			factory.close(state.t);
 			state.proxy = null;
 		}
 	}
 
-	void nonBlockingRemove(final State<T> state) {
-		list.remove(state);
-	}
+//	void nonBlockingRemove(final State<T> state) {
+//		list.remove(state);
+//	}
 
 	/*
 	 * (non-Javadoc)

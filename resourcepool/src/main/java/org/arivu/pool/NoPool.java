@@ -69,7 +69,8 @@ public final class NoPool<T> extends AbstractPool<T> {
 		if (state != null) {
 			logger.debug("close " + state.t.hashCode());
 			factory.close(state.t);
-			nonBlockingRemove(state);
+//			nonBlockingRemove(state);
+			list.remove(state);
 		}
 	}
 
