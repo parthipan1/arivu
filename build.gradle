@@ -292,7 +292,6 @@ dependencies {
 project(':datasource'){
 dependencies {
     compile project(':resourcepool')
-    compile "org.apache.tomcat:tomcat-catalina:7.0.14"
     testCompile project(':lightninglog')
     runtime project(':lightninglog')
   }
