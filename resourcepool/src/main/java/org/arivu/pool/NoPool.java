@@ -2,6 +2,8 @@ package org.arivu.pool;
 
 import java.util.Map;
 
+import org.arivu.datastructure.DoublyLinkedList;
+
 /**
  * @author P
  *
@@ -34,7 +36,7 @@ public final class NoPool<T> extends AbstractPool<T> {
 	 */
 	@Override
 	public T get(final Map<String, Object> params) {
-		return getProxyLinked(createNew(params, false));
+		return getProxyLinked(createNew(params, true));
 	}
 
 	/*
@@ -46,15 +48,15 @@ public final class NoPool<T> extends AbstractPool<T> {
 	public void put(T t) {
 		if (t != null) {
 			logger.debug("close " + t.hashCode());
-			factory.close(t);
-//			@SuppressWarnings("unchecked")
-//			DoublyLinkedList<State<T>> dll = (DoublyLinkedList<State<T>>) list.getBinaryTree()
-//					.get(DoublyLinkedList.get(new State<T>(t)));
-//			if (dll != null) {
-//				State state = dll.removeRef();
-//				factory.close(state.t);
-//				state.proxy = null;
-//			 }
+//			factory.close(t);
+			@SuppressWarnings("unchecked")
+			DoublyLinkedList<State<T>> dll = (DoublyLinkedList<State<T>>) list.getBinaryTree()
+					.get(DoublyLinkedList.get(new State<T>(t)));
+			if (dll != null) {
+				State<T> state = dll.removeRef();
+				factory.close(state.t);
+				state.proxy = null;
+			 }
 		}
 	}
 

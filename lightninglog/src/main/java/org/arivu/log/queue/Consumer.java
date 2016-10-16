@@ -258,7 +258,7 @@ public final class Consumer<T> implements AutoCloseable {
 			try {
 				ManagementFactory.getPlatformMBeanServer().unregisterMBean(new ObjectName(beanNameStr));
 			} catch (Exception e) {
-				System.err.println(e.toString());
+//				System.err.println(e.toString());
 			}
 		}
 	}
