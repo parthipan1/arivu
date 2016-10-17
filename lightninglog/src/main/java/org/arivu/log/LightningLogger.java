@@ -4,13 +4,8 @@
 package org.arivu.log;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.management.ManagementFactory;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1036,42 +1031,42 @@ public final class LightningLogger implements Logger {
 		};
 	}
 
-	private static String getEnv(String key, String dvalue) {
-		return System.getProperty(key, (System.getenv().get(key) == null ? dvalue : System.getenv().get(key)));
-	}
+//	private static String getEnv(String key, String dvalue) {
+//		return System.getProperty(key, (System.getenv().get(key) == null ? dvalue : System.getenv().get(key)));
+//	}
 
-	private static Map<String, Object> loadProperties() {
-		InputStream in = null;
-		String instr = getEnv(CONFIGURATION_FILE, null);
-		if (instr == null) {
-			in = AccessController.doPrivileged(new PrivilegedAction<InputStream>() {
-				public InputStream run() {
-					ClassLoader threadCL = Thread.currentThread().getContextClassLoader();
-					if (threadCL != null) {
-						return threadCL.getResourceAsStream(CONFIGURATION_FILE);
-					} else {
-						return ClassLoader.getSystemResourceAsStream(CONFIGURATION_FILE);
-					}
-				}
-			});
-		} else {
-			try {
-				in = new FileInputStream(new File(instr));
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
-			}
-		}
-		if (null != in) {
-			try {
-				Map<String, Object> fromJson = new Ason().fromJson(in);
-				in.close();
-				return fromJson;
-			} catch (Exception e) {
-				System.err.println(e.toString());
-			}
-		}
-		return null;
-	}
+//	private static Map<String, Object> loadProperties() {
+//		InputStream in = null;
+//		String instr = getEnv(CONFIGURATION_FILE, null);
+//		if (instr == null) {
+//			in = AccessController.doPrivileged(new PrivilegedAction<InputStream>() {
+//				public InputStream run() {
+//					ClassLoader threadCL = Thread.currentThread().getContextClassLoader();
+//					if (threadCL != null) {
+//						return threadCL.getResourceAsStream(CONFIGURATION_FILE);
+//					} else {
+//						return ClassLoader.getSystemResourceAsStream(CONFIGURATION_FILE);
+//					}
+//				}
+//			});
+//		} else {
+//			try {
+//				in = new FileInputStream(new File(instr));
+//			} catch (FileNotFoundException e) {
+//				e.printStackTrace();
+//			}
+//		}
+//		if (null != in) {
+//			try {
+//				Map<String, Object> fromJson = new Ason().fromJson(in);
+//				in.close();
+//				return fromJson;
+//			} catch (Exception e) {
+//				System.err.println(e.toString());
+//			}
+//		}
+//		return null;
+//	}
 
 	private static Producer<String> LOG_PRODUCER;
 
@@ -1206,7 +1201,7 @@ public final class LightningLogger implements Logger {
 	private final static String WARN_LEVEL_STRING;
 
 	static {
-		final Map<String, Object> json = loadProperties();
+		final Map<String, Object> json = Ason.loadProperties(CONFIGURATION_FILE);
 
 		if (json == null) {
 			ALL_LOGGER.put("root", "debug");

@@ -1,10 +1,15 @@
 package org.arivu.utils;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -118,4 +123,36 @@ public final class Ason {
 		return (Number) get(json, token, deflt);
 	}
 	
+	public static Map<String, Object> loadProperties(final String file) {
+		InputStream in = null;
+		String instr = Env.getEnv(file, null);
+		if (instr == null) {
+			in = AccessController.doPrivileged(new PrivilegedAction<InputStream>() {
+				public InputStream run() {
+					ClassLoader threadCL = Thread.currentThread().getContextClassLoader();
+					if (threadCL != null) {
+						return threadCL.getResourceAsStream(file);
+					} else {
+						return ClassLoader.getSystemResourceAsStream(file);
+					}
+				}
+			});
+		} else {
+			try {
+				in = new FileInputStream(new File(instr));
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			}
+		}
+		if (null != in) {
+			try {
+				Map<String, Object> fromJson = new Ason().fromJson(in);
+				in.close();
+				return fromJson;
+			} catch (Exception e) {
+				System.err.println(e.toString());
+			}
+		}
+		return null;
+	}
 }

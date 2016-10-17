@@ -1,0 +1,21 @@
+{
+	"appenders":["file","console"],
+	"loggers":{
+		"root":"debug",
+		"org.arivu":"debug"
+	},
+	"buffer":{
+		"batch":1,
+		"ring":1
+	},
+	"log":{
+		"showDateTime":true,
+		"showThreadName":true,
+		"showName":true,
+		"showShortName":true,
+		"file":"logs//nioserver.log",
+		"fileSize":5242880000,
+		"dateTimeFormat":"yyyy-MM-dd HH:mm:ss:SSS Z",
+		"fileDateTimeExt":"yyyy-MM-dd'T'HH:mm:ss:SSS'Z'"
+	}
+}

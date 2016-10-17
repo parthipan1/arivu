@@ -3,8 +3,12 @@
  */
 package org.arivu.nioserver;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.channels.SelectionKey;
@@ -25,6 +29,7 @@ import java.util.concurrent.Executors;
 
 import org.arivu.datastructure.Amap;
 import org.arivu.nioserver.Request.Method;
+import org.arivu.utils.Env;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,32 +39,30 @@ import org.slf4j.LoggerFactory;
  */
 public class Server {
 
+	private static final String DEFAULT_HOST = Env.getEnv("host", "localhost");
+
 	private static final int BUFFER_SIZE = 1024;
 
 	private static final Logger logger = LoggerFactory.getLogger(Server.class);
 
-	private static final int DEFAULT_PORT = Integer.parseInt(getEnv("port", "8080"));
+	private static final int DEFAULT_PORT = Integer.parseInt(Env.getEnv("port", "8080"));
 
 	private static volatile boolean shutdown = false;
 
 	static final ExecutorService exe = Executors.newCachedThreadPool();
-	static String clientChannel = "clientChannel";
-	static String serverChannel = "serverChannel";
-	static String channelType = "channelType";
+	static String clientChannel = "org.arivu.nioserver.clientChannel";
+	static String serverChannel = "org.arivu.nioserver.serverChannel";
+	static String channelType = "org.arivu.nioserver.channelType";
 
-	private static final Map<Integer, Session> SESSIONS = new Amap<Integer, Session>();
+	private static final Map<Integer, Connection> CONNECTIONS = new Amap<Integer, Connection>();
 
-	private static final Session getRequest(Integer id) {
-		Session session = SESSIONS.get(id);
-		if (session == null) {
-			session = new Session();
-			SESSIONS.put(id, session);
+	private static final Connection getRequest(Integer id, Selector selector) {
+		Connection connection = CONNECTIONS.get(id);
+		if (connection == null) {
+			connection = new Connection(selector);
+			CONNECTIONS.put(id, connection);
 		}
-		return session;
-	}
-
-	private static String getEnv(String key, String dvalue) {
-		return System.getProperty(key, (System.getenv().get(key) == null ? dvalue : System.getenv().get(key)));
+		return connection;
 	}
 
 	/**
@@ -68,15 +71,50 @@ public class Server {
 	 * @throws IOException
 	 */
 	public static void main(String[] args) throws InterruptedException, IOException {
-		start(args);
-		exe.shutdownNow();
+		if (args != null && args.length > 0 && args[0].equalsIgnoreCase("stop")) {
+			stopRemote();
+		} else {
+			start(args);
+		}
+	}
+
+	private static void stopRemote() {
+		String url = "http://" + DEFAULT_HOST + ":" + DEFAULT_PORT + Configuration.stopUri;
+//		System.out.println("req::"+url);
+		BufferedReader in = null;
+		try {
+			final HttpURLConnection con = (HttpURLConnection) new URL(url).openConnection();
+			int responseCode = con.getResponseCode();
+			final StringBuffer response = new StringBuffer();
+			in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+			String inputLine;
+			while ((inputLine = in.readLine()) != null) {
+				response.append(inputLine);
+			}
+			if (responseCode == 200) {
+				System.out.println("Server stopped");
+			}
+			// System.out.println(" responseCode :: "+responseCode+" response ::
+			// "+response.toString());
+		} catch (Throwable e) {
+//			 e.printStackTrace();
+			System.err.println(e.toString());
+		} finally {
+			if (in != null)
+				try {
+					in.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+		}
+
 	}
 
 	private static void start(String[] args) throws IOException {
 		ServerSocketChannel channel = ServerSocketChannel.open();
 
-		channel.bind(new InetSocketAddress("localhost", DEFAULT_PORT));
-		logger.debug("Server listning at " + DEFAULT_PORT + "!");
+		channel.bind(new InetSocketAddress(DEFAULT_HOST, DEFAULT_PORT));
+		logger.debug("Server listning at " + DEFAULT_HOST + ":" + DEFAULT_PORT + "!");
 		channel.configureBlocking(false);
 
 		final Selector selector = Selector.open();
@@ -101,7 +139,6 @@ public class Server {
 					ServerSocketChannel serverSocketChannel = (ServerSocketChannel) key.channel();
 					SocketChannel clientSocketChannel = serverSocketChannel.accept();
 					Integer reqId = clientSocketChannel.socket().hashCode();
-					// logger.debug("write channel! " + reqId);
 					if (clientSocketChannel != null) {
 						// set the client connection to be non blocking
 						clientSocketChannel.configureBlocking(false);
@@ -110,28 +147,21 @@ public class Server {
 						Map<String, String> clientproperties = new HashMap<String, String>();
 						clientproperties.put(channelType, clientChannel);
 						clientKey.attach(clientproperties);
-
-						getRequest(reqId).setOut(clientSocketChannel);
-
+						getRequest(reqId, selector).setOut(clientSocketChannel);
 					}
 				} else {
 					ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
 					SocketChannel clientSocketChannel = (SocketChannel) key.channel();
 					Integer reqId = clientSocketChannel.socket().hashCode();
-					// logger.debug("read channel! " + reqId);
 					int bytesRead = 0;
 					if (key.isReadable()) {
 						if ((bytesRead = clientSocketChannel.read(buffer)) > 0) {
 							buffer.flip();
-							CharBuffer decode = Charset.defaultCharset().decode(buffer);
-							// logger.debug("clientSocketChannel
-							// "+clientSocketChannel.);
-							getRequest(reqId).read(decode);
+							getRequest(reqId, selector).read(Charset.defaultCharset().decode(buffer));
 							buffer.clear();
 						}
-						// logger.debug("bytesRead " + bytesRead);
 						if (bytesRead < BUFFER_SIZE) {
-							Session remove = SESSIONS.remove(reqId);
+							Connection remove = CONNECTIONS.remove(reqId);
 							if (remove != null)
 								remove.process();
 
@@ -145,6 +175,7 @@ public class Server {
 
 			}
 		}
+		exe.shutdownNow();
 	}
 
 	public static void stop() {
@@ -152,14 +183,16 @@ public class Server {
 	}
 }
 
-final class Session {
-	private static final Logger logger = LoggerFactory.getLogger(Session.class);
+final class Connection {
+	private static final Logger logger = LoggerFactory.getLogger(Connection.class);
 
 	final StringBuffer inBuffer = new StringBuffer();
 	SocketChannel socketChannel = null;
+	Selector selector = null;
 
-	public Session() {
+	public Connection(Selector selector) {
 		super();
+		this.selector = selector;
 	}
 
 	public void read(CharBuffer charBuffer) {
@@ -171,18 +204,21 @@ final class Session {
 	}
 
 	public void process() throws IOException {
+		logger.debug("process connection from " + socketChannel.socket().getRemoteSocketAddress());
 		Server.exe.submit(new Runnable() {
 			@Override
 			public void run() {
 				try {
-				new ConsoleRequestHandler().handle(new RequestParser().parse(inBuffer),new Response(socketChannel));
-//					CharBuffer buffer = CharBuffer.wrap("Hello client " + System.currentTimeMillis());
-//					while (buffer.hasRemaining()) {
-//						socketChannel.write(Charset.defaultCharset().encode(buffer));
-//					}
-//					buffer.clear();
-//					socketChannel.close();
-//					logger.debug("got :: " + inBuffer.toString());
+					Request parse = new RequestParser().parse(inBuffer);
+					if (parse.uri.equalsIgnoreCase(Configuration.stopUri)) {
+						new Response(parse, socketChannel).close();
+						Server.stop();
+						selector.close();
+						selector = null;
+					} else {
+						selector = null;
+						new ConsoleRequestHandler().handle(parse, new Response(parse, socketChannel));
+					}
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -194,32 +230,24 @@ final class Session {
 }
 
 final class RequestParser {
-	private static final byte BYTE_13 = (byte)13;
-	private static final byte BYTE_10 = (byte)10;
+	private static final byte BYTE_13 = (byte) 13;
+	private static final byte BYTE_10 = (byte) 10;
 	static final String divider = System.lineSeparator() + System.lineSeparator();
 
 	Request parse(final StringBuffer buffer) {
 		String content = buffer.toString();
 		byte[] bytes = content.getBytes();
 		int indexOf = -1;
-		for(int i=3;i<bytes.length;i++){
-			boolean c1 = bytes[i] == bytes[i-2];
-			boolean c2 = bytes[i] == BYTE_10;
-			boolean c3 = bytes[i-1] == bytes[i-3];
-			boolean c4 = bytes[i-1] == BYTE_13;
-			boolean b = c1 && c2  &&
-				c3 && c4;
-			System.out.println("bytes["+i+"] %"+bytes[i]+"% b "+b+" c1 "+c1+" c2 "+c2+" c3 "+c3+" c4 "+c4);
-			if( b ){
+		for (int i = 3; i < bytes.length; i++) {
+			if (bytes[i] == bytes[i - 2] && bytes[i] == BYTE_10 && bytes[i - 1] == bytes[i - 3]
+					&& bytes[i - 1] == BYTE_13) {
 				indexOf = i;
 				break;
 			}
 		}
-//		int indexOf = content.indexOf(divider);
-		System.out.println();
+
 		String metadata = content.substring(0, indexOf - 1);
 		String body = content.substring(indexOf);
-		// POST /snw/apps/sync HTTP/1.1
 
 		String[] split = metadata.split(System.lineSeparator());
 
@@ -242,38 +270,41 @@ final class RequestParser {
 			}
 		}
 
-		String uriparams = uri.substring(uri.indexOf("?"));
+		int indexOf3 = uri.indexOf("?");
 		Map<String, Collection<String>> tempparams = new HashMap<String, Collection<String>>();
-		String[] split3 = uriparams.split("&");
-		for (String p : split3) {
-			int indexOf2 = p.indexOf("=");
-			if (indexOf2 == -1) {
-				Collection<String> collection = tempparams.get(p);
-				if (collection == null) {
-					collection = new ArrayList<String>();
+
+		if (indexOf3 > 0) {
+			String uriparams = uri.substring(indexOf3);
+			String[] split3 = uriparams.split("&");
+			for (String p : split3) {
+				int indexOf2 = p.indexOf("=");
+				if (indexOf2 == -1) {
+					Collection<String> collection = tempparams.get(p);
+					if (collection == null) {
+						collection = new ArrayList<String>();
+					}
+					tempparams.put(p, collection);
+				} else {
+					String key = p.substring(0, indexOf2);
+					String value = p.substring(indexOf2 + 1);
+					Collection<String> collection = tempparams.get(key);
+					if (collection == null) {
+						collection = new ArrayList<String>();
+					}
+					collection.add(value);
+					tempparams.put(key, collection);
 				}
-				tempparams.put(p, collection);
-			} else {
-				String key = p.substring(0, indexOf2);
-				String value = p.substring(indexOf2 + 1);
-				Collection<String> collection = tempparams.get(key);
-				if (collection == null) {
-					collection = new ArrayList<String>();
-				}
-				collection.add(value);
-				tempparams.put(key, collection);
+			}
+			for (Entry<String, Collection<String>> e : tempparams.entrySet()) {
+				e.setValue(Collections.unmodifiableCollection(e.getValue()));
 			}
 		}
-
-		for (Entry<String, Collection<String>> e : tempparams.entrySet()) {
-			e.setValue(Collections.unmodifiableCollection(e.getValue()));
-		}
-
 		return new Request(valueOf, uri, protocol, Collections.unmodifiableMap(tempparams),
 				Collections.unmodifiableMap(tempheaders), body);
 	}
 }
-final class ConsoleRequestHandler implements RequestHandler{
+
+final class ConsoleRequestHandler implements RequestHandler {
 
 	@Override
 	public void handle(Request req, Response res) throws Exception {
@@ -281,5 +312,5 @@ final class ConsoleRequestHandler implements RequestHandler{
 		res.append("Ok");
 		res.close();
 	}
-	
+
 }
