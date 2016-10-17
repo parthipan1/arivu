@@ -1,8 +1,9 @@
 package org.arivu.pool;
 
+import java.util.Collection;
 import java.util.Map;
 
-import org.arivu.datastructure.DoublyLinkedList;
+import org.arivu.datastructure.Btree;
 
 /**
  * @author P
@@ -11,7 +12,7 @@ import org.arivu.datastructure.DoublyLinkedList;
  */
 public final class NoPool<T> extends AbstractPool<T> {
 	
-	final DoublyLinkedList<T> nolist = new DoublyLinkedList<T>(cas);
+	final Btree nolist = new Btree();
 	
 	/**
 	 * @param factory
@@ -98,13 +99,21 @@ public final class NoPool<T> extends AbstractPool<T> {
 	/**
 	 * 
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	public void clear() {
-		T t = null;
-		while ((t = nolist.poll()) != null) {
-			logger.debug("close " + t.hashCode());
-			factory.close(t);
-		}
+		Collection<Object> all = nolist.getAll();
 		nolist.clear();
+		
+		for(Object o:all){
+			logger.debug("close " + o.hashCode());
+			factory.close((T)o);
+		}
+//		
+//		T t = null;
+//		while ((t = nolist.poll()) != null) {
+//			logger.debug("close " + t.hashCode());
+//			factory.close(t);
+//		}
 	}
 }
