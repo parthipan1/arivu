@@ -36,7 +36,7 @@ public final class NoPool<T> extends AbstractPool<T> {
 	 */
 	@Override
 	public T get(final Map<String, Object> params) {
-		return getProxyLinked(createNew(params, true));
+		return getProxyLinked(createNew(params));
 	}
 
 	/*
@@ -48,7 +48,6 @@ public final class NoPool<T> extends AbstractPool<T> {
 	public void put(T t) {
 		if (t != null) {
 			logger.debug("close " + t.hashCode());
-//			factory.close(t);
 			@SuppressWarnings("unchecked")
 			DoublyLinkedList<State<T>> dll = (DoublyLinkedList<State<T>>) list.getBinaryTree()
 					.get(DoublyLinkedList.get(new State<T>(t)));
@@ -71,7 +70,6 @@ public final class NoPool<T> extends AbstractPool<T> {
 		if (state != null) {
 			logger.debug("close " + state.t.hashCode());
 			factory.close(state.t);
-//			nonBlockingRemove(state);
 			list.remove(state);
 		}
 	}

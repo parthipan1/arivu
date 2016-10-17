@@ -32,8 +32,6 @@ public final class ThreadLocalPool<T> extends AbstractPool<T> {
 		super(factory, klass, maxPoolSize, maxReuseCount, lifeSpan);
 	}
 
-//	private final AtomicInteger ps = new AtomicInteger(0);
-	
 	/**
 	 * 
 	 */
@@ -43,20 +41,17 @@ public final class ThreadLocalPool<T> extends AbstractPool<T> {
 		public State<T> create(Map<String, Object> params) {
 			final State<T> state = new State<T>(factory.create(params));
 			logger.debug("Factory create "+state.t.hashCode()+" Thread "+Thread.currentThread().hashCode());
-//			System.out.println("Factory create "+c.t.hashCode()+" Thread "+Thread.currentThread().hashCode());
 			return state;
 		}
 	}  , -1);
 	
-//	private final ThreadLocal<LinkedRef<T>> threadlocals = new ThreadLocal<LinkedRef<T>>();
-	
-
 	/* (non-Javadoc)
 	 * @see org.arivu.pool.AbstractPool#close()
 	 */
 	@Override
 	public void close() throws Exception {
-		clear();
+		super.close();
+		threadlocals.close();
 	}
 
 	/* (non-Javadoc)
@@ -66,10 +61,9 @@ public final class ThreadLocalPool<T> extends AbstractPool<T> {
 	public T get(Map<String, Object> params) {
 		State<T> lr = threadlocals.get(params);
 		if(lr==null){
-			lr = createNew(params, true);
+			lr = createNew(params);
 			threadlocals.set(lr);
 		}
-//		LinkedRef<T> lr = threadlocals.get(params);
 		return getProxyLinked(lr);
 	}
 
@@ -86,41 +80,10 @@ public final class ThreadLocalPool<T> extends AbstractPool<T> {
 	 */
 	@Override
 	void releaseLink(State<T> state) {
-//		logger.debug("release "+ref.t.hashCode());
 		if( state!=null && state.checkExp(1, this) ){
-//			logger.debug("releaseLink close "+ref.t.hashCode()+" Thread "+Thread.currentThread().hashCode());
 			threadlocals.remove();
-//			logger.debug("releaseLink close After remove Thread "+Thread.currentThread().hashCode());
-			factory.close(state.t);
-			
-			list.remove(state);
-//			LinkedReference<T> search = head.search(ref.state.t);
-//			if(search!=null){
-//				search.remove();
-//			}
-			
-//			LinkedRef<T> linkedReference = threadlocals.get();
-//			if( linkedReference != null )
-//				logger.debug("releaseLink close After close Thread "+Thread.currentThread().hashCode()+" get "+linkedReference.t.hashCode());
-//			else
-//				logger.debug("releaseLink close After close Thread "+Thread.currentThread().hashCode()+" get null");
-			
+			closeExpConn(state);
 		}
-	}
-
-	/* (non-Javadoc)
-	 * @see org.arivu.pool.AbstractPool#clear()
-	 */
-	@Override
-	public void clear() {
-		clearHead();
-//		super.clear();
-//		Collection<LinkedRef<T>> all = threadlocals.getAll();
-//		threadlocals.clearAll();
-//		for( LinkedRef<T> lr:all ){
-//			logger.debug("close "+lr.t.hashCode());
-//			factory.close(lr.t);
-//		}
 	}
 
 	/* (non-Javadoc)

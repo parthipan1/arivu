@@ -5,6 +5,8 @@ package org.arivu.pool;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.arivu.datastructure.DoublyLinkedList;
+
 /**
  * @author P
  *
@@ -48,6 +50,7 @@ final class State<T> {
 	 */
 	T proxy;
 	
+	DoublyLinkedList<State<T>> dll = null;
 	public State(T t) {
 		super();
 		this.t = t;
