@@ -253,7 +253,12 @@ abstract class AbstractPool<T> implements Pool<T> {
 
 	}
 
-	private void removeExpired(final DoublyLinkedList<State<T>> expired) {
+	/**
+	 * Remove expired resources from the pool.
+	 * 
+	 * @param expired
+	 */
+	void removeExpired(final DoublyLinkedList<State<T>> expired) {
 		if (!expired.isEmpty()) {
 			list.removeAll(expired);
 			for (final State<T> es : expired)
@@ -262,7 +267,9 @@ abstract class AbstractPool<T> implements Pool<T> {
 	}
 
 	/**
-	 * @return
+	 * Block call if the resources are not enough.
+	 * 
+	 * @return blockFlag
 	 */
 	boolean blockOnGet() {
 		notEnough.awaitUninterruptibly();
@@ -270,6 +277,7 @@ abstract class AbstractPool<T> implements Pool<T> {
 	}
 
 	/**
+	 * Once a resource is available to consume, then release a waiting consumer.
 	 * 
 	 */
 	void signalOnRelease() {
@@ -284,8 +292,10 @@ abstract class AbstractPool<T> implements Pool<T> {
 	}
 
 	/**
+	 * Create a new Resource delegate to Factory create method. All the resource will be tracked.
+	 * 
 	 * @param params
-	 * @return
+	 * @return State
 	 */
 	final State<T> createNew(final Map<String, Object> params) {
 		final T create = factory.create(params);
@@ -298,6 +308,8 @@ abstract class AbstractPool<T> implements Pool<T> {
 	}
 
 	/**
+	 * Put back a resource released by the application. 
+	 * 
 	 * @param t
 	 */
 	@Override
@@ -346,7 +358,7 @@ abstract class AbstractPool<T> implements Pool<T> {
 	}
 
 	/**
-	 * 
+	 * Clear all available resources.
 	 */
 	@Override
 	public void clear() {
@@ -357,20 +369,9 @@ abstract class AbstractPool<T> implements Pool<T> {
 		list.clear();
 	}
 
-//	/**
-//	 * 
-//	 */
-//	final void clearHead() {
-//		State<T> state = null;
-//		while ((state = list.poll()) != null) {
-//			closeExpConn(state);
-//		}
-//		list.clear();
-//	}
-
 	/**
-	 * @param t
-	 * @return
+	 * @param state
+	 * @return tObject
 	 */
 	@SuppressWarnings("unchecked")
 	final T getProxyLinked(final State<T> state) {
@@ -416,7 +417,9 @@ abstract class AbstractPool<T> implements Pool<T> {
 	}
 
 	/**
-	 * @param ref
+	 * Release a resource back to the pool, which was just used.
+	 * 
+	 * @param state
 	 */
 	void releaseLink(final State<T> state) {
 		final boolean checkExp = state.checkExp(list.size(), this);// checkExp(lr.t);
@@ -433,7 +436,7 @@ abstract class AbstractPool<T> implements Pool<T> {
 	}
 
 	/**
-	 * @param lr
+	 * @param state
 	 */
 	final void closeExpConn(final State<T> state) {
 		if (state != null) {
