@@ -6,9 +6,11 @@ package org.arivu.nioserver;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.channels.SelectionKey;
@@ -30,6 +32,7 @@ import java.util.concurrent.Executors;
 import org.arivu.datastructure.Amap;
 import org.arivu.nioserver.Request.Method;
 import org.arivu.utils.Env;
+import org.arivu.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +83,7 @@ public class Server {
 
 	private static void stopRemote() {
 		String url = "http://" + DEFAULT_HOST + ":" + DEFAULT_PORT + Configuration.stopUri;
-//		System.out.println("req::"+url);
+		// System.out.println("req::"+url);
 		BufferedReader in = null;
 		try {
 			final HttpURLConnection con = (HttpURLConnection) new URL(url).openConnection();
@@ -97,7 +100,7 @@ public class Server {
 			// System.out.println(" responseCode :: "+responseCode+" response ::
 			// "+response.toString());
 		} catch (Throwable e) {
-//			 e.printStackTrace();
+			// e.printStackTrace();
 			System.err.println(e.toString());
 		} finally {
 			if (in != null)
@@ -219,7 +222,7 @@ final class Connection {
 						selector = null;
 						new ConsoleRequestHandler().handle(parse, new Response(parse, socketChannel));
 					}
-				} catch (Exception e) {
+				} catch (Throwable e) {
 					e.printStackTrace();
 				}
 			}
@@ -230,6 +233,7 @@ final class Connection {
 }
 
 final class RequestParser {
+	private static final String ENC_UTF_8 = "UTF-8";
 	private static final byte BYTE_13 = (byte) 13;
 	private static final byte BYTE_10 = (byte) 10;
 	static final String divider = System.lineSeparator() + System.lineSeparator();
@@ -246,12 +250,12 @@ final class RequestParser {
 			}
 		}
 
-		String metadata = null; 
+		String metadata = null;
 		String body = null;
-		
-		if( indexOf==-1 ){
+
+		if (indexOf == -1) {
 			metadata = content;
-		}else{
+		} else {
 			metadata = content.substring(0, indexOf - 1);
 			body = content.substring(indexOf);
 		}
@@ -260,6 +264,7 @@ final class RequestParser {
 
 		String[] split2 = split[0].split(" ");
 
+		// System.out.println("REQ METHOD :: "+split2[0]);
 		Method valueOf = Request.Method.valueOf(split2[0]);
 		if (valueOf == null)
 			throw new IllegalArgumentException("Unknown Request " + metadata);
@@ -278,36 +283,49 @@ final class RequestParser {
 		}
 
 		int indexOf3 = uri.indexOf("?");
-		Map<String, Collection<String>> tempparams = new HashMap<String, Collection<String>>();
-
+		Map<String, Collection<String>> tempparams = null;
 		if (indexOf3 > 0) {
-			String uriparams = uri.substring(indexOf3+1);
-			String[] split3 = uriparams.split("&");
-			for (String p : split3) {
-				int indexOf2 = p.indexOf("=");
-				if (indexOf2 == -1) {
-					Collection<String> collection = tempparams.get(p);
+			tempparams = parseParams(uri.substring(indexOf3 + 1));
+		}
+		return new Request(valueOf, uri, protocol, tempparams, Utils.unmodifiableMap(tempheaders), body);
+	}
+
+	Map<String, Collection<String>> parseParams(String uriparams) {
+		Map<String, Collection<String>> tempparams = new HashMap<String, Collection<String>>();
+		String[] split3 = uriparams.split("&");
+		for (String p : split3) {
+			int indexOf2 = p.indexOf("=");
+			if (indexOf2 == -1) {
+				Collection<String> collection = tempparams.get(p);
+				if (collection == null) {
+					collection = new ArrayList<String>();
+				}
+				try {
+					tempparams.put(URLDecoder.decode(p, ENC_UTF_8), collection);
+				} catch (UnsupportedEncodingException e1) {
+					e1.printStackTrace();
+				}
+			} else {
+				String key = p.substring(0, indexOf2);
+				String value = p.substring(indexOf2 + 1);
+				try {
+					String decodeKey = URLDecoder.decode(key, ENC_UTF_8);
+					Collection<String> collection = tempparams.get(decodeKey);
 					if (collection == null) {
 						collection = new ArrayList<String>();
+						tempparams.put(decodeKey, collection);
 					}
-					tempparams.put(p, collection);
-				} else {
-					String key = p.substring(0, indexOf2);
-					String value = p.substring(indexOf2 + 1);
-					Collection<String> collection = tempparams.get(key);
-					if (collection == null) {
-						collection = new ArrayList<String>();
-					}
-					collection.add(value);
-					tempparams.put(key, collection);
+					collection.add(URLDecoder.decode(value, ENC_UTF_8));
+				} catch (UnsupportedEncodingException e1) {
+					e1.printStackTrace();
 				}
 			}
-			for (Entry<String, Collection<String>> e : tempparams.entrySet()) {
-				e.setValue(Collections.unmodifiableCollection(e.getValue()));
-			}
+
 		}
-		return new Request(valueOf, uri, protocol, Collections.unmodifiableMap(tempparams),
-				Collections.unmodifiableMap(tempheaders), body);
+		for (Entry<String, Collection<String>> e : tempparams.entrySet()) {
+			e.setValue(Collections.unmodifiableCollection(e.getValue()));
+		}
+		return Utils.unmodifiableMap(tempparams);
 	}
 }
 
