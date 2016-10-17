@@ -246,8 +246,15 @@ final class RequestParser {
 			}
 		}
 
-		String metadata = content.substring(0, indexOf - 1);
-		String body = content.substring(indexOf);
+		String metadata = null; 
+		String body = null;
+		
+		if( indexOf==-1 ){
+			metadata = content;
+		}else{
+			metadata = content.substring(0, indexOf - 1);
+			body = content.substring(indexOf);
+		}
 
 		String[] split = metadata.split(System.lineSeparator());
 
@@ -274,7 +281,7 @@ final class RequestParser {
 		Map<String, Collection<String>> tempparams = new HashMap<String, Collection<String>>();
 
 		if (indexOf3 > 0) {
-			String uriparams = uri.substring(indexOf3);
+			String uriparams = uri.substring(indexOf3+1);
 			String[] split3 = uriparams.split("&");
 			for (String p : split3) {
 				int indexOf2 = p.indexOf("=");

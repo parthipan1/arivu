@@ -221,7 +221,9 @@ public final class Consumer<T> implements AutoCloseable {
 				}
 			}
 		}
-		write(sb.toString());
+		if (sb.length()>0) {
+			write(sb.toString());
+		}
 	}
 
 	/**
