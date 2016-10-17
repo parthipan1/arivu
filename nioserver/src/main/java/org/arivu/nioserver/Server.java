@@ -12,14 +12,19 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.arivu.datastructure.Amap;
+import org.arivu.nioserver.Request.Method;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,15 +84,15 @@ public class Server {
 		Map<String, String> properties = new HashMap<String, String>();
 		properties.put(channelType, serverChannel);
 		socketServerSelectionKey.attach(properties);
-//		logger.debug("Created SelectionKey!");
+		// logger.debug("Created SelectionKey!");
 		while (!shutdown) {
-//			logger.debug("shutdown loop!");
+			// logger.debug("shutdown loop!");
 			if (selector.select() == 0)
 				continue;
-			
+
 			// the select method returns with a list of selected keys
 			Set<SelectionKey> selectedKeys = selector.selectedKeys();
-//			logger.debug("get selectedKeys!");
+			// logger.debug("get selectedKeys!");
 			Iterator<SelectionKey> iterator = selectedKeys.iterator();
 			while (iterator.hasNext()) {
 				SelectionKey key = iterator.next();
@@ -96,7 +101,7 @@ public class Server {
 					ServerSocketChannel serverSocketChannel = (ServerSocketChannel) key.channel();
 					SocketChannel clientSocketChannel = serverSocketChannel.accept();
 					Integer reqId = clientSocketChannel.socket().hashCode();
-//					logger.debug("write channel! " + reqId);
+					// logger.debug("write channel! " + reqId);
 					if (clientSocketChannel != null) {
 						// set the client connection to be non blocking
 						clientSocketChannel.configureBlocking(false);
@@ -113,7 +118,7 @@ public class Server {
 					ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
 					SocketChannel clientSocketChannel = (SocketChannel) key.channel();
 					Integer reqId = clientSocketChannel.socket().hashCode();
-//					logger.debug("read channel! " + reqId);
+					// logger.debug("read channel! " + reqId);
 					int bytesRead = 0;
 					if (key.isReadable()) {
 						if ((bytesRead = clientSocketChannel.read(buffer)) > 0) {
@@ -124,12 +129,12 @@ public class Server {
 							getRequest(reqId).read(decode);
 							buffer.clear();
 						}
-//						logger.debug("bytesRead " + bytesRead);
+						// logger.debug("bytesRead " + bytesRead);
 						if (bytesRead < BUFFER_SIZE) {
 							Session remove = SESSIONS.remove(reqId);
-							if( remove != null )
+							if (remove != null)
 								remove.process();
-							
+
 						}
 					}
 
@@ -170,14 +175,15 @@ final class Session {
 			@Override
 			public void run() {
 				try {
-					CharBuffer buffer = CharBuffer.wrap("Hello client " + System.currentTimeMillis());
-					while (buffer.hasRemaining()) {
-						socketChannel.write(Charset.defaultCharset().encode(buffer));
-					}
-					buffer.clear();
-					socketChannel.close();
-					logger.debug("got :: " + inBuffer.toString());
-				} catch (IOException e) {
+				new ConsoleRequestHandler().handle(new RequestParser().parse(inBuffer),new Response(socketChannel));
+//					CharBuffer buffer = CharBuffer.wrap("Hello client " + System.currentTimeMillis());
+//					while (buffer.hasRemaining()) {
+//						socketChannel.write(Charset.defaultCharset().encode(buffer));
+//					}
+//					buffer.clear();
+//					socketChannel.close();
+//					logger.debug("got :: " + inBuffer.toString());
+				} catch (Exception e) {
 					e.printStackTrace();
 				}
 			}
@@ -187,8 +193,93 @@ final class Session {
 
 }
 
-final class RequestParser{
-	Request parse(StringBuffer buffer){
-		return null;
+final class RequestParser {
+	private static final byte BYTE_13 = (byte)13;
+	private static final byte BYTE_10 = (byte)10;
+	static final String divider = System.lineSeparator() + System.lineSeparator();
+
+	Request parse(final StringBuffer buffer) {
+		String content = buffer.toString();
+		byte[] bytes = content.getBytes();
+		int indexOf = -1;
+		for(int i=3;i<bytes.length;i++){
+			boolean c1 = bytes[i] == bytes[i-2];
+			boolean c2 = bytes[i] == BYTE_10;
+			boolean c3 = bytes[i-1] == bytes[i-3];
+			boolean c4 = bytes[i-1] == BYTE_13;
+			boolean b = c1 && c2  &&
+				c3 && c4;
+			System.out.println("bytes["+i+"] %"+bytes[i]+"% b "+b+" c1 "+c1+" c2 "+c2+" c3 "+c3+" c4 "+c4);
+			if( b ){
+				indexOf = i;
+				break;
+			}
+		}
+//		int indexOf = content.indexOf(divider);
+		System.out.println();
+		String metadata = content.substring(0, indexOf - 1);
+		String body = content.substring(indexOf);
+		// POST /snw/apps/sync HTTP/1.1
+
+		String[] split = metadata.split(System.lineSeparator());
+
+		String[] split2 = split[0].split(" ");
+
+		Method valueOf = Request.Method.valueOf(split2[0]);
+		if (valueOf == null)
+			throw new IllegalArgumentException("Unknown Request " + metadata);
+		String uri = split2[1];
+		String protocol = split2[2];
+
+		Map<String, String> tempheaders = new HashMap<String, String>();
+		for (int i = 1; i < split.length; i++) {
+			String h = split[i];
+			int indexOf2 = h.indexOf(": ");
+			if (indexOf2 == -1) {
+				tempheaders.put(h, "");
+			} else {
+				tempheaders.put(h.substring(0, indexOf2), h.substring(indexOf2 + 2));
+			}
+		}
+
+		String uriparams = uri.substring(uri.indexOf("?"));
+		Map<String, Collection<String>> tempparams = new HashMap<String, Collection<String>>();
+		String[] split3 = uriparams.split("&");
+		for (String p : split3) {
+			int indexOf2 = p.indexOf("=");
+			if (indexOf2 == -1) {
+				Collection<String> collection = tempparams.get(p);
+				if (collection == null) {
+					collection = new ArrayList<String>();
+				}
+				tempparams.put(p, collection);
+			} else {
+				String key = p.substring(0, indexOf2);
+				String value = p.substring(indexOf2 + 1);
+				Collection<String> collection = tempparams.get(key);
+				if (collection == null) {
+					collection = new ArrayList<String>();
+				}
+				collection.add(value);
+				tempparams.put(key, collection);
+			}
+		}
+
+		for (Entry<String, Collection<String>> e : tempparams.entrySet()) {
+			e.setValue(Collections.unmodifiableCollection(e.getValue()));
+		}
+
+		return new Request(valueOf, uri, protocol, Collections.unmodifiableMap(tempparams),
+				Collections.unmodifiableMap(tempheaders), body);
 	}
+}
+final class ConsoleRequestHandler implements RequestHandler{
+
+	@Override
+	public void handle(Request req, Response res) throws Exception {
+		System.out.println(req.toString());
+		res.append("Ok");
+		res.close();
+	}
+	
 }

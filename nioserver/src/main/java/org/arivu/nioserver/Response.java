@@ -1,8 +1,10 @@
 package org.arivu.nioserver;
 
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 public class Response implements AutoCloseable {
 
@@ -42,7 +44,15 @@ public class Response implements AutoCloseable {
 
 	@Override
 	public void close() throws Exception {
+		final StringBuffer responseBody = new StringBuffer();
 		
+		for(Entry<String, String> e:headers.entrySet()){
+			responseBody.append(e.getKey()).append(": ").append(e.getValue()).append(System.lineSeparator());
+		}
+		responseBody.append(System.lineSeparator());
+		responseBody.append(body);
+		
+		this.socketChannel.write(ByteBuffer.wrap(responseBody.toString().getBytes()));
 		this.socketChannel.close();
 	}
 	
