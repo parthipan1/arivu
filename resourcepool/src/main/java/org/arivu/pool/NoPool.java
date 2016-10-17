@@ -10,7 +10,9 @@ import org.arivu.datastructure.DoublyLinkedList;
  * @param <T>
  */
 public final class NoPool<T> extends AbstractPool<T> {
-
+	
+	final DoublyLinkedList<T> nolist = new DoublyLinkedList<T>(cas);
+	
 	/**
 	 * @param factory
 	 * @param klass
@@ -36,7 +38,9 @@ public final class NoPool<T> extends AbstractPool<T> {
 	 */
 	@Override
 	public T get(final Map<String, Object> params) {
-		return getProxyLinked(createNew(params));
+		T create = factory.create(params);
+		nolist.add(create);
+		return (create);
 	}
 
 	/*
@@ -48,30 +52,59 @@ public final class NoPool<T> extends AbstractPool<T> {
 	public void put(T t) {
 		if (t != null) {
 			logger.debug("close " + t.hashCode());
-			@SuppressWarnings("unchecked")
-			DoublyLinkedList<State<T>> dll = (DoublyLinkedList<State<T>>) list.getBinaryTree()
-					.get(DoublyLinkedList.get(new State<T>(t)));
-			if (dll != null) {
-				State<T> state = dll.removeRef();
-				factory.close(state.t);
-				state.proxy = null;
-			 }
+			factory.close(t);
+			nolist.remove(t);
 		}
 	}
 
-	/*
-	 * (non-Javadoc)
+//	/**
+//	 * @param t
+//	 * @return
+//	 */
+//	@SuppressWarnings("unchecked")
+//	final T getProxy(final T created) {
+//		if (created == null)
+//			return null;
+//		if (created instanceof AutoCloseable) {
+//			logger.debug("reuse resource! " + created.hashCode());
+//			return (T) Proxy.newProxyInstance(klass.getClassLoader(), new Class[] { klass }, new InvocationHandler() {
+//
+//				@Override
+//				public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable {
+//					final String methodName = method.getName();
+//					logger.debug("Proxy methodName :: " + methodName + " " + created.hashCode());
+//					if ("close".equals(methodName)) {
+//						put(created);
+//						return Void.TYPE;
+//					} else if ("toString".equals(methodName)) {
+//						return created.toString();
+//					} else {
+//						return method.invoke(created, args);
+//					}
+//				}
+//
+//			});
+//		} else {
+//			logger.debug("reuse resource! " + created.hashCode());
+//			return created;
+//		}
+//	}
+
+	@Override
+	public int getMaxPoolSize() {
+		return nolist.size();
+	}
+	
+	/**
 	 * 
-	 * @see
-	 * org.arivu.pool.AbstractPool#releaseLink(org.arivu.pool.LinkedReference)
 	 */
 	@Override
-	void releaseLink(final State<T> state) {
-		if (state != null) {
-			logger.debug("close " + state.t.hashCode());
-			factory.close(state.t);
-			list.remove(state);
+	public void clear() {
+		T t = null;
+		while ((t = nolist.poll()) != null) {
+			logger.debug("close " + t.hashCode());
+			factory.close(t);
 		}
+		nolist.clear();
 	}
-
 }

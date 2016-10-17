@@ -350,19 +350,23 @@ abstract class AbstractPool<T> implements Pool<T> {
 	 */
 	@Override
 	public void clear() {
-		clearHead();
-	}
-
-	/**
-	 * 
-	 */
-	final void clearHead() {
 		State<T> state = null;
 		while ((state = list.poll()) != null) {
 			closeExpConn(state);
 		}
 		list.clear();
 	}
+
+//	/**
+//	 * 
+//	 */
+//	final void clearHead() {
+//		State<T> state = null;
+//		while ((state = list.poll()) != null) {
+//			closeExpConn(state);
+//		}
+//		list.clear();
+//	}
 
 	/**
 	 * @param t
@@ -452,7 +456,7 @@ abstract class AbstractPool<T> implements Pool<T> {
 	 * @see org.arivu.pool.Pool#getMaxPoolSize()
 	 */
 	@Override
-	public final int getMaxPoolSize() {
+	public int getMaxPoolSize() {
 		return this.list.size();
 	}
 
