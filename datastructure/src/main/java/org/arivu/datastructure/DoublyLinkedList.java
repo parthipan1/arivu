@@ -360,6 +360,16 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 		}
 	}
 
+	public DoublyLinkedList<T> addList(T e) {
+		if (e != null) {
+			DoublyLinkedList<T> l = new DoublyLinkedList<T>(e, size, compareStrategy, cas, binaryTree, this.dupTree);
+			addLeft(l);
+			return l;
+		} else {
+			return null;
+		}
+	}
+	
 	@Override
 	public boolean remove(Object o) {
 		DoublyLinkedList<T> search = null;

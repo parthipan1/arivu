@@ -34,8 +34,8 @@ public final class Btree implements Serializable {
 	private final int height;
 	private final int baseMask;
 	final int order;
-	// final Lock cas;
-	// final Lock[] locks;
+//	final Lock cas;
+	 final Lock[] locks;
 	private final CompareStrategy compareStrategy;
 
 	// volatile int size = 0;
@@ -95,11 +95,11 @@ public final class Btree implements Serializable {
 		this.baseMask = (order - 1);
 		this.compareStrategy = compareStrategy;
 		this.root = new Object[order];
-		// this.cas = lock;
-		// this.locks = new Lock[order];
-		// for(int i=0;i<order;i++){
-		// this.locks[i] = new AtomicWFReentrantLock();
-		// }
+//		this.cas = lock;
+		this.locks = new Lock[order];
+		for (int i = 0; i < order; i++) {
+			this.locks[i] = new AtomicWFReentrantLock();
+		}
 	}
 
 	int[] getPathObj(final Object obj) {
@@ -357,11 +357,12 @@ public final class Btree implements Serializable {
 	}
 
 	boolean addObj(final Object obj, final int[] arr) {
-		// final Lock l = this.locks[arr[0]];//cas;
-		// l.lock();
-		final LinkedRef nodes = new LinkedRef(compareStrategy);
+		 final Lock l = this.locks[arr[0]];//cas;//
+		 l.lock();
+//		final LinkedRef nodes = new LinkedRef(compareStrategy);
+		
 		Object[] n = root;
-		nodes.addObj(n);
+//		nodes.addObj(n);
 		for (int i = 0; i <= arr.length - 2; i++) {
 			Object[] n1 = (Object[]) n[arr[i]];
 			if (n1 == null) {
@@ -369,9 +370,9 @@ public final class Btree implements Serializable {
 				n[arr[i]] = n1;
 			}
 			n = n1;
-			nodes.addObj(n);
+//			nodes.addObj(n);
 		}
-
+		l.unlock();
 		Object[] ref = (Object[]) n[arr[arr.length - 1]];
 		if (ref == null) {
 			ref = new Object[1];
@@ -426,10 +427,10 @@ public final class Btree implements Serializable {
 		if (search == null) {
 			return null;
 		} else {
-			// final Lock l = this.locks[arr[0]];//cas;
-			// l.lock();
 			// try{
 			if (getSize(ref) == 0) {
+				final Lock l = this.locks[arr[0]];//cas;//
+				l.lock();
 				int c = 0;
 				LinkedRef cref = nodes.left;
 				while (cref != null && cref.obj != null && cref != nodes) {
@@ -443,11 +444,11 @@ public final class Btree implements Serializable {
 
 					cref = cref.left;
 				}
+				l.unlock();
 			}
 			// size--;
 			size.decrementAndGet();
 			// }finally{
-			// l.unlock();
 			// }
 		}
 
