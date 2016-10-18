@@ -4,8 +4,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.nio.channels.SocketChannel;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
@@ -147,19 +149,19 @@ public class PackageScanner {
 				if (path != null) {
 					try {
 						String uri = path.value();
-//						String method2 = path.method();
-//						if (!NullCheck.isNullOrEmpty(method2)) {
-							Request.Method httpMethod = path.method();//Request.Method.valueOf(method2.toUpperCase(Locale.ENGLISH));
-							if (!NullCheck.isNullOrEmpty(uri) && httpMethod != null) {
-								RequestPath e = new RequestPath(uri, httpMethod, clazz, method);
-								boolean add = reqPaths.add(e);
-								if (add) {
-									logger.info("Discovered request handler :: " + clazz.getName()+" method "+method.getName());
-								} else {
-									logger.info("Duplicate request handler discovered ignoring :: " + clazz.getName()+" method "+method.getName());
-								}
-							} 
-//						}
+						Request.Method httpMethod = path.method();
+						if (!NullCheck.isNullOrEmpty(uri) && httpMethod != null) {
+							boolean isStatic = Modifier.isStatic(method.getModifiers());
+							RequestPath e = new RequestPath(uri, httpMethod, clazz, method, isStatic);
+							boolean add = reqPaths.add(e);
+							if (add) {
+								logger.info("Discovered request handler :: " + clazz.getName() + " method "
+										+ method.getName());
+							} else {
+								logger.info("Duplicate request handler discovered ignoring :: " + clazz.getName()
+										+ " method " + method.getName());
+							}
+						}
 					} catch (IllegalArgumentException e) {
 						e.printStackTrace();
 					}
@@ -170,31 +172,34 @@ public class PackageScanner {
 	}
 }
 
-final class RequestPath {
+class RequestPath {
 	final String uri;
 	final Request.Method httpMethod;
 	final Class<?> klass;
 	final Method method;
+	final boolean isStatic;
+	final Threadlocal<Object> tl;
 
-	final Threadlocal<Object> tl; 
-	
-	RequestPath(String uri, org.arivu.nioserver.Request.Method httpMethod){
-		this(uri, httpMethod, null, null);
+	RequestPath(String uri, org.arivu.nioserver.Request.Method httpMethod) {
+		this(uri, httpMethod, null, null, false);
 	}
+
 	/**
 	 * @param uri
 	 * @param httpMethod
 	 * @param klass
 	 * @param method
 	 */
-	RequestPath(String uri, org.arivu.nioserver.Request.Method httpMethod, Class<?> klass, Method method) {
+	RequestPath(String uri, org.arivu.nioserver.Request.Method httpMethod, Class<?> klass, Method method,
+			boolean isStatic) {
 		super();
 		this.uri = uri;
 		this.httpMethod = httpMethod;
 		this.klass = klass;
 		this.method = method;
-		if(klass!=null){
-			this.tl = new Threadlocal<Object>(new Threadlocal.Factory<Object>(){
+		this.isStatic = isStatic;
+		if (klass != null) {
+			this.tl = new Threadlocal<Object>(new Threadlocal.Factory<Object>() {
 
 				@Override
 				public Object create(Map<String, Object> params) {
@@ -206,16 +211,24 @@ final class RequestPath {
 						e.printStackTrace();
 					}
 					return null;
-				}}, -1); 
-		}else{
+				}
+			}, -1);
+		} else {
 			this.tl = null;
 		}
 	}
 
-	public void handle(Request req, Response res) throws Exception {
-		method.invoke(tl.get(null), req, res);
+	Response getResponse(Request req,SocketChannel socketChannel){
+		return new Response(req, socketChannel, Configuration.defaultResponseHeader);
 	}
 	
+	public void handle(Request req, Response res) throws Exception {
+		if (isStatic)
+			method.invoke(null, req, res);
+		else
+			method.invoke(tl.get(null), req, res);
+	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -244,4 +257,49 @@ final class RequestPath {
 		return true;
 	}
 
+}
+
+class ProxyRequestPath extends RequestPath{
+
+	String name;
+	String proxy_pass;
+	Map<String, Object> defaultResponseHeader;
+	/**
+	 * @param uri
+	 * @param httpMethod
+	 * @param klass
+	 * @param method
+	 * @param isStatic
+	 */
+	ProxyRequestPath(String name,String proxy_pass,String uri, org.arivu.nioserver.Request.Method httpMethod, Class<?> klass, Method method,
+			boolean isStatic,Map<String, Object> defaultResponseHeader) {
+		super(uri, httpMethod, klass, method, isStatic);
+		this.name = name;
+		this.proxy_pass = proxy_pass;
+		this.defaultResponseHeader = defaultResponseHeader;
+	}
+
+	/**
+	 * @param uri
+	 * @param httpMethod
+	 */
+	ProxyRequestPath(String uri, org.arivu.nioserver.Request.Method httpMethod) {
+		super(uri, httpMethod);
+	}
+
+	@Override
+	public void handle(Request req, Response res) throws Exception {
+		super.handle(req, res);
+	}
+
+	@Override
+	Response getResponse(Request req, SocketChannel socketChannel) {
+		return new ProxyResponse(req, socketChannel, defaultResponseHeader);
+	}
+
+	@Override
+	public String toString() {
+		return "ProxyRequestPath [name=" + name + ", uri=" + uri + ", httpMethod=" + httpMethod + "]";
+	}
+	
 }

@@ -105,6 +105,10 @@ public final class Ason {
 		return deflt;
 	}
 	
+	public static String getStr(Map<String, Object> json,String token,Map<String,Object> deflt){
+		return (String) get(json, token, deflt);
+	}
+	
 	@SuppressWarnings("unchecked")
 	public static Map<String,Object> getObj(Map<String, Object> json,String token,Map<String,Object> deflt){
 		return (Map<String, Object>) get(json, token, deflt);

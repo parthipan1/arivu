@@ -42,13 +42,13 @@ import org.slf4j.LoggerFactory;
  */
 public class Server {
 
-	private static final String DEFAULT_HOST = Env.getEnv("host", "localhost");
+	static final String DEFAULT_HOST = Env.getEnv("host", "localhost");
 
 	private static final int BUFFER_SIZE = 1024;
 
 	private static final Logger logger = LoggerFactory.getLogger(Server.class);
 
-	private static final int DEFAULT_PORT = Integer.parseInt(Env.getEnv("port", "8080"));
+	static final int DEFAULT_PORT = Integer.parseInt(Env.getEnv("port", "8080"));
 
 	private static volatile boolean shutdown = false;
 
@@ -114,6 +114,7 @@ public class Server {
 	}
 
 	private static Selector selector = null;
+
 	private static void start(String[] args) throws IOException {
 		ServerSocketChannel channel = ServerSocketChannel.open();
 
@@ -218,8 +219,8 @@ final class Connection {
 				try {
 					final Request req = new RequestParser().parse(inBuffer);
 					RequestPath requestPath = Request.get(Configuration.requestPaths, req);
-					if(requestPath!=null){
-						requestPath.handle(req, new Response(req, socketChannel));
+					if (requestPath != null) {
+						requestPath.handle(req,  requestPath.getResponse(req, socketChannel) );
 					}
 				} catch (Throwable e) {
 					e.printStackTrace();
@@ -328,18 +329,18 @@ final class RequestParser {
 	}
 }
 
-final class ConsoleRequestHandler {
+final class DefaultRequestHandler {
+	private static final Logger logger = LoggerFactory.getLogger(DefaultRequestHandler.class);
 
-	@Path(value="/*",method=Request.Method.ALL)
-	public void handle(Request req, Response res) throws Exception {
-		System.out.println(req.toString());
+	@Path(value = "/*", method = Request.Method.ALL)
+	static public void handle(Request req, Response res) throws Exception {
+		logger.debug(req.toString());
 		res.setResponseCode(404);
 		res.close();
 	}
 
-	@Path(value=Configuration.stopUri,method=Request.Method.GET)
-	public void stop(Request req, Response res) throws Exception {
-		System.out.println(req.toString());
+	@Path(value = Configuration.stopUri, method = Request.Method.GET)
+	static public void stop(Request req, Response res) throws Exception {
 		res.setResponseCode(200);
 		res.close();
 		Server.stop();
