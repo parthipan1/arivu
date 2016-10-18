@@ -78,6 +78,10 @@ public final class Request {
 					df = rq;
 				else if(rq.uri.equals(req.uri))
 					return rq;
+				else if( rq instanceof ProxyRequestPath && req.uri.startsWith(rq.uri) )
+					return rq;
+			}else if( rq.httpMethod == Method.GET && rq instanceof ProxyRequestPath && req.uri.startsWith(rq.uri)  ){
+				return rq;
 			}
 		}
 		return df;

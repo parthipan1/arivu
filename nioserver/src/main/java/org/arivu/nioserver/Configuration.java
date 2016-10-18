@@ -45,12 +45,12 @@ public final class Configuration {
 			Map<String, Object> header = (Map<String, Object>) Ason.getObj(proxy, "header", null);
 			String proxy_pass = Ason.getStr(proxy, "proxy_pass", null);
 			if (proxy_pass != null) {
-				proxy_pass = proxy_pass.replaceAll("$host", Server.DEFAULT_HOST);
-				proxy_pass = proxy_pass.replaceAll("$port", String.valueOf(Server.DEFAULT_PORT));
+				proxy_pass = Utils.replaceAll(proxy_pass, "$host", Server.DEFAULT_HOST) ;
+				proxy_pass = Utils.replaceAll(proxy_pass, "$port", String.valueOf(Server.DEFAULT_PORT)) ;
 			}
 			String dir = Ason.getStr(proxy, "dir", null);
 			if (dir != null) {
-				dir = dir.replaceAll("$home", new File(".").getAbsolutePath() );
+				dir =  Utils.replaceAll(dir, "$home", new File(".").getAbsolutePath()) ;
 			}
 			ProxyRequestPath prp = new ProxyRequestPath(name, proxy_pass, dir, Ason.getStr(proxy, "location", null),
 					httpMethod, null, null, false, header);

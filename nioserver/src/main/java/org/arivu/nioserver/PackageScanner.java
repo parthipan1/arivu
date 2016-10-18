@@ -303,10 +303,18 @@ class ProxyRequestPath extends RequestPath{
 	public void handle(Request req, Response res) throws Exception {
 		if(!NullCheck.isNullOrEmpty(dir)){
 			// static
-			String file = req.uri.replaceFirst(this.uri, this.dir);
+//			String replaceAll = this.dir.replaceAll("$home", "." );
+//			System.out.println("static :: this.uri :: "+this.uri+" this.dir :: "+this.dir);
+			String file = this.dir+req.uri.substring(this.uri.length());
+//			String file = req.uri.replaceFirst(this.uri, this.dir);
+//			System.out.println("static :: "+file);
 			ByteBuffer bytes = files.getBytes(file);
-			res.append(bytes.asCharBuffer());
-			res.putHeader("Content-Length", bytes.array().length);
+			if(bytes==null){
+				bytes=files.addBytes(file);
+			}
+			byte[] array = bytes.array();
+			res.append(array);
+			res.putHeader("Content-Length", array.length);
 		}else{
 			// proxy
 			super.handle(req, res);

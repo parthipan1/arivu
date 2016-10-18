@@ -60,6 +60,10 @@ public class Response implements AutoCloseable {
 		return body.append(s);
 	}
 
+	public StringBuffer append(byte[] s) {
+		return body.append(s);
+	}
+	
 	@Override
 	public void close() throws Exception {
 		final StringBuffer responseBody = new StringBuffer();
