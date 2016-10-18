@@ -5,19 +5,55 @@ import java.util.Map;
 
 final class RequestImpl implements Request {
 
+	/**
+	 * 
+	 */
 	final Map<String,String> headers;
 	
+	/**
+	 * 
+	 */
 	final String uri;
+	
+	/**
+	 * 
+	 */
 	final String uriWithParams;
 	
+	/**
+	 * 
+	 */
 	final Map<String,Collection<String>> params ;
 	
+	/**
+	 * 
+	 */
 	final HttpMethod httpMethod;
 	
+	/**
+	 * 
+	 */
 	final String body;
 
+	/**
+	 * 
+	 */
 	final String protocol;
 	
+	/**
+	 * 
+	 */
+	final long startTime = System.currentTimeMillis();
+	
+	/**
+	 * @param httpMethod
+	 * @param uri
+	 * @param uriWithParams
+	 * @param protocol
+	 * @param params
+	 * @param headers
+	 * @param body
+	 */
 	RequestImpl(HttpMethod httpMethod, String uri, String uriWithParams, String protocol, Map<String, Collection<String>> params,
 			Map<String, String> headers, String body) {
 		super();
@@ -28,6 +64,22 @@ final class RequestImpl implements Request {
 		this.params = params;
 		this.headers = headers;
 		this.body = body;
+	}
+
+	/* (non-Javadoc)
+	 * @see org.arivu.nioserver.Request#getHttpMethod()
+	 */
+	@Override
+	public HttpMethod getHttpMethod() {
+		return httpMethod;
+	}
+
+	/* (non-Javadoc)
+	 * @see org.arivu.nioserver.Request#getStartTime()
+	 */
+	@Override
+	public long getStartTime() {
+		return startTime;
 	}
 
 	/* (non-Javadoc)

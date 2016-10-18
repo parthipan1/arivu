@@ -2,6 +2,8 @@ package org.arivu.nioserver;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -114,7 +116,8 @@ final class ResponseImpl implements Response {
 		else
 			responseBody.append(request.getProtocol()).append(" ").append(responseCode).append(" ").append(rescodetxt).append(System.lineSeparator());
 		
-		responseBody.append("Date: ").append(new Date().toString()).append(System.lineSeparator());
+		Date enddate = new Date();
+		responseBody.append("Date: ").append(enddate.toString()).append(System.lineSeparator());
 		
 		for (Entry<String, Object> e : headers.entrySet()) {
 			responseBody.append(e.getKey()).append(": ").append(e.getValue()).append(System.lineSeparator());
@@ -122,10 +125,17 @@ final class ResponseImpl implements Response {
 		responseBody.append(System.lineSeparator());
 		responseBody.append(body);
 
-		this.socketChannel.write(ByteBuffer.wrap(responseBody.toString().getBytes()));
+		byte[] bytes = responseBody.toString().getBytes();
+		this.socketChannel.write(ByteBuffer.wrap(bytes));
 		this.socketChannel.close();
+		
+		if(!request.getUri().equals(Configuration.stopUri)){
+			StringBuffer access = new StringBuffer();
+			access.append(dateFormat.format(new Date(request.getStartTime()))).append(" ").append(request.getUri()).append(" ").append(responseCode).append(" ").append(bytes.length).append(" ").append(dateFormat.format(enddate));
+			Server.accessLog.append(access.toString());
+		}
 	}
-
+	private final DateFormat dateFormat = new SimpleDateFormat("EEE MMM d hh:mm:ss.SSS yyyy");
 }
 //class ProxyResponse extends ResponseImpl{
 //

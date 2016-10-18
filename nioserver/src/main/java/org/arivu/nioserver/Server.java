@@ -4,6 +4,7 @@
 package org.arivu.nioserver;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
@@ -31,6 +32,8 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
 import org.arivu.datastructure.Amap;
+import org.arivu.log.Appender;
+import org.arivu.log.appender.Appenders;
 import org.arivu.utils.Env;
 import org.arivu.utils.NullCheck;
 import org.slf4j.Logger;
@@ -59,7 +62,7 @@ public class Server {
 
 	private static final Map<Integer, Connection> CONNECTIONS = new Amap<Integer, Connection>();
 
-	private static final Connection getRequest(Integer id, Selector selector) {
+	private static final Connection getRequest(Integer id) {
 		Connection connection = CONNECTIONS.get(id);
 		if (connection == null) {
 			connection = new Connection();
@@ -115,8 +118,11 @@ public class Server {
 
 	private static Selector selector = null;
 
+	static Appender accessLog = null;
+	
 	private static void start(String[] args) throws IOException {
 		registerMXBean();
+		accessLog = Appenders.file.get(Env.getEnv("access.log", ".."+File.separator+"logs"+File.separator+"access.log"));
 		ServerSocketChannel channel = ServerSocketChannel.open();
 
 		channel.bind(new InetSocketAddress(DEFAULT_HOST, DEFAULT_PORT));
@@ -153,7 +159,7 @@ public class Server {
 						Map<String, String> clientproperties = new HashMap<String, String>();
 						clientproperties.put(channelType, clientChannel);
 						clientKey.attach(clientproperties);
-						getRequest(reqId, selector).setOut(clientSocketChannel);
+						getRequest(reqId).setOut(clientSocketChannel);
 					}
 				} else {
 					ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
@@ -163,7 +169,7 @@ public class Server {
 					if (key.isReadable()) {
 						if ((bytesRead = clientSocketChannel.read(buffer)) > 0) {
 							buffer.flip();
-							getRequest(reqId, selector).read(Charset.defaultCharset().decode(buffer));
+							getRequest(reqId).read(Charset.defaultCharset().decode(buffer));
 							buffer.clear();
 						}
 						if (bytesRead < BUFFER_SIZE) {
@@ -188,6 +194,13 @@ public class Server {
 		}
 		exe.shutdownNow();
 		unregisterMXBean();
+		if(accessLog!=null){
+			try {
+				accessLog.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
 		logger.info("Server stopped!");
 	}
 	
