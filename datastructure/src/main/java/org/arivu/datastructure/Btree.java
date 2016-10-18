@@ -431,6 +431,7 @@ public final class Btree implements Serializable {
 			if (getSize(ref) == 0) {
 				final Lock l = this.locks[arr[0]];//cas;//
 				l.lock();
+				try{
 				int c = 0;
 				LinkedRef cref = nodes.left;
 				while (cref != null && cref.obj != null && cref != nodes) {
@@ -444,7 +445,9 @@ public final class Btree implements Serializable {
 
 					cref = cref.left;
 				}
-				l.unlock();
+				}finally{
+					l.unlock();
+				}
 			}
 			// size--;
 			size.decrementAndGet();
