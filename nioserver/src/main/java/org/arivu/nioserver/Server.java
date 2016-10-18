@@ -6,11 +6,9 @@ package org.arivu.nioserver;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.net.URL;
-import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.channels.SelectionKey;
@@ -18,21 +16,18 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.arivu.datastructure.Amap;
-import org.arivu.nioserver.Request.Method;
 import org.arivu.utils.Env;
-import org.arivu.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,7 +120,7 @@ public class Server {
 
 		selector = Selector.open();
 		final SelectionKey socketServerSelectionKey = channel.register(selector, SelectionKey.OP_ACCEPT);
-		Map<String, String> properties = new HashMap<String, String>();
+		Map<String, String> properties = new Amap<String, String>();
 		properties.put(channelType, serverChannel);
 		socketServerSelectionKey.attach(properties);
 		// logger.debug("Created SelectionKey!");
@@ -134,7 +129,7 @@ public class Server {
 			if (selector.select() == 0)
 				continue;
 
-			// the select method returns with a list of selected keys
+			// the select httpMethod returns with a list of selected keys
 			Set<SelectionKey> selectedKeys = selector.selectedKeys();
 			// logger.debug("get selectedKeys!");
 			Iterator<SelectionKey> iterator = selectedKeys.iterator();
@@ -189,6 +184,27 @@ public class Server {
 		exe.shutdownNow();
 		logger.info("Server stopped!");
 	}
+	
+	@Path(value = "/*", httpMethod = HttpMethod.ALL)
+	static void handle(Request req, Response res) throws Exception {
+		logger.debug(req.toString());
+		res.setResponseCode(404);
+	}
+
+	@Path(value = Configuration.stopUri, httpMethod = HttpMethod.GET)
+	static void stop(Request req, Response res) throws Exception {
+		res.setResponseCode(200);
+		final ScheduledExecutorService exe = Executors.newScheduledThreadPool(1);
+		exe.schedule(new Runnable() {
+			
+			@Override
+			public void run() {
+				exe.shutdownNow();
+				stop();
+			}
+		}, 1, TimeUnit.SECONDS);
+		
+	}
 }
 
 final class Connection {
@@ -215,146 +231,149 @@ final class Connection {
 			@Override
 			public void run() {
 				try {
-					final Request req = new RequestParser().parse(inBuffer);
-					RequestPath requestPath = Request.get(Configuration.requestPaths, req);
+					final Request req = RequestUtil.parse(inBuffer);
+					RequestPath requestPath = get(Configuration.requestPaths, req);
 					if (requestPath != null) {
-						final Response response = requestPath.getResponse(req, socketChannel);
+						final Response responseImpl = requestPath.getResponse(req, socketChannel);
 						try{
-						requestPath.handle(req,  response );
+						requestPath.handle(req,  responseImpl );
 						}finally{
 							try {
-								response.close();
+								responseImpl.close();
 							} catch (Throwable e) {
 								logger.error("Failed in response close :: ", e);
 							}
 						}
 					}
 				} catch (Throwable e) {
+					e.printStackTrace();
 					long currentTimeMillis = System.currentTimeMillis();
-					logger.error("Failed in request("+currentTimeMillis+") :: "+inBuffer);
-					logger.error("Failed in request("+currentTimeMillis+") :: ", e);
+					logger.error("Failed in requestImpl("+currentTimeMillis+") :: "+inBuffer);
+					logger.error("Failed in requestImpl("+currentTimeMillis+") :: ", e);
 				}
 			}
 		});
 
 	}
 
-}
-
-final class RequestParser {
-	private static final Logger logger = LoggerFactory.getLogger(RequestParser.class);
-	
-	private static final String ENC_UTF_8 = "UTF-8";
-	private static final byte BYTE_13 = (byte) 13;
-	private static final byte BYTE_10 = (byte) 10;
-	static final String divider = System.lineSeparator() + System.lineSeparator();
-
-	Request parse(final StringBuffer buffer) {
-		String content = buffer.toString();
-		byte[] bytes = content.getBytes();
-		int indexOf = -1;
-		for (int i = 3; i < bytes.length; i++) {
-			if (bytes[i] == bytes[i - 2] && bytes[i] == BYTE_10 && bytes[i - 1] == bytes[i - 3]
-					&& bytes[i - 1] == BYTE_13) {
-				indexOf = i;
-				break;
+	static RequestPath get(Collection<RequestPath> paths,Request req){
+		RequestPath df = null;
+		RequestPath in = new RequestPath(req.getUri(), req.getMethod());
+		for( RequestPath rq: paths ){
+			if( in.equals(rq) ) return rq;
+			else if( rq.httpMethod == HttpMethod.ALL ){
+				if(rq.uri.equals("/*"))
+					df = rq;
+				else if(rq.uri.equals(req.getUri()))
+					return rq;
+				else if( rq instanceof ProxyRequestPath && req.getUri().startsWith(rq.uri) )
+					return rq;
+			}else if( rq instanceof ProxyRequestPath && req.getUri().startsWith(rq.uri)  ){
+				return rq;
 			}
 		}
-
-		String metadata = null;
-		String body = null;
-
-		if (indexOf == -1) {
-			metadata = content;
-		} else {
-			metadata = content.substring(0, indexOf - 1);
-			body = content.substring(indexOf);
-		}
-
-		String[] split = metadata.split(System.lineSeparator());
-
-		String[] split2 = split[0].split(" ");
-
-//		System.out.println("REQ METHOD :: "+split2[0]);
-		logger.debug("Parsing Request :: "+content);
-		Method valueOf = Request.Method.valueOf(split2[0]);
-		if (valueOf == null)
-			throw new IllegalArgumentException("Unknown Request " + metadata);
-		String uriWithParams = split2[1];
-		String protocol = split2[2];
-
-		Map<String, String> tempheaders = new HashMap<String, String>();
-		for (int i = 1; i < split.length; i++) {
-			String h = split[i];
-			int indexOf2 = h.indexOf(": ");
-			if (indexOf2 == -1) {
-				tempheaders.put(h, "");
-			} else {
-				tempheaders.put(h.substring(0, indexOf2), h.substring(indexOf2 + 2));
-			}
-		}
-
-		int indexOf3 = uriWithParams.indexOf("?");
-		String uri = uriWithParams;
-		Map<String, Collection<String>> tempparams = null;
-		if (indexOf3 > 0) {
-			uri = uriWithParams.substring(0, indexOf3);
-			tempparams = parseParams(uriWithParams.substring(indexOf3 + 1));
-		}
-		return new Request(valueOf, uri, uriWithParams, protocol, tempparams, Utils.unmodifiableMap(tempheaders), body);
-	}
-
-	Map<String, Collection<String>> parseParams(String uriparams) {
-		Map<String, Collection<String>> tempparams = new HashMap<String, Collection<String>>();
-		String[] split3 = uriparams.split("&");
-		for (String p : split3) {
-			int indexOf2 = p.indexOf("=");
-			if (indexOf2 == -1) {
-				Collection<String> collection = tempparams.get(p);
-				if (collection == null) {
-					collection = new ArrayList<String>();
-				}
-				try {
-					tempparams.put(URLDecoder.decode(p, ENC_UTF_8), collection);
-				} catch (UnsupportedEncodingException e1) {
-					e1.printStackTrace();
-				}
-			} else {
-				String key = p.substring(0, indexOf2);
-				String value = p.substring(indexOf2 + 1);
-				try {
-					String decodeKey = URLDecoder.decode(key, ENC_UTF_8);
-					Collection<String> collection = tempparams.get(decodeKey);
-					if (collection == null) {
-						collection = new ArrayList<String>();
-						tempparams.put(decodeKey, collection);
-					}
-					collection.add(URLDecoder.decode(value, ENC_UTF_8));
-				} catch (UnsupportedEncodingException e1) {
-					e1.printStackTrace();
-				}
-			}
-
-		}
-		for (Entry<String, Collection<String>> e : tempparams.entrySet()) {
-			e.setValue(Collections.unmodifiableCollection(e.getValue()));
-		}
-		return Utils.unmodifiableMap(tempparams);
+		return df;
 	}
 }
 
-final class DefaultRequestHandler {
-	private static final Logger logger = LoggerFactory.getLogger(DefaultRequestHandler.class);
-
-	@Path(value = "/*", method = Request.Method.ALL)
-	static public void handle(Request req, Response res) throws Exception {
-		logger.debug(req.toString());
-		res.setResponseCode(404);
-	}
-
-	@Path(value = Configuration.stopUri, method = Request.Method.GET)
-	static public void stop(Request req, Response res) throws Exception {
-		res.setResponseCode(200);
-		Server.stop();
-	}
-}
+//final class RequestParser {
+//	private static final Logger logger = LoggerFactory.getLogger(RequestParser.class);
+//	
+//	private static final String ENC_UTF_8 = "UTF-8";
+//	private static final byte BYTE_13 = (byte) 13;
+//	private static final byte BYTE_10 = (byte) 10;
+//	static final String divider = System.lineSeparator() + System.lineSeparator();
+//
+//	RequestImpl parse(final StringBuffer buffer) {
+//		String content = buffer.toString();
+//		byte[] bytes = content.getBytes();
+//		int indexOf = -1;
+//		for (int i = 3; i < bytes.length; i++) {
+//			if (bytes[i] == bytes[i - 2] && bytes[i] == BYTE_10 && bytes[i - 1] == bytes[i - 3]
+//					&& bytes[i - 1] == BYTE_13) {
+//				indexOf = i;
+//				break;
+//			}
+//		}
+//
+//		String metadata = null;
+//		String body = null;
+//
+//		if (indexOf == -1) {
+//			metadata = content;
+//		} else {
+//			metadata = content.substring(0, indexOf - 1);
+//			body = content.substring(indexOf);
+//		}
+//
+//		String[] split = metadata.split(System.lineSeparator());
+//
+//		String[] split2 = split[0].split(" ");
+//
+////		System.out.println("REQ METHOD :: "+split2[0]);
+//		logger.debug("Parsing RequestImpl :: "+content);
+//		HttpMethod valueOf = HttpMethod.valueOf(split2[0]);
+//		if (valueOf == null)
+//			throw new IllegalArgumentException("Unknown RequestImpl " + metadata);
+//		String uriWithParams = split2[1];
+//		String protocol = split2[2];
+//
+//		Map<String, String> tempheaders = new HashMap<String, String>();
+//		for (int i = 1; i < split.length; i++) {
+//			String h = split[i];
+//			int indexOf2 = h.indexOf(": ");
+//			if (indexOf2 == -1) {
+//				tempheaders.put(h, "");
+//			} else {
+//				tempheaders.put(h.substring(0, indexOf2), h.substring(indexOf2 + 2));
+//			}
+//		}
+//
+//		int indexOf3 = uriWithParams.indexOf("?");
+//		String uri = uriWithParams;
+//		Map<String, Collection<String>> tempparams = null;
+//		if (indexOf3 > 0) {
+//			uri = uriWithParams.substring(0, indexOf3);
+//			tempparams = parseParams(uriWithParams.substring(indexOf3 + 1));
+//		}
+//		return new RequestImpl(valueOf, uri, uriWithParams, protocol, tempparams, Utils.unmodifiableMap(tempheaders), body);
+//	}
+//
+//	Map<String, Collection<String>> parseParams(String uriparams) {
+//		Map<String, Collection<String>> tempparams = new HashMap<String, Collection<String>>();
+//		String[] split3 = uriparams.split("&");
+//		for (String p : split3) {
+//			int indexOf2 = p.indexOf("=");
+//			if (indexOf2 == -1) {
+//				Collection<String> collection = tempparams.get(p);
+//				if (collection == null) {
+//					collection = new ArrayList<String>();
+//				}
+//				try {
+//					tempparams.put(URLDecoder.decode(p, ENC_UTF_8), collection);
+//				} catch (UnsupportedEncodingException e1) {
+//					e1.printStackTrace();
+//				}
+//			} else {
+//				String key = p.substring(0, indexOf2);
+//				String value = p.substring(indexOf2 + 1);
+//				try {
+//					String decodeKey = URLDecoder.decode(key, ENC_UTF_8);
+//					Collection<String> collection = tempparams.get(decodeKey);
+//					if (collection == null) {
+//						collection = new ArrayList<String>();
+//						tempparams.put(decodeKey, collection);
+//					}
+//					collection.add(URLDecoder.decode(value, ENC_UTF_8));
+//				} catch (UnsupportedEncodingException e1) {
+//					e1.printStackTrace();
+//				}
+//			}
+//
+//		}
+//		for (Entry<String, Collection<String>> e : tempparams.entrySet()) {
+//			e.setValue(Collections.unmodifiableCollection(e.getValue()));
+//		}
+//		return Utils.unmodifiableMap(tempparams);
+//	}
+//}

@@ -1,20 +1,19 @@
 package org.arivu.nioserver;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.arivu.nioserver.Request.Method;
+import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.utils.Ason;
 import org.arivu.utils.NullCheck;
 import org.arivu.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class Configuration {
-	private static final Logger logger = LoggerFactory.getLogger(Connection.class);
+final class Configuration {
+	private static final Logger logger = LoggerFactory.getLogger(Configuration.class);
 	static final String stopUri = "/zzxyz";
 	static final Map<String, Object> defaultResponseHeader;
 	static final Map<String, Object> defaultResponseCodes;
@@ -30,17 +29,17 @@ public final class Configuration {
 		defaultResCode = Ason.getNumber(json, "response.defaultcode", 200).intValue();
 		Collection<String> scanPackages = Utils.unmodifiableCollection(Ason.getArray(json, "request.packages", null));
 
-		Collection<RequestPath> tempRequestPaths = new ArrayList<RequestPath>();
+		Collection<RequestPath> tempRequestPaths = new DoublyLinkedList<RequestPath>();
 		Map<String, Object> proxies = (Map<String, Object>) Ason.getObj(json, "request.proxies", null);
 
 		for (Entry<String, Object> e : proxies.entrySet()) {
 			String name = e.getKey();
 			@SuppressWarnings("unchecked")
 			Map<String, Object> proxy = (Map<String, Object>) e.getValue();
-			String strMethod = Ason.getStr(proxy, "method", null);
+			String strMethod = Ason.getStr(proxy, "httpMethod", null);
 			if (NullCheck.isNullOrEmpty(strMethod))
 				strMethod = "ALL";
-			Method httpMethod = Method.valueOf(strMethod);
+			HttpMethod httpMethod = HttpMethod.valueOf(strMethod);
 			Map<String, Object> header = (Map<String, Object>) Ason.getObj(proxy, "header", null);
 			String proxy_pass = Ason.getStr(proxy, "proxy_pass", null);
 			if (proxy_pass != null) {
@@ -60,6 +59,7 @@ public final class Configuration {
 		try {
 			tempRequestPaths.addAll(PackageScanner.getPaths(scanPackages));
 			requestPaths = Utils.unmodifiableCollection(tempRequestPaths);
+			logger.debug("All request paths : "+requestPaths);
 		} catch (Exception e) {
 			logger.error("Failed in packagescan :: ", e);
 			throw new IllegalStateException(e);

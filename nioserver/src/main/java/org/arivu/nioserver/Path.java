@@ -16,5 +16,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Path {
 	String value();
-	Request.Method method();
+	HttpMethod httpMethod();
 }
