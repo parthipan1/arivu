@@ -7,6 +7,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -15,6 +16,7 @@ import java.util.Map;
 
 import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.datastructure.DoublyLinkedSet;
+import org.arivu.datastructure.MemoryMappedFiles;
 import org.arivu.datastructure.Threadlocal;
 import org.arivu.utils.NullCheck;
 import org.slf4j.Logger;
@@ -265,6 +267,7 @@ class ProxyRequestPath extends RequestPath{
 	String proxy_pass;
 	Map<String, Object> defaultResponseHeader;
 	String dir;
+	MemoryMappedFiles files = null;
 	/**
 	 * @param uri
 	 * @param httpMethod
@@ -279,6 +282,13 @@ class ProxyRequestPath extends RequestPath{
 		this.proxy_pass = proxy_pass;
 		this.dir = dir;
 		this.defaultResponseHeader = defaultResponseHeader;
+		if( NullCheck.isNullOrEmpty(proxy_pass) && NullCheck.isNullOrEmpty(dir) ){
+			throw new IllegalArgumentException("Invalid config "+name+" !");
+		}else if( !NullCheck.isNullOrEmpty(proxy_pass) && !NullCheck.isNullOrEmpty(dir) ){
+			throw new IllegalArgumentException("Invalid config "+name+" !");
+		}else if(!NullCheck.isNullOrEmpty(dir)){
+			files = new MemoryMappedFiles();
+		}
 	}
 
 	/**
@@ -291,12 +301,25 @@ class ProxyRequestPath extends RequestPath{
 
 	@Override
 	public void handle(Request req, Response res) throws Exception {
-		super.handle(req, res);
+		if(!NullCheck.isNullOrEmpty(dir)){
+			// static
+			String file = req.uri.replaceFirst(this.uri, this.dir);
+			ByteBuffer bytes = files.getBytes(file);
+			res.append(bytes.asCharBuffer());
+			res.putHeader("Content-Length", bytes.array().length);
+		}else{
+			// proxy
+			super.handle(req, res);
+		}
 	}
 
 	@Override
 	Response getResponse(Request req, SocketChannel socketChannel) {
-		return new ProxyResponse(req, socketChannel, defaultResponseHeader);
+		if(!NullCheck.isNullOrEmpty(dir)){
+			return super.getResponse(req, socketChannel);
+		}else{
+			return new ProxyResponse(req, socketChannel, defaultResponseHeader);
+		}
 	}
 
 	@Override
