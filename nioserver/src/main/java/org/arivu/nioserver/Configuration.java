@@ -1,5 +1,6 @@
 package org.arivu.nioserver;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -47,7 +48,11 @@ public final class Configuration {
 				proxy_pass = proxy_pass.replaceAll("$host", Server.DEFAULT_HOST);
 				proxy_pass = proxy_pass.replaceAll("$port", String.valueOf(Server.DEFAULT_PORT));
 			}
-			ProxyRequestPath prp = new ProxyRequestPath(name, proxy_pass, Ason.getStr(proxy, "location", null),
+			String dir = Ason.getStr(proxy, "dir", null);
+			if (dir != null) {
+				dir = dir.replaceAll("$home", new File(".").getAbsolutePath() );
+			}
+			ProxyRequestPath prp = new ProxyRequestPath(name, proxy_pass, dir, Ason.getStr(proxy, "location", null),
 					httpMethod, null, null, false, header);
 			logger.debug("Discovered Proxy setting ::" + prp.toString());
 			tempRequestPaths.add(prp);

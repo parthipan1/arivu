@@ -15,6 +15,18 @@
             "location":"/search",
             "method":"GET",
             "proxy_pass":"http://localhost:$port"
+         },
+         "staticContent":{  
+            "header":{  
+               "Expires":-1,
+               "Cache-Control":"private, max-age=0",
+               "Server":"clownserver",
+               "X-XSS-Protection":"1; mode=block",
+               "Connection":"close"
+            },
+            "location":"/static",
+            "method":"GET",
+            "dir":"$home/public"
          }
       }
    },

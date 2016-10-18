@@ -264,6 +264,7 @@ class ProxyRequestPath extends RequestPath{
 	String name;
 	String proxy_pass;
 	Map<String, Object> defaultResponseHeader;
+	String dir;
 	/**
 	 * @param uri
 	 * @param httpMethod
@@ -271,11 +272,12 @@ class ProxyRequestPath extends RequestPath{
 	 * @param method
 	 * @param isStatic
 	 */
-	ProxyRequestPath(String name,String proxy_pass,String uri, org.arivu.nioserver.Request.Method httpMethod, Class<?> klass, Method method,
+	ProxyRequestPath(String name,String proxy_pass,String dir,String uri, org.arivu.nioserver.Request.Method httpMethod, Class<?> klass, Method method,
 			boolean isStatic,Map<String, Object> defaultResponseHeader) {
 		super(uri, httpMethod, klass, method, isStatic);
 		this.name = name;
 		this.proxy_pass = proxy_pass;
+		this.dir = dir;
 		this.defaultResponseHeader = defaultResponseHeader;
 	}
 
