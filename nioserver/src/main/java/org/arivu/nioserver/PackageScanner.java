@@ -1,10 +1,14 @@
 package org.arivu.nioserver;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
@@ -24,12 +28,6 @@ import org.slf4j.LoggerFactory;
 
 public class PackageScanner {
 	static final Logger logger = LoggerFactory.getLogger(PackageScanner.class);
-	// public static void main(String[] args) throws ClassNotFoundException{
-	// for( Class<?> kcs: getClassesForPackage("org.arivu")){
-	//// reqPaths.addAll(parse(kcs));
-	// System.out.println("class :: "+kcs.getName());
-	// }
-	// }
 
 	public static Collection<RequestPath> getPaths(Collection<String> packageNames)
 			throws ClassNotFoundException, IOException {
@@ -37,7 +35,7 @@ public class PackageScanner {
 
 		for (String pkgName : packageNames) {
 			for (Class<?> kcs : getClassesForPackage(pkgName)) {
-				parse(reqPaths, kcs);
+				AddMethod(reqPaths, kcs);
 			}
 		}
 
@@ -45,8 +43,6 @@ public class PackageScanner {
 	}
 
 	static Collection<Class<?>> getClassesForPackage(String pckgname) throws ClassNotFoundException {
-		// This will hold a list of directories matching the pckgname. There may
-		// be more than one if a package is split over multiple jars/paths
 		List<File> directories = new DoublyLinkedList<File>();
 		String packageToPath = pckgname.replace('.', '/');
 		try {
@@ -71,27 +67,20 @@ public class PackageScanner {
 		}
 
 		Collection<Class<?>> classes = new DoublyLinkedSet<Class<?>>();
-		// For every directoryFile identified capture all the .class files
 		while (!directories.isEmpty()) {
 			File directoryFile = directories.remove(0);
 			if (directoryFile.exists()) {
-				// Get the list of the files contained in the package
 				File[] files = directoryFile.listFiles();
 
 				for (File file : files) {
-					// we are only interested in .class files
 					if ((file.getName().endsWith(".class")) && (!file.getName().contains("$"))) {
-						// removes the .class extension
 						int index = directoryFile.getPath().indexOf(packageToPath);
 						String packagePrefix = directoryFile.getPath().substring(index).replace('/', '.');
-						;
 						try {
 							String className = packagePrefix + '.'
 									+ file.getName().substring(0, file.getName().length() - 6);
 							classes.add(Class.forName(className));
 						} catch (NoClassDefFoundError e) {
-							// do nothing. this class hasn't been found by the
-							// loader, and we don't care.
 						}
 					} else if (file.isDirectory()) { // If we got to a
 														// subdirectory
@@ -106,44 +95,7 @@ public class PackageScanner {
 		return classes;
 	}
 
-	// public static Collection<Class<?>> getClasses(String packageName)
-	// throws ClassNotFoundException, IOException {
-	// ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-	// assert classLoader != null;
-	// String path = packageName.replace('.', '/');
-	// Enumeration<URL> resources = classLoader.getResources(path);
-	// List<File> dirs = new ArrayList<File>();
-	// while (resources.hasMoreElements()) {
-	// URL resource = resources.nextElement();
-	// dirs.add(new File(resource.getFile()));
-	// }
-	// Collection<Class<?>> classes = new ArrayList<Class<?>>();
-	// for (File directory : dirs) {
-	// classes.addAll(findClasses(directory, packageName));
-	// }
-	// return classes;//.toArray(new Class[classes.size()]);
-	// }
-
-	// private static Collection<Class<?>> findClasses(File directory, String
-	// packageName) throws ClassNotFoundException {
-	// Collection<Class<?>> classes = new ArrayList<Class<?>>();
-	// if (!directory.exists()) {
-	// return classes;
-	// }
-	// File[] files = directory.listFiles();
-	// for (File file : files) {
-	// if (file.isDirectory()) {
-	// assert !file.getName().contains(".");
-	// classes.addAll(findClasses(file, packageName + "." + file.getName()));
-	// } else if (file.getName().endsWith(".class")) {
-	// classes.add(Class.forName(packageName + '.' + file.getName().substring(0,
-	// file.getName().length() - 6)));
-	// }
-	// }
-	// return classes;
-	// }
-
-	static void parse(Collection<RequestPath> reqPaths, Class<?> clazz) {
+	static void AddMethod(Collection<RequestPath> reqPaths, Class<?> clazz) {
 		Method[] methods = clazz.getMethods();
 		for (Method method : methods) {
 			if (method.isAnnotationPresent(Path.class)) {
@@ -170,7 +122,6 @@ public class PackageScanner {
 				}
 			}
 		}
-		// return reqPaths;
 	}
 }
 
@@ -180,7 +131,7 @@ class RequestPath {
 	final Class<?> klass;
 	final Method method;
 	final boolean isStatic;
-	final Threadlocal<Object> tl;
+	Threadlocal<Object> tl;
 
 	RequestPath(String uri, org.arivu.nioserver.Request.Method httpMethod) {
 		this(uri, httpMethod, null, null, false);
@@ -220,10 +171,10 @@ class RequestPath {
 		}
 	}
 
-	Response getResponse(Request req,SocketChannel socketChannel){
+	Response getResponse(Request req, SocketChannel socketChannel) {
 		return new Response(req, socketChannel, Configuration.defaultResponseHeader);
 	}
-	
+
 	public void handle(Request req, Response res) throws Exception {
 		if (isStatic)
 			method.invoke(null, req, res);
@@ -261,13 +212,15 @@ class RequestPath {
 
 }
 
-class ProxyRequestPath extends RequestPath{
+class ProxyRequestPath extends RequestPath {
 
 	String name;
 	String proxy_pass;
 	Map<String, Object> defaultResponseHeader;
 	String dir;
 	MemoryMappedFiles files = null;
+	Threadlocal<HttpMethods> proxyTh;
+
 	/**
 	 * @param uri
 	 * @param httpMethod
@@ -275,20 +228,30 @@ class ProxyRequestPath extends RequestPath{
 	 * @param method
 	 * @param isStatic
 	 */
-	ProxyRequestPath(String name,String proxy_pass,String dir,String uri, org.arivu.nioserver.Request.Method httpMethod, Class<?> klass, Method method,
-			boolean isStatic,Map<String, Object> defaultResponseHeader) {
+	ProxyRequestPath(String name, String proxy_pass, String dir, String uri,
+			org.arivu.nioserver.Request.Method httpMethod, Class<?> klass, Method method, boolean isStatic,
+			Map<String, Object> defaultResponseHeader) {
 		super(uri, httpMethod, klass, method, isStatic);
 		this.name = name;
 		this.proxy_pass = proxy_pass;
 		this.dir = dir;
 		this.defaultResponseHeader = defaultResponseHeader;
-		if( NullCheck.isNullOrEmpty(proxy_pass) && NullCheck.isNullOrEmpty(dir) ){
-			throw new IllegalArgumentException("Invalid config "+name+" !");
-		}else if( !NullCheck.isNullOrEmpty(proxy_pass) && !NullCheck.isNullOrEmpty(dir) ){
-			throw new IllegalArgumentException("Invalid config "+name+" !");
-		}else if(!NullCheck.isNullOrEmpty(dir)){
+		if (NullCheck.isNullOrEmpty(proxy_pass) && NullCheck.isNullOrEmpty(dir)) {
+			throw new IllegalArgumentException("Invalid config " + name + " !");
+		} else if (!NullCheck.isNullOrEmpty(proxy_pass) && !NullCheck.isNullOrEmpty(dir)) {
+			throw new IllegalArgumentException("Invalid config " + name + " !");
+		} else if (!NullCheck.isNullOrEmpty(dir)) {
 			files = new MemoryMappedFiles();
+		} else if (!NullCheck.isNullOrEmpty(proxy_pass)) {
+			this.proxyTh = new Threadlocal<HttpMethods>(new Threadlocal.Factory<HttpMethods>() {
+
+				@Override
+				public HttpMethods create(Map<String, Object> params) {
+					return new JavaHttpMethods();
+				}
+			}, -1);
 		}
+
 	}
 
 	/**
@@ -301,31 +264,47 @@ class ProxyRequestPath extends RequestPath{
 
 	@Override
 	public void handle(Request req, Response res) throws Exception {
-		if(!NullCheck.isNullOrEmpty(dir)){
-			// static
-//			String replaceAll = this.dir.replaceAll("$home", "." );
-//			System.out.println("static :: this.uri :: "+this.uri+" this.dir :: "+this.dir);
-			String file = this.dir+req.uri.substring(this.uri.length());
-//			String file = req.uri.replaceFirst(this.uri, this.dir);
-//			System.out.println("static :: "+file);
+		if (!NullCheck.isNullOrEmpty(dir)) {
+			String file = this.dir + req.uri.substring(this.uri.length());
 			ByteBuffer bytes = files.getBytes(file);
-			if(bytes==null){
-				bytes=files.addBytes(file);
+			if (bytes == null) {
+				bytes = files.addBytes(file);
 			}
 			byte[] array = bytes.array();
 			res.append(array);
 			res.putHeader("Content-Length", array.length);
-		}else{
-			// proxy
-			super.handle(req, res);
+		} else {
+			String loc = this.proxy_pass + req.uri.substring(this.uri.length());
+			HttpMethods httpMethods = proxyTh.get(null);
+			ProxyRes pres = null;
+			switch (req.method) {
+			case GET:
+				pres = httpMethods.get(loc);
+				break;
+			case POST:
+				pres = httpMethods.post(loc, req.body);
+				break;
+			case PUT:
+				pres = httpMethods.put(loc, req.body);
+				break;
+			case DELETE:
+				pres = httpMethods.delete(loc);
+				break;
+			default:
+				break;
+			}
+			if (pres != null) {
+				res.setResponseCode(pres.responseCode);
+				res.append(pres.response);
+			}
 		}
 	}
 
 	@Override
 	Response getResponse(Request req, SocketChannel socketChannel) {
-		if(!NullCheck.isNullOrEmpty(dir)){
+		if (!NullCheck.isNullOrEmpty(dir)) {
 			return super.getResponse(req, socketChannel);
-		}else{
+		} else {
 			return new ProxyResponse(req, socketChannel, defaultResponseHeader);
 		}
 	}
@@ -334,5 +313,148 @@ class ProxyRequestPath extends RequestPath{
 	public String toString() {
 		return "ProxyRequestPath [name=" + name + ", uri=" + uri + ", httpMethod=" + httpMethod + "]";
 	}
-	
+
+}
+
+final class ProxyRes {
+	final String response;
+	final int responseCode;
+
+	ProxyRes(int responseCode, String response) {
+		super();
+		this.responseCode = responseCode;
+		this.response = response;
+	}
+
+}
+
+interface HttpMethods {
+	ProxyRes get(String uri) throws IOException;
+
+	ProxyRes post(String uri, String body) throws IOException;
+
+	ProxyRes put(String uri, String body) throws IOException;
+
+	ProxyRes delete(String uri) throws IOException;
+}
+
+class JavaHttpMethods implements HttpMethods {
+
+	@Override
+	public ProxyRes delete(String uri) throws IOException {
+		// System.out.println("DELETE "+uri);
+		final URL obj = new URL(uri);
+		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+		// optional default is GET
+		con.setRequestMethod("DELETE");
+		// add request header
+		addReqHeaders(con);
+
+		return extractResponse(con);
+	}
+
+	private void addReqHeaders(final HttpURLConnection con) {
+		con.setRequestProperty("User-Agent", "Java8");
+		con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
+	}
+
+	@Override
+	public ProxyRes get(final String uri) throws IOException {
+		final URL obj = new URL(uri);
+		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+
+		// optional default is GET
+		con.setRequestMethod("GET");
+		addReqHeaders(con);
+
+		return extractResponse(con);
+	}
+
+	@Override
+	public ProxyRes post(final String uri, final String body) throws IOException {
+		final URL obj = new URL(uri);
+		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+
+		// optional default is POST
+		con.setRequestMethod("POST");
+		addReqHeaders(con);
+		// Send post request
+		con.setDoOutput(true);
+		final OutputStream wr = (con.getOutputStream());
+		try {
+			wr.write(body.getBytes());
+			wr.flush();
+		} finally {
+			wr.close();
+		}
+		return extractResponse(con);
+	}
+
+	@Override
+	public ProxyRes put(final String uri, final String body) throws IOException {
+
+		final URL obj = new URL(uri);
+		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+
+		// optional default is PUT
+		con.setRequestMethod("PUT");
+		addReqHeaders(con);
+		// Send post request
+		con.setDoOutput(true);
+		final OutputStream wr = (con.getOutputStream());
+		try {
+			wr.write(body.getBytes());
+			wr.flush();
+		} finally {
+			wr.close();
+		}
+		return extractResponse(con);
+	}
+
+	private ProxyRes extractResponse(final HttpURLConnection con) throws IOException {
+		// Collection<Map<String, Object>> data = null;
+		// int responseCode = 0;
+		// try {
+		int responseCode = con.getResponseCode();
+		// log.info("\nSending 'GET' request to URL : " + geturi);
+		// log.info("Response Code : " + responseCode);
+		final StringBuffer response = new StringBuffer();
+		final BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+		try {
+			String inputLine;
+			while ((inputLine = in.readLine()) != null) {
+				response.append(inputLine);
+			}
+		} finally {
+			in.close();
+		}
+		return new ProxyRes(responseCode, response.toString());// response.toString();
+		// log.info(response.toString());
+		// log.debug(response.toString());
+		// if (responseCode == 200) {
+		// if (returnList) {
+		// final Map<String, Object> fromJson = (Map<String, Object>)
+		// fromJson(response.toString(),
+		// Map.class);
+		// final Map<String, Object> object = (Map<String, Object>)
+		// fromJson.get(ElasticSearch.HITS_TOKEN);
+		// if (object != null) {
+		// data = (Collection<Map<String, Object>>)
+		// object.get(ElasticSearch.HITS_TOKEN);
+		// }
+		// }
+		// } else {
+		// log.info(response.toString());
+		// }
+		// } catch (FileNotFoundException e) {
+		// log.error("Error failed on search", e);
+		// }
+
+		// if (returnList) {
+		// return data;
+		// } else {
+		// return responseCode;
+		// }
+	}
+
 }
