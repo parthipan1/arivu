@@ -20,9 +20,9 @@ import org.slf4j.LoggerFactory;
 class PackageScanner {
 	static final Logger logger = LoggerFactory.getLogger(PackageScanner.class);
 
-	static Collection<RequestPath> getPaths(Collection<String> packageNames)
+	static Collection<Route> getPaths(Collection<String> packageNames)
 			throws ClassNotFoundException, IOException {
-		Collection<RequestPath> reqPaths = new DoublyLinkedSet<RequestPath>();
+		Collection<Route> reqPaths = new DoublyLinkedSet<Route>();
 
 		for (String pkgName : packageNames) {
 			for (Class<?> kcs : getClassesForPackage(pkgName)) {
@@ -92,7 +92,7 @@ class PackageScanner {
 		return classes;
 	}
 
-	static void addMethod(Collection<RequestPath> reqPaths, Class<?> clazz) {
+	static void addMethod(Collection<Route> reqPaths, Class<?> clazz) {
 		logger.debug("Scanning class "+clazz.getName());
 		Method[] methods = clazz.getDeclaredMethods();//Methods();
 		for (Method method : methods) {
@@ -105,7 +105,7 @@ class PackageScanner {
 						org.arivu.nioserver.HttpMethod httpMethod = path.httpMethod();
 						if (!NullCheck.isNullOrEmpty(uri) && httpMethod != null) {
 							boolean isStatic = Modifier.isStatic(method.getModifiers());
-							RequestPath e = new RequestPath(uri, httpMethod, clazz, method, isStatic);
+							Route e = new Route(uri, httpMethod, clazz, method, isStatic);
 							boolean add = reqPaths.add(e);
 							if (add) {
 								logger.info("Discovered requestImpl handler :: " + clazz.getName() + " httpMethod "
@@ -116,7 +116,7 @@ class PackageScanner {
 							}
 						}
 					} catch (IllegalArgumentException e) {
-						e.printStackTrace();
+						logger.error("Error on Scanning annotation addMethod :: ", e);
 					}
 				}
 			}

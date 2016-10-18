@@ -18,8 +18,12 @@ import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.MemoryMappedFiles;
 import org.arivu.datastructure.Threadlocal;
 import org.arivu.utils.NullCheck;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-class RequestPath {
+class Route {
+	private static final Logger logger = LoggerFactory.getLogger(Route.class);
+	
 	final String uri;
 	final org.arivu.nioserver.HttpMethod httpMethod;
 	final Class<?> klass;
@@ -27,7 +31,7 @@ class RequestPath {
 	final boolean isStatic;
 	Threadlocal<Object> tl;
 
-	RequestPath(String uri, org.arivu.nioserver.HttpMethod httpMethod) {
+	Route(String uri, org.arivu.nioserver.HttpMethod httpMethod) {
 		this(uri, httpMethod, null, null, false);
 	}
 
@@ -37,7 +41,7 @@ class RequestPath {
 	 * @param klass
 	 * @param httpMethod
 	 */
-	RequestPath(String uri, org.arivu.nioserver.HttpMethod httpMethod, Class<?> klass, Method method,
+	Route(String uri, org.arivu.nioserver.HttpMethod httpMethod, Class<?> klass, Method method,
 			boolean isStatic) {
 		super();
 		this.uri = uri;
@@ -51,11 +55,11 @@ class RequestPath {
 				@Override
 				public Object create(Map<String, Object> params) {
 					try {
-						return RequestPath.this.klass.newInstance();
+						return Route.this.klass.newInstance();
 					} catch (InstantiationException e) {
-						e.printStackTrace();
+						logger.error("Error on creating new instance "+Route.this.klass.getName()+" :: ", e);
 					} catch (IllegalAccessException e) {
-						e.printStackTrace();
+						logger.error("Error on creating new instance "+Route.this.klass.getName()+" :: ", e);
 					}
 					return null;
 				}
@@ -93,7 +97,7 @@ class RequestPath {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		RequestPath other = (RequestPath) obj;
+		Route other = (Route) obj;
 		if (httpMethod != other.httpMethod)
 			return false;
 		if (uri == null) {
@@ -106,13 +110,13 @@ class RequestPath {
 
 	@Override
 	public String toString() {
-		return "RequestPath [uri=" + uri + ", httpMethod=" + httpMethod + ", klass=" + klass + ", method=" + method
+		return "Route [uri=" + uri + ", httpMethod=" + httpMethod + ", klass=" + klass + ", method=" + method
 				+ ", isStatic=" + isStatic + "]";
 	}
 
 }
 
-final class ProxyRequestPath extends RequestPath {
+final class ProxyRoute extends Route {
 
 	String name;
 	String proxy_pass;
@@ -128,7 +132,7 @@ final class ProxyRequestPath extends RequestPath {
 	 * @param httpMethod
 	 * @param isStatic
 	 */
-	ProxyRequestPath(String name, String proxy_pass, String dir, String uri,
+	ProxyRoute(String name, String proxy_pass, String dir, String uri,
 			org.arivu.nioserver.HttpMethod httpMethod, Class<?> klass, Method method, boolean isStatic,
 			Map<String, Object> defaultResponseHeader) {
 		super(uri, httpMethod, klass, method, isStatic);
@@ -158,7 +162,7 @@ final class ProxyRequestPath extends RequestPath {
 	 * @param uri
 	 * @param httpMethod
 	 */
-	ProxyRequestPath(String uri, org.arivu.nioserver.HttpMethod httpMethod) {
+	ProxyRoute(String uri, org.arivu.nioserver.HttpMethod httpMethod) {
 		super(uri, httpMethod);
 	}
 
@@ -243,7 +247,7 @@ final class ProxyRequestPath extends RequestPath {
 
 	@Override
 	public String toString() {
-		return "ProxyRequestPath [name=" + name + ", uri=" + uri + ", httpMethod=" + httpMethod + "]";
+		return "ProxyRoute [name=" + name + ", uri=" + uri + ", httpMethod=" + httpMethod + "]";
 	}
 
 }

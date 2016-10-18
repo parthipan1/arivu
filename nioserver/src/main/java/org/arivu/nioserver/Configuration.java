@@ -17,7 +17,7 @@ final class Configuration {
 	static final String stopUri = "/zzxyz";
 	static final Map<String, Object> defaultResponseHeader;
 	static final Map<String, Object> defaultResponseCodes;
-	static final Collection<RequestPath> requestPaths;
+	static final Collection<Route> routes;
 	static final int defaultResCode;
 	private static final String CONFIGURATION_FILE = "arivu.nioserver.json";
 
@@ -29,7 +29,7 @@ final class Configuration {
 		defaultResCode = Ason.getNumber(json, "response.defaultcode", 200).intValue();
 		Collection<String> scanPackages = Utils.unmodifiableCollection(Ason.getArray(json, "request.packages", null));
 
-		Collection<RequestPath> tempRequestPaths = new DoublyLinkedList<RequestPath>();
+		Collection<Route> tempRequestPaths = new DoublyLinkedList<Route>();
 		Map<String, Object> proxies = (Map<String, Object>) Ason.getObj(json, "request.proxies", null);
 
 		for (Entry<String, Object> e : proxies.entrySet()) {
@@ -50,7 +50,7 @@ final class Configuration {
 			if (dir != null) {
 				dir = Utils.replaceAll(dir, "$home", new File(".").getAbsolutePath());
 			}
-			ProxyRequestPath prp = new ProxyRequestPath(name, proxy_pass, dir, Ason.getStr(proxy, "location", null),
+			ProxyRoute prp = new ProxyRoute(name, proxy_pass, dir, Ason.getStr(proxy, "location", null),
 					httpMethod, null, null, false, header);
 			logger.debug("Discovered Proxy setting ::" + prp.toString());
 			tempRequestPaths.add(prp);
@@ -58,8 +58,8 @@ final class Configuration {
 
 		try {
 			tempRequestPaths.addAll(PackageScanner.getPaths(scanPackages));
-			requestPaths = Utils.unmodifiableCollection(tempRequestPaths);
-			logger.debug("All request paths : "+requestPaths);
+			routes = Utils.unmodifiableCollection(tempRequestPaths);
+			logger.debug("All request paths : "+routes);
 		} catch (Exception e) {
 			logger.error("Failed in packagescan :: ", e);
 			throw new IllegalStateException(e);

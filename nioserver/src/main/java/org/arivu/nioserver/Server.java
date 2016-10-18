@@ -96,14 +96,13 @@ public class Server {
 			// "+response.toString());
 		} catch (Throwable e) {
 			logger.error("Failed on stop::", e);
-			// e.printStackTrace();
 //			System.err.println(e.toString());
 		} finally {
 			if (in != null)
 				try {
 					in.close();
 				} catch (IOException e) {
-					e.printStackTrace();
+					logger.error("Failed on stop::", e);
 				}
 		}
 
@@ -232,11 +231,11 @@ final class Connection {
 			public void run() {
 				try {
 					final Request req = RequestUtil.parse(inBuffer);
-					RequestPath requestPath = get(Configuration.requestPaths, req);
-					if (requestPath != null) {
-						final Response responseImpl = requestPath.getResponse(req, socketChannel);
+					Route route = get(Configuration.routes, req);
+					if (route != null) {
+						final Response responseImpl = route.getResponse(req, socketChannel);
 						try{
-						requestPath.handle(req,  responseImpl );
+						route.handle(req,  responseImpl );
 						}finally{
 							try {
 								responseImpl.close();
@@ -246,7 +245,6 @@ final class Connection {
 						}
 					}
 				} catch (Throwable e) {
-					e.printStackTrace();
 					long currentTimeMillis = System.currentTimeMillis();
 					logger.error("Failed in requestImpl("+currentTimeMillis+") :: "+inBuffer);
 					logger.error("Failed in requestImpl("+currentTimeMillis+") :: ", e);
@@ -256,124 +254,22 @@ final class Connection {
 
 	}
 
-	static RequestPath get(Collection<RequestPath> paths,Request req){
-		RequestPath df = null;
-		RequestPath in = new RequestPath(req.getUri(), req.getMethod());
-		for( RequestPath rq: paths ){
+	static Route get(Collection<Route> paths,Request req){
+		Route df = null;
+		Route in = new Route(req.getUri(), req.getMethod());
+		for( Route rq: paths ){
 			if( in.equals(rq) ) return rq;
 			else if( rq.httpMethod == HttpMethod.ALL ){
 				if(rq.uri.equals("/*"))
 					df = rq;
 				else if(rq.uri.equals(req.getUri()))
 					return rq;
-				else if( rq instanceof ProxyRequestPath && req.getUri().startsWith(rq.uri) )
+				else if( rq instanceof ProxyRoute && req.getUri().startsWith(rq.uri) )
 					return rq;
-			}else if( rq instanceof ProxyRequestPath && req.getUri().startsWith(rq.uri)  ){
+			}else if( rq instanceof ProxyRoute && req.getUri().startsWith(rq.uri)  ){
 				return rq;
 			}
 		}
 		return df;
 	}
 }
-
-//final class RequestParser {
-//	private static final Logger logger = LoggerFactory.getLogger(RequestParser.class);
-//	
-//	private static final String ENC_UTF_8 = "UTF-8";
-//	private static final byte BYTE_13 = (byte) 13;
-//	private static final byte BYTE_10 = (byte) 10;
-//	static final String divider = System.lineSeparator() + System.lineSeparator();
-//
-//	RequestImpl parse(final StringBuffer buffer) {
-//		String content = buffer.toString();
-//		byte[] bytes = content.getBytes();
-//		int indexOf = -1;
-//		for (int i = 3; i < bytes.length; i++) {
-//			if (bytes[i] == bytes[i - 2] && bytes[i] == BYTE_10 && bytes[i - 1] == bytes[i - 3]
-//					&& bytes[i - 1] == BYTE_13) {
-//				indexOf = i;
-//				break;
-//			}
-//		}
-//
-//		String metadata = null;
-//		String body = null;
-//
-//		if (indexOf == -1) {
-//			metadata = content;
-//		} else {
-//			metadata = content.substring(0, indexOf - 1);
-//			body = content.substring(indexOf);
-//		}
-//
-//		String[] split = metadata.split(System.lineSeparator());
-//
-//		String[] split2 = split[0].split(" ");
-//
-////		System.out.println("REQ METHOD :: "+split2[0]);
-//		logger.debug("Parsing RequestImpl :: "+content);
-//		HttpMethod valueOf = HttpMethod.valueOf(split2[0]);
-//		if (valueOf == null)
-//			throw new IllegalArgumentException("Unknown RequestImpl " + metadata);
-//		String uriWithParams = split2[1];
-//		String protocol = split2[2];
-//
-//		Map<String, String> tempheaders = new HashMap<String, String>();
-//		for (int i = 1; i < split.length; i++) {
-//			String h = split[i];
-//			int indexOf2 = h.indexOf(": ");
-//			if (indexOf2 == -1) {
-//				tempheaders.put(h, "");
-//			} else {
-//				tempheaders.put(h.substring(0, indexOf2), h.substring(indexOf2 + 2));
-//			}
-//		}
-//
-//		int indexOf3 = uriWithParams.indexOf("?");
-//		String uri = uriWithParams;
-//		Map<String, Collection<String>> tempparams = null;
-//		if (indexOf3 > 0) {
-//			uri = uriWithParams.substring(0, indexOf3);
-//			tempparams = parseParams(uriWithParams.substring(indexOf3 + 1));
-//		}
-//		return new RequestImpl(valueOf, uri, uriWithParams, protocol, tempparams, Utils.unmodifiableMap(tempheaders), body);
-//	}
-//
-//	Map<String, Collection<String>> parseParams(String uriparams) {
-//		Map<String, Collection<String>> tempparams = new HashMap<String, Collection<String>>();
-//		String[] split3 = uriparams.split("&");
-//		for (String p : split3) {
-//			int indexOf2 = p.indexOf("=");
-//			if (indexOf2 == -1) {
-//				Collection<String> collection = tempparams.get(p);
-//				if (collection == null) {
-//					collection = new ArrayList<String>();
-//				}
-//				try {
-//					tempparams.put(URLDecoder.decode(p, ENC_UTF_8), collection);
-//				} catch (UnsupportedEncodingException e1) {
-//					e1.printStackTrace();
-//				}
-//			} else {
-//				String key = p.substring(0, indexOf2);
-//				String value = p.substring(indexOf2 + 1);
-//				try {
-//					String decodeKey = URLDecoder.decode(key, ENC_UTF_8);
-//					Collection<String> collection = tempparams.get(decodeKey);
-//					if (collection == null) {
-//						collection = new ArrayList<String>();
-//						tempparams.put(decodeKey, collection);
-//					}
-//					collection.add(URLDecoder.decode(value, ENC_UTF_8));
-//				} catch (UnsupportedEncodingException e1) {
-//					e1.printStackTrace();
-//				}
-//			}
-//
-//		}
-//		for (Entry<String, Collection<String>> e : tempparams.entrySet()) {
-//			e.setValue(Collections.unmodifiableCollection(e.getValue()));
-//		}
-//		return Utils.unmodifiableMap(tempparams);
-//	}
-//}

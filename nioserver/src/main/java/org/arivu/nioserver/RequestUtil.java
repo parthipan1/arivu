@@ -90,7 +90,7 @@ public class RequestUtil {
 				try {
 					tempparams.put(URLDecoder.decode(p, ENC_UTF_8), collection);
 				} catch (UnsupportedEncodingException e1) {
-					e1.printStackTrace();
+					logger.error("Error on parseParams :: ", e1);
 				}
 			} else {
 				String key = p.substring(0, indexOf2);
@@ -104,7 +104,7 @@ public class RequestUtil {
 					}
 					collection.add(URLDecoder.decode(value, ENC_UTF_8));
 				} catch (UnsupportedEncodingException e1) {
-					e1.printStackTrace();
+					logger.error("Error on parseParams :: ", e1);
 				}
 			}
 
