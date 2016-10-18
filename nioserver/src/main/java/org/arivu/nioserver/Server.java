@@ -212,15 +212,18 @@ final class Connection {
 			@Override
 			public void run() {
 				try {
-					Request parse = new RequestParser().parse(inBuffer);
-					if (parse.uri.equalsIgnoreCase(Configuration.stopUri)) {
-						new Response(parse, socketChannel).close();
+					Request req = new RequestParser().parse(inBuffer);
+					if (req.uri.equalsIgnoreCase(Configuration.stopUri)) {
+						new Response(req, socketChannel).close();
 						Server.stop();
 						selector.close();
 						selector = null;
 					} else {
 						selector = null;
-						new ConsoleRequestHandler().handle(parse, new Response(parse, socketChannel));
+						RequestPath requestPath = Request.get(Configuration.requestPaths, req);
+						if(requestPath!=null){
+							requestPath.handle(req, new Response(req, socketChannel));
+						}
 					}
 				} catch (Throwable e) {
 					e.printStackTrace();
@@ -329,12 +332,12 @@ final class RequestParser {
 	}
 }
 
-final class ConsoleRequestHandler implements RequestHandler {
+final class ConsoleRequestHandler {
 
-	@Override
+	@Path(value="/*",method="all")
 	public void handle(Request req, Response res) throws Exception {
 		System.out.println(req.toString());
-		res.append("Ok");
+		res.setResponseCode(404);
 		res.close();
 	}
 

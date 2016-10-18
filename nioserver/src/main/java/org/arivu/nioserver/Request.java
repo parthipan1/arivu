@@ -6,7 +6,7 @@ import java.util.Map;
 public class Request {
 
 	enum Method{
-		HEAD,PUT,DELETE,OPTIONS,GET,POST,CONNECT,TRACE;
+		HEAD,PUT,DELETE,OPTIONS,GET,POST,CONNECT,TRACE,ALL;
 	}
 	
 	final Map<String,String> headers;
@@ -62,4 +62,15 @@ public class Request {
 				+ body + ", protocol=" + protocol + "]";
 	}
 	
+	static RequestPath get(Collection<RequestPath> paths,Request req){
+		RequestPath df = null;
+		RequestPath in = new RequestPath(req.uri, req.method);
+		for( RequestPath rq: paths ){
+			if( in.equals(rq) ) return rq;
+			else if( rq.httpMethod == Method.ALL && rq.uri.equals("/*") ){
+				df = rq;
+			}
+		}
+		return df;
+	}
 }
