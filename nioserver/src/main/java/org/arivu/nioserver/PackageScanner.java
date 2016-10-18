@@ -9,7 +9,6 @@ import java.net.URLDecoder;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import org.arivu.datastructure.DoublyLinkedList;
@@ -148,9 +147,9 @@ public class PackageScanner {
 				if (path != null) {
 					try {
 						String uri = path.value();
-						String method2 = path.method();
-						if (!NullCheck.isNullOrEmpty(method2)) {
-							Request.Method httpMethod = Request.Method.valueOf(method2.toUpperCase(Locale.ENGLISH));
+//						String method2 = path.method();
+//						if (!NullCheck.isNullOrEmpty(method2)) {
+							Request.Method httpMethod = path.method();//Request.Method.valueOf(method2.toUpperCase(Locale.ENGLISH));
 							if (!NullCheck.isNullOrEmpty(uri) && httpMethod != null) {
 								RequestPath e = new RequestPath(uri, httpMethod, clazz, method);
 								boolean add = reqPaths.add(e);
@@ -160,7 +159,7 @@ public class PackageScanner {
 									logger.info("Duplicate request handler discovered ignoring :: " + clazz.getName()+" method "+method.getName());
 								}
 							} 
-						}
+//						}
 					} catch (IllegalArgumentException e) {
 						e.printStackTrace();
 					}

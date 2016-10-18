@@ -330,14 +330,14 @@ final class RequestParser {
 
 final class ConsoleRequestHandler {
 
-	@Path(value="/*",method="all")
+	@Path(value="/*",method=Request.Method.ALL)
 	public void handle(Request req, Response res) throws Exception {
 		System.out.println(req.toString());
 		res.setResponseCode(404);
 		res.close();
 	}
 
-	@Path(value=Configuration.stopUri,method="GET")
+	@Path(value=Configuration.stopUri,method=Request.Method.GET)
 	public void stop(Request req, Response res) throws Exception {
 		System.out.println(req.toString());
 		res.setResponseCode(200);

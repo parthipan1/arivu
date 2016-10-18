@@ -5,7 +5,7 @@ import java.util.Map;
 
 public class Request {
 
-	enum Method{
+	public enum Method{
 		HEAD,PUT,DELETE,OPTIONS,GET,POST,CONNECT,TRACE,ALL;
 	}
 	
