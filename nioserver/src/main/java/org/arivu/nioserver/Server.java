@@ -190,6 +190,7 @@ public class Server {
 			e.printStackTrace();
 		}
 		exe.shutdownNow();
+		logger.info("Server stopped!");
 	}
 }
 

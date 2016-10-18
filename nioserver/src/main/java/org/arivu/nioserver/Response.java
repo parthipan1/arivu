@@ -9,7 +9,7 @@ import java.util.Map.Entry;
 
 import org.arivu.utils.NullCheck;
 
-class Response implements AutoCloseable {
+public class Response implements AutoCloseable {
 
 	final Map<String, Object> headers = new HashMap<String, Object>();
 

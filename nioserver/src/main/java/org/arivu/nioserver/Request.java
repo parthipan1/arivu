@@ -3,7 +3,7 @@ package org.arivu.nioserver;
 import java.util.Collection;
 import java.util.Map;
 
-final class Request {
+public final class Request {
 
 	public enum Method{
 		HEAD,PUT,DELETE,OPTIONS,GET,POST,CONNECT,TRACE,ALL;
