@@ -80,7 +80,7 @@ public final class Request {
 					return rq;
 				else if( rq instanceof ProxyRequestPath && req.uri.startsWith(rq.uri) )
 					return rq;
-			}else if( rq.httpMethod == Method.GET && rq instanceof ProxyRequestPath && req.uri.startsWith(rq.uri)  ){
+			}else if( rq instanceof ProxyRequestPath && req.uri.startsWith(rq.uri)  ){
 				return rq;
 			}
 		}

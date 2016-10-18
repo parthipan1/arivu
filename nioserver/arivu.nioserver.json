@@ -14,7 +14,7 @@
             },
             "location":"/search",
             "method":"GET",
-            "proxy_pass":"http://localhost:$port"
+            "proxy_pass":"https://www.google.co.in"
          },
          "staticContent":{  
             "header":{  

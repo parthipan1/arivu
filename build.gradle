@@ -322,4 +322,102 @@ dependencies {
 	compile project(':utils')
     runtime project(':lightninglog')
   }
+  
+	// deployment directory
+	def deployDir = project.getProject().getProjectDir().getAbsolutePath() 
+  
+  	//println "deployDir -- "+deployDir
+  
+  task distZip() << {//dependsOn:build
+	//createDir(deployDir)
+	createDir(deployDir+FS+"dist")
+	createDir(deployDir+FS+"dist"+FS+"libs")
+	createDir(deployDir+FS+"dist"+FS+"bin")
+	createDir(deployDir+FS+"dist"+FS+"conf")
+	createDir(deployDir+FS+"dist"+FS+"logs")
+	
+	new File(deployDir+FS+"dist"+FS+"bin"+FS+"start.sh") << "java -classpath ../libs/*:../conf/* -Dlightninglog.json=../conf/lightninglog.json -Darivu.nioserver.json=../conf/arivu.nioserver.json -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=12345 -Djava.rmi.server.hostname=localhost -Dcom.sun.management.jmxremote.rmi.port=12345 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false org.arivu.nioserver.Server start"
+	new File(deployDir+FS+"dist"+FS+"bin"+FS+"start.cmd") << "java -classpath ..\\libs\\*:..\\conf\\* -Dlightninglog.json=..\\conf\\lightninglog.json -Darivu.nioserver.json=../conf/arivu.nioserver.json -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=12345 -Djava.rmi.server.hostname=localhost -Dcom.sun.management.jmxremote.rmi.port=12345 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false org.arivu.nioserver.Server start"
+	new File(deployDir+FS+"dist"+FS+"bin"+FS+"stop.sh") << "java -classpath ../libs/*:../conf/* -Darivu.nioserver.json=../conf/arivu.nioserver.json org.arivu.nioserver.Server stop"
+	new File(deployDir+FS+"dist"+FS+"bin"+FS+"stop.cmd") << "java -classpath ..\\libs\\*:..\\conf\\* -Darivu.nioserver.json=../conf/arivu.nioserver.json org.arivu.nioserver.Server stop"
+	
+	configurations.compile.resolve().each{ f ->
+		copy{
+				from(f)
+				into(deployDir+FS+"dist"+FS+"libs") 
+			} 
+	}
+	
+	copy {
+        from project.buildDir.toString()+FS+'libs'
+        into(deployDir+FS+"dist"+FS+"libs")
+      }
+      
+	copy{
+		from("lightninglog.json")
+		into(deployDir+FS+"dist"+FS+"conf") 
+	} 
+	
+	copy{
+		from("arivu.nioserver.json")
+		into(deployDir+FS+"dist"+FS+"conf") 
+	} 
+	
+	copy{
+		from("src"+FS+"main"+FS+"resources")
+		into(deployDir+FS+"dist"+FS+"conf") 
+	}
+	
+	del(deployDir+FS+"arivu.nioserver-"+project.version+".zip");
+	ant.zip(destfile: deployDir+FS+"arivu.nioserver-"+project.version+".zip",
+			basedir: deployDir+FS+"dist",
+		){
+			fileset(dir: deployDir+FS+"dist"){
+				include(name: '**')
+			}
+		}
+	
+	del(deployDir+FS+"dist");
 }
+
+  build {
+  	finalizedBy distZip
+  }
+  
+}
+
+
+def createDir(p){
+	def f = new File(p)
+	if(f.exists()){
+		del(p);
+	}
+	f.mkdirs()
+}
+
+
+def del(p){
+	try{
+		def f = new File(p)
+    	if(f.isDirectory()){
+    		if(f.list().length==0){
+    		   f.delete()
+//    		   println " Del Dir1 :: "+f.getAbsolutePath()
+    		}else{
+    		   f.list().each{ temp ->
+	        	  del(new File(f, temp).getAbsolutePath());
+    		   }
+        	   if(f.list().length==0){
+           	     f.delete()
+  //         	     println " Del Dir2 :: "+f.getAbsolutePath()
+        	   }
+    		}
+    	}else{
+    		f.delete()
+//    		println " Del File :: "+f.getAbsolutePath()
+    	}
+    }catch(Throwable e){
+    	e.printStackTrace();
+    }
+}
+

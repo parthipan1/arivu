@@ -9,7 +9,7 @@ import java.util.Map.Entry;
 
 import org.arivu.utils.NullCheck;
 
-public class Response implements AutoCloseable {
+public final class Response implements AutoCloseable {
 
 	final Map<String, Object> headers = new HashMap<String, Object>();
 
@@ -91,41 +91,41 @@ public class Response implements AutoCloseable {
 	}
 
 }
-class ProxyResponse extends Response{
-
-	/**
-	 * @param request
-	 * @param socketChannel
-	 * @param headers
-	 */
-	ProxyResponse(Request request, SocketChannel socketChannel, Map<String, Object> headers) {
-		super(request, socketChannel, headers);
-	}
-
-	@Override
-	public void close() throws Exception {
-//		final StringBuffer responseBody = new StringBuffer();
-		
-//		Object rescodetxt = null;
-//		if(!NullCheck.isNullOrEmpty(Configuration.defaultResponseCodes)){
-//			rescodetxt = Configuration.defaultResponseCodes.get(String.valueOf(responseCode));
-//		}
-//		
-//		if(rescodetxt==null)
-//			responseBody.append(request.protocol).append(" ").append(responseCode).append(" ").append(System.lineSeparator());
-//		else
-//			responseBody.append(request.protocol).append(" ").append(responseCode).append(" ").append(rescodetxt).append(System.lineSeparator());
-//		
-//		responseBody.append("Date: ").append(new Date().toString()).append(System.lineSeparator());
-//		
-//		for (Entry<String, Object> e : headers.entrySet()) {
-//			responseBody.append(e.getKey()).append(": ").append(e.getValue()).append(System.lineSeparator());
-//		}
-//		responseBody.append(System.lineSeparator());
-//		responseBody.append(body);
-
-		this.socketChannel.write(ByteBuffer.wrap(body.toString().getBytes()));
-		this.socketChannel.close();
-	}
-	
-}
+//class ProxyResponse extends Response{
+//
+//	/**
+//	 * @param request
+//	 * @param socketChannel
+//	 * @param headers
+//	 */
+//	ProxyResponse(Request request, SocketChannel socketChannel, Map<String, Object> headers) {
+//		super(request, socketChannel, headers);
+//	}
+//
+////	@Override
+////	public void close() throws Exception {
+////		final StringBuffer responseBody = new StringBuffer();
+////		
+////		Object rescodetxt = null;
+////		if(!NullCheck.isNullOrEmpty(Configuration.defaultResponseCodes)){
+////			rescodetxt = Configuration.defaultResponseCodes.get(String.valueOf(responseCode));
+////		}
+////		
+////		if(rescodetxt==null)
+////			responseBody.append(request.protocol).append(" ").append(responseCode).append(" ").append(System.lineSeparator());
+////		else
+////			responseBody.append(request.protocol).append(" ").append(responseCode).append(" ").append(rescodetxt).append(System.lineSeparator());
+////		
+////		responseBody.append("Date: ").append(new Date().toString()).append(System.lineSeparator());
+//////		
+////		for (Entry<String, Object> e : headers.entrySet()) {
+////			responseBody.append(e.getKey()).append(": ").append(e.getValue()).append(System.lineSeparator());
+////		}
+////		responseBody.append(System.lineSeparator());
+//////		responseBody.append(body);
+////
+////		this.socketChannel.write(ByteBuffer.wrap(body.toString().getBytes()));
+////		this.socketChannel.close();
+////	}
+//	
+//}

@@ -100,6 +100,7 @@ public class Server {
 			// System.out.println(" responseCode :: "+responseCode+" response ::
 			// "+response.toString());
 		} catch (Throwable e) {
+			logger.error("Failed on stop::", e);
 			// e.printStackTrace();
 //			System.err.println(e.toString());
 		} finally {
@@ -119,7 +120,7 @@ public class Server {
 		ServerSocketChannel channel = ServerSocketChannel.open();
 
 		channel.bind(new InetSocketAddress(DEFAULT_HOST, DEFAULT_PORT));
-		logger.debug("Server listning at " + DEFAULT_HOST + ":" + DEFAULT_PORT + "!");
+		logger.info("Server listning at " + DEFAULT_HOST + ":" + DEFAULT_PORT + "!");
 		channel.configureBlocking(false);
 
 		selector = Selector.open();
@@ -172,12 +173,8 @@ public class Server {
 
 						}
 					}
-
 				}
-
-				// once a key is handled, it needs to be removed
 				iterator.remove();
-
 			}
 		}
 	}
@@ -187,7 +184,7 @@ public class Server {
 		try {
 			selector.close();
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error("Failed in selector close :: ", e);
 		}
 		exe.shutdownNow();
 		logger.info("Server stopped!");
@@ -228,11 +225,14 @@ final class Connection {
 							try {
 								response.close();
 							} catch (Throwable e) {
+								logger.error("Failed in response close :: ", e);
 							}
 						}
 					}
 				} catch (Throwable e) {
-					e.printStackTrace();
+					long currentTimeMillis = System.currentTimeMillis();
+					logger.error("Failed in request("+currentTimeMillis+") :: "+inBuffer);
+					logger.error("Failed in request("+currentTimeMillis+") :: ", e);
 				}
 			}
 		});
@@ -242,6 +242,8 @@ final class Connection {
 }
 
 final class RequestParser {
+	private static final Logger logger = LoggerFactory.getLogger(RequestParser.class);
+	
 	private static final String ENC_UTF_8 = "UTF-8";
 	private static final byte BYTE_13 = (byte) 13;
 	private static final byte BYTE_10 = (byte) 10;
@@ -273,7 +275,8 @@ final class RequestParser {
 
 		String[] split2 = split[0].split(" ");
 
-		// System.out.println("REQ METHOD :: "+split2[0]);
+//		System.out.println("REQ METHOD :: "+split2[0]);
+		logger.debug("Parsing Request :: "+content);
 		Method valueOf = Request.Method.valueOf(split2[0]);
 		if (valueOf == null)
 			throw new IllegalArgumentException("Unknown Request " + metadata);

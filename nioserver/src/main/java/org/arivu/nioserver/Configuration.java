@@ -1,7 +1,6 @@
 package org.arivu.nioserver;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
@@ -45,12 +44,12 @@ public final class Configuration {
 			Map<String, Object> header = (Map<String, Object>) Ason.getObj(proxy, "header", null);
 			String proxy_pass = Ason.getStr(proxy, "proxy_pass", null);
 			if (proxy_pass != null) {
-				proxy_pass = Utils.replaceAll(proxy_pass, "$host", Server.DEFAULT_HOST) ;
-				proxy_pass = Utils.replaceAll(proxy_pass, "$port", String.valueOf(Server.DEFAULT_PORT)) ;
+				proxy_pass = Utils.replaceAll(proxy_pass, "$host", Server.DEFAULT_HOST);
+				proxy_pass = Utils.replaceAll(proxy_pass, "$port", String.valueOf(Server.DEFAULT_PORT));
 			}
 			String dir = Ason.getStr(proxy, "dir", null);
 			if (dir != null) {
-				dir =  Utils.replaceAll(dir, "$home", new File(".").getAbsolutePath()) ;
+				dir = Utils.replaceAll(dir, "$home", new File(".").getAbsolutePath());
 			}
 			ProxyRequestPath prp = new ProxyRequestPath(name, proxy_pass, dir, Ason.getStr(proxy, "location", null),
 					httpMethod, null, null, false, header);
@@ -61,11 +60,8 @@ public final class Configuration {
 		try {
 			tempRequestPaths.addAll(PackageScanner.getPaths(scanPackages));
 			requestPaths = Utils.unmodifiableCollection(tempRequestPaths);
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-			throw new IllegalStateException(e);
-		} catch (IOException e) {
-			e.printStackTrace();
+		} catch (Exception e) {
+			logger.error("Failed in packagescan :: ", e);
 			throw new IllegalStateException(e);
 		}
 	}

@@ -11,13 +11,15 @@ import java.lang.reflect.Modifier;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
+import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.datastructure.DoublyLinkedSet;
 import org.arivu.datastructure.MemoryMappedFiles;
@@ -57,12 +59,15 @@ public class PackageScanner {
 				directories.add(new File(URLDecoder.decode(resources.nextElement().getPath(), "UTF-8")));
 			}
 		} catch (NullPointerException x) {
+			logger.error("Error on Scanning annotation :: ", x);
 			throw new ClassNotFoundException(
 					pckgname + " does not appear to be a valid package (Null pointer exception)");
 		} catch (UnsupportedEncodingException encex) {
+			logger.error("Error on Scanning annotation :: ", encex);
 			throw new ClassNotFoundException(
 					pckgname + " does not appear to be a valid package (Unsupported encoding)");
 		} catch (IOException ioex) {
+			logger.error("Error on Scanning annotation :: ", ioex);
 			throw new ClassNotFoundException("IOException was thrown when trying to get all resources for " + pckgname);
 		}
 
@@ -73,7 +78,7 @@ public class PackageScanner {
 				File[] files = directoryFile.listFiles();
 
 				for (File file : files) {
-					if ((file.getName().endsWith(".class")) && (!file.getName().contains("$"))) {
+					if ( file.getName().endsWith(".class") && !file.getName().contains("$") ) {
 						int index = directoryFile.getPath().indexOf(packageToPath);
 						String packagePrefix = directoryFile.getPath().substring(index).replace('/', '.');
 						try {
@@ -81,6 +86,7 @@ public class PackageScanner {
 									+ file.getName().substring(0, file.getName().length() - 6);
 							classes.add(Class.forName(className));
 						} catch (NoClassDefFoundError e) {
+							logger.error("Error on Scanning annotation :: ", e);
 						}
 					} else if (file.isDirectory()) { // If we got to a
 														// subdirectory
@@ -88,6 +94,8 @@ public class PackageScanner {
 					}
 				}
 			} else {
+				logger.error(
+						pckgname + " (" + directoryFile.getPath() + ") does not appear to be a valid package");
 				throw new ClassNotFoundException(
 						pckgname + " (" + directoryFile.getPath() + ") does not appear to be a valid package");
 			}
@@ -212,7 +220,7 @@ class RequestPath {
 
 }
 
-class ProxyRequestPath extends RequestPath {
+final class ProxyRequestPath extends RequestPath {
 
 	String name;
 	String proxy_pass;
@@ -266,29 +274,60 @@ class ProxyRequestPath extends RequestPath {
 	public void handle(Request req, Response res) throws Exception {
 		if (!NullCheck.isNullOrEmpty(dir)) {
 			String file = this.dir + req.uri.substring(this.uri.length());
-			ByteBuffer bytes = files.getBytes(file);
-			if (bytes == null) {
-				bytes = files.addBytes(file);
+			File f = new File(file);
+			if(!f.exists()){
+				res.setResponseCode(404);
+			}else if(f.isDirectory()){
+				File[] listFiles = f.listFiles();
+				StringBuffer buf = new StringBuffer("<html><body>");
+				buf.append("<a href=\"").append("..").append("\" >").append("..").append("</a>").append("<br>");
+				for(File f1:listFiles){
+					buf.append("<a href=\"").append(f1.getName()).append("\" >").append(f1.getName()).append("</a>").append("<br>");
+				}
+				buf.append("</body></html>");
+				res.setResponseCode(200);
+				res.append(buf.toString());
+//				res.putHeader("Content-Type", "text/html;charset=UTF-8");
+				res.putHeader("Content-Length", buf.length());
+			}else{
+				String content = files.get(file);
+				if (content == null) {
+					files.addBytes(file);
+					content = files.get(file);
+				}
+				res.append(content);
+				res.putHeader("Content-Length", content.length());
 			}
-			byte[] array = bytes.array();
-			res.append(array);
-			res.putHeader("Content-Length", array.length);
 		} else {
-			String loc = this.proxy_pass + req.uri.substring(this.uri.length());
+			String queryStr = req.uriWithParams.substring(req.uriWithParams.indexOf("?"));
+			String loc = this.proxy_pass + req.uri.substring(this.uri.length()) + queryStr;
+			System.out.println("loc :: " + loc);
 			HttpMethods httpMethods = proxyTh.get(null);
 			ProxyRes pres = null;
 			switch (req.method) {
+			case HEAD:
+				pres = httpMethods.head(loc, req.headers);
+				break;
+			case OPTIONS:
+				pres = httpMethods.options(loc, req.body, req.headers);
+				break;
+			case CONNECT:
+				pres = httpMethods.connect(loc, req.headers);
+				break;
+			case TRACE:
+				pres = httpMethods.trace(loc, req.headers);
+				break;
 			case GET:
-				pres = httpMethods.get(loc);
+				pres = httpMethods.get(loc, req.headers);
 				break;
 			case POST:
-				pres = httpMethods.post(loc, req.body);
+				pres = httpMethods.post(loc, req.body, req.headers);
 				break;
 			case PUT:
-				pres = httpMethods.put(loc, req.body);
+				pres = httpMethods.put(loc, req.body, req.headers);
 				break;
 			case DELETE:
-				pres = httpMethods.delete(loc);
+				pres = httpMethods.delete(loc, req.headers);
 				break;
 			default:
 				break;
@@ -296,6 +335,7 @@ class ProxyRequestPath extends RequestPath {
 			if (pres != null) {
 				res.setResponseCode(pres.responseCode);
 				res.append(pres.response);
+				res.putAllHeader(pres.headers);
 			}
 		}
 	}
@@ -305,7 +345,7 @@ class ProxyRequestPath extends RequestPath {
 		if (!NullCheck.isNullOrEmpty(dir)) {
 			return super.getResponse(req, socketChannel);
 		} else {
-			return new ProxyResponse(req, socketChannel, defaultResponseHeader);
+			return new Response(req, socketChannel, defaultResponseHeader);
 		}
 	}
 
@@ -319,6 +359,7 @@ class ProxyRequestPath extends RequestPath {
 final class ProxyRes {
 	final String response;
 	final int responseCode;
+	Map<String, String> headers = new Amap<String, String>();
 
 	ProxyRes(int responseCode, String response) {
 		super();
@@ -329,58 +370,72 @@ final class ProxyRes {
 }
 
 interface HttpMethods {
-	ProxyRes get(String uri) throws IOException;
+	ProxyRes trace(String uri, Map<String, String> headers) throws IOException;
+	
+	ProxyRes head(String uri, Map<String, String> headers) throws IOException;
+	
+	ProxyRes connect(String uri, Map<String, String> headers) throws IOException;
+	
+	ProxyRes options(String uri, String body, Map<String, String> headers) throws IOException;
+	
+	ProxyRes get(String uri, Map<String, String> headers) throws IOException;
 
-	ProxyRes post(String uri, String body) throws IOException;
+	ProxyRes post(String uri, String body, Map<String, String> headers) throws IOException;
 
-	ProxyRes put(String uri, String body) throws IOException;
+	ProxyRes put(String uri, String body, Map<String, String> headers) throws IOException;
 
-	ProxyRes delete(String uri) throws IOException;
+	ProxyRes delete(String uri, Map<String, String> headers) throws IOException;
 }
 
 class JavaHttpMethods implements HttpMethods {
 
 	@Override
-	public ProxyRes delete(String uri) throws IOException {
+	public ProxyRes delete(String uri, Map<String, String> headers) throws IOException {
 		// System.out.println("DELETE "+uri);
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 		// optional default is GET
 		con.setRequestMethod("DELETE");
 		// add request header
-		addReqHeaders(con);
+		addReqHeaders(con, headers);
 
 		return extractResponse(con);
 	}
 
-	private void addReqHeaders(final HttpURLConnection con) {
+	private void addReqHeaders(final HttpURLConnection con, Map<String, String> headers) {
 		con.setRequestProperty("User-Agent", "Java8");
 		con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
+		if (!NullCheck.isNullOrEmpty(headers)) {
+			Set<Entry<String, String>> entrySet = headers.entrySet();
+			for (Entry<String, String> e : entrySet) {
+				con.setRequestProperty(e.getKey(), e.getValue());
+			}
+		}
 	}
 
 	@Override
-	public ProxyRes get(final String uri) throws IOException {
+	public ProxyRes get(final String uri, Map<String, String> headers) throws IOException {
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
 		// optional default is GET
 		con.setRequestMethod("GET");
-		addReqHeaders(con);
+		addReqHeaders(con, headers);
 
 		return extractResponse(con);
 	}
 
 	@Override
-	public ProxyRes post(final String uri, final String body) throws IOException {
+	public ProxyRes post(final String uri, final String body, Map<String, String> headers) throws IOException {
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
 		// optional default is POST
 		con.setRequestMethod("POST");
-		addReqHeaders(con);
+		addReqHeaders(con, headers);
 		// Send post request
 		con.setDoOutput(true);
-		final OutputStream wr = (con.getOutputStream());
+		final OutputStream wr = con.getOutputStream();
 		try {
 			wr.write(body.getBytes());
 			wr.flush();
@@ -391,17 +446,17 @@ class JavaHttpMethods implements HttpMethods {
 	}
 
 	@Override
-	public ProxyRes put(final String uri, final String body) throws IOException {
+	public ProxyRes put(final String uri, final String body, Map<String, String> headers) throws IOException {
 
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
 		// optional default is PUT
 		con.setRequestMethod("PUT");
-		addReqHeaders(con);
+		addReqHeaders(con, headers);
 		// Send post request
 		con.setDoOutput(true);
-		final OutputStream wr = (con.getOutputStream());
+		final OutputStream wr = con.getOutputStream();
 		try {
 			wr.write(body.getBytes());
 			wr.flush();
@@ -412,12 +467,10 @@ class JavaHttpMethods implements HttpMethods {
 	}
 
 	private ProxyRes extractResponse(final HttpURLConnection con) throws IOException {
-		// Collection<Map<String, Object>> data = null;
-		// int responseCode = 0;
-		// try {
 		int responseCode = con.getResponseCode();
-		// log.info("\nSending 'GET' request to URL : " + geturi);
-		// log.info("Response Code : " + responseCode);
+
+		Map<String, List<String>> map = con.getHeaderFields();
+		
 		final StringBuffer response = new StringBuffer();
 		final BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
 		try {
@@ -428,33 +481,61 @@ class JavaHttpMethods implements HttpMethods {
 		} finally {
 			in.close();
 		}
-		return new ProxyRes(responseCode, response.toString());// response.toString();
-		// log.info(response.toString());
-		// log.debug(response.toString());
-		// if (responseCode == 200) {
-		// if (returnList) {
-		// final Map<String, Object> fromJson = (Map<String, Object>)
-		// fromJson(response.toString(),
-		// Map.class);
-		// final Map<String, Object> object = (Map<String, Object>)
-		// fromJson.get(ElasticSearch.HITS_TOKEN);
-		// if (object != null) {
-		// data = (Collection<Map<String, Object>>)
-		// object.get(ElasticSearch.HITS_TOKEN);
-		// }
-		// }
-		// } else {
-		// log.info(response.toString());
-		// }
-		// } catch (FileNotFoundException e) {
-		// log.error("Error failed on search", e);
-		// }
+		ProxyRes proxyRes = new ProxyRes(responseCode, response.toString());
+		for (Map.Entry<String, List<String>> entry : map.entrySet()) {
+			proxyRes.headers.put(entry.getKey(), entry.getValue().get(0));
+		}
+		return proxyRes;
+	}
 
-		// if (returnList) {
-		// return data;
-		// } else {
-		// return responseCode;
-		// }
+	@Override
+	public ProxyRes trace(String uri, Map<String, String> headers) throws IOException {
+		final URL obj = new URL(uri);
+		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+
+		// optional default is TRACE
+		con.setRequestMethod("TRACE");
+		addReqHeaders(con, headers);
+
+		return extractResponse(con);
+	}
+
+	@Override
+	public ProxyRes head(String uri, Map<String, String> headers) throws IOException {
+		final URL obj = new URL(uri);
+		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+
+		// optional default is HEAD
+		con.setRequestMethod("HEAD");
+		addReqHeaders(con, headers);
+
+		return extractResponse(con);
+	}
+
+	@Override
+	public ProxyRes connect(String uri, Map<String, String> headers) throws IOException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public ProxyRes options(String uri, String body, Map<String, String> headers) throws IOException {
+		final URL obj = new URL(uri);
+		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+
+		// optional default is OPTIONS
+		con.setRequestMethod("OPTIONS");
+		addReqHeaders(con, headers);
+		// Send post request
+		con.setDoOutput(true);
+		final OutputStream wr = con.getOutputStream();
+		try {
+			wr.write(body.getBytes());
+			wr.flush();
+		} finally {
+			wr.close();
+		}
+		return extractResponse(con);
 	}
 
 }
