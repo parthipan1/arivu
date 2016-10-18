@@ -59,6 +59,7 @@ final class Configuration {
 		try {
 			tempRequestPaths.addAll(PackageScanner.getPaths(scanPackages));
 			routes = Utils.unmodifiableCollection(tempRequestPaths);
+//			routes = tempRequestPaths;
 			logger.debug("All request paths : "+routes);
 		} catch (Exception e) {
 			logger.error("Failed in packagescan :: ", e);

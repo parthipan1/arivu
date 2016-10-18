@@ -6,6 +6,7 @@ package org.arivu.nioserver;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.management.ManagementFactory;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.net.URL;
@@ -26,8 +27,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+
 import org.arivu.datastructure.Amap;
 import org.arivu.utils.Env;
+import org.arivu.utils.NullCheck;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -111,6 +116,7 @@ public class Server {
 	private static Selector selector = null;
 
 	private static void start(String[] args) throws IOException {
+		registerMXBean();
 		ServerSocketChannel channel = ServerSocketChannel.open();
 
 		channel.bind(new InetSocketAddress(DEFAULT_HOST, DEFAULT_PORT));
@@ -181,6 +187,7 @@ public class Server {
 			logger.error("Failed in selector close :: ", e);
 		}
 		exe.shutdownNow();
+		unregisterMXBean();
 		logger.info("Server stopped!");
 	}
 	
@@ -204,6 +211,74 @@ public class Server {
 		}, 1, TimeUnit.SECONDS);
 		
 	}
+	
+	private static void unregisterMXBean() {
+		if (beanNameStr != null) {
+			try {
+				ManagementFactory.getPlatformMBeanServer().unregisterMBean(new ObjectName(beanNameStr));
+				logger.debug("Unregister Jmx bean " + beanNameStr);
+			} catch (Exception e) {
+				logger.error("Failed with Error::", e);
+			}
+		}
+	}
+	
+	static String beanNameStr = null;
+
+	/**
+	 * 
+	 */
+	private static void registerMXBean() {
+		try {
+			MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+			beanNameStr = "org.arivu.niosever:type=" + Server.class.getSimpleName() + "." + DEFAULT_PORT;
+			mbs.registerMBean(mxBean, new ObjectName(beanNameStr));
+			logger.debug(" Jmx bean beanName " + beanNameStr + " registered!");
+		} catch (Exception e) {
+			logger.error("Failed with Error::", e);
+		}
+	}
+	
+	static final ServerMXBean mxBean = new ServerMXBean() {
+		
+		@Override
+		public void shutdown() {
+			Server.stop();
+		}
+		
+		@Override
+		public void removeRoute(String route) {
+			if(NullCheck.isNullOrEmpty(route)) return;
+			
+			throw new RuntimeException("Cannot remove route!");
+//			Collection<Route> rts = Configuration.routes;
+//			for( Route rt:rts ){
+//				if( route.equals(rt.uri+" "+rt.httpMethod) ){
+//					rts.remove(rt);
+//					break;
+//				}
+//			}
+		}
+		
+		@Override
+		public int noOfConnections() {
+			return CONNECTIONS.size();
+		}
+		
+		@Override
+		public String[] getAllRoute() {
+			Collection<Route> rts = Configuration.routes;
+			
+			String[] ret = new String[rts.size()];
+			int i=0;
+			for( Route rt:rts ){
+				ret[i++] = rt.uri+" "+rt.httpMethod;
+			}
+			
+			return ret;
+		}
+	};
+	
 }
 
 final class Connection {
