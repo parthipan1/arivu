@@ -12,6 +12,7 @@ final class Request {
 	final Map<String,String> headers;
 	
 	final String uri;
+	final String uriWithParams;
 	
 	final Map<String,Collection<String>> params ;
 	
@@ -21,11 +22,12 @@ final class Request {
 
 	final String protocol;
 	
-	Request(Method method, String uri, String protocol, Map<String, Collection<String>> params, Map<String, String> headers,
-			String body) {
+	Request(Method method, String uri, String uriWithParams, String protocol, Map<String, Collection<String>> params,
+			Map<String, String> headers, String body) {
 		super();
 		this.method = method;
 		this.uri = uri;
+		this.uriWithParams = uriWithParams;
 		this.protocol = protocol;
 		this.params = params;
 		this.headers = headers;
@@ -54,6 +56,10 @@ final class Request {
 
 	public String getProtocol() {
 		return protocol;
+	}
+
+	public String getUriWithParams() {
+		return uriWithParams;
 	}
 
 	@Override

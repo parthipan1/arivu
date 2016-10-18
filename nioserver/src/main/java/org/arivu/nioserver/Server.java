@@ -268,7 +268,7 @@ final class RequestParser {
 		Method valueOf = Request.Method.valueOf(split2[0]);
 		if (valueOf == null)
 			throw new IllegalArgumentException("Unknown Request " + metadata);
-		String uri = split2[1];
+		String uriWithParams = split2[1];
 		String protocol = split2[2];
 
 		Map<String, String> tempheaders = new HashMap<String, String>();
@@ -282,12 +282,14 @@ final class RequestParser {
 			}
 		}
 
-		int indexOf3 = uri.indexOf("?");
+		int indexOf3 = uriWithParams.indexOf("?");
+		String uri = uriWithParams;
 		Map<String, Collection<String>> tempparams = null;
 		if (indexOf3 > 0) {
-			tempparams = parseParams(uri.substring(indexOf3 + 1));
+			uri = uriWithParams.substring(0, indexOf3);
+			tempparams = parseParams(uriWithParams.substring(indexOf3 + 1));
 		}
-		return new Request(valueOf, uri, protocol, tempparams, Utils.unmodifiableMap(tempheaders), body);
+		return new Request(valueOf, uri, uriWithParams, protocol, tempparams, Utils.unmodifiableMap(tempheaders), body);
 	}
 
 	Map<String, Collection<String>> parseParams(String uriparams) {
