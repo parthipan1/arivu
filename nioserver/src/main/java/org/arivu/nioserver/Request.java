@@ -73,8 +73,11 @@ public final class Request {
 		RequestPath in = new RequestPath(req.uri, req.method);
 		for( RequestPath rq: paths ){
 			if( in.equals(rq) ) return rq;
-			else if( rq.httpMethod == Method.ALL && rq.uri.equals("/*") ){
-				df = rq;
+			else if( rq.httpMethod == Method.ALL ){
+				if(rq.uri.equals("/*"))
+					df = rq;
+				else if(rq.uri.equals(req.uri))
+					return rq;
 			}
 		}
 		return df;

@@ -101,7 +101,7 @@ public class Server {
 			// "+response.toString());
 		} catch (Throwable e) {
 			// e.printStackTrace();
-			System.err.println(e.toString());
+//			System.err.println(e.toString());
 		} finally {
 			if (in != null)
 				try {
@@ -221,7 +221,15 @@ final class Connection {
 					final Request req = new RequestParser().parse(inBuffer);
 					RequestPath requestPath = Request.get(Configuration.requestPaths, req);
 					if (requestPath != null) {
-						requestPath.handle(req,  requestPath.getResponse(req, socketChannel) );
+						final Response response = requestPath.getResponse(req, socketChannel);
+						try{
+						requestPath.handle(req,  response );
+						}finally{
+							try {
+								response.close();
+							} catch (Throwable e) {
+							}
+						}
 					}
 				} catch (Throwable e) {
 					e.printStackTrace();
@@ -339,13 +347,11 @@ final class DefaultRequestHandler {
 	static public void handle(Request req, Response res) throws Exception {
 		logger.debug(req.toString());
 		res.setResponseCode(404);
-		res.close();
 	}
 
 	@Path(value = Configuration.stopUri, method = Request.Method.GET)
 	static public void stop(Request req, Response res) throws Exception {
 		res.setResponseCode(200);
-		res.close();
 		Server.stop();
 	}
 }
