@@ -155,9 +155,9 @@ public class PackageScanner {
 								RequestPath e = new RequestPath(uri, httpMethod, clazz, method);
 								boolean add = reqPaths.add(e);
 								if (add) {
-									logger.info("Discovered request handler :: " + clazz.getName());
+									logger.info("Discovered request handler :: " + clazz.getName()+" method "+method.getName());
 								} else {
-									logger.info("Duplicate request handler discovered ignoring :: " + clazz.getName());
+									logger.info("Duplicate request handler discovered ignoring :: " + clazz.getName()+" method "+method.getName());
 								}
 							} 
 						}

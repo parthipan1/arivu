@@ -62,7 +62,7 @@ public class Server {
 	private static final Connection getRequest(Integer id, Selector selector) {
 		Connection connection = CONNECTIONS.get(id);
 		if (connection == null) {
-			connection = new Connection(selector);
+			connection = new Connection();
 			CONNECTIONS.put(id, connection);
 		}
 		return connection;
@@ -113,6 +113,7 @@ public class Server {
 
 	}
 
+	private static Selector selector = null;
 	private static void start(String[] args) throws IOException {
 		ServerSocketChannel channel = ServerSocketChannel.open();
 
@@ -120,7 +121,7 @@ public class Server {
 		logger.debug("Server listning at " + DEFAULT_HOST + ":" + DEFAULT_PORT + "!");
 		channel.configureBlocking(false);
 
-		final Selector selector = Selector.open();
+		selector = Selector.open();
 		final SelectionKey socketServerSelectionKey = channel.register(selector, SelectionKey.OP_ACCEPT);
 		Map<String, String> properties = new HashMap<String, String>();
 		properties.put(channelType, serverChannel);
@@ -178,11 +179,16 @@ public class Server {
 
 			}
 		}
-		exe.shutdownNow();
 	}
 
 	public static void stop() {
 		shutdown = true;
+		try {
+			selector.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		exe.shutdownNow();
 	}
 }
 
@@ -191,11 +197,9 @@ final class Connection {
 
 	final StringBuffer inBuffer = new StringBuffer();
 	SocketChannel socketChannel = null;
-	Selector selector = null;
 
-	public Connection(Selector selector) {
+	public Connection() {
 		super();
-		this.selector = selector;
 	}
 
 	public void read(CharBuffer charBuffer) {
@@ -212,18 +216,10 @@ final class Connection {
 			@Override
 			public void run() {
 				try {
-					Request req = new RequestParser().parse(inBuffer);
-					if (req.uri.equalsIgnoreCase(Configuration.stopUri)) {
-						new Response(req, socketChannel).close();
-						Server.stop();
-						selector.close();
-						selector = null;
-					} else {
-						selector = null;
-						RequestPath requestPath = Request.get(Configuration.requestPaths, req);
-						if(requestPath!=null){
-							requestPath.handle(req, new Response(req, socketChannel));
-						}
+					final Request req = new RequestParser().parse(inBuffer);
+					RequestPath requestPath = Request.get(Configuration.requestPaths, req);
+					if(requestPath!=null){
+						requestPath.handle(req, new Response(req, socketChannel));
 					}
 				} catch (Throwable e) {
 					e.printStackTrace();
@@ -341,4 +337,11 @@ final class ConsoleRequestHandler {
 		res.close();
 	}
 
+	@Path(value=Configuration.stopUri,method="GET")
+	public void stop(Request req, Response res) throws Exception {
+		System.out.println(req.toString());
+		res.setResponseCode(200);
+		res.close();
+		Server.stop();
+	}
 }
