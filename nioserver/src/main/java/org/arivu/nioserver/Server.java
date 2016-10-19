@@ -357,7 +357,7 @@ final class Connection {
 				} catch (Throwable e) {
 					StringBuffer access = new StringBuffer();
 					String formatDate = ResponseImpl.dateFormat.format(new Date());
-					access.append("[").append(formatDate).append("] ").append(inBuffer.toString().split(System.lineSeparator())[0])
+					access.append("[").append(formatDate).append("] ").append(inBuffer.toString().split(" ")[1])
 							.append(" ").append("400");
 					Server.accessLog.append(access.toString());
 					logger.error("Failed in request parse("+formatDate+") :: "+inBuffer);
