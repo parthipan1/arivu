@@ -53,10 +53,7 @@ final class Configuration {
 		for (Entry<String, Object> e : proxies.entrySet()) {
 			String name = e.getKey();
 			Map<String, Object> proxy = (Map<String, Object>) e.getValue();
-			String strMethod = Ason.getStr(proxy, "httpMethod", null);
-			if (NullCheck.isNullOrEmpty(strMethod))
-				strMethod = "ALL";
-			HttpMethod httpMethod = HttpMethod.valueOf(strMethod);
+			HttpMethod httpMethod = HttpMethod.valueOf(Ason.getStr(proxy, "httpMethod", "ALL"));
 			Map<String, Object> header = (Map<String, Object>) Ason.getObj(proxy, "header", null);
 			String proxy_pass = Ason.getStr(proxy, "proxy_pass", null);
 			if (proxy_pass != null) {
