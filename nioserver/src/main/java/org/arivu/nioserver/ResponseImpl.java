@@ -1,5 +1,7 @@
 package org.arivu.nioserver;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.text.DateFormat;
@@ -15,22 +17,24 @@ final class ResponseImpl implements Response {
 
 	final Map<String, Object> headers = new Amap<String, Object>();
 
-	final StringBuffer body = new StringBuffer();
+	final ByteArrayOutputStream out = new ByteArrayOutputStream();
 
 	int responseCode = Configuration.defaultResCode;
-	
+
 	final SocketChannel socketChannel;
 	final Request request;
 
 	ResponseImpl(Request request, SocketChannel socketChannel, Map<String, Object> headers) {
 		this.request = request;
 		this.socketChannel = socketChannel;
-		if(!NullCheck.isNullOrEmpty(headers)){
+		if (!NullCheck.isNullOrEmpty(headers)) {
 			this.headers.putAll(headers);
 		}
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.arivu.nioserver.Response#getResponseCode()
 	 */
 	@Override
@@ -38,7 +42,9 @@ final class ResponseImpl implements Response {
 		return responseCode;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.arivu.nioserver.Response#setResponseCode(int)
 	 */
 	@Override
@@ -46,7 +52,9 @@ final class ResponseImpl implements Response {
 		this.responseCode = responseCode;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.arivu.nioserver.Response#getHeader(java.lang.Object)
 	 */
 	@Override
@@ -54,15 +62,20 @@ final class ResponseImpl implements Response {
 		return headers.get(key);
 	}
 
-	/* (non-Javadoc)
-	 * @see org.arivu.nioserver.Response#putHeader(java.lang.String, java.lang.Object)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.arivu.nioserver.Response#putHeader(java.lang.String,
+	 * java.lang.Object)
 	 */
 	@Override
 	public Object putHeader(String key, Object value) {
 		return headers.put(key, value);
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.arivu.nioserver.Response#removeHeader(java.lang.Object)
 	 */
 	@Override
@@ -70,7 +83,9 @@ final class ResponseImpl implements Response {
 		return headers.remove(key);
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.arivu.nioserver.Response#putAllHeader(java.util.Map)
 	 */
 	@Override
@@ -78,100 +93,126 @@ final class ResponseImpl implements Response {
 		headers.putAll(m);
 	}
 
-	/* (non-Javadoc)
-	 * @see org.arivu.nioserver.Response#replaceHeader(java.lang.String, java.lang.Object)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.arivu.nioserver.Response#replaceHeader(java.lang.String,
+	 * java.lang.Object)
 	 */
 	@Override
 	public Object replaceHeader(String key, Object value) {
 		return headers.replace(key, value);
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.arivu.nioserver.Response#append(java.lang.CharSequence)
 	 */
 	@Override
-	public StringBuffer append(CharSequence s) {
-		return body.append(s);
+	public void append(CharSequence s) throws IOException {
+		if (s != null)
+			append(s.toString().getBytes());
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.arivu.nioserver.Response#append(byte[])
 	 */
 	@Override
-	public StringBuffer append(byte[] s) {
-		return body.append(s);
+	public void append(byte[] s) throws IOException {
+		out.write(s);
 	}
-	
+
+	volatile boolean closed = false;
+
 	@Override
 	public void close() throws Exception {
+		if (closed)
+			return;
+		closed = true;
 		final StringBuffer responseBody = new StringBuffer();
-		
+
 		Object rescodetxt = null;
-		if(!NullCheck.isNullOrEmpty(Configuration.defaultResponseCodes)){
+		if (!NullCheck.isNullOrEmpty(Configuration.defaultResponseCodes)) {
 			rescodetxt = Configuration.defaultResponseCodes.get(String.valueOf(responseCode));
 		}
-		
-		if(rescodetxt==null)
-			responseBody.append(request.getProtocol()).append(" ").append(responseCode).append(" ").append(System.lineSeparator());
+
+		if (rescodetxt == null)
+			responseBody.append(request.getProtocol()).append(" ").append(responseCode).append(" ")
+					.append(System.lineSeparator());
 		else
-			responseBody.append(request.getProtocol()).append(" ").append(responseCode).append(" ").append(rescodetxt).append(System.lineSeparator());
-		
+			responseBody.append(request.getProtocol()).append(" ").append(responseCode).append(" ").append(rescodetxt)
+					.append(System.lineSeparator());
+
 		Date enddate = new Date();
 		responseBody.append("Date: ").append(enddate.toString()).append(System.lineSeparator());
-		
+
 		for (Entry<String, Object> e : headers.entrySet()) {
 			responseBody.append(e.getKey()).append(": ").append(e.getValue()).append(System.lineSeparator());
 		}
 		responseBody.append(System.lineSeparator());
-		responseBody.append(body);
 
 		byte[] bytes = responseBody.toString().getBytes();
 		this.socketChannel.write(ByteBuffer.wrap(bytes));
+		this.socketChannel.write(ByteBuffer.wrap(out.toByteArray()));
 		this.socketChannel.close();
-		
-		if(!request.getUri().equals(Configuration.stopUri)){
+		this.out.close();
+
+		if (!request.getUri().equals(Configuration.stopUri)) {
 			StringBuffer access = new StringBuffer();
-			access.append(dateFormat.format(new Date(request.getStartTime()))).append(" ").append(request.getUri()).append(" ").append(responseCode).append(" ").append(bytes.length).append(" ").append(dateFormat.format(enddate));
+			access.append(dateFormat.format(new Date(request.getStartTime()))).append(" ").append(request.getUri())
+					.append(" ").append(responseCode).append(" ").append(bytes.length).append(" ")
+					.append(dateFormat.format(enddate));
 			Server.accessLog.append(access.toString());
 		}
 	}
+
 	private final DateFormat dateFormat = new SimpleDateFormat("EEE MMM d hh:mm:ss.SSS yyyy");
 }
-//class ProxyResponse extends ResponseImpl{
+// class ProxyResponse extends ResponseImpl{
 //
-//	/**
-//	 * @param requestImpl
-//	 * @param socketChannel
-//	 * @param headers
-//	 */
-//	ProxyResponse(RequestImpl requestImpl, SocketChannel socketChannel, Map<String, Object> headers) {
-//		super(requestImpl, socketChannel, headers);
-//	}
+// /**
+// * @param requestImpl
+// * @param socketChannel
+// * @param headers
+// */
+// ProxyResponse(RequestImpl requestImpl, SocketChannel socketChannel,
+// Map<String, Object> headers) {
+// super(requestImpl, socketChannel, headers);
+// }
 //
-////	@Override
-////	public void close() throws Exception {
-////		final StringBuffer responseBody = new StringBuffer();
-////		
-////		Object rescodetxt = null;
-////		if(!NullCheck.isNullOrEmpty(Configuration.defaultResponseCodes)){
-////			rescodetxt = Configuration.defaultResponseCodes.get(String.valueOf(responseCode));
-////		}
-////		
-////		if(rescodetxt==null)
-////			responseBody.append(requestImpl.protocol).append(" ").append(responseCode).append(" ").append(System.lineSeparator());
-////		else
-////			responseBody.append(requestImpl.protocol).append(" ").append(responseCode).append(" ").append(rescodetxt).append(System.lineSeparator());
-////		
-////		responseBody.append("Date: ").append(new Date().toString()).append(System.lineSeparator());
-//////		
-////		for (Entry<String, Object> e : headers.entrySet()) {
-////			responseBody.append(e.getKey()).append(": ").append(e.getValue()).append(System.lineSeparator());
-////		}
-////		responseBody.append(System.lineSeparator());
-//////		responseBody.append(body);
+//// @Override
+//// public void close() throws Exception {
+//// final StringBuffer responseBody = new StringBuffer();
 ////
-////		this.socketChannel.write(ByteBuffer.wrap(body.toString().getBytes()));
-////		this.socketChannel.close();
-////	}
-//	
-//}
+//// Object rescodetxt = null;
+//// if(!NullCheck.isNullOrEmpty(Configuration.defaultResponseCodes)){
+//// rescodetxt =
+// Configuration.defaultResponseCodes.get(String.valueOf(responseCode));
+//// }
+////
+//// if(rescodetxt==null)
+//// responseBody.append(requestImpl.protocol).append("
+// ").append(responseCode).append(" ").append(System.lineSeparator());
+//// else
+//// responseBody.append(requestImpl.protocol).append("
+// ").append(responseCode).append("
+// ").append(rescodetxt).append(System.lineSeparator());
+////
+//// responseBody.append("Date: ").append(new
+// Date().toString()).append(System.lineSeparator());
+//////
+//// for (Entry<String, Object> e : headers.entrySet()) {
+//// responseBody.append(e.getKey()).append(":
+// ").append(e.getValue()).append(System.lineSeparator());
+//// }
+//// responseBody.append(System.lineSeparator());
+////// responseBody.append(body);
+////
+//// this.socketChannel.write(ByteBuffer.wrap(body.toString().getBytes()));
+//// this.socketChannel.close();
+//// }
+//
+// }

@@ -8,6 +8,7 @@ import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.Map;
@@ -169,70 +170,101 @@ final class ProxyRoute extends Route {
 	@Override
 	public void handle(Request req, Response res) throws Exception {
 		if (!NullCheck.isNullOrEmpty(dir)) {
-			String file = this.dir + req.getUri().substring(this.uri.length());
-			File f = new File(file);
-			if(!f.exists()){
-				res.setResponseCode(404);
-			}else if(f.isDirectory()){
-				File[] listFiles = f.listFiles();
-				StringBuffer buf = new StringBuffer("<html><body>");
-				buf.append("<a href=\"").append("..").append("\" >").append("..").append("</a>").append("<br>");
-				for(File f1:listFiles){
-					buf.append("<a href=\"").append(f1.getName()).append("\" >").append(f1.getName()).append("</a>").append("<br>");
-				}
-				buf.append("</body></html>");
-				res.setResponseCode(200);
-				res.append(buf.toString());
-//				res.putHeader("Content-Type", "text/html;charset=UTF-8");
-				res.putHeader("Content-Length", buf.length());
-			}else{
-				String content = files.get(file);
-				if (content == null) {
-					files.addBytes(file);
-					content = files.get(file);
-				}
-				res.append(content);
-				res.putHeader("Content-Length", content.length());
-			}
+			handleDirectory(req, res);
 		} else {
-			String queryStr = req.getUriWithParams().substring(req.getUriWithParams().indexOf("?"));
-			String loc = this.proxy_pass + req.getUri().substring(this.uri.length()) + queryStr;
+			handleProxy(req, res);
+		}
+	}
+
+	void handleProxy(Request req, Response res) throws IOException {
+		String queryStr = req.getUriWithParams().substring(req.getUriWithParams().indexOf("?"));
+		String loc = this.proxy_pass + req.getUri().substring(this.uri.length()) + queryStr;
 //			logger.debug("loc :: " + loc);
-			HttpMethodCall httpMethodCall = proxyTh.get(null);
-			ProxyRes pres = null;
-			switch (req.getMethod()) {
-			case HEAD:
-				pres = httpMethodCall.head(loc, req.getHeaders());
-				break;
-			case OPTIONS:
-				pres = httpMethodCall.options(loc, req.getBody(), req.getHeaders());
-				break;
-			case CONNECT:
-				pres = httpMethodCall.connect(loc, req.getHeaders());
-				break;
-			case TRACE:
-				pres = httpMethodCall.trace(loc, req.getHeaders());
-				break;
-			case GET:
-				pres = httpMethodCall.get(loc, req.getHeaders());
-				break;
-			case POST:
-				pres = httpMethodCall.post(loc, req.getBody(), req.getHeaders());
-				break;
-			case PUT:
-				pres = httpMethodCall.put(loc, req.getBody(), req.getHeaders());
-				break;
-			case DELETE:
-				pres = httpMethodCall.delete(loc, req.getHeaders());
-				break;
-			default:
-				break;
+		HttpMethodCall httpMethodCall = proxyTh.get(null);
+		ProxyRes pres = null;
+		switch (req.getMethod()) {
+		case HEAD:
+			pres = httpMethodCall.head(loc, req.getHeaders());
+			break;
+		case OPTIONS:
+			pres = httpMethodCall.options(loc, req.getBody(), req.getHeaders());
+			break;
+		case CONNECT:
+			pres = httpMethodCall.connect(loc, req.getHeaders());
+			break;
+		case TRACE:
+			pres = httpMethodCall.trace(loc, req.getHeaders());
+			break;
+		case GET:
+			pres = httpMethodCall.get(loc, req.getHeaders());
+			break;
+		case POST:
+			pres = httpMethodCall.post(loc, req.getBody(), req.getHeaders());
+			break;
+		case PUT:
+			pres = httpMethodCall.put(loc, req.getBody(), req.getHeaders());
+			break;
+		case DELETE:
+			pres = httpMethodCall.delete(loc, req.getHeaders());
+			break;
+		default:
+			break;
+		}
+		if (pres != null) {
+			res.setResponseCode(pres.responseCode);
+			res.append(pres.response);
+			res.putAllHeader(pres.headers);
+		}
+	}
+
+	void handleDirectory(Request req, Response res) throws IOException {
+		String file = this.dir + req.getUri().substring(this.uri.length());
+		File f = new File(file);
+//			System.out.println("file :: "+file+" exists "+f.exists());
+		if(!f.exists()){
+			res.setResponseCode(404);
+		}else if(f.isDirectory()){
+			boolean endsWith = req.getUri().endsWith("/");
+			String pathSep = "";
+			if(!endsWith)
+				pathSep = req.getUri()+"/";
+			
+			File[] listFiles = f.listFiles();
+			StringBuffer buf = new StringBuffer("<html><body>");
+			buf.append("<a href=\"").append("..").append("\" >").append("..").append("</a>").append("<br>");
+			for(File f1:listFiles){
+				if( f1.isDirectory() )
+					buf.append("<a href=\"").append(pathSep).append(f1.getName()).append("/").append("\" >").append(f1.getName()).append("</a>").append("<br>");
+				else
+					buf.append("<a href=\"").append(pathSep).append(f1.getName()).append("\" >").append(f1.getName()).append("</a>").append("&ensp;").append(f1.length()).append("&nbsp;bytes").append("<br>");
 			}
-			if (pres != null) {
-				res.setResponseCode(pres.responseCode);
-				res.append(pres.response);
-				res.putAllHeader(pres.headers);
+			buf.append("</body></html>");
+			res.setResponseCode(200);
+			res.append(buf.toString());
+			res.putHeader("Content-Type", "text/html;charset=UTF-8");
+			res.putHeader("Content-Length", buf.length());
+		}else{
+			if(!NullCheck.isNullOrEmpty(Configuration.defaultMimeType)){
+				String[] split = f.getName().split("\\.(?=[^\\.]+$)");
+				final String ext = "."+split[split.length-1];
+				Map<String, Object> map = Configuration.defaultMimeType.get(ext);
+				if (map!=null) {
+					Object typeObj = map.get("type");
+//						System.out.println(" ext :: " + ext + " type :: " + typeObj);
+					if (typeObj != null) {
+						res.putHeader("Content-Type", typeObj);
+					} 
+				}
 			}
+			ByteBuffer bytes = files.getBytes(file);
+			if (bytes == null) {
+				bytes = files.addBytes(file);
+			}
+//				System.out.println("Read bytes "+bytes.remaining());
+			byte[] array = new byte[bytes.remaining()];
+			bytes.get(array, 0, array.length);
+			res.append(array);
+			res.putHeader("Content-Length", array.length);
 		}
 	}
 

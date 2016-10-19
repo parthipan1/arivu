@@ -341,6 +341,11 @@ dependencies {
 	new File(deployDir+FS+"dist"+FS+"bin"+FS+"stop.sh") << "java -classpath ../libs/*:../conf/* -Darivu.nioserver.json=../conf/arivu.nioserver.json org.arivu.nioserver.Server stop"
 	new File(deployDir+FS+"dist"+FS+"bin"+FS+"stop.cmd") << "java -classpath ..\\libs\\*:..\\conf\\* -Darivu.nioserver.json=../conf/arivu.nioserver.json org.arivu.nioserver.Server stop"
 	
+	copy{
+		from("favicon.ico")
+		into(deployDir+FS+"dist"+FS+"bin") 
+	} 
+	
 	configurations.compile.resolve().each{ f ->
 		copy{
 				from(f)

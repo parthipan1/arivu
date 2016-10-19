@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.utils.Ason;
 import org.arivu.utils.NullCheck;
@@ -12,11 +13,13 @@ import org.arivu.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SuppressWarnings("unchecked")
 final class Configuration {
 	private static final Logger logger = LoggerFactory.getLogger(Configuration.class);
 	static final String stopUri = "/zzxyz";
 	static final Map<String, Object> defaultResponseHeader;
 	static final Map<String, Object> defaultResponseCodes;
+	static final Map<String, Map<String, Object>> defaultMimeType;
 	static final Collection<Route> routes;
 	static final int defaultResCode;
 	private static final String CONFIGURATION_FILE = "arivu.nioserver.json";
@@ -29,12 +32,18 @@ final class Configuration {
 		defaultResCode = Ason.getNumber(json, "response.defaultcode", 200).intValue();
 		Collection<String> scanPackages = Utils.unmodifiableCollection(Ason.getArray(json, "request.packages", null));
 
+		Map<String, Object> jmt = (Map<String, Object>) Ason.getObj(json, "response.mime", null);
+		Map<String, Map<String, Object>> tempMimeType = new Amap<String, Map<String,Object>>();
+		for (Entry<String, Object> e : jmt.entrySet()) {
+			tempMimeType.put(e.getKey(), Utils.unmodifiableMap((Map<String, Object>)e.getValue()));
+		}
+		defaultMimeType = Utils.unmodifiableMap(tempMimeType);
+		
 		Collection<Route> tempRequestPaths = new DoublyLinkedList<Route>();
 		Map<String, Object> proxies = (Map<String, Object>) Ason.getObj(json, "request.proxies", null);
 
 		for (Entry<String, Object> e : proxies.entrySet()) {
 			String name = e.getKey();
-			@SuppressWarnings("unchecked")
 			Map<String, Object> proxy = (Map<String, Object>) e.getValue();
 			String strMethod = Ason.getStr(proxy, "httpMethod", null);
 			if (NullCheck.isNullOrEmpty(strMethod))

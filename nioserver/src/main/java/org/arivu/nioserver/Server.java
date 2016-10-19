@@ -7,12 +7,14 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.RandomAccessFile;
 import java.lang.management.ManagementFactory;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -209,7 +211,32 @@ public class Server {
 		logger.debug(req.toString());
 		res.setResponseCode(404);
 	}
-
+	
+	static ByteBuffer iconBytes = null; 
+	@Path(value = "/favicon.ico", httpMethod = HttpMethod.GET)
+	static void handleIcon(Request req, Response res) throws Exception {
+		res.setResponseCode(200);
+		
+		if (iconBytes==null) {
+			RandomAccessFile randomAccessFile = null;
+			try {
+				randomAccessFile = new RandomAccessFile(new File("favicon.ico"), "r");
+				final FileChannel fileChannel = randomAccessFile.getChannel();
+				iconBytes = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size());
+			} finally {
+				if (randomAccessFile != null) {
+					randomAccessFile.close();
+				}
+			} 
+		}
+		byte[] array = new byte[iconBytes.remaining()];
+		iconBytes.get(array, 0, array.length);
+		res.append(array);
+		res.putHeader("Content-Length", array.length);
+		res.putHeader("Content-Type", "image/x-icon");
+	}
+	
+	
 	@Path(value = Configuration.stopUri, httpMethod = HttpMethod.GET)
 	static void stop(Request req, Response res) throws Exception {
 		res.setResponseCode(200);

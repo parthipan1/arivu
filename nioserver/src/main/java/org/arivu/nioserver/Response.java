@@ -1,5 +1,6 @@
 package org.arivu.nioserver;
 
+import java.io.IOException;
 import java.util.Map;
 
 public interface Response extends AutoCloseable {
@@ -18,8 +19,8 @@ public interface Response extends AutoCloseable {
 
 	Object replaceHeader(String key, Object value);
 
-	StringBuffer append(CharSequence s);
+	void append(CharSequence s) throws IOException;
 
-	StringBuffer append(byte[] s);
+	void append(byte[] s) throws IOException;
 
 }
