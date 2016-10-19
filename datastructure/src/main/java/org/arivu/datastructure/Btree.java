@@ -393,17 +393,17 @@ public final class Btree implements Serializable {
 		}
 	}
 
-	Object[] findLeaf(final Object obj, final int[] arr, final LinkedRef path) {
+	Object[] findLeaf(final Object obj, final int[] arr, final Object[] path) {
 		Object[] n = root;
 		if (path != null)
-			path.addObj(n);
+			path[0] = n;
 		for (int i = 0; i <= arr.length - 2; i++) {
 			if (n == null)
 				return null;
 			else {
 				n = (Object[]) n[arr[i]];
 				if (path != null && n != null)
-					path.addObj(n);
+					path[i+1] = n;
 			}
 		}
 		if (n == null)
@@ -416,45 +416,51 @@ public final class Btree implements Serializable {
 		return searchArr(findLeaf(obj, arr, null), obj);
 	}
 
+	void clearRef( LinkedRef nodes){
+		LinkedRef cref = nodes.left;
+		while (cref != null && cref.obj != null && cref != nodes) {
+			cref.obj = null;
+			cref = cref.left;
+		}
+	}
+	
 	Object removeObj(final Object obj, final int[] arr) {
-		final LinkedRef nodes = new LinkedRef(compareStrategy);
+		Object[] nodes = new Object[order];
 		final Object[] ref = findLeaf(obj, arr, nodes);
 		if (ref == null) {
+			for(int i=0;i<nodes.length;i++)
+				nodes[i]=null;
+			nodes = null;
 			return null;
 		}
-
 		final Object search = removeArr(ref, obj);
 		if (search == null) {
+			for(int i=0;i<nodes.length;i++)
+				nodes[i]=null;
+			nodes = null;
 			return null;
 		} else {
-			// try{
 			if (getSize(ref) == 0) {
 				final Lock l = this.locks[arr[0]];//cas;//
 				l.lock();
 				try{
-				int c = 0;
-				LinkedRef cref = nodes.left;
-				while (cref != null && cref.obj != null && cref != nodes) {
-					final Object[] obj2 = (Object[]) cref.obj;
-
-					if (getSize(obj2) == 1) {
-						obj2[arr[c++]] = null;
-					} else {
-						break;
+					for(int c=order-1;c>=0;c--){
+						final Object[] obj2 = (Object[]) nodes[c];
+						if (getSize(obj2) == 1) {
+							obj2[arr[c-order-1]] = null;
+						} else {
+							break;
+						}
 					}
-
-					cref = cref.left;
-				}
 				}finally{
 					l.unlock();
 				}
 			}
-			// size--;
 			size.decrementAndGet();
-			// }finally{
-			// }
 		}
-
+		for(int i=0;i<nodes.length;i++)
+			nodes[i]=null;
+		nodes = null;
 		return search;
 	}
 

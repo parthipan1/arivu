@@ -15,6 +15,8 @@ import org.arivu.utils.NullCheck;
 
 final class ResponseImpl implements Response {
 
+	private static final String LINE_SEPARATOR = System.lineSeparator();
+
 	final Map<String, Object> headers = new Amap<String, Object>();
 
 	final ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -141,30 +143,30 @@ final class ResponseImpl implements Response {
 
 		if (rescodetxt == null)
 			responseBody.append(request.getProtocol()).append(" ").append(responseCode).append(" ")
-					.append(System.lineSeparator());
+					.append(LINE_SEPARATOR);
 		else
 			responseBody.append(request.getProtocol()).append(" ").append(responseCode).append(" ").append(rescodetxt)
-					.append(System.lineSeparator());
+					.append(LINE_SEPARATOR);
 
 		Date enddate = new Date();
-		responseBody.append("Date: ").append(enddate.toString()).append(System.lineSeparator());
+		responseBody.append("Date: ").append(enddate.toString()).append(LINE_SEPARATOR);
 
 		for (Entry<String, Object> e : headers.entrySet()) {
-			responseBody.append(e.getKey()).append(": ").append(e.getValue()).append(System.lineSeparator());
+			responseBody.append(e.getKey()).append(": ").append(e.getValue()).append(LINE_SEPARATOR);
 		}
-		responseBody.append(System.lineSeparator());
+		responseBody.append(LINE_SEPARATOR);
 
-		byte[] bytes = responseBody.toString().getBytes();
-		this.socketChannel.write(ByteBuffer.wrap(bytes));
-		this.socketChannel.write(ByteBuffer.wrap(out.toByteArray()));
+		this.socketChannel.write(ByteBuffer.wrap(responseBody.toString().getBytes()));
+		byte[] byteArray = out.toByteArray();
+		this.socketChannel.write(ByteBuffer.wrap(byteArray));
 		this.socketChannel.close();
 		this.out.close();
 
 		if (!request.getUri().equals(Configuration.stopUri)) {
 			StringBuffer access = new StringBuffer();
 			access.append("[").append(dateFormat.format(new Date(request.getStartTime()))).append("] ").append(request.getUri())
-					.append(" ").append(responseCode).append(" ").append(bytes.length).append(" [")
-					.append(dateFormat.format(enddate)).append("]");
+					.append(" ").append(responseCode).append(" ").append(byteArray.length).append(" [")
+					.append((enddate.getTime()-request.getStartTime())).append("]");
 			Server.accessLog.append(access.toString());
 		}
 	}
