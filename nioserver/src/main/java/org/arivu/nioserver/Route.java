@@ -70,7 +70,7 @@ class Route {
 		}
 	}
 
-	ResponseImpl getResponse(Request req, SocketChannel socketChannel) {
+	Response getResponse(Request req, SocketChannel socketChannel) {
 		return new ResponseImpl(req, socketChannel, Configuration.defaultResponseHeader);
 	}
 
@@ -269,7 +269,7 @@ final class ProxyRoute extends Route {
 	}
 
 	@Override
-	ResponseImpl getResponse(Request req, SocketChannel socketChannel) {
+	Response getResponse(Request req, SocketChannel socketChannel) {
 		if (!NullCheck.isNullOrEmpty(dir)) {
 			return super.getResponse(req, socketChannel);
 		} else {
