@@ -327,7 +327,7 @@ final class Connection {
 
 	final StringBuffer inBuffer = new StringBuffer();
 	SocketChannel socketChannel = null;
-
+	final long startTime = System.currentTimeMillis();
 	public Connection() {
 		super();
 	}
@@ -349,7 +349,7 @@ final class Connection {
 				Route route = null;
 				Response response = null;
 				try {
-					req = RequestUtil.parse(inBuffer);
+					req = RequestUtil.parse(inBuffer, startTime);
 					route = get(Configuration.routes, req);
 					if (route != null) {
 						response = route.getResponse(req, socketChannel);

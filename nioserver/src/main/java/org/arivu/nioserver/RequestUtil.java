@@ -22,7 +22,7 @@ public class RequestUtil {
 	private static final byte BYTE_10 = (byte) 10;
 	static final String divider = System.lineSeparator() + System.lineSeparator();
 	
-	static Request parse(final StringBuffer buffer) {
+	static Request parse(final StringBuffer buffer, long startTime) {
 		String content = buffer.toString();
 		byte[] bytes = content.getBytes();
 		int indexOf = -1;
@@ -74,7 +74,7 @@ public class RequestUtil {
 			uri = uriWithParams.substring(0, indexOf3);
 			tempparams = parseParams(uriWithParams.substring(indexOf3 + 1));
 		}
-		return new RequestImpl(valueOf, uri, uriWithParams, protocol, tempparams, Utils.unmodifiableMap(tempheaders), body);
+		return new RequestImpl(valueOf, uri, uriWithParams, protocol, tempparams, Utils.unmodifiableMap(tempheaders), body, startTime);
 	}
 
 	public static Map<String, Collection<String>> parseParams(String uriparams) {

@@ -43,7 +43,7 @@ final class RequestImpl implements Request {
 	/**
 	 * 
 	 */
-	final long startTime = System.currentTimeMillis();
+	final long startTime;
 	
 	/**
 	 * @param httpMethod
@@ -53,9 +53,10 @@ final class RequestImpl implements Request {
 	 * @param params
 	 * @param headers
 	 * @param body
+	 * @param startTime TODO
 	 */
 	RequestImpl(HttpMethod httpMethod, String uri, String uriWithParams, String protocol, Map<String, Collection<String>> params,
-			Map<String, String> headers, String body) {
+			Map<String, String> headers, String body, long startTime) {
 		super();
 		this.httpMethod = httpMethod;
 		this.uri = uri;
@@ -64,6 +65,7 @@ final class RequestImpl implements Request {
 		this.params = params;
 		this.headers = headers;
 		this.body = body;
+		this.startTime = startTime;
 	}
 
 	/* (non-Javadoc)
