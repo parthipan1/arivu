@@ -270,7 +270,7 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 			if (dupCnt == 0) {
 				this.binaryTree.removeObj(this, pathObj);
 			} else {
-				LinkedRef lref = (LinkedRef) this.dupTree
+				final LinkedRef lref = (LinkedRef) this.dupTree
 						.get(new LinkedRef(String.valueOf(this.hashCode())));
 				LinkedRef search = lref.search(this);
 				search.remove();
@@ -284,8 +284,10 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 						this.binaryTree.removeObj(this, pathObj);
 						this.binaryTree.addObj(lref.right.obj, pathObj);
 //					}
-					if(dupCnt==1)
+					if(dupCnt==1){
 						this.dupTree.remove(new LinkedRef(String.valueOf(this.hashCode())));
+						LinkedRef.clearRef(lref);
+					}
 //				}
 			}
 

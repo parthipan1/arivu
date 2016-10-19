@@ -416,14 +416,6 @@ public final class Btree implements Serializable {
 		return searchArr(findLeaf(obj, arr, null), obj);
 	}
 
-	void clearRef( LinkedRef nodes){
-		LinkedRef cref = nodes.left;
-		while (cref != null && cref.obj != null && cref != nodes) {
-			cref.obj = null;
-			cref = cref.left;
-		}
-	}
-	
 	Object removeObj(final Object obj, final int[] arr) {
 		Object[] nodes = new Object[order];
 		final Object[] ref = findLeaf(obj, arr, nodes);
@@ -656,6 +648,13 @@ final class LinkedRef {
 		return true;
 	}
 
+	static void clearRef(LinkedRef nodes){
+		LinkedRef cref = nodes.left;
+		while (cref != null && cref.obj != null && cref != nodes) {
+			cref.obj = null;
+			cref = cref.left;
+		}
+	}
 }
 
 enum Direction {

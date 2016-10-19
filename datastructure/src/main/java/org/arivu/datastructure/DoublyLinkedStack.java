@@ -320,9 +320,8 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 			int dupCnt = --object3.cnt;
 			if (dupCnt == 0) {
 				this.binaryTree.removeObj(this, pathObj);
-
 			} else {
-				LinkedRef lref = (LinkedRef) this.dupTree.get(new LinkedRef(String.valueOf(this.hashCode())));
+				final LinkedRef lref = (LinkedRef) this.dupTree.get(new LinkedRef(String.valueOf(this.hashCode())));
 				LinkedRef search = lref.search(this);
 				search.remove();
 //				if (dupCnt >= 1) {
@@ -336,8 +335,10 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 						this.binaryTree.removeObj(this, pathObj);
 						this.binaryTree.addObj(lref.right.obj, pathObj);
 //					}
-					if (dupCnt == 1)
+					if (dupCnt == 1){
 						this.dupTree.remove(new LinkedRef(String.valueOf(this.hashCode())));
+						LinkedRef.clearRef(lref);						
+					}
 
 //				}
 			}
