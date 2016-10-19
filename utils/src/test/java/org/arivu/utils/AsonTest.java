@@ -23,7 +23,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class AsonTest {
-	private static final String CONFIGURATION_FILE = "lightninglog.json";
+	private static final String CONFIGURATION_FILE = "test.json";
 	
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
