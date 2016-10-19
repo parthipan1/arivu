@@ -179,7 +179,7 @@ final class ProxyRoute extends Route {
 	void handleProxy(Request req, Response res) throws IOException {
 		String queryStr = req.getUriWithParams().substring(req.getUriWithParams().indexOf("?"));
 		String loc = this.proxy_pass + req.getUri().substring(this.uri.length()) + queryStr;
-//			logger.debug("loc :: " + loc);
+//		System.out.println("loc :: " + loc);
 		HttpMethodCall httpMethodCall = proxyTh.get(null);
 		ProxyRes pres = null;
 		switch (req.getMethod()) {
@@ -411,7 +411,9 @@ class JavaHttpMethodCall implements HttpMethodCall {
 		}
 		ProxyRes proxyRes = new ProxyRes(responseCode, response.toString());
 		for (Map.Entry<String, List<String>> entry : map.entrySet()) {
-			proxyRes.headers.put(entry.getKey(), entry.getValue().get(0));
+			final String key = entry.getKey();
+			if( !NullCheck.isNullOrEmpty(key) && !NullCheck.isNullOrEmpty(entry.getValue()) )
+				proxyRes.headers.put(key, entry.getValue().get(0));
 		}
 		return proxyRes;
 	}

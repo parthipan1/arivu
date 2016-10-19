@@ -288,6 +288,9 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 			if( e1.inverse == null )
 				entries.add(new MapEntry<K, V>((K)e1.k,(V)e1.v));
 		}
+		if(nullValue!=null)
+			entries.add(new MapEntry<K, V>((K)null,(V)nullValue));
+		
 		return entries;
 	}
 
