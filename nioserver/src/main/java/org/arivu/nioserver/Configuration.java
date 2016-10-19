@@ -30,7 +30,15 @@ final class Configuration {
 		defaultResponseHeader = Utils.unmodifiableMap((Map<String, Object>) Ason.getObj(json, "response.header", null));
 		defaultResponseCodes = Utils.unmodifiableMap((Map<String, Object>) Ason.getObj(json, "response.codes", null));
 		defaultResCode = Ason.getNumber(json, "response.defaultcode", 200).intValue();
-		Collection<String> scanPackages = Utils.unmodifiableCollection(Ason.getArray(json, "request.packages", null));
+		Collection<String> array = Ason.getArray(json, "request.scanpackages", null);
+		if( NullCheck.isNullOrEmpty(array) ){
+			array = new DoublyLinkedList<String>();
+			array.add("org.arivu.nioserver");
+		}else{
+			array = new DoublyLinkedList<String>(array);
+			array.add("org.arivu.nioserver");
+		}
+		Collection<String> scanPackages = Utils.unmodifiableCollection(array);
 
 		Map<String, Object> jmt = (Map<String, Object>) Ason.getObj(json, "response.mime", null);
 		Map<String, Map<String, Object>> tempMimeType = new Amap<String, Map<String,Object>>();

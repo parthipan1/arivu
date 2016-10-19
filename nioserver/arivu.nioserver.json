@@ -1,7 +1,6 @@
 {  
    "request":{  
-      "packages":[  
-         "org.arivu"
+      "scanpackages":[  
       ],
       "proxies":{  
          "googleSite":{  
@@ -14,7 +13,7 @@
             },
             "location":"/search",
             "method":"GET",
-            "proxy_pass":"https://www.google.co.in"
+            "proxy_pass":"https://www.google.co.in/search"
          },
          "staticContent":{  
             "header":{  

@@ -363,10 +363,25 @@ dependencies {
 		into(deployDir+FS+"dist"+FS+"conf") 
 	} 
 	
+	def jsonFile = new File(deployDir+FS+"dist"+FS+"conf"+FS+"lightninglog.json")
+	def json = new groovy.json.JsonSlurper().parseText( jsonFile.text )
+	json.log.file = "..//logs//nioserver.log"
+	json.buffer.batch = 50
+	json.buffer.ring = 50
+	json.loggers = [:]
+	json.loggers["root"] = "info"
+	json.appenders = ["file"]
+	jsonFile.text = new groovy.json.JsonBuilder(json).toPrettyString()
+	
 	copy{
 		from("arivu.nioserver.json")
 		into(deployDir+FS+"dist"+FS+"conf") 
 	} 
+	
+	def jsonFile2 = new File(deployDir+FS+"dist"+FS+"conf"+FS+"arivu.nioserver.json")
+	def json2 = new groovy.json.JsonSlurper().parseText( jsonFile2.text )
+	json2.request = [:]
+	jsonFile2.text = new groovy.json.JsonBuilder(json2).toPrettyString()
 	
 	copy{
 		from("src"+FS+"main"+FS+"resources")
