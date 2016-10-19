@@ -162,14 +162,14 @@ final class ResponseImpl implements Response {
 
 		if (!request.getUri().equals(Configuration.stopUri)) {
 			StringBuffer access = new StringBuffer();
-			access.append(dateFormat.format(new Date(request.getStartTime()))).append(" ").append(request.getUri())
-					.append(" ").append(responseCode).append(" ").append(bytes.length).append(" ")
-					.append(dateFormat.format(enddate));
+			access.append("[").append(dateFormat.format(new Date(request.getStartTime()))).append("] ").append(request.getUri())
+					.append(" ").append(responseCode).append(" ").append(bytes.length).append(" [")
+					.append(dateFormat.format(enddate)).append("]");
 			Server.accessLog.append(access.toString());
 		}
 	}
 
-	private final DateFormat dateFormat = new SimpleDateFormat("EEE MMM d hh:mm:ss.SSS yyyy");
+	final static DateFormat dateFormat = new SimpleDateFormat("EEE MMM d hh:mm:ss.SSS yyyy");
 }
 // class ProxyResponse extends ResponseImpl{
 //

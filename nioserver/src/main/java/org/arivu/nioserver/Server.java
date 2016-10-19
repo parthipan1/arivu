@@ -21,6 +21,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -344,25 +345,40 @@ final class Connection {
 		Server.exe.submit(new Runnable() {
 			@Override
 			public void run() {
+				Request req = null;
+				Route route = null;
+				Response response = null;
 				try {
-					final Request req = RequestUtil.parse(inBuffer);
-					Route route = get(Configuration.routes, req);
+					req = RequestUtil.parse(inBuffer);
+					route = get(Configuration.routes, req);
 					if (route != null) {
-						final Response responseImpl = route.getResponse(req, socketChannel);
-						try{
-						route.handle(req,  responseImpl );
-						}finally{
-							try {
-								responseImpl.close();
-							} catch (Throwable e) {
-								logger.error("Failed in response close :: ", e);
-							}
-						}
+						response = route.getResponse(req, socketChannel);
 					}
 				} catch (Throwable e) {
-					long currentTimeMillis = System.currentTimeMillis();
-					logger.error("Failed in requestImpl("+currentTimeMillis+") :: "+inBuffer);
-					logger.error("Failed in requestImpl("+currentTimeMillis+") :: ", e);
+					StringBuffer access = new StringBuffer();
+					String formatDate = ResponseImpl.dateFormat.format(new Date());
+					access.append("[").append(formatDate).append("] ").append(inBuffer.toString().split(System.lineSeparator())[0])
+							.append(" ").append("400");
+					Server.accessLog.append(access.toString());
+					logger.error("Failed in request parse("+formatDate+") :: "+inBuffer);
+					logger.error("Failed in request parse("+formatDate+") :: ", e);
+					return;
+				}
+				try{
+					if(response!=null)
+						route.handle(req,  response );
+					
+				} catch (Throwable e) {
+					String formatDate = ResponseImpl.dateFormat.format(new Date());
+					logger.error("Failed in route.handle("+formatDate+") :: "+inBuffer);
+					logger.error("Failed in route.handle("+formatDate+") :: ", e);
+				}finally{
+					try {
+						if(response!=null)
+							response.close();
+					} catch (Throwable e) {
+						logger.error("Failed in response close :: ", e);
+					}
 				}
 			}
 		});
