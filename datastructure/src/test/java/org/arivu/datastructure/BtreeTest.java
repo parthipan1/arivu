@@ -249,7 +249,38 @@ public class BtreeTest {
 		}
 
 	}
-
+	
+	@Test
+	public void testBtreeAddAndRemove() {
+		Btree bt = new Btree();
+		
+		TestAdd obj0 = new TestAdd("0");
+		
+		bt.add(obj0);
+		bt.remove(obj0);
+		
+		assertTrue(bt.size() == 0);
+//
+//		Object[] findLeaf = bt.findLeaf(obj0, bt.getPathObj(obj0), null);
+//
+//		assertTrue(findLeaf.length == bt.order);
+//
+//		assertTrue(Btree.getSize(findLeaf) == bt.order);
+//
+//		TestAdd obj16 = new TestAdd(String.valueOf(bt.order));
+//		
+//		bt.add(obj16);
+//
+//		assertTrue(bt.size() == bt.order+1);
+//
+//		findLeaf = bt.findLeaf(obj0, bt.getPathObj(obj0), null);
+//
+//		assertTrue(findLeaf.length == bt.order+1);
+//
+//		assertTrue(Btree.getSize(findLeaf) == bt.order+1);
+//		assertTrue(Btree.getSize(null) == 0);
+	}
+	
 	@Test
 	public void testBtreeAddExpand() {
 		Btree bt = new Btree();

@@ -417,7 +417,7 @@ public final class Btree implements Serializable {
 	}
 
 	Object removeObj(final Object obj, final int[] arr) {
-		Object[] nodes = new Object[order];
+		Object[] nodes = new Object[height];
 		final Object[] ref = findLeaf(obj, arr, nodes);
 		if (ref == null) {
 			for(int i=0;i<nodes.length;i++)
@@ -436,10 +436,11 @@ public final class Btree implements Serializable {
 				final Lock l = this.locks[arr[0]];//cas;//
 				l.lock();
 				try{
-					for(int c=order-1;c>=0;c--){
+					for(int c=height-1;c>=0;c--){
 						final Object[] obj2 = (Object[]) nodes[c];
-						if (getSize(obj2) == 1) {
-							obj2[arr[c-order-1]] = null;
+						int size2 = getSize(obj2);
+						if (size2 == 1) {
+							obj2[arr[height-1-c]] = null;
 						} else {
 							break;
 						}
