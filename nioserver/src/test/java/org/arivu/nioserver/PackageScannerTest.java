@@ -57,8 +57,8 @@ public class PackageScannerTest {
 		
 		Collection<Class<?>> classesForPackage = PackageScanner.getClassesForPackage("org.arivu.nioserver");
 		assertFalse(NullCheck.isNullOrEmpty(classesForPackage));
-		for( Class<?> c:classesForPackage )
-			System.out.println(c.getName());
+//		for( Class<?> c:classesForPackage )
+//			System.out.println(c.getName());
 	}
 
 	@Test
