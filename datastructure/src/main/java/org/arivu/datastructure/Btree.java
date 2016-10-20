@@ -186,7 +186,7 @@ public final class Btree implements Serializable {
 		for( int i=0;i<charArray.length;i++ ){
 			char c = charArray[i];
 			if( c >= 97 )
-				ret[i] = 10+c-97;
+				ret[i] = c-87;
 			else
 				ret[i] = c-48;
 		}

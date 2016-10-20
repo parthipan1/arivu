@@ -197,6 +197,7 @@ public class DoublyLinkedListTest {
 		DoublyLinkedList<String> list = new DoublyLinkedList<String>();
 		list.add(element1);
 		assertTrue(list.dupTree.size() == 0);
+		assertTrue("Failed in clear", list.size() == 1);
 		list.add(element1);
 		assertFalse("Failed in clear", list.isEmpty());
 		assertTrue("Failed in clear", list.size() == 2);
@@ -218,6 +219,19 @@ public class DoublyLinkedListTest {
 			sb.append(s);
 
 		assertTrue("Failed in Iterator!", (element1 + element1 + element1).equals(sb.toString()));
+		
+		list.remove(element1);
+		assertTrue(list.dupTree.size() == 1);
+		assertTrue("Failed in clear", list.size() == 2);
+		
+		list.remove(element1);
+		assertTrue(list.dupTree.size() == 0);
+		assertTrue("Failed in clear", list.size() == 1);
+		
+		list.remove(element1);
+		assertTrue(list.dupTree.size() == 0);
+		assertTrue("Failed in clear", list.size() == 0);
+		
 	}
 
 	@Test
