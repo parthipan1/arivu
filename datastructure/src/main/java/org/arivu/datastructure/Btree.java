@@ -34,8 +34,8 @@ public final class Btree implements Serializable {
 	private final int height;
 	private final int baseMask;
 	final int order;
-//	final Lock cas;
-	 final Lock[] locks;
+	// final Lock cas;
+//	final Lock[] locks;
 	private final CompareStrategy compareStrategy;
 
 	// volatile int size = 0;
@@ -43,7 +43,7 @@ public final class Btree implements Serializable {
 
 	/**
 	 * Create B tree based on power value , higher the power faster the
-	 * performance. Power value can be with in 1-4. 
+	 * performance. Power value can be with in 1-4.
 	 * 
 	 * @param order
 	 */
@@ -95,11 +95,11 @@ public final class Btree implements Serializable {
 		this.baseMask = (order - 1);
 		this.compareStrategy = compareStrategy;
 		this.root = new Object[order];
-//		this.cas = lock;
-		this.locks = new Lock[order];
-		for (int i = 0; i < order; i++) {
-			this.locks[i] = new AtomicWFReentrantLock();
-		}
+		// this.cas = lock;
+//		this.locks = new Lock[order];
+//		for (int i = 0; i < order; i++) {
+//			this.locks[i] = new AtomicWFReentrantLock();
+//		}
 	}
 
 	int[] getPathObj(final Object obj) {
@@ -115,7 +115,7 @@ public final class Btree implements Serializable {
 			int[] ret = new int[height];
 			for (int i = height - 1; i >= 0; i--) {
 				ret[i] = (int) (hashCode & baseMask);
-				
+
 				if (hashCode != 0)
 					hashCode = hashCode >>> base;
 			}
@@ -124,41 +124,104 @@ public final class Btree implements Serializable {
 			return ret;
 		}
 	}
+
+//	public static void main(String[] args){
+//		
+//		Btree b = new Btree();
+//		
+//		int hashCode = 0;//Integer.MIN_VALUE;//Integer.MAX_VALUE;//
+//		
+//		int[] ret = new int[] { 0, 0, 0, 0, 0, 0, 0, 0 };
+//		String hexString = Long.toHexString(pad + hashCode + max).substring(1);
+//		char[] charArray = hexString.toCharArray();
+//		for( int i=0;i<charArray.length;i++ ){
+//			char c = charArray[i];
+//			if( c >= 97 )
+//				ret[i] = 10+c-97;
+//			else
+//				ret[i] = c-48;
+//		}
+//		System.out.println(" hashCode :: "+hashCode+" getPath8 :: "+b.con(b.getPath8(hashCode))+" hex :: "+hexString+" \n\t\t conhex :: "+b.con(ret)+" order :: "+b.order+" height :: "+b.height);
+//		
+//		
+////		int[] ret = new int[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+////		String hexString = Long.toHexString(pad + hashCode + max).substring(1);
+////		char[] charArray = hexString.toCharArray();
+////		for( int i=0;i<charArray.length;i++ ){
+////			char c = charArray[i];
+////			int v = 0 ;
+////			if( c >= 97 )
+////				v = 10+c-97;
+////			else
+////				v = c-48;
+////			
+////			if( v > 7 ){
+////				ret[i] = 7;
+////				ret[i+1] = v-8;
+////			}else{
+////				ret[i] = v;
+////				ret[i+1] = 0; 
+////			}
+////		}
+////		
+////		
+////		System.out.println(" hashCode :: "+hashCode+" getPath16 :: "+b.con(b.getPath16(hashCode))+" hex :: "+hexString+" \n\t\t  conhex :: "+b.con(ret)+" order :: "+b.order+" height :: "+b.height);
+//		
+//	}
+//	
+//	String con(int[] arr){
+//		StringBuffer buf = new StringBuffer();
+//		for( int i:arr ) buf.append(i).append(",");
+//		return buf.toString();
+//	}
 	
-	private int[] getPath8(int hashCode) {
+	static final long pad = (long)Integer.MIN_VALUE;
+	static final long max = ((long)Integer.MAX_VALUE+1l)*4;
+	
+	int[] getPath8(int hashCode) {
 		int[] ret = new int[] { 0, 0, 0, 0, 0, 0, 0, 0 };
 
-		if (hashCode == 0)
-			return ret;
-		ret[7] = (int) (hashCode & baseMask);
-		hashCode = hashCode >>> base;
-		if (hashCode == 0)
-			return ret;
-		ret[6] = (int) (hashCode & baseMask);
-		hashCode = hashCode >>> base;
-		if (hashCode == 0)
-			return ret;
-		ret[5] = (int) (hashCode & baseMask);
-		hashCode = hashCode >>> base;
-		if (hashCode == 0)
-			return ret;
-		ret[4] = (int) (hashCode & baseMask);
-		hashCode = hashCode >>> base;
-		if (hashCode == 0)
-			return ret;
-		ret[3] = (int) (hashCode & baseMask);
-		hashCode = hashCode >>> base;
-		if (hashCode == 0)
-			return ret;
-		ret[2] = (int) (hashCode & baseMask);
-		hashCode = hashCode >>> base;
-		if (hashCode == 0)
-			return ret;
-		ret[1] = (int) (hashCode & baseMask);
-		hashCode = hashCode >>> base;
-		if (hashCode == 0)
-			return ret;
-		ret[0] = (int) (hashCode & baseMask);
+		String hexString = Long.toHexString(pad + hashCode + max).substring(1);
+		char[] charArray = hexString.toCharArray();
+		for( int i=0;i<charArray.length;i++ ){
+			char c = charArray[i];
+			if( c >= 97 )
+				ret[i] = 10+c-97;
+			else
+				ret[i] = c-48;
+		}
+		
+//		if (hashCode == 0)
+//			return ret;
+//		ret[7] = (int) (hashCode & baseMask);
+//		hashCode = hashCode >>> base;
+//		if (hashCode == 0)
+//			return ret;
+//		ret[6] = (int) (hashCode & baseMask);
+//		hashCode = hashCode >>> base;
+//		if (hashCode == 0)
+//			return ret;
+//		ret[5] = (int) (hashCode & baseMask);
+//		hashCode = hashCode >>> base;
+//		if (hashCode == 0)
+//			return ret;
+//		ret[4] = (int) (hashCode & baseMask);
+//		hashCode = hashCode >>> base;
+//		if (hashCode == 0)
+//			return ret;
+//		ret[3] = (int) (hashCode & baseMask);
+//		hashCode = hashCode >>> base;
+//		if (hashCode == 0)
+//			return ret;
+//		ret[2] = (int) (hashCode & baseMask);
+//		hashCode = hashCode >>> base;
+//		if (hashCode == 0)
+//			return ret;
+//		ret[1] = (int) (hashCode & baseMask);
+//		hashCode = hashCode >>> base;
+//		if (hashCode == 0)
+//			return ret;
+//		ret[0] = (int) (hashCode & baseMask);
 
 		// for (int i = height - 1; i >= 0; i--) {
 		// ret[i] = (int) (hashCode & baseMask);
@@ -173,6 +236,26 @@ public final class Btree implements Serializable {
 
 	private int[] getPath16(int hashCode) {
 		int[] ret = new int[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+		
+//		String hexString = Long.toHexString(pad + hashCode + max).substring(1);
+//		char[] charArray = hexString.toCharArray();
+//		for( int i=0;i<charArray.length;i++ ){
+//			char c = charArray[i];
+//			int v = 0 ;
+//			if( c >= 97 )
+//				v = 10+c-97;
+//			else
+//				v = c-48;
+//			
+//			if( v > 7 ){
+//				ret[i] = 7;
+//				ret[i+1] = v-8;
+//			}else{
+//				ret[i] = v;
+//				ret[i+1] = 0; 
+//			}
+//		}
+		
 
 		if (hashCode == 0)
 			return ret;
@@ -247,7 +330,7 @@ public final class Btree implements Serializable {
 		// "+con(ret));
 		return ret;
 	}
-	
+
 	public int getHeight() {
 		return height;
 	}
@@ -357,22 +440,21 @@ public final class Btree implements Serializable {
 	}
 
 	boolean addObj(final Object obj, final int[] arr) {
-		 final Lock l = this.locks[arr[0]];//cas;//
-		 l.lock();
-//		final LinkedRef nodes = new LinkedRef(compareStrategy);
-		
+//		final Lock l = this.locks[arr[0]];// cas;//
+//		l.lock();
 		Object[] n = root;
-//		nodes.addObj(n);
-		for (int i = 0; i <= arr.length - 2; i++) {
-			Object[] n1 = (Object[]) n[arr[i]];
-			if (n1 == null) {
-				n1 = new Object[order];
-				n[arr[i]] = n1;
+//		try {
+			for (int i = 0; i <= arr.length - 2; i++) {
+				Object[] n1 = (Object[]) n[arr[i]];
+				if (n1 == null) {
+					n1 = new Object[order];
+					n[arr[i]] = n1;
+				}
+				n = n1;
 			}
-			n = n1;
-//			nodes.addObj(n);
-		}
-		l.unlock();
+//		} finally {
+//			l.unlock();
+//		}
 		Object[] ref = (Object[]) n[arr[arr.length - 1]];
 		if (ref == null) {
 			ref = new Object[1];
@@ -403,7 +485,7 @@ public final class Btree implements Serializable {
 			else {
 				n = (Object[]) n[arr[i]];
 				if (path != null && n != null)
-					path[i+1] = n;
+					path[i + 1] = n;
 			}
 		}
 		if (n == null)
@@ -420,39 +502,39 @@ public final class Btree implements Serializable {
 		Object[] nodes = new Object[height];
 		final Object[] ref = findLeaf(obj, arr, nodes);
 		if (ref == null) {
-			for(int i=0;i<nodes.length;i++)
-				nodes[i]=null;
+			for (int i = 0; i < nodes.length; i++)
+				nodes[i] = null;
 			nodes = null;
 			return null;
 		}
 		final Object search = removeArr(ref, obj);
 		if (search == null) {
-			for(int i=0;i<nodes.length;i++)
-				nodes[i]=null;
+			for (int i = 0; i < nodes.length; i++)
+				nodes[i] = null;
 			nodes = null;
 			return null;
 		} else {
 			if (getSize(ref) == 0) {
-				final Lock l = this.locks[arr[0]];//cas;//
-				l.lock();
-				try{
-					for(int c=height-1;c>=0;c--){
+//				final Lock l = this.locks[arr[0]];// cas;//
+//				l.lock();
+//				try {
+					for (int c = height - 1; c >= 0; c--) {
 						final Object[] obj2 = (Object[]) nodes[c];
 						int size2 = getSize(obj2);
 						if (size2 == 1) {
-							obj2[arr[height-1-c]] = null;
+							obj2[arr[height - 1 - c]] = null;
 						} else {
 							break;
 						}
 					}
-				}finally{
-					l.unlock();
-				}
+//				} finally {
+//					l.unlock();
+//				}
 			}
 			size.decrementAndGet();
 		}
-		for(int i=0;i<nodes.length;i++)
-			nodes[i]=null;
+		for (int i = 0; i < nodes.length; i++)
+			nodes[i] = null;
 		nodes = null;
 		return search;
 	}
@@ -649,7 +731,7 @@ final class LinkedRef {
 		return true;
 	}
 
-	static void clearRef(LinkedRef nodes){
+	static void clearRef(LinkedRef nodes) {
 		LinkedRef cref = nodes.left;
 		while (cref != null && cref.obj != null && cref != nodes) {
 			cref.obj = null;
