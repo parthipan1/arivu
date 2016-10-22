@@ -6,8 +6,6 @@ public interface ServerMXBean {
 	
 	void removeRoute(String route);
 	
-	int noOfConnections();
-	
 	void shutdown();
 	
 }

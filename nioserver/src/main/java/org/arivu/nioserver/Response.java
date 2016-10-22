@@ -1,9 +1,10 @@
 package org.arivu.nioserver;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Map;
 
-public interface Response extends AutoCloseable {
+public interface Response {
 
 	int getResponseCode();
 
@@ -22,5 +23,9 @@ public interface Response extends AutoCloseable {
 	void append(CharSequence s) throws IOException;
 
 	void append(byte[] s) throws IOException;
+
+	ByteArrayOutputStream getOut();
+
+	Map<String, Object> getHeaders();
 
 }

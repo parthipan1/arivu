@@ -22,6 +22,8 @@ final class Configuration {
 	static final Map<String, Map<String, Object>> defaultMimeType;
 	static final Collection<Route> routes;
 	static final int defaultResCode;
+	static final int defaultChunkSize;
+	static final int defaultRequestBuffer;
 	private static final String CONFIGURATION_FILE = "arivu.nioserver.json";
 
 	static {
@@ -30,6 +32,9 @@ final class Configuration {
 		defaultResponseHeader = Utils.unmodifiableMap((Map<String, Object>) Ason.getObj(json, "response.header", null));
 		defaultResponseCodes = Utils.unmodifiableMap((Map<String, Object>) Ason.getObj(json, "response.codes", null));
 		defaultResCode = Ason.getNumber(json, "response.defaultcode", 200).intValue();
+		defaultChunkSize = Ason.getNumber(json, "response.chunkSize", 100000).intValue();
+		defaultRequestBuffer = Ason.getNumber(json, "request.buffer", 1024).intValue();
+		
 		Collection<String> array = Ason.getArray(json, "request.scanpackages", null);
 		if( NullCheck.isNullOrEmpty(array) ){
 			array = new DoublyLinkedList<String>();

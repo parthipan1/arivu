@@ -43,7 +43,7 @@ final class RequestImpl implements Request {
 	/**
 	 * 
 	 */
-	final long startTime;
+//	final long startTime;
 	
 	/**
 	 * @param httpMethod
@@ -53,10 +53,9 @@ final class RequestImpl implements Request {
 	 * @param params
 	 * @param headers
 	 * @param body
-	 * @param startTime TODO
 	 */
 	RequestImpl(HttpMethod httpMethod, String uri, String uriWithParams, String protocol, Map<String, Collection<String>> params,
-			Map<String, String> headers, String body, long startTime) {
+			Map<String, String> headers, String body) {
 		super();
 		this.httpMethod = httpMethod;
 		this.uri = uri;
@@ -65,7 +64,6 @@ final class RequestImpl implements Request {
 		this.params = params;
 		this.headers = headers;
 		this.body = body;
-		this.startTime = startTime;
 	}
 
 	/* (non-Javadoc)
@@ -76,13 +74,13 @@ final class RequestImpl implements Request {
 		return httpMethod;
 	}
 
-	/* (non-Javadoc)
-	 * @see org.arivu.nioserver.Request#getStartTime()
-	 */
-	@Override
-	public long getStartTime() {
-		return startTime;
-	}
+//	/* (non-Javadoc)
+//	 * @see org.arivu.nioserver.Request#getStartTime()
+//	 */
+//	@Override
+//	public long getStartTime() {
+//		return startTime;
+//	}
 
 	/* (non-Javadoc)
 	 * @see org.arivu.nioserver.Request#getHeaders()

@@ -2,20 +2,12 @@ package org.arivu.nioserver;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.arivu.datastructure.Amap;
 import org.arivu.utils.NullCheck;
 
 final class ResponseImpl implements Response {
-
-	private static final String LINE_SEPARATOR = System.lineSeparator();
 
 	final Map<String, Object> headers = new Amap<String, Object>();
 
@@ -23,12 +15,10 @@ final class ResponseImpl implements Response {
 
 	int responseCode = Configuration.defaultResCode;
 
-	final SocketChannel socketChannel;
 	final Request request;
 
-	ResponseImpl(Request request, SocketChannel socketChannel, Map<String, Object> headers) {
+	ResponseImpl(Request request, Map<String, Object> headers) {
 		this.request = request;
-		this.socketChannel = socketChannel;
 		if (!NullCheck.isNullOrEmpty(headers)) {
 			this.headers.putAll(headers);
 		}
@@ -52,6 +42,11 @@ final class ResponseImpl implements Response {
 	@Override
 	public void setResponseCode(int responseCode) {
 		this.responseCode = responseCode;
+	}
+
+	@Override
+	public Map<String, Object> getHeaders() {
+		return headers;
 	}
 
 	/*
@@ -127,62 +122,36 @@ final class ResponseImpl implements Response {
 		out.write(s);
 	}
 
-	volatile boolean closed = false;
-
 	@Override
-	public void close() throws Exception {
-		if (closed)
-			return;
-		closed = true;
-		final StringBuffer responseBody = new StringBuffer();
-
-		Object rescodetxt = null;
-		if (!NullCheck.isNullOrEmpty(Configuration.defaultResponseCodes)) {
-			rescodetxt = Configuration.defaultResponseCodes.get(String.valueOf(responseCode));
-		}
-
-		if (rescodetxt == null)
-			responseBody.append(request.getProtocol()).append(" ").append(responseCode).append(" ")
-					.append(LINE_SEPARATOR);
-		else
-			responseBody.append(request.getProtocol()).append(" ").append(responseCode).append(" ").append(rescodetxt)
-					.append(LINE_SEPARATOR);
-
-		Date enddate = new Date();
-		responseBody.append("Date: ").append(enddate.toString()).append(LINE_SEPARATOR);
-
-		for (Entry<String, Object> e : headers.entrySet()) {
-			responseBody.append(e.getKey()).append(": ").append(e.getValue()).append(LINE_SEPARATOR);
-		}
-		responseBody.append(LINE_SEPARATOR);
-
-		this.socketChannel.write(ByteBuffer.wrap(responseBody.toString().getBytes()));
-		byte[] byteArray = out.toByteArray();
-		this.socketChannel.write(ByteBuffer.wrap(byteArray));
-		this.socketChannel.close();
-		this.out.close();
-
-		if (!request.getUri().equals(Configuration.stopUri)) {
-			StringBuffer access = new StringBuffer();
-			access.append("[").append(dateFormat.format(new Date(request.getStartTime()))).append("] ").append(request.getUri())
-					.append(" ").append(responseCode).append(" ").append(byteArray.length).append(" [")
-					.append((enddate.getTime()-request.getStartTime())).append("]");
-			Server.accessLog.append(access.toString());
-		}
+	public ByteArrayOutputStream getOut() {
+		return out;
 	}
 
-	final static DateFormat dateFormat = new SimpleDateFormat("EEE MMM d hh:mm:ss.SSS yyyy");
+//	volatile boolean closed = false;
+//
+//	@Override
+//	public void close() throws Exception {
+//		if (closed)
+//			return;
+//		closed = true;
+//		RequestUtil.getResponseBytes(this.getResponseCode(), this.getHeaders(), this.getOut(), request.getProtocol());
+//		
+//		this.socketChannel.close();
+//		this.out.close();
+//	}
+
+	
 }
 // class ProxyResponse extends ResponseImpl{
 //
 // /**
 // * @param requestImpl
-// * @param socketChannel
+// * @param clientSocket
 // * @param headers
 // */
-// ProxyResponse(RequestImpl requestImpl, SocketChannel socketChannel,
+// ProxyResponse(RequestImpl requestImpl, SocketChannel clientSocket,
 // Map<String, Object> headers) {
-// super(requestImpl, socketChannel, headers);
+// super(requestImpl, clientSocket, headers);
 // }
 //
 //// @Override

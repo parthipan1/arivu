@@ -1,5 +1,6 @@
 {  
    "request":{  
+	  "buffer":1024,   	
       "scanpackages":[  
       ],
       "proxies":{  
@@ -20,17 +21,16 @@
                "Expires":-1,
                "Cache-Control":"private, max-age=0",
                "Server":"clownserver",
-               "X-XSS-Protection":"1; mode=block",
-               "Connection":"close"
+               "X-XSS-Protection":"1; mode=block"
             },
             "location":"/static",
-            "method":"GET",
-            "dir":"$home/public"
+            "dir":"/Users/parthipangounder/Downloads"
          }
       }
    },
    "response":{  
       "defaultcode":200,
+      "chunkSize":100000,
       "header":{  
          "Expires":-1,
          "Cache-Control":"private, max-age=0",

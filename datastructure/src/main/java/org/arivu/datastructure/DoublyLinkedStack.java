@@ -419,14 +419,17 @@ public final class DoublyLinkedStack<T> implements Iterable<T>, Queue<T> {
 		if (l == null)
 			return false;
 		l.lock();
+		try{
 		search = searchRef(o);
 		if (search != null) {
 			search.remove();
-			l.unlock();
+//			l.unlock();
 			return true;
 		} else {
-			l.unlock();
 			return false;
+		}
+		}finally{
+			l.unlock();
 		}
 	}
 

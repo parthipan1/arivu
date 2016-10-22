@@ -8,8 +8,8 @@ import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -70,8 +70,8 @@ class Route {
 		}
 	}
 
-	Response getResponse(Request req, SocketChannel socketChannel) {
-		return new ResponseImpl(req, socketChannel, Configuration.defaultResponseHeader);
+	Response getResponse(Request req) {
+		return new ResponseImpl(req, Configuration.defaultResponseHeader);
 	}
 
 	public void handle(Request req, Response res) throws Exception {
@@ -177,7 +177,7 @@ final class ProxyRoute extends Route {
 	}
 
 	void handleProxy(Request req, Response res) throws IOException {
-		String queryStr = req.getUriWithParams().substring(req.getUriWithParams().indexOf("?"));
+		String queryStr = URLDecoder.decode(req.getUriWithParams().substring(req.getUriWithParams().indexOf("?")), RequestUtil.ENC_UTF_8) ;
 		String loc = this.proxy_pass + req.getUri().substring(this.uri.length()) + queryStr;
 //		System.out.println("loc :: " + loc);
 		HttpMethodCall httpMethodCall = proxyTh.get(null);
@@ -218,7 +218,7 @@ final class ProxyRoute extends Route {
 	}
 
 	void handleDirectory(Request req, Response res) throws IOException {
-		String file = this.dir + req.getUri().substring(this.uri.length());
+		String file = this.dir + URLDecoder.decode( req.getUri().substring(this.uri.length()), RequestUtil.ENC_UTF_8);
 		File f = new File(file);
 //			System.out.println("file :: "+file+" exists "+f.exists());
 		if(!f.exists()){
@@ -260,7 +260,7 @@ final class ProxyRoute extends Route {
 			if (bytes == null) {
 				bytes = files.addBytes(file);
 			}
-//				System.out.println("Read bytes "+bytes.remaining());
+//			System.out.println("Read bytes "+bytes.remaining());
 			byte[] array = new byte[bytes.remaining()];
 			bytes.get(array, 0, array.length);
 			res.append(array);
@@ -269,11 +269,11 @@ final class ProxyRoute extends Route {
 	}
 
 	@Override
-	Response getResponse(Request req, SocketChannel socketChannel) {
+	Response getResponse(Request req) {
 		if (!NullCheck.isNullOrEmpty(dir)) {
-			return super.getResponse(req, socketChannel);
+			return super.getResponse(req);
 		} else {
-			return new ResponseImpl(req, socketChannel, defaultResponseHeader);
+			return new ResponseImpl(req, defaultResponseHeader);
 		}
 	}
 

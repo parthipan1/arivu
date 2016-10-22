@@ -19,8 +19,6 @@ public interface Request {
 
 	String getUriWithParams();
 
-	long getStartTime();
-
 	HttpMethod getHttpMethod();
 
 }
