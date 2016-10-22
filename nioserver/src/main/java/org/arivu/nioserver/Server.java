@@ -312,8 +312,7 @@ final class Connection {
 	void handleErrorReq(Throwable e, SelectionKey key) {
 		StringBuffer access = new StringBuffer();
 		String formatDate = RequestUtil.dateFormat.format(new Date());
-		access.append("[").append(formatDate).append("] ").append(inBuffer.toString().split(" ")[1]).append(" ")
-				.append("400");
+		errorAccessLog(access, formatDate);
 		Server.accessLog.append(access.toString());
 		logger.error("Failed in request parse(" + formatDate + ") :: " + inBuffer);
 		logger.error("Failed in request parse(" + formatDate + ") :: ", e);
@@ -324,6 +323,22 @@ final class Connection {
 		}
 		if (key != null)
 			key.cancel();
+	}
+
+	private void errorAccessLog(StringBuffer access, String formatDate) {
+		String[] split = inBuffer.toString().split(" ");
+		if( NullCheck.isNullOrEmpty(split) ){
+			access.append("[").append(formatDate).append("] ").append(inBuffer.toString()).append(" ")
+			.append("400");
+		}else{
+			if( split.length == 0 ){
+				access.append("[").append(formatDate).append("] ").append(inBuffer.toString()).append(" ")
+				.append("400");
+			}else{
+				access.append("[").append(formatDate).append("] ").append(split[1]).append(" ")
+				.append("400");
+			}
+		}
 	}
 
 	static Route get(Collection<Route> paths, Request req) {
