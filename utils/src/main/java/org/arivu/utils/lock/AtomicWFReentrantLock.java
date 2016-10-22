@@ -3,6 +3,7 @@
  */
 package org.arivu.utils.lock;
 
+import java.lang.reflect.Field;
 import java.util.Date;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -10,15 +11,30 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
+import sun.misc.Unsafe;
+
 /**
  * @author P
  *
  */
 public final class AtomicWFReentrantLock implements Lock {
+	static Unsafe unsafe;
+
+	static Unsafe getUnsafe() throws Exception {
+		if (unsafe == null) {
+			Field f = Unsafe.class.getDeclaredField("theUnsafe");
+			f.setAccessible(true);
+			unsafe = (Unsafe) f.get(null);
+		}
+		return unsafe;
+	}
 
 	final LinkedReference<CountDownLatch> waits = new LinkedReference<CountDownLatch>();
 
-	final AtomicBoolean cas = new AtomicBoolean(false);
+	// final AtomicBoolean cas = new AtomicBoolean(false);
+	private volatile long cas = 0l;
+
+	private long offset;
 
 	volatile Reentrant reentrant = null;
 
@@ -27,6 +43,18 @@ public final class AtomicWFReentrantLock implements Lock {
 	 */
 	public AtomicWFReentrantLock() {
 		super();
+		try {
+			getUnsafe();
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new IllegalStateException(e);
+		}
+		try {
+			offset = unsafe.objectFieldOffset(AtomicWFReentrantLock.class.getDeclaredField("cas"));
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new IllegalStateException(e);
+		}
 	}
 
 	@Override
@@ -44,9 +72,12 @@ public final class AtomicWFReentrantLock implements Lock {
 	}
 
 	private void internalLock() {
-		while (!cas.compareAndSet(false, true)) {
+		while (!unsafe.compareAndSwapLong(this, offset, 0l, 1l)) {
 			waitForSignal();
-		}
+        }
+//		while (!cas.compareAndSet(false, true)) {
+//			waitForSignal();
+//		}
 		reentrant = new Reentrant();
 	}
 
@@ -67,7 +98,8 @@ public final class AtomicWFReentrantLock implements Lock {
 			try {
 				if (reentrant.release()) {
 					reentrant = null;
-					cas.set(false);
+					cas = 0l;
+//					cas.set(false);
 					releaseAWait();
 				} else {
 				}
@@ -90,7 +122,8 @@ public final class AtomicWFReentrantLock implements Lock {
 
 	@Override
 	public boolean tryLock() {
-		return !cas.get();
+//		return !cas.get();
+		return cas == 0l;
 	}
 
 	private static final int delta = 100;

@@ -9,6 +9,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
+import sun.misc.Unsafe;
+
 /**
  * @author P
  *
@@ -17,18 +19,34 @@ public final class AtomicWFLock implements Lock {
 
 	final LinkedReference<CountDownLatch> waits = new LinkedReference<CountDownLatch>();
 
-	final AtomicBoolean cas = new AtomicBoolean(false);
+//	final AtomicBoolean cas = new AtomicBoolean(false);
+	private volatile long cas = 0l;
+	private long offset;
+	Unsafe unsafe;
 	
 	/**
 	 * 
 	 */
 	public AtomicWFLock() {
 		super();
+		try {
+			unsafe = AtomicWFReentrantLock.getUnsafe();
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new IllegalStateException(e);
+		}
+		try {
+			offset = unsafe.objectFieldOffset(AtomicWFLock.class.getDeclaredField("cas"));
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new IllegalStateException(e);
+		}
 	}
 
 	@Override
 	public void lock() {
-		while (!cas.compareAndSet(false, true)) {
+//		while (!cas.compareAndSet(false, true)) {
+		while (!unsafe.compareAndSwapLong(this, offset, 0l, 1l)) {
 			waitForSignal();
 		}
 	}
@@ -46,7 +64,8 @@ public final class AtomicWFLock implements Lock {
 
 	@Override
 	public void unlock() {
-		cas.set(false);
+//		cas.set(false);
+		cas = 0l;
 		releaseAWait();
 	}
 
@@ -71,7 +90,8 @@ public final class AtomicWFLock implements Lock {
 
 	@Override
 	public boolean tryLock() {
-		return !cas.get();
+//		return !cas.get();
+		return cas == 0l;
 	}
 
 	private static final int delta = 100;
