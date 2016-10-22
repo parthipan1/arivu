@@ -17,6 +17,7 @@ import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -28,6 +29,9 @@ import javax.management.ObjectName;
 
 import org.arivu.log.Appender;
 import org.arivu.log.appender.Appenders;
+import org.arivu.pool.ConcurrentPool;
+import org.arivu.pool.Pool;
+import org.arivu.pool.PoolFactory;
 import org.arivu.utils.Env;
 import org.arivu.utils.NullCheck;
 import org.slf4j.Logger;
@@ -120,6 +124,34 @@ final class SelectorHandler {
 		}
 	};
 
+	final Pool<Connection> connectionPool = new ConcurrentPool<Connection>(new PoolFactory<Connection>(){
+
+		@Override
+		public Connection create(Map<String, Object> params) {
+			return new Connection(connectionPool);
+		}
+
+		@Override
+		public void close(Connection t) {
+			if(t!=null)
+				t.pool = null;
+		}
+
+		@Override
+		public void clear(Connection t) {
+			if(t!=null)
+				t.reset();
+			
+		}},Connection.class);
+	
+	SelectorHandler() {
+		super();
+		connectionPool.setMaxPoolSize(-1);
+		connectionPool.setMaxReuseCount(-1);
+		connectionPool.setLifeSpan(-1);
+		connectionPool.setIdleTimeout(30000);
+	}
+
 	void registerMXBean() {
 		try {
 			MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
@@ -163,7 +195,7 @@ final class SelectorHandler {
 						SocketChannel clientSocket = ssc.accept();
 						clientSocket.configureBlocking(false);
 						SelectionKey key1 = clientSocket.register(clientSelector, SelectionKey.OP_READ);
-						key1.attach(new Connection());
+						key1.attach(connectionPool.get(null));
 					} else {
 						key.interestOps(0);
 						exe.execute(new Runnable() {
@@ -206,6 +238,11 @@ final class SelectorHandler {
 				logger.error("Failed to close accesslog::", e);
 			}
 		}
+		try {
+			connectionPool.close();
+		} catch (Exception e) {
+			logger.error("Failed to close connectionPool::", e);
+		}
 		logger.info("Server stopped!");
 	}
 }
@@ -218,14 +255,20 @@ final class Connection {
 	StringBuffer inBuffer = null;
 	ByteBuffer buff = null;
 	Ref resBuff = null;
-
-	public Connection() {
+	int writeLen = 0;
+	Pool<Connection> pool;
+	public Connection(Pool<Connection> pool) {
 		super();
-		inBuffer = new StringBuffer();
-		buff = ByteBuffer.allocateDirect(Configuration.defaultRequestBuffer);
+		reset();
+		this.pool = pool;
 	}
 
-	int writeLen = 0;
+	void reset() {
+		inBuffer = new StringBuffer();
+		buff = ByteBuffer.allocateDirect(Configuration.defaultRequestBuffer);
+		writeLen = 0;
+	}
+
 
 	void write(SelectionKey key) throws IOException {
 		logger.debug(" write  :: "+resBuff);
@@ -257,6 +300,7 @@ final class Connection {
 		buff = null;
 		inBuffer = null;
 		writeLen = 0;
+		pool.put(this);
 	}
 
 	void read(final SelectionKey key) throws IOException {
@@ -326,19 +370,19 @@ final class Connection {
 	}
 
 	private void errorAccessLog(StringBuffer access, String formatDate) {
-		String[] split = inBuffer.toString().split(" ");
-		if( NullCheck.isNullOrEmpty(split) ){
+//		String[] split = inBuffer.toString().split(" ");
+//		if( NullCheck.isNullOrEmpty(split) ){
 			access.append("[").append(formatDate).append("] ").append(inBuffer.toString()).append(" ")
 			.append("400");
-		}else{
-			if( split.length == 0 ){
-				access.append("[").append(formatDate).append("] ").append(inBuffer.toString()).append(" ")
-				.append("400");
-			}else{
-				access.append("[").append(formatDate).append("] ").append(split[1]).append(" ")
-				.append("400");
-			}
-		}
+//		}else{
+//			if( split.length == 0 ){
+//				access.append("[").append(formatDate).append("] ").append(inBuffer.toString()).append(" ")
+//				.append("400");
+//			}else{
+//				access.append("[").append(formatDate).append("] ").append(split[1]).append(" ")
+//				.append("400");
+//			}
+//		}
 	}
 
 	static Route get(Collection<Route> paths, Request req) {
