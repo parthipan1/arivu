@@ -8,6 +8,7 @@ import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
+import java.net.SocketAddress;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
@@ -131,12 +132,12 @@ public class RequestUtil {
 	
 	private static final String LINE_SEPARATOR = System.lineSeparator();
 	
-	static void accessLog(int responseCode, String uri, long start, long end, int size){
+	static void accessLog(int responseCode, String uri, long start, long end, int size, SocketAddress remoteSocketAddress){
 		if (!uri.equals(Configuration.stopUri)) {
 			StringBuffer access = new StringBuffer();
 			access.append("[").append(dateFormat.format(new Date(start))).append("] ")
 					.append(uri).append(" ").append(responseCode).append(" ").append(size)
-					.append(" [").append((end - start)).append("]");
+					.append(" [").append((end - start)).append("] ").append(remoteSocketAddress.toString());
 			Server.accessLog.append(access.toString());
 		}
 	}

@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -294,9 +295,10 @@ final class Connection {
 	}
 
 	void finish(SelectionKey key) throws IOException {
+		 SocketAddress remoteSocketAddress = ((SocketChannel) key.channel()).socket().getRemoteSocketAddress();
 		((SocketChannel) key.channel()).close();
 		key.cancel();
-		RequestUtil.accessLog(resBuff.rc, resBuff.uri, startTime, System.currentTimeMillis(), resBuff.bodyBytes.length);
+		RequestUtil.accessLog(resBuff.rc, resBuff.uri, startTime, System.currentTimeMillis(), resBuff.bodyBytes.length, remoteSocketAddress);
 		buff = null;
 		inBuffer = null;
 		writeLen = 0;

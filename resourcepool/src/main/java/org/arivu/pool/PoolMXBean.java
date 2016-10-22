@@ -4,7 +4,7 @@ package org.arivu.pool;
  * @author P
  *
  */
-interface PoolMXBean {
+public interface PoolMXBean {
 	/**
 	 * @return maxPoolSize
 	 */
