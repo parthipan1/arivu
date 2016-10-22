@@ -11,7 +11,7 @@ def FS = java.io.File.separator
 
 allprojects {
 	group = 'org.arivu'
-	version = '1.0.0'
+	version = '1.0.1'
 	
     tasks.withType(Javadoc) {
         options.addStringOption('Xdoclint:none', '-quiet')
@@ -38,8 +38,8 @@ subprojects {
     apply plugin: 'pmd'
     apply plugin: 'jacoco'
 
-	sourceCompatibility = 1.6
-	targetCompatibility = 1.6
+	sourceCompatibility = 1.8
+	targetCompatibility = 1.8
   
   //tasks.withType(Javadoc).all { enabled = false }
   
@@ -126,6 +126,7 @@ subprojects {
   
     //enable incremental compilation
 //    options.incremental = true
+    options.compilerArgs << '-XDignore.symbol.file'
     
     // set debug Levels
     options.debugOptions.debugLevel = "source,lines,vars"
@@ -138,6 +139,7 @@ subprojects {
   
     //enable incremental compilation
 //    options.incremental = true
+    options.compilerArgs << '-XDignore.symbol.file'
     
     // set debug Levels
     options.debugOptions.debugLevel = "source,lines,vars"
@@ -196,7 +198,7 @@ subprojects {
             name = project.version //Bintray logical version name
             //desc = //Optional - Version-specific description'
             released  = new Date() //Optional - Date of the version release. 2 possible values: date in the format of 'yyyy-MM-dd'T'HH:mm:ss.SSSZZ' OR a java.util.Date instance
-            vcsTag = 'baseVersion'
+            vcsTag = 'baseVersion_1_6'
             //attributes = ['gradle-plugin': 'com.use.less:com.use.less.gradle:gradle-useless-plugin'] //Optional version-level attributes
             //Optional configuration for GPG signing
             /*
