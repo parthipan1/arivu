@@ -55,26 +55,27 @@ final class Configuration {
 		Collection<Route> tempRequestPaths = new DoublyLinkedList<Route>();
 		Map<String, Object> proxies = (Map<String, Object>) Ason.getObj(json, "request.proxies", null);
 
-		for (Entry<String, Object> e : proxies.entrySet()) {
-			String name = e.getKey();
-			Map<String, Object> proxy = (Map<String, Object>) e.getValue();
-			HttpMethod httpMethod = HttpMethod.valueOf(Ason.getStr(proxy, "httpMethod", "ALL"));
-			Map<String, Object> header = (Map<String, Object>) Ason.getObj(proxy, "header", null);
-			String proxy_pass = Ason.getStr(proxy, "proxy_pass", null);
-			if (proxy_pass != null) {
-				proxy_pass = Utils.replaceAll(proxy_pass, "$host", Server.DEFAULT_HOST);
-				proxy_pass = Utils.replaceAll(proxy_pass, "$port", String.valueOf(Server.DEFAULT_PORT));
-			}
-			String dir = Ason.getStr(proxy, "dir", null);
-			if (dir != null) {
-				dir = Utils.replaceAll(dir, "$home", new File(".").getAbsolutePath());
-			}
-			ProxyRoute prp = new ProxyRoute(name, proxy_pass, dir, Ason.getStr(proxy, "location", null),
-					httpMethod, null, null, false, header);
-			logger.debug("Discovered Proxy setting ::" + prp.toString());
-			tempRequestPaths.add(prp);
+		if (proxies!=null) {
+			for (Entry<String, Object> e : proxies.entrySet()) {
+				String name = e.getKey();
+				Map<String, Object> proxy = (Map<String, Object>) e.getValue();
+				HttpMethod httpMethod = HttpMethod.valueOf(Ason.getStr(proxy, "httpMethod", "ALL"));
+				Map<String, Object> header = (Map<String, Object>) Ason.getObj(proxy, "header", null);
+				String proxy_pass = Ason.getStr(proxy, "proxy_pass", null);
+				if (proxy_pass != null) {
+					proxy_pass = Utils.replaceAll(proxy_pass, "$host", Server.DEFAULT_HOST);
+					proxy_pass = Utils.replaceAll(proxy_pass, "$port", String.valueOf(Server.DEFAULT_PORT));
+				}
+				String dir = Ason.getStr(proxy, "dir", null);
+				if (dir != null) {
+					dir = Utils.replaceAll(dir, "$home", new File(".").getAbsolutePath());
+				}
+				ProxyRoute prp = new ProxyRoute(name, proxy_pass, dir, Ason.getStr(proxy, "location", null), httpMethod,
+						null, null, false, header);
+				logger.debug("Discovered Proxy setting ::" + prp.toString());
+				tempRequestPaths.add(prp);
+			} 
 		}
-
 		try {
 			tempRequestPaths.addAll(PackageScanner.getPaths(scanPackages));
 			routes = Utils.unmodifiableCollection(tempRequestPaths);
