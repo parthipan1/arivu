@@ -108,10 +108,10 @@ class PackageScanner {
 							Route e = new Route(uri, httpMethod, clazz, method, isStatic);
 							boolean add = reqPaths.add(e);
 							if (add) {
-								logger.info("Discovered requestImpl handler :: " + clazz.getName() + " httpMethod "
+								logger.debug("Discovered requestImpl handler :: " + clazz.getName() + " httpMethod "
 										+ method.getName());
 							} else {
-								logger.info("Duplicate requestImpl handler discovered ignoring :: " + clazz.getName()
+								logger.debug("Duplicate requestImpl handler discovered ignoring :: " + clazz.getName()
 										+ " httpMethod " + method.getName());
 							}
 						}

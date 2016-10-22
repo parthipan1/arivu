@@ -80,7 +80,8 @@ final class Configuration {
 			tempRequestPaths.addAll(PackageScanner.getPaths(scanPackages));
 			routes = Utils.unmodifiableCollection(tempRequestPaths);
 //			routes = tempRequestPaths;
-			logger.debug("All request paths : "+routes);
+			for(Route r:routes)
+				logger.info("Route discovered :: "+r);
 		} catch (Exception e) {
 			logger.error("Failed in packagescan :: ", e);
 			throw new IllegalStateException(e);
