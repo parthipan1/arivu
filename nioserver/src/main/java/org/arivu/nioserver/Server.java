@@ -59,11 +59,11 @@ public class Server {
 		} else {
 			accessLog = Appenders.file
 					.get(Env.getEnv("access.log", ".." + File.separator + "logs" + File.separator + "access.log"));
-			handler.sync();
+			(handler = new SelectorHandler()).sync();
 		}
 	}
 
-	private static SelectorHandler handler = new SelectorHandler();
+	private static SelectorHandler handler = null;
 
 	static Appender accessLog = null;
 
@@ -192,7 +192,9 @@ final class SelectorHandler {
 				for (Iterator<SelectionKey> it = readySet.iterator(); it.hasNext();) {
 					final SelectionKey key = it.next();
 					it.remove();
-					if (key.isAcceptable()) {
+					if(!key.isValid()){
+						continue;
+					}else if (key.isAcceptable()) {
 						SocketChannel clientSocket = ssc.accept();
 						clientSocket.configureBlocking(false);
 						SelectionKey key1 = clientSocket.register(clientSelector, SelectionKey.OP_READ);
