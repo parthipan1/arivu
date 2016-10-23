@@ -84,7 +84,7 @@ class Route {
 			logger.error("Failed in route "+this+" :: ", e);
 			res.setResponseCode(400);
 			try {
-				res.append(e.getMessage());
+				res.append(RequestUtil.getStackTrace(e));
 			} catch (IOException e1) {
 				logger.error("Failed in route "+this+" :: ", e1);
 			}
@@ -190,7 +190,7 @@ final class ProxyRoute extends Route {
 			logger.error("Failed in route "+this+" :: ", e);
 			res.setResponseCode(400);
 			try {
-				res.append(e.getMessage());
+				res.append(RequestUtil.getStackTrace(e));
 			} catch (IOException e1) {
 				logger.error("Failed in route "+this+" :: ", e1);
 			}

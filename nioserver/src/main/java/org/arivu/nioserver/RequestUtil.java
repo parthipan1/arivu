@@ -5,7 +5,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.io.RandomAccessFile;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.SocketAddress;
@@ -128,6 +130,13 @@ public class RequestUtil {
 			e.setValue(Collections.unmodifiableCollection(e.getValue()));
 		}
 		return Utils.unmodifiableMap(tempparams);
+	}
+	
+	static String getStackTrace(final Throwable throwable) {
+	    final StringWriter sw = new StringWriter();
+	    final PrintWriter pw = new PrintWriter(sw, true);
+	    throwable.printStackTrace(pw);
+	    return sw.getBuffer().toString();
 	}
 	
 	private static final String LINE_SEPARATOR = System.lineSeparator();
