@@ -28,4 +28,8 @@ public interface Response {
 
 	Map<String, Object> getHeaders();
 
+	void sendRedirect(String url);
+
+	String getSendRedirectUrl();
+
 }
