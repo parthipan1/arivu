@@ -1,6 +1,7 @@
 package org.arivu.nioserver;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
@@ -10,18 +11,20 @@ import java.net.URLDecoder;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.jar.JarEntry;
+import java.util.jar.JarInputStream;
 
 import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.datastructure.DoublyLinkedSet;
 import org.arivu.utils.NullCheck;
+import org.arivu.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 class PackageScanner {
 	static final Logger logger = LoggerFactory.getLogger(PackageScanner.class);
 
-	static Collection<Route> getPaths(Collection<String> packageNames)
-			throws ClassNotFoundException, IOException {
+	static Collection<Route> getPaths(Collection<String> packageNames) throws ClassNotFoundException, IOException {
 		Collection<Route> reqPaths = new DoublyLinkedSet<Route>();
 
 		for (String pkgName : packageNames) {
@@ -41,7 +44,6 @@ class PackageScanner {
 			if (cld == null) {
 				throw new ClassNotFoundException("Can't get class loader.");
 			}
-
 			// Ask for all resources for the packageToPath
 			Enumeration<URL> resources = cld.getResources(packageToPath);
 			while (resources.hasMoreElements()) {
@@ -63,43 +65,82 @@ class PackageScanner {
 		Collection<Class<?>> classes = new DoublyLinkedSet<Class<?>>();
 		while (!directories.isEmpty()) {
 			File directoryFile = directories.remove(0);
+			String path = directoryFile.getPath();
 			if (directoryFile.exists()) {
 				File[] files = directoryFile.listFiles();
 
 				for (File file : files) {
-					if ( file.getName().endsWith(".class") && !file.getName().contains("$") ) {
-						int index = directoryFile.getPath().indexOf(packageToPath);
-						String packagePrefix = directoryFile.getPath().substring(index).replace('/', '.');
+					if (file.getName().endsWith(".class") && !file.getName().contains("$")) {
+						int index = path.indexOf(packageToPath);
+						String packagePrefix = path.substring(index).replace('/', '.');
 						try {
 							String className = packagePrefix + '.'
 									+ file.getName().substring(0, file.getName().length() - 6);
-							classes.add(Class.forName(className));
+							if("org.arivu.nioserver.Configuration.class".equals(className)||
+								"org.arivu.nioserver.PackageScanner.class".equals(className)
+									){
+								continue;
+							}else{
+								classes.add(Class.forName(className));
+							}
 						} catch (NoClassDefFoundError e) {
 							logger.error("Error on Scanning annotation :: ", e);
 						}
-					} else if (file.isDirectory()) { // If we got to a
-														// subdirectory
+					} else if (file.isDirectory()) {
 						directories.add(new File(file.getPath()));
 					}
 				}
 			} else {
-				logger.error(
-						pckgname + " (" + directoryFile.getPath() + ") does not appear to be a valid package");
-				throw new ClassNotFoundException(
-						pckgname + " (" + directoryFile.getPath() + ") does not appear to be a valid package");
+				int indexOf = path.indexOf("!");
+				if(indexOf==-1){
+					logger.error(pckgname + " (" + path + ") does not appear to be a valid package");
+					throw new ClassNotFoundException(
+							pckgname + " (" + path + ") does not appear to be a valid package");
+				}else{
+					classes.addAll(getClasseNamesInPackage(path.substring(0, indexOf),pckgname));
+				}
 			}
 		}
 		return classes;
 	}
 
+	static Collection<Class<?>> getClasseNamesInPackage(String jarName, String packageName) {
+		Collection<Class<?>> classes = new DoublyLinkedList<Class<?>>();
+		jarName = Utils.replaceAll(jarName, "file:", "");//jarName.replaceFirst("file:", "");
+		packageName = packageName.replaceAll("\\.", "/");
+		try(
+			JarInputStream jarFile = new JarInputStream(new FileInputStream(new File(jarName)));
+		) {
+			JarEntry jarEntry;
+			while ( (jarEntry = jarFile.getNextJarEntry()) != null ) {
+				if ((jarEntry.getName().startsWith(packageName)) && (jarEntry.getName().endsWith(".class"))) {
+					String className = jarEntry.getName().replaceAll("/", "\\.");
+					if("org.arivu.nioserver.Configuration.class".equals(className)||
+							"org.arivu.nioserver.PackageScanner.class".equals(className)){
+						continue;
+					}else{
+						try {
+							classes.add(Class.forName( Utils.replaceAll(className, ".class", "") ));
+						}  catch (NoClassDefFoundError e) {
+							logger.error("Error on Scanning annotation :: ", e);
+						}
+					}
+				}
+			}
+		} catch (Exception e) {
+			logger.error("Error on Scanning getClasseNamesInPackage :: ", e);
+		}
+		return classes;
+	}
+
 	static void addMethod(Collection<Route> reqPaths, Class<?> clazz) {
-		logger.debug("Scanning class "+clazz.getName());
-		Method[] methods = clazz.getDeclaredMethods();//Methods();
+		logger.debug("Scanning class " + clazz.getName());
+		Method[] methods = clazz.getDeclaredMethods();// Methods();
 		for (Method method : methods) {
 			if (method.isAnnotationPresent(Path.class)) {
 				Path path = method.getAnnotation(Path.class);
 				if (path != null) {
-					logger.debug("Scanning class "+clazz.getName()+" annotation present "+method);
+					logger.debug("Scanning class " + clazz.getName() + " annotation present " + method);
 					try {
 						String uri = path.value();
 						org.arivu.nioserver.HttpMethod httpMethod = path.httpMethod();

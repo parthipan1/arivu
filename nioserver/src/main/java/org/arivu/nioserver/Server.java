@@ -248,6 +248,7 @@ final class SelectorHandler {
 			logger.error("Failed to close connectionPool::", e);
 		}
 		logger.info("Server stopped!");
+		System.exit(0);
 	}
 }
 
