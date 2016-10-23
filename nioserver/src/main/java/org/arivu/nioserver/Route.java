@@ -77,8 +77,18 @@ class Route {
 		return new ResponseImpl(req, Configuration.defaultResponseHeader);
 	}
 
-	public void handle(Request req, Response res) throws Exception {
-		this.invoker.handle(req, res, isStatic, method, tl);
+	public void handle(Request req, Response res) {
+		try {
+			this.invoker.handle(req, res, isStatic, method, tl);
+		} catch (Throwable e) {
+			logger.error("Failed in route "+this+" :: ", e);
+			res.setResponseCode(400);
+			try {
+				res.append(e.getMessage());
+			} catch (IOException e1) {
+				logger.error("Failed in route "+this+" :: ", e1);
+			}
+		}
 	}
 
 	@Override
@@ -118,7 +128,8 @@ class Route {
 }
 
 final class ProxyRoute extends Route {
-
+	private static final Logger logger = LoggerFactory.getLogger(ProxyRoute.class);
+	
 	String name;
 	String proxy_pass;
 	Map<String, Object> defaultResponseHeader;
@@ -168,11 +179,21 @@ final class ProxyRoute extends Route {
 	}
 
 	@Override
-	public void handle(Request req, Response res) throws Exception {
-		if (!NullCheck.isNullOrEmpty(dir)) {
-			handleDirectory(req, res);
-		} else {
-			handleProxy(req, res);
+	public void handle(Request req, Response res){
+		try {
+			if (!NullCheck.isNullOrEmpty(dir)) {
+				handleDirectory(req, res);
+			} else {
+				handleProxy(req, res);
+			}
+		} catch (Throwable e) {
+			logger.error("Failed in route "+this+" :: ", e);
+			res.setResponseCode(400);
+			try {
+				res.append(e.getMessage());
+			} catch (IOException e1) {
+				logger.error("Failed in route "+this+" :: ", e1);
+			}
 		}
 	}
 
