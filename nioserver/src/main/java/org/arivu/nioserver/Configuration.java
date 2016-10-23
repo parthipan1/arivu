@@ -26,36 +26,41 @@ final class Configuration {
 	static final int defaultRequestBuffer;
 	private static final String CONFIGURATION_FILE = "arivu.nioserver.json";
 
+	private static final String RESPONSE_CODES = "arivu.nioserver.response.json";
+
 	static {
+		final Map<String, Object> responseJson = Ason.loadProperties(RESPONSE_CODES);
+		defaultResponseCodes = Utils
+				.unmodifiableMap((Map<String, Object>) Ason.getObj(responseJson, "response.codes", null));
+
+		Map<String, Object> jmt = (Map<String, Object>) Ason.getObj(responseJson, "response.mime", null);
+		Map<String, Map<String, Object>> tempMimeType = new Amap<String, Map<String, Object>>();
+		for (Entry<String, Object> e : jmt.entrySet()) {
+			tempMimeType.put(e.getKey(), Utils.unmodifiableMap((Map<String, Object>) e.getValue()));
+		}
+		defaultMimeType = Utils.unmodifiableMap(tempMimeType);
+
 		final Map<String, Object> json = Ason.loadProperties(CONFIGURATION_FILE);
 
 		defaultResponseHeader = Utils.unmodifiableMap((Map<String, Object>) Ason.getObj(json, "response.header", null));
-		defaultResponseCodes = Utils.unmodifiableMap((Map<String, Object>) Ason.getObj(json, "response.codes", null));
+
 		defaultResCode = Ason.getNumber(json, "response.defaultcode", 200).intValue();
 		defaultChunkSize = Ason.getNumber(json, "response.chunkSize", 100000).intValue();
 		defaultRequestBuffer = Ason.getNumber(json, "request.buffer", 1024).intValue();
-		
+
 		Collection<String> array = Ason.getArray(json, "request.scanpackages", null);
-		if( NullCheck.isNullOrEmpty(array) ){
+		if (NullCheck.isNullOrEmpty(array)) {
 			array = new DoublyLinkedList<String>();
-			array.add("org.arivu.nioserver");
-		}else{
+		} else {
 			array = new DoublyLinkedList<String>(array);
-			array.add("org.arivu.nioserver");
 		}
+		array.add("org.arivu.nioserver");
 		Collection<String> scanPackages = Utils.unmodifiableCollection(array);
 
-		Map<String, Object> jmt = (Map<String, Object>) Ason.getObj(json, "response.mime", null);
-		Map<String, Map<String, Object>> tempMimeType = new Amap<String, Map<String,Object>>();
-		for (Entry<String, Object> e : jmt.entrySet()) {
-			tempMimeType.put(e.getKey(), Utils.unmodifiableMap((Map<String, Object>)e.getValue()));
-		}
-		defaultMimeType = Utils.unmodifiableMap(tempMimeType);
-		
 		Collection<Route> tempRequestPaths = new DoublyLinkedList<Route>();
 		Map<String, Object> proxies = (Map<String, Object>) Ason.getObj(json, "request.proxies", null);
 
-		if (proxies!=null) {
+		if (proxies != null) {
 			for (Entry<String, Object> e : proxies.entrySet()) {
 				String name = e.getKey();
 				Map<String, Object> proxy = (Map<String, Object>) e.getValue();
@@ -74,14 +79,14 @@ final class Configuration {
 						null, null, false, header);
 				logger.debug("Discovered Proxy setting ::" + prp.toString());
 				tempRequestPaths.add(prp);
-			} 
+			}
 		}
 		try {
 			tempRequestPaths.addAll(PackageScanner.getPaths(scanPackages));
 			routes = Utils.unmodifiableCollection(tempRequestPaths);
-//			routes = tempRequestPaths;
-			for(Route r:routes)
-				logger.info("Route discovered :: "+r);
+			// routes = tempRequestPaths;
+			for (Route r : routes)
+				logger.info("Route discovered :: " + r);
 		} catch (Exception e) {
 			logger.error("Failed in packagescan :: ", e);
 			throw new IllegalStateException(e);

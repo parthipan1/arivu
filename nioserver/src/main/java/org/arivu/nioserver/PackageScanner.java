@@ -146,7 +146,7 @@ class PackageScanner {
 						org.arivu.nioserver.HttpMethod httpMethod = path.httpMethod();
 						if (!NullCheck.isNullOrEmpty(uri) && httpMethod != null) {
 							boolean isStatic = Modifier.isStatic(method.getModifiers());
-							Route e = new Route(uri, httpMethod, clazz, method, isStatic);
+							Route e = new Route(uri, httpMethod, clazz, method, isStatic, getMethodInvoker(method));
 							boolean add = reqPaths.add(e);
 							if (add) {
 								logger.debug("Discovered requestImpl handler :: " + clazz.getName() + " httpMethod "
@@ -161,6 +161,33 @@ class PackageScanner {
 					}
 				}
 			}
+		}
+	}
+	
+	static MethodInvoker getMethodInvoker(Method method){
+		int parameterCount = method.getParameterCount();
+		if(parameterCount==0)
+			return MethodInvoker.none;
+		else if(parameterCount==1){
+			Class<?>[] parameterTypes = method.getParameterTypes();
+			if( parameterTypes[0].isAssignableFrom(Response.class)  ){
+				return MethodInvoker.onlyRes;
+			}else if( parameterTypes[0].isAssignableFrom(Request.class)  ){
+				return MethodInvoker.onlyReq;
+			}else{
+				throw new IllegalStateException("Method signature not in line with @Path! for method "+method);
+			}
+		}else if(parameterCount==2){
+			Class<?>[] parameterTypes = method.getParameterTypes();
+			if( parameterTypes[0].isAssignableFrom(Response.class)  && parameterTypes[1].isAssignableFrom(Request.class) ){
+				return MethodInvoker.reverDef;
+			}else if( parameterTypes[0].isAssignableFrom( Request.class)  && parameterTypes[1].isAssignableFrom(Response.class) ){
+				return MethodInvoker.defalt;		
+			}else{
+				throw new IllegalStateException("Method signature not in line with @Path! for method "+method);
+			}
+		}else{
+			throw new IllegalStateException("Method signature not in line with @Path! for method "+method);
 		}
 	}
 }

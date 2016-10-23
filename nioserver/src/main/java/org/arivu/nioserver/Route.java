@@ -30,26 +30,29 @@ class Route {
 	final Class<?> klass;
 	final Method method;
 	final boolean isStatic;
+	final MethodInvoker invoker;
 	Threadlocal<Object> tl;
 
 	Route(String uri, org.arivu.nioserver.HttpMethod httpMethod) {
-		this(uri, httpMethod, null, null, false);
+		this(uri, httpMethod, null, null, false, null);
 	}
 
 	/**
 	 * @param uri
 	 * @param httpMethod
-	 * @param klass
 	 * @param httpMethod
+	 * @param klass
+	 * @param invoker TODO
 	 */
 	Route(String uri, org.arivu.nioserver.HttpMethod httpMethod, Class<?> klass, Method method,
-			boolean isStatic) {
+			boolean isStatic, MethodInvoker invoker) {
 		super();
 		this.uri = uri;
 		this.httpMethod = httpMethod;
 		this.klass = klass;
 		this.method = method;
 		this.isStatic = isStatic;
+		this.invoker = invoker;
 		if (klass != null) {
 			this.tl = new Threadlocal<Object>(new Threadlocal.Factory<Object>() {
 
@@ -75,10 +78,7 @@ class Route {
 	}
 
 	public void handle(Request req, Response res) throws Exception {
-		if (isStatic)
-			method.invoke(null, req, res);
-		else
-			method.invoke(tl.get(null), req, res);
+		this.invoker.handle(req, res, isStatic, method, tl);
 	}
 
 	@Override
@@ -136,7 +136,7 @@ final class ProxyRoute extends Route {
 	ProxyRoute(String name, String proxy_pass, String dir, String uri,
 			org.arivu.nioserver.HttpMethod httpMethod, Class<?> klass, Method method, boolean isStatic,
 			Map<String, Object> defaultResponseHeader) {
-		super(uri, httpMethod, klass, method, isStatic);
+		super(uri, httpMethod, klass, method, isStatic, null);
 		this.name = name;
 		this.proxy_pass = proxy_pass;
 		this.dir = dir;
@@ -468,4 +468,60 @@ class JavaHttpMethodCall implements HttpMethodCall {
 		return extractResponse(con);
 	}
 
+}
+enum MethodInvoker{
+	none{
+
+		@Override
+		public void handle(Request req, Response res, boolean isStatic, Method method, Threadlocal<Object> tl)
+				throws Exception {
+			if (isStatic)
+				method.invoke(null);
+			else
+				method.invoke(tl.get(null));
+		}
+		
+	},defalt,
+	onlyReq{
+
+		@Override
+		public void handle(Request req, Response res, boolean isStatic, Method method, Threadlocal<Object> tl)
+				throws Exception {
+			if (isStatic)
+				method.invoke(null, req);
+			else
+				method.invoke(tl.get(null), req);
+		}
+		
+	},onlyRes{
+
+		@Override
+		public void handle(Request req, Response res, boolean isStatic, Method method, Threadlocal<Object> tl)
+				throws Exception {
+			if (isStatic)
+				method.invoke(null, res);
+			else
+				method.invoke(tl.get(null), res);
+		}
+		
+	},reverDef{
+
+		@Override
+		public void handle(Request req, Response res, boolean isStatic, Method method, Threadlocal<Object> tl)
+				throws Exception {
+			if (isStatic)
+				method.invoke(null, res, req);
+			else
+				method.invoke(tl.get(null), res, req);
+		}
+		
+	};
+	
+	public void handle(Request req, Response res,boolean isStatic,Method method,Threadlocal<Object> tl) throws Exception{
+		if (isStatic)
+			method.invoke(null, req, res);
+		else
+			method.invoke(tl.get(null), req, res);
+	} 
+	
 }
