@@ -60,20 +60,22 @@ class Route {
 				this.invoker = MethodInvoker.variable;
 				this.rut = RequestUtil.parseRequestUriTokens(uri, method);
 			}
-			this.tl = new Threadlocal<Object>(new Threadlocal.Factory<Object>() {
-
-				@Override
-				public Object create(Map<String, Object> params) {
-					try {
-						return Route.this.klass.newInstance();
-					} catch (InstantiationException e) {
-						logger.error("Error on creating new instance " + Route.this.klass.getName() + " :: ", e);
-					} catch (IllegalAccessException e) {
-						logger.error("Error on creating new instance " + Route.this.klass.getName() + " :: ", e);
+			if(!isStatic){
+				this.tl = new Threadlocal<Object>(new Threadlocal.Factory<Object>() {
+					
+					@Override
+					public Object create(Map<String, Object> params) {
+						try {
+							return Route.this.klass.newInstance();
+						} catch (InstantiationException e) {
+							logger.error("Error on creating new instance " + Route.this.klass.getName() + " :: ", e);
+						} catch (IllegalAccessException e) {
+							logger.error("Error on creating new instance " + Route.this.klass.getName() + " :: ", e);
+						}
+						return null;
 					}
-					return null;
-				}
-			}, 30000);
+				}, 30000);
+			}
 		} else {
 			this.rut = null;
 			this.invoker = null;
