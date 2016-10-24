@@ -3,9 +3,11 @@ package org.arivu.nioserver;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 
+import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.utils.NullCheck;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -115,5 +117,41 @@ public class RequestUtilTest {
 		assertTrue(parseParams.get("t2").toArray(new String[]{})[0].equals("2"));
 		assertTrue(parseParams.get("t2").toArray(new String[]{})[1].equals("1"));
 		
+	}
+	
+	@Test
+	public void testParseUriTokens() throws Exception {
+		
+		System.setProperty("lightninglog.json", "./lightninglog.json");
+		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
+		System.setProperty("access.log", "./access.log");
+		
+		Collection<String> packages = new DoublyLinkedList<>();
+		packages.add("org.arivu.nioserver");
+		Collection<Route> routes = PackageScanner.getPaths(packages);
+		assertFalse(NullCheck.isNullOrEmpty(routes));
+		Route varia = null;
+		for( Route c:routes ){
+			if( c.uri.equals("/test/{p1}/value") && c.httpMethod==HttpMethod.GET ){
+				varia = c;
+				break;
+			}
+		}
+		
+	 	assertTrue(Connection.get(routes, "/test/1/value", HttpMethod.GET)==varia);
+	 	
+		Request req = new RequestImpl(HttpMethod.GET,"/test/1/value","/test/1/value",null,null,null,null);
+		Response res = varia.getResponse(req);
+	 	varia.handle(req, res);
+		
+	 	assertTrue( new String( res.getOut().toByteArray() ).equals("1"));
+	}
+}
+
+class TestRoute{
+	
+	@Path(value="/test/{p1}/value",httpMethod=HttpMethod.GET)
+	void handle(Request req,Response res,String p1) throws IOException{
+		res.append(p1);
 	}
 }

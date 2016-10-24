@@ -18,6 +18,7 @@ import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -336,7 +337,7 @@ final class Connection {
 		try {
 			request = RequestUtil.parse(inBuffer, startTime);
 			// System.out.println(" request :: " + request.toString());
-			route = get(Configuration.routes, request);
+			route = get(Configuration.routes, request.getUri(), request.getHttpMethod());
 			if (route != null) {
 				response = route.getResponse(request);
 			}
@@ -382,21 +383,39 @@ final class Connection {
 		Server.accessLog.append(access.toString());
 	}
 
-	static Route get(Collection<Route> paths, Request req) {
+	static Route get(Collection<Route> paths, final String uri, HttpMethod httpMethod) {
 		Route df = null;
-		Route in = new Route(req.getUri(), req.getMethod());
+		final Route in = new Route(uri, httpMethod);
 		for (Route rq : paths) {
-			if (in.equals(rq))
-				return rq;
-			else if (rq.httpMethod == HttpMethod.ALL) {
-				if (rq.uri.equals("/*"))
-					df = rq;
-				else if (rq.uri.equals(req.getUri()))
+			if (rq.rut == null) {
+				if (in.equals(rq))
 					return rq;
-				else if (rq instanceof ProxyRoute && req.getUri().startsWith(rq.uri))
+				else if (rq.httpMethod == HttpMethod.ALL) {
+					if (rq.uri.equals("/*"))
+						df = rq;
+					else if (rq.uri.equals(uri))
+						return rq;
+					else if (rq instanceof ProxyRoute && uri.startsWith(rq.uri))
+						return rq;
+				} else if (rq instanceof ProxyRoute && uri.startsWith(rq.uri)) {
 					return rq;
-			} else if (rq instanceof ProxyRoute && req.getUri().startsWith(rq.uri)) {
-				return rq;
+				}
+			} else {
+				List<String> uriParts = rq.rut.uriParts;
+				String prefix = uriParts.get(0);
+				boolean startsWith = uri.startsWith(prefix);
+				if (rq.httpMethod == httpMethod && startsWith) {
+					if (uriParts.size() == 1) {
+						return rq;
+					} else {
+						int v = prefix.length();
+						for (int i = 1; i < uriParts.size(); i++) 
+							if ( (v = uri.indexOf(uriParts.get(i), v)) == -1) break;
+						
+						if (v != -1)
+							return rq;
+					}
+				}
 			}
 		}
 		return df;
