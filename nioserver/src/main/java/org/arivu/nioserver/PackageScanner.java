@@ -147,11 +147,9 @@ class PackageScanner {
 						if (!NullCheck.isNullOrEmpty(uri) && httpMethod != null) {
 							boolean isStatic = Modifier.isStatic(method.getModifiers());
 							Route e = new Route(uri, httpMethod, clazz, method, isStatic);
-							
-							
-							
-							boolean add = reqPaths.add(e);
-							if (add) {
+							Route matchingRoute = RequestUtil.getMatchingRoute(reqPaths, uri, httpMethod, true);
+							if (matchingRoute==null) {
+								reqPaths.add(e);
 								logger.debug("Discovered requestImpl handler :: " + clazz.getName() + " httpMethod "
 										+ method.getName());
 							} else {

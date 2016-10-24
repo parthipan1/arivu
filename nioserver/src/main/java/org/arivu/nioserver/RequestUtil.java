@@ -22,7 +22,6 @@ import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -42,7 +41,7 @@ public class RequestUtil {
 	static final byte BYTE_10 = (byte) 10;
 	static final String divider = System.lineSeparator() + System.lineSeparator();
 
-	static Request parse(final StringBuffer buffer, long startTime) {
+	static Request parseRequest(final StringBuffer buffer) {
 		String content = buffer.toString();
 		byte[] bytes = content.getBytes();
 		int indexOf = -1;
@@ -142,87 +141,121 @@ public class RequestUtil {
 		throwable.printStackTrace(pw);
 		return sw.getBuffer().toString();
 	}
-	
-	static MethodInvoker getMethodInvoker(Method method){
+
+	static MethodInvoker getMethodInvoker(Method method) {
 		int parameterCount = method.getParameterCount();
-		if(parameterCount==0)
+		if (parameterCount == 0)
 			return MethodInvoker.none;
-		else if(parameterCount==1){
+		else if (parameterCount == 1) {
 			Class<?>[] parameterTypes = method.getParameterTypes();
-			if( parameterTypes[0].isAssignableFrom(Response.class)  ){
+			if (parameterTypes[0].isAssignableFrom(Response.class)) {
 				return MethodInvoker.onlyRes;
-			}else if( parameterTypes[0].isAssignableFrom(Request.class)  ){
+			} else if (parameterTypes[0].isAssignableFrom(Request.class)) {
 				return MethodInvoker.onlyReq;
-			}else{
-				throw new IllegalStateException("Method signature not in line with @Path! for method "+method);
+			} else {
+				throw new IllegalStateException("Method signature not in line with @Path! for method " + method);
 			}
-		}else if(parameterCount==2){
+		} else if (parameterCount == 2) {
 			Class<?>[] parameterTypes = method.getParameterTypes();
-			if( parameterTypes[0].isAssignableFrom(Response.class)  && parameterTypes[1].isAssignableFrom(Request.class) ){
+			if (parameterTypes[0].isAssignableFrom(Response.class)
+					&& parameterTypes[1].isAssignableFrom(Request.class)) {
 				return MethodInvoker.reverDef;
-			}else if( parameterTypes[0].isAssignableFrom( Request.class)  && parameterTypes[1].isAssignableFrom(Response.class) ){
-				return MethodInvoker.defalt;		
-			}else{
-				throw new IllegalStateException("Method signature not in line with @Path! for method "+method);
+			} else if (parameterTypes[0].isAssignableFrom(Request.class)
+					&& parameterTypes[1].isAssignableFrom(Response.class)) {
+				return MethodInvoker.defalt;
+			} else {
+				throw new IllegalStateException("Method signature not in line with @Path! for method " + method);
 			}
-		}else{
-//			throw new IllegalStateException("Method signature not in line with @Path! for method "+method);
+		} else {
+			// throw new IllegalStateException("Method signature not in line
+			// with @Path! for method "+method);
 			return MethodInvoker.variable;
 		}
 	}
 	
-	static RequestUriTokens parseRequestUriTokens(String uri,Method method) {
-//		String uri = route.uri; 
-//		Method method = route.method;
+	static Route getMatchingRoute(Collection<Route> paths, final String uri, final HttpMethod httpMethod, final boolean retNull) {
+		Route df = null;
+		final Route in = new Route(uri, httpMethod);
+		for (Route rq : paths) {
+			if (rq.rut == null) {
+				if (in.equals(rq))
+					return rq;
+				else if (rq.httpMethod == HttpMethod.ALL) {
+					if (rq.uri.equals("/*"))
+						df = rq;
+					else if (rq.uri.equals(uri))
+						return rq;
+					else if (rq instanceof ProxyRoute && uri.startsWith(rq.uri))
+						return rq;
+				} else if (rq instanceof ProxyRoute && uri.startsWith(rq.uri)) {
+					return rq;
+				}
+			} else {
+				if (rq.httpMethod == HttpMethod.ALL || rq.httpMethod == httpMethod) {
+					String[] split = uri.split("/");
+					if (rq.rut.uriTokens.length == split.length) {
+						boolean match = true;
+						for (int i = 0; i < split.length; i++) {
+							if (rq.rut.paramIdx[i] == -1) {
+								if (!rq.rut.uriTokens[i].equals(split[i])) {
+									match = false;
+									break;
+								}
+							}
+						}
+						if (match)
+							return rq;
+					} 
+				}
+			}
+		}
+		if(retNull) return null;
+		else return df;
+	}
+	
+	static RequestUriTokens parseRequestUriTokens(String uri, Method method) {
 		RequestUriTokens rut = new RequestUriTokens();
+		rut.uriTokens = uri.split("/");
+		rut.paramIdx = new int[rut.uriTokens.length];
+		
 		Parameter[] parameters = method.getParameters();
 		Class<?>[] parameterTypes = method.getParameterTypes();
-		int is = uri.indexOf('{');
-		int seqId = 0;
-		while (is != -1) {
-			String up = uri.substring(0, is);
-			int ie = uri.indexOf('}');
-			if (ie == -1)
-				throw new IllegalArgumentException("Invalid @Path uri specified!");
-			String tp = uri.substring(is+1, ie);
-			uri = uri.substring(ie+1);
-			is = uri.indexOf('{');
-			if (!NullCheck.isNullOrEmpty(up)) {
-				rut.uriParts.add(up);
+		
+		int as = 0;
+		for (int i = 0; i < parameters.length; i++) {
+			if (rut.resIdx == -1 && parameterTypes[i].isAssignableFrom(Response.class)) {
+				rut.resIdx = i;
+				as++;
 			}
-			if (!NullCheck.isNullOrEmpty(tp)) {
-				rut.tokenParts.add(setParameter(new UriTokens(tp, seqId), parameters, rut, parameterTypes));
+			if (rut.reqIdx == -1 && parameterTypes[i].isAssignableFrom(Request.class)) {
+				rut.reqIdx = i;
+				as++;
 			}
-			seqId++;
-		}
-
-		if( is == -1 ){
-			rut.uriParts.add(uri);
 		}
 		
-		return rut;
-	}
-
-	static UriTokens setParameter(UriTokens token, Parameter[] parameters, RequestUriTokens rut, Class<?>[] parameterTypes) {
-		if (!NullCheck.isNullOrEmpty(parameters)) {
-			for (int i = 0; i < parameters.length; i++) {
-				if(  rut.resIdx==-1 && parameterTypes[i].isAssignableFrom(Response.class) ){
-					rut.resIdx = i;
+		rut.argsIdx = new int[parameters.length - as];
+		int arid = 0;
+		
+		for (int i = 0; i < rut.uriTokens.length; i++) {
+			String uritkn = rut.uriTokens[i];
+			int si = uritkn.indexOf("{");
+			int ei = uritkn.indexOf("}");
+			if (si != -1 && ei != -1) {
+				rut.paramIdx[i] = i;
+				rut.uriTokens[i] = uritkn.substring(si+1, ei);
+				for (int j = 0; j < parameters.length; j++) {
+					Parameter parameter = parameters[j];
+					if (parameter.getName().equals(rut.uriTokens[i])) {
+						rut.argsIdx[arid++] = j;
+						break;
+					}
 				}
-				if(  rut.reqIdx ==-1 && parameterTypes[i].isAssignableFrom(Request.class) ){
-					rut.reqIdx = i;
-				}
-			}
-			for (int i = 0; i < parameters.length; i++) {
-				Parameter parameter = parameters[i];
-				if (parameter.getName().equals(token.name)) {
-					token.indx = i;
-					token.parameter = parameter;
-					break;
-				}
+			} else {
+				rut.paramIdx[i] = -1;
 			}
 		}
-		return token;
+
+		return rut;
 	}
 
 	private static final String LINE_SEPARATOR = System.lineSeparator();
@@ -351,24 +384,8 @@ class Ref {
 }
 
 final class RequestUriTokens {
-	final List<String> uriParts = new DoublyLinkedList<>();
-	final List<UriTokens> tokenParts = new DoublyLinkedList<>();
-	int reqIdx=-1,resIdx=-1;
-}
-
-final class UriTokens {
-	final String name;
-	final int seqId;
-	Parameter parameter;
-	int indx = 0;
-	/**
-	 * @param name
-	 * @param seqId TODO
-	 */
-	UriTokens(String name, int seqId) {
-		super();
-		this.name = name;
-		this.seqId = seqId;
-	}
-
+	String[] uriTokens;
+	int[] paramIdx;
+	int[] argsIdx;
+	int reqIdx = -1, resIdx = -1;
 }

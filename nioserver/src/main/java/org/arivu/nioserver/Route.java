@@ -530,7 +530,14 @@ enum MethodInvoker {
 				final Threadlocal<Object> tl, final RequestUriTokens rut) throws Exception {
 
 			final Object[] args = new Object[method.getParameters().length];
-
+			String[] split = req.getUri().split("/");
+			int arid = 0;
+			for (int pi : rut.paramIdx) {
+				if (pi != -1) {
+					args[rut.argsIdx[arid++]] = split[pi];
+				}
+			}
+			
 //			System.out.println(" rut uriParts   size "+rut.uriParts.size());
 //			for (int i = 0; i < rut.uriParts.size(); i++) {
 //				System.out.println("  uri  "+i+" "+rut.uriParts.get(i));
@@ -540,21 +547,21 @@ enum MethodInvoker {
 //				System.out.println("  token "+i+" "+rut.tokenParts.get(i));
 //			}
 			
-			final String inUrl = req.getUri();
-			int idx = rut.uriParts.get(0).length();
-			for (int i = 0; i < rut.tokenParts.size(); i++) {
-				int endIndex = inUrl.indexOf(rut.uriParts.get(i + 1), idx);
-				if (i == rut.tokenParts.size() - 1) {
-					if (rut.tokenParts.size() == rut.uriParts.size() + 1) {
-						args[rut.tokenParts.get(i).indx] = inUrl.substring(idx, endIndex);
-					} else {
-						args[rut.tokenParts.get(i).indx] = inUrl.substring(idx, endIndex);
-					}
-				} else {
-					args[rut.tokenParts.get(i).indx] = inUrl.substring(idx, endIndex);
-				}
-				idx = endIndex;
-			}
+//			final String inUrl = req.getUri();
+//			int idx = rut.uriParts.get(0).length();
+//			for (int i = 0; i < rut.tokenParts.size(); i++) {
+//				int endIndex = inUrl.indexOf(rut.uriParts.get(i + 1), idx);
+//				if (i == rut.tokenParts.size() - 1) {
+//					if (rut.tokenParts.size() == rut.uriParts.size() + 1) {
+//						args[rut.tokenParts.get(i).indx] = inUrl.substring(idx, endIndex);
+//					} else {
+//						args[rut.tokenParts.get(i).indx] = inUrl.substring(idx, endIndex);
+//					}
+//				} else {
+//					args[rut.tokenParts.get(i).indx] = inUrl.substring(idx, endIndex);
+//				}
+//				idx = endIndex;
+//			}
 
 			if (rut.resIdx != -1)
 				args[rut.resIdx] = res;

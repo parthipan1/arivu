@@ -43,7 +43,7 @@ public class RequestUtilTest {
 		buf.append("User-Agent: Apache-HttpClient/4.1.1 (java 1.5)").append(System.lineSeparator());
 		buf.append(System.lineSeparator());
 		
-		Request parse = RequestUtil.parse(buf,0l);
+		Request parse = RequestUtil.parseRequest(buf);
 		assertTrue(NullCheck.isNullOrEmpty(parse.getBody()));
 		assertTrue(parse.getHttpMethod()==HttpMethod.GET);
 		assertTrue(parse.getProtocol().equals("HTTP/1.1"));
@@ -74,7 +74,7 @@ public class RequestUtilTest {
 		buf.append(EOL);//.append(EOL);
 		buf.append(strBody);//.append(EOL);
 		
-		Request parse = RequestUtil.parse(buf,0l);
+		Request parse = RequestUtil.parseRequest(buf);
 		assertFalse(NullCheck.isNullOrEmpty(parse.getBody()));
 		assertFalse(strBody.equals(parse.getBody()));
 		assertTrue(parse.getHttpMethod()==HttpMethod.POST);
@@ -138,7 +138,7 @@ public class RequestUtilTest {
 			}
 		}
 		
-	 	assertTrue(Connection.get(routes, "/test/1/value", HttpMethod.GET)==varia);
+	 	assertTrue(RequestUtil.getMatchingRoute(routes, "/test/1/value", HttpMethod.GET, false)==varia);
 	 	
 		Request req = new RequestImpl(HttpMethod.GET,"/test/1/value","/test/1/value",null,null,null,null);
 		Response res = varia.getResponse(req);
