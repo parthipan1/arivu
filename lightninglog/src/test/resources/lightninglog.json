@@ -1,19 +1,19 @@
 {
-	"appenders":["zip"],
+	"appenders":["file"],
 	"loggers":{
-		"root":"debug",
-		"org.arivu":"debug"
+		"root":"info",
+		"org.arivu":"info"
 	},
 	"buffer":{
-		"batch":100,
-		"ring":300
+		"batch":50,
+		"ring":50
 	},
 	"log":{
 		"showDateTime":true,
 		"showThreadName":true,
 		"showName":true,
 		"showShortName":true,
-		"file":"logs//ds.test.log",
+		"file":"logs//test.log",
 		"fileSize":5242880000,
 		"dateTimeFormat":"yyyy-MM-dd HH:mm:ss:SSS Z",
 		"fileDateTimeExt":"yyyy-MM-dd'T'HH:mm:ss:SSS'Z'"
