@@ -5,6 +5,8 @@ package org.arivu.log;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.management.ManagementFactory;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -780,15 +782,14 @@ public final class LightningLogger implements Logger {
 		}
 	}
 
-	private String stackTraceToString(Throwable e) {
-		StringBuilder sb = new StringBuilder();
-		for (StackTraceElement element : e.getStackTrace()) {
-			sb.append(element.toString());
-			sb.append(AppenderProperties.separator);
-		}
-		return sb.toString();
+	private String stackTraceToString(Throwable throwable) {
+		final StringWriter sw = new StringWriter();
+		final PrintWriter pw = new PrintWriter(sw, true);
+		throwable.printStackTrace(pw);
+		pw.close();
+		return sw.getBuffer().toString();
 	}
-
+	
 	private String computeShortName() {
 		return name.substring(name.lastIndexOf(".") + 1);
 	}
