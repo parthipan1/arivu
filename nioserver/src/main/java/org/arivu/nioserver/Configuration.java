@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("unchecked")
 final class Configuration {
 	private static final Logger logger = LoggerFactory.getLogger(Configuration.class);
-	static final String stopUri = "/zzxyz";
+	static final String stopUri = "/__admin/shutdown";
 	static final Map<String, Object> defaultResponseHeader;
 	static final Map<String, Object> defaultResponseCodes;
 	static final Map<String, Map<String, Object>> defaultMimeType;

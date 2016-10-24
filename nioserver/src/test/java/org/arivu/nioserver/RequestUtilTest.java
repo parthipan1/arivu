@@ -120,6 +120,33 @@ public class RequestUtilTest {
 	}
 	
 	@Test
+	public void testValidateRouteUri(){
+		assertTrue(RequestUtil.validateRouteUri("/stop"));
+		assertTrue(RequestUtil.validateRouteUri("/-stop"));
+		assertTrue(RequestUtil.validateRouteUri("/-stop-"));
+		assertTrue(RequestUtil.validateRouteUri("/_stop"));
+		assertTrue(RequestUtil.validateRouteUri("/_stop_"));
+		assertTrue(RequestUtil.validateRouteUri(Configuration.stopUri));
+		assertTrue(RequestUtil.validateRouteUri("/test/{p1}/value"));
+		
+		assertFalse(RequestUtil.validateRouteUri("/st op"));
+		assertFalse(RequestUtil.validateRouteUri("stop"));
+		assertFalse(RequestUtil.validateRouteUri("/stop{}"));
+		assertFalse(RequestUtil.validateRouteUri("/stop?"));
+		assertFalse(RequestUtil.validateRouteUri("/stop&"));
+		assertFalse(RequestUtil.validateRouteUri("/stop;"));
+		assertFalse(RequestUtil.validateRouteUri("/stop:"));
+		assertFalse(RequestUtil.validateRouteUri("/stop+"));
+		
+		assertFalse(RequestUtil.validateRouteUri("/test/{}/value"));
+		assertFalse(RequestUtil.validateRouteUri("/test/}{/value"));
+		assertFalse(RequestUtil.validateRouteUri("/test/}}/value"));
+		assertFalse(RequestUtil.validateRouteUri("/test/{}}/value"));
+		assertFalse(RequestUtil.validateRouteUri("/test/{{/value"));
+		assertFalse(RequestUtil.validateRouteUri("/test/{{}/value"));
+	}
+	
+	@Test
 	public void testParseUriTokens() throws Exception {
 		
 		System.setProperty("lightninglog.json", "./lightninglog.json");

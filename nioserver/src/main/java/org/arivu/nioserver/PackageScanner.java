@@ -145,17 +145,24 @@ class PackageScanner {
 						String uri = path.value();
 						org.arivu.nioserver.HttpMethod httpMethod = path.httpMethod();
 						if (!NullCheck.isNullOrEmpty(uri) && httpMethod != null) {
-							boolean isStatic = Modifier.isStatic(method.getModifiers());
-							Route e = new Route(uri, httpMethod, clazz, method, isStatic);
-							Route matchingRoute = RequestUtil.getMatchingRoute(reqPaths, uri, httpMethod, true);
-							if (matchingRoute==null) {
-								reqPaths.add(e);
-								logger.debug("Discovered requestImpl handler :: " + clazz.getName() + " httpMethod "
-										+ method.getName());
-							} else {
-								logger.info("Duplicate requestImpl handler discovered ignoring :: " + clazz.getName()
-										+ " httpMethod " + method.getName());
+							boolean validateRouteUri = RequestUtil.validateRouteUri(uri);
+							if( validateRouteUri ){
+								boolean isStatic = Modifier.isStatic(method.getModifiers());
+								Route e = new Route(uri, httpMethod, clazz, method, isStatic);
+								Route matchingRoute = RequestUtil.getMatchingRoute(reqPaths, uri, httpMethod, true);
+								if (matchingRoute==null) {
+									reqPaths.add(e);
+									logger.debug("Discovered request handler :: " + clazz.getName() + " httpMethod "
+											+ method.getName());
+								} else {
+									logger.info("Duplicate request handler discovered ignoring :: " + clazz.getName()
+									+ " httpMethod " + method.getName());
+								}
 							}
+						}else{
+							logger.info("Invalid request Uri ("+uri+") handler discovered ignoring :: " + clazz.getName()
+							+ " httpMethod " + method.getName());
+
 						}
 					} catch (IllegalArgumentException e) {
 						logger.error("Error on Scanning annotation addMethod :: ", e);

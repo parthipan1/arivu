@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.regex.Pattern;
 
 import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
@@ -172,8 +173,35 @@ public class RequestUtil {
 			return MethodInvoker.variable;
 		}
 	}
-	
-	static Route getMatchingRoute(Collection<Route> paths, final String uri, final HttpMethod httpMethod, final boolean retNull) {
+
+	static final Pattern validUrl = Pattern.compile("^[a-zA-Z0-9-_]*$");//"[a-zA-Z0-9_-]"
+//	static final Pattern validName = Pattern.compile("[a-zA-Z0-9_]");
+
+	static boolean validateRouteUri(final String uri) {
+		if( NullCheck.isNullOrEmpty(uri) ) return false;
+		else if( !uri.startsWith("/") ) return false;
+		String[] split = uri.split("/");
+		for (int i=1;i<split.length;i++) {
+			String uritkn = split[i];
+			int si = uritkn.indexOf("{");
+			if (si == -1) {
+				if(!validUrl.matcher(uritkn).matches())
+					return false;
+			} else {
+				int ei = uritkn.indexOf("}");
+				String paramName = uritkn.substring(1, uritkn.length() - 1);
+				if (ei < si || si != 0 && ei != uritkn.length() - 1 
+						|| NullCheck.isNullOrEmpty(paramName)
+						|| !validUrl.matcher(paramName).matches()) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	static Route getMatchingRoute(Collection<Route> paths, final String uri, final HttpMethod httpMethod,
+			final boolean retNull) {
 		Route df = null;
 		final Route in = new Route(uri, httpMethod);
 		for (Route rq : paths) {
@@ -205,22 +233,24 @@ public class RequestUtil {
 						}
 						if (match)
 							return rq;
-					} 
+					}
 				}
 			}
 		}
-		if(retNull) return null;
-		else return df;
+		if (retNull)
+			return null;
+		else
+			return df;
 	}
-	
+
 	static RequestUriTokens parseRequestUriTokens(String uri, Method method) {
 		RequestUriTokens rut = new RequestUriTokens();
 		rut.uriTokens = uri.split("/");
 		rut.paramIdx = new int[rut.uriTokens.length];
-		
+
 		Parameter[] parameters = method.getParameters();
 		Class<?>[] parameterTypes = method.getParameterTypes();
-		
+
 		int as = 0;
 		for (int i = 0; i < parameters.length; i++) {
 			if (rut.resIdx == -1 && parameterTypes[i].isAssignableFrom(Response.class)) {
@@ -232,17 +262,17 @@ public class RequestUtil {
 				as++;
 			}
 		}
-		
+
 		rut.argsIdx = new int[parameters.length - as];
 		int arid = 0;
-		
+
 		for (int i = 0; i < rut.uriTokens.length; i++) {
 			String uritkn = rut.uriTokens[i];
 			int si = uritkn.indexOf("{");
 			int ei = uritkn.indexOf("}");
 			if (si != -1 && ei != -1) {
 				rut.paramIdx[i] = i;
-				rut.uriTokens[i] = uritkn.substring(si+1, ei);
+				rut.uriTokens[i] = uritkn.substring(si + 1, ei);
 				for (int j = 0; j < parameters.length; j++) {
 					Parameter parameter = parameters[j];
 					if (parameter.getName().equals(rut.uriTokens[i])) {
