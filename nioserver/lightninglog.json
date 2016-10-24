@@ -1,8 +1,7 @@
 {
-	"appenders":["file","console"],
+	"appenders":["file"],
 	"loggers":{
-		"root":"debug",
-		"org.arivu":"debug"
+		"root":"info"
 	},
 	"buffer":{
 		"batch":50,

@@ -153,7 +153,7 @@ class PackageScanner {
 								logger.debug("Discovered requestImpl handler :: " + clazz.getName() + " httpMethod "
 										+ method.getName());
 							} else {
-								logger.debug("Duplicate requestImpl handler discovered ignoring :: " + clazz.getName()
+								logger.info("Duplicate requestImpl handler discovered ignoring :: " + clazz.getName()
 										+ " httpMethod " + method.getName());
 							}
 						}
