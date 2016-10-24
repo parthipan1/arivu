@@ -47,6 +47,8 @@ public class Server {
 	static final String DEFAULT_HOST = Env.getEnv("host", "localhost");
 
 	static final int DEFAULT_PORT = Integer.parseInt(Env.getEnv("port", "8080"));
+	
+	static final boolean SINGLE_THREAD_MODE = Boolean.parseBoolean(Env.getEnv("singleThread", "false"));
 
 	/**
 	 * @param args
@@ -204,22 +206,15 @@ final class SelectorHandler {
 						key1.attach(connectionPool.get(null));
 					} else {
 						key.interestOps(0);
-						exe.execute(new Runnable() {
-							public void run() {
-								try {
-									Connection client = (Connection) key.attachment();
-									if (key.isReadable()) {
-										client.read(key);
-									} else {
-										client.write(key);
-									}
-									clientSelector.wakeup();
-								} catch (IOException e) {
-									e.printStackTrace();
-									logger.error("Failed with Error::", e);
+						if(Server.SINGLE_THREAD_MODE){
+							process(key);
+						}else{
+							exe.execute(new Runnable() {
+								public void run() {
+									process(key);
 								}
-							}
-						});
+							});
+						}
 					}
 				}
 			} catch (IOException e) {
@@ -251,6 +246,21 @@ final class SelectorHandler {
 		}
 		logger.info("Server stopped!");
 		System.exit(0);
+	}
+
+	void process(final SelectionKey key) {
+		try {
+			Connection client = (Connection) key.attachment();
+			if (key.isReadable()) {
+				client.read(key);
+			} else {
+				client.write(key);
+			}
+			clientSelector.wakeup();
+		} catch (IOException e) {
+			e.printStackTrace();
+			logger.error("Failed with Error::", e);
+		}
 	}
 }
 
