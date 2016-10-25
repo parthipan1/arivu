@@ -70,8 +70,8 @@ public class Server {
 	static Appender accessLog = null;
 
 	@Path(value = Configuration.stopUri, httpMethod = HttpMethod.GET)
-	static void stop(Request req, Response res) throws Exception {
-		res.setResponseCode(200);
+	static void stop() throws Exception {
+		StaticRef.getResponse().setResponseCode(200);
 		final ScheduledExecutorService exe = Executors.newScheduledThreadPool(1);
 		exe.schedule(new Runnable() {
 
@@ -301,7 +301,7 @@ final class Connection {
 					int subArrLen = Math.min(resBuff.bodyBytes.length, writeLen + Configuration.defaultChunkSize);
 					socketChannel
 							.write(ByteBuffer.wrap(resBuff.bodyBytes, writeLen, subArrLen - writeLen));
-//					System.out.println( "  write bytes from  :: "+writeLen+"  length :: "+(subArrLen - writeLen) +" to :: "+subArrLen);
+					logger.debug( "  write bytes from  :: "+writeLen+"  length :: "+(subArrLen - writeLen) +" to :: "+subArrLen);
 					writeLen = subArrLen;
 					if (writeLen == resBuff.bodyBytes.length) {
 						finish(key);

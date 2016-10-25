@@ -22,7 +22,8 @@
                "Expires":-1,
                "Cache-Control":"private, max-age=0",
                "Server":"clownserver",
-               "X-XSS-Protection":"1; mode=block"
+               "X-XSS-Protection":"1; mode=block",
+               "Connection":"keepalive"
             },
             "location":"/static",
             "dir":"/Users/parthipangounder/Downloads"
@@ -31,7 +32,7 @@
    },
    "response":{  
       "defaultcode":200,
-      "chunkSize":10000,
+      "chunkSize":1024,
       "header":{  
          "Expires":-1,
          "Cache-Control":"private, max-age=0",

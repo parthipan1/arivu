@@ -45,7 +45,7 @@ final class Configuration {
 		defaultResponseHeader = Utils.unmodifiableMap((Map<String, Object>) Ason.getObj(json, "response.header", null));
 
 		defaultResCode = Ason.getNumber(json, "response.defaultcode", 200).intValue();
-		defaultChunkSize = Ason.getNumber(json, "response.chunkSize", 10000).intValue();
+		defaultChunkSize = Ason.getNumber(json, "response.chunkSize", 1024).intValue();
 		defaultRequestBuffer = Ason.getNumber(json, "request.buffer", 1024).intValue();
 
 		Collection<String> array = Ason.getArray(json, "request.scanpackages", null);

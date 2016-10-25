@@ -1,5 +1,5 @@
 {
-	"appenders":["file"],
+	"appenders":["file","console"],
 	"loggers":{
 		"root":"info"
 	},

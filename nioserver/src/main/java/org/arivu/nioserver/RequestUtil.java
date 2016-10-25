@@ -375,15 +375,17 @@ public class RequestUtil {
 	}
 
 	@Path(value = "/*", httpMethod = HttpMethod.ALL)
-	static void handle(Request req, Response res) throws Exception {
-		logger.debug(req.toString());
+	static void handle404() throws Exception {
+		Response res = StaticRef.getResponse();
+		logger.debug(StaticRef.getRequest().toString());
 		res.setResponseCode(404);
 	}
 
 	static ByteBuffer iconBytes = null;
 
 	@Path(value = "/favicon.ico", httpMethod = HttpMethod.GET)
-	static void handleIcon(Request req, Response res) throws Exception {
+	static void handleIcon() throws Exception {
+		Response res = StaticRef.getResponse();
 		res.setResponseCode(200);
 
 		if (iconBytes == null) {
