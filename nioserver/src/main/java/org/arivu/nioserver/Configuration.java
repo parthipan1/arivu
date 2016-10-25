@@ -20,10 +20,10 @@ final class Configuration {
 	static final Map<String, Object> defaultResponseHeader;
 	static final Map<String, Object> defaultResponseCodes;
 	static final Map<String, Map<String, Object>> defaultMimeType;
-	static final Collection<Route> routes;
+	static Collection<Route> routes;
 	static final int defaultResCode;
-	static final int defaultChunkSize;
-	static final int defaultRequestBuffer;
+	static int defaultChunkSize;
+	static int defaultRequestBuffer;
 	private static final String CONFIGURATION_FILE = "arivu.nioserver.json";
 
 	private static final String RESPONSE_CODES = "arivu.nioserver.response.json";
@@ -42,7 +42,8 @@ final class Configuration {
 
 		final Map<String, Object> json = Ason.loadProperties(CONFIGURATION_FILE);
 
-		defaultResponseHeader = Utils.unmodifiableMap((Map<String, Object>) Ason.getObj(json, "response.header", null));
+//		headers = Utils.unmodifiableMap((Map<String, Object>) Ason.getObj(json, "response.header", null));
+		defaultResponseHeader = (Map<String, Object>) Ason.getObj(json, "response.header", new Amap<>());
 
 		defaultResCode = Ason.getNumber(json, "response.defaultcode", 200).intValue();
 		defaultChunkSize = Ason.getNumber(json, "response.chunkSize", 1024).intValue();
@@ -83,8 +84,8 @@ final class Configuration {
 		}
 		try {
 			tempRequestPaths.addAll(PackageScanner.getPaths(scanPackages));
-			routes = Utils.unmodifiableCollection(tempRequestPaths);
-			// routes = tempRequestPaths;
+//			routes = Utils.unmodifiableCollection(tempRequestPaths);
+			routes = tempRequestPaths;
 			for (Route r : routes)
 				logger.info("Route discovered :: " + r);
 		} catch (Exception e) {

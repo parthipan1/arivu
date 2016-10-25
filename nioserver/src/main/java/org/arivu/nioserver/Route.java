@@ -34,7 +34,8 @@ class Route {
 	final MethodInvoker invoker;
 	final RequestUriTokens rut;
 	Threadlocal<Object> tl;
-
+	Map<String, Object> headers = null;
+	
 	Route(String uri, org.arivu.nioserver.HttpMethod httpMethod) {
 		this(uri, httpMethod, null, null, false);
 	}
@@ -47,6 +48,7 @@ class Route {
 	 */
 	Route(String uri, org.arivu.nioserver.HttpMethod httpMethod, Class<?> klass, Method method, boolean isStatic) {
 		super();
+		this.headers = new Amap<>(Configuration.defaultResponseHeader);
 		this.uri = uri;
 		this.httpMethod = httpMethod;
 		this.klass = klass;
@@ -92,7 +94,7 @@ class Route {
 	}
 
 	Response getResponse(Request req) {
-		return new ResponseImpl(req, Configuration.defaultResponseHeader);
+		return new ResponseImpl(req, headers);
 	}
 
 	public void handle(Request req, Response res) {
@@ -153,7 +155,6 @@ final class ProxyRoute extends Route {
 
 	String name;
 	String proxy_pass;
-	Map<String, Object> defaultResponseHeader;
 	String dir;
 	MemoryMappedFiles files = null;
 	Threadlocal<HttpMethodCall> proxyTh;
@@ -171,7 +172,7 @@ final class ProxyRoute extends Route {
 		this.name = name;
 		this.proxy_pass = proxy_pass;
 		this.dir = dir;
-		this.defaultResponseHeader = defaultResponseHeader;
+		this.headers = new Amap<>(defaultResponseHeader);
 		if (NullCheck.isNullOrEmpty(proxy_pass) && NullCheck.isNullOrEmpty(dir)) {
 			throw new IllegalArgumentException("Invalid config " + name + " !");
 		} else if (!NullCheck.isNullOrEmpty(proxy_pass) && !NullCheck.isNullOrEmpty(dir)) {
@@ -318,7 +319,7 @@ final class ProxyRoute extends Route {
 		if (!NullCheck.isNullOrEmpty(dir)) {
 			return super.getResponse(req);
 		} else {
-			return new ResponseImpl(req, defaultResponseHeader);
+			return new ResponseImpl(req, headers);
 		}
 	}
 

@@ -28,12 +28,16 @@ class PackageScanner {
 		Collection<Route> reqPaths = new DoublyLinkedSet<Route>();
 
 		for (String pkgName : packageNames) {
-			for (Class<?> kcs : getClassesForPackage(pkgName)) {
-				addMethod(reqPaths, kcs);
-			}
+			getPaths(reqPaths, pkgName);
 		}
 
 		return reqPaths;
+	}
+
+	static void getPaths(Collection<Route> reqPaths, String pkgName) throws ClassNotFoundException {
+		for (Class<?> kcs : getClassesForPackage(pkgName)) {
+			addMethod(reqPaths, kcs);
+		}
 	}
 
 	static Collection<Class<?>> getClassesForPackage(String pckgname) throws ClassNotFoundException {
