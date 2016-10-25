@@ -5,8 +5,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.io.RandomAccessFile;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.net.HttpURLConnection;
 import java.net.SocketAddress;
 import java.net.URL;
@@ -20,6 +24,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.regex.Pattern;
 
 import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
@@ -36,8 +41,8 @@ public class RequestUtil {
 	private static final byte BYTE_13 = (byte) 13;
 	static final byte BYTE_10 = (byte) 10;
 	static final String divider = System.lineSeparator() + System.lineSeparator();
-	
-	static Request parse(final StringBuffer buffer, long startTime) {
+
+	static Request parseRequest(final StringBuffer buffer) {
 		String content = buffer.toString();
 		byte[] bytes = content.getBytes();
 		int indexOf = -1;
@@ -63,8 +68,8 @@ public class RequestUtil {
 
 		String[] split2 = split[0].split(" ");
 
-//		System.out.println("REQ METHOD :: "+split2[0]);
-		logger.debug("Parsing RequestImpl :: "+content);
+		// System.out.println("REQ METHOD :: "+split2[0]);
+		logger.debug("Parsing RequestImpl :: " + content);
 		HttpMethod valueOf = HttpMethod.valueOf(split2[0]);
 		if (valueOf == null)
 			throw new IllegalArgumentException("Unknown RequestImpl " + metadata);
@@ -89,7 +94,8 @@ public class RequestUtil {
 			uri = uriWithParams.substring(0, indexOf3);
 			tempparams = parseParams(uriWithParams.substring(indexOf3 + 1));
 		}
-		return new RequestImpl(valueOf, uri, uriWithParams, protocol, tempparams, Utils.unmodifiableMap(tempheaders), body);
+		return new RequestImpl(valueOf, uri, uriWithParams, protocol, tempparams, Utils.unmodifiableMap(tempheaders),
+				body);
 	}
 
 	public static Map<String, Collection<String>> parseParams(String uriparams) {
@@ -129,24 +135,179 @@ public class RequestUtil {
 		}
 		return Utils.unmodifiableMap(tempparams);
 	}
-	
+
+	static String getStackTrace(final Throwable throwable) {
+		final StringWriter sw = new StringWriter();
+		final PrintWriter pw = new PrintWriter(sw, true);
+		throwable.printStackTrace(pw);
+		return sw.getBuffer().toString();
+	}
+
+	static MethodInvoker getMethodInvoker(Method method) {
+		int parameterCount = method.getParameterCount();
+		if (parameterCount == 0)
+			return MethodInvoker.none;
+		else if (parameterCount == 1) {
+			Class<?>[] parameterTypes = method.getParameterTypes();
+			if (parameterTypes[0].isAssignableFrom(Response.class)) {
+				return MethodInvoker.onlyRes;
+			} else if (parameterTypes[0].isAssignableFrom(Request.class)) {
+				return MethodInvoker.onlyReq;
+			} else {
+				throw new IllegalStateException("Method signature not in line with @Path! for method " + method);
+			}
+		} else if (parameterCount == 2) {
+			Class<?>[] parameterTypes = method.getParameterTypes();
+			if (parameterTypes[0].isAssignableFrom(Response.class)
+					&& parameterTypes[1].isAssignableFrom(Request.class)) {
+				return MethodInvoker.reverDef;
+			} else if (parameterTypes[0].isAssignableFrom(Request.class)
+					&& parameterTypes[1].isAssignableFrom(Response.class)) {
+				return MethodInvoker.defalt;
+			} else {
+				throw new IllegalStateException("Method signature not in line with @Path! for method " + method);
+			}
+		} else {
+			// throw new IllegalStateException("Method signature not in line
+			// with @Path! for method "+method);
+			return MethodInvoker.variable;
+		}
+	}
+
+	static final Pattern validUrl = Pattern.compile("^[a-zA-Z0-9-_]*$");//"[a-zA-Z0-9_-]"
+//	static final Pattern validName = Pattern.compile("[a-zA-Z0-9_]");
+
+	static boolean validateRouteUri(final String uri) {
+		if( NullCheck.isNullOrEmpty(uri) ) return false;
+		else if( !uri.startsWith("/") ) return false;
+		String[] split = uri.split("/");
+		for (int i=1;i<split.length;i++) {
+			String uritkn = split[i];
+			int si = uritkn.indexOf("{");
+			if (si == -1) {
+				if(!validUrl.matcher(uritkn).matches())
+					return false;
+			} else {
+				int ei = uritkn.indexOf("}");
+				String paramName = uritkn.substring(1, uritkn.length() - 1);
+				if (ei < si || si != 0 && ei != uritkn.length() - 1 
+						|| NullCheck.isNullOrEmpty(paramName)
+						|| !validUrl.matcher(paramName).matches()) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	static Route getMatchingRoute(Collection<Route> paths, final String uri, final HttpMethod httpMethod,
+			final boolean retNull) {
+		Route df = null;
+		final Route in = new Route(uri, httpMethod);
+		for (Route rq : paths) {
+			if (rq.rut == null) {
+				if (in.equals(rq))
+					return rq;
+				else if (rq.httpMethod == HttpMethod.ALL) {
+					if (rq.uri.equals("/*"))
+						df = rq;
+					else if (rq.uri.equals(uri))
+						return rq;
+					else if (rq instanceof ProxyRoute && uri.startsWith(rq.uri))
+						return rq;
+				} else if (rq instanceof ProxyRoute && uri.startsWith(rq.uri)) {
+					return rq;
+				}
+			} else {
+				if (rq.httpMethod == HttpMethod.ALL || rq.httpMethod == httpMethod) {
+					String[] split = uri.split("/");
+					if (rq.rut.uriTokens.length == split.length) {
+						boolean match = true;
+						for (int i = 0; i < split.length; i++) {
+							if (rq.rut.paramIdx[i] == -1) {
+								if (!rq.rut.uriTokens[i].equals(split[i])) {
+									match = false;
+									break;
+								}
+							}
+						}
+						if (match)
+							return rq;
+					}
+				}
+			}
+		}
+		if (retNull)
+			return null;
+		else
+			return df;
+	}
+
+	static RequestUriTokens parseRequestUriTokens(String uri, Method method) {
+		RequestUriTokens rut = new RequestUriTokens();
+		rut.uriTokens = uri.split("/");
+		rut.paramIdx = new int[rut.uriTokens.length];
+
+		Parameter[] parameters = method.getParameters();
+		Class<?>[] parameterTypes = method.getParameterTypes();
+
+		int as = 0;
+		for (int i = 0; i < parameters.length; i++) {
+			if (rut.resIdx == -1 && parameterTypes[i].isAssignableFrom(Response.class)) {
+				rut.resIdx = i;
+				as++;
+			}
+			if (rut.reqIdx == -1 && parameterTypes[i].isAssignableFrom(Request.class)) {
+				rut.reqIdx = i;
+				as++;
+			}
+		}
+
+		rut.argsIdx = new int[parameters.length - as];
+		int arid = 0;
+
+		for (int i = 0; i < rut.uriTokens.length; i++) {
+			String uritkn = rut.uriTokens[i];
+			int si = uritkn.indexOf("{");
+			int ei = uritkn.indexOf("}");
+			if (si != -1 && ei != -1) {
+				rut.paramIdx[i] = i;
+				rut.uriTokens[i] = uritkn.substring(si + 1, ei);
+				for (int j = 0; j < parameters.length; j++) {
+					Parameter parameter = parameters[j];
+					if (parameter.getName().equals(rut.uriTokens[i])) {
+						rut.argsIdx[arid++] = j;
+						break;
+					}
+				}
+			} else {
+				rut.paramIdx[i] = -1;
+			}
+		}
+
+		return rut;
+	}
+
 	private static final String LINE_SEPARATOR = System.lineSeparator();
-	
-	static void accessLog(int responseCode, String uri, long start, long end, int size, SocketAddress remoteSocketAddress){
+
+	static void accessLog(int responseCode, String uri, long start, long end, int size,
+			SocketAddress remoteSocketAddress) {
 		if (!uri.equals(Configuration.stopUri)) {
 			StringBuffer access = new StringBuffer();
-			access.append("[").append(dateFormat.format(new Date(start))).append("] ")
-					.append(uri).append(" ").append(responseCode).append(" ").append(size)
-					.append(" [").append((end - start)).append("] ").append(remoteSocketAddress.toString());
+			access.append("[").append(dateFormat.format(new Date(start))).append("] ").append(uri).append(" ")
+					.append(responseCode).append(" ").append(size).append(" [").append((end - start)).append("] ")
+					.append(remoteSocketAddress.toString());
 			Server.accessLog.append(access.toString());
 		}
 	}
-	
-	static Ref getResponseBytes(Request request,Response response) {
-		return RequestUtil.getResponseBytes(response.getResponseCode(), response.getHeaders(), response.getOut(), request.getProtocol(), request.getUri());
+
+	static Ref getResponseBytes(Request request, Response response) {
+		return RequestUtil.getResponseBytes(response.getResponseCode(), response.getHeaders(), response.getOut(),
+				request.getProtocol(), request.getUri());
 	}
-	
-	static Ref getResponseBytes(int responseCode, Map<String, Object> headers, ByteArrayOutputStream out, String protocol, String uri) {
+
+	static Ref getResponseBytes(int responseCode, Map<String, Object> headers, ByteArrayOutputStream out,
+			String protocol, String uri) {
 		final StringBuffer responseBody = new StringBuffer();
 
 		Object rescodetxt = null;
@@ -155,8 +316,7 @@ public class RequestUtil {
 		}
 
 		if (rescodetxt == null)
-			responseBody.append(protocol).append(" ").append(responseCode).append(" ")
-					.append(LINE_SEPARATOR);
+			responseBody.append(protocol).append(" ").append(responseCode).append(" ").append(LINE_SEPARATOR);
 		else
 			responseBody.append(protocol).append(" ").append(responseCode).append(" ").append(rescodetxt)
 					.append(LINE_SEPARATOR);
@@ -174,17 +334,18 @@ public class RequestUtil {
 		ref.uri = uri;
 		ref.headerBytes = responseBody.toString().getBytes();
 		ref.bodyBytes = out.toByteArray();
-		
-//		ByteBuffer resBytes = ByteBuffer.allocate(headerBytes.length+bodyBytes.length);
-//		resBytes.put(headerBytes);
-//		resBytes.put(bodyBytes);
-//		ref.buf = resBytes;
-//		ref.len = bodyBytes.length;
+
+		// ByteBuffer resBytes =
+		// ByteBuffer.allocate(headerBytes.length+bodyBytes.length);
+		// resBytes.put(headerBytes);
+		// resBytes.put(bodyBytes);
+		// ref.buf = resBytes;
+		// ref.len = bodyBytes.length;
 		return ref;
 	}
 
 	final static DateFormat dateFormat = new SimpleDateFormat("EEE MMM d hh:mm:ss.SSS yyyy");
-	
+
 	static void stopRemote() {
 		String url = "http://" + Server.DEFAULT_HOST + ":" + Server.DEFAULT_PORT + Configuration.stopUri;
 		BufferedReader in = null;
@@ -212,13 +373,13 @@ public class RequestUtil {
 		}
 
 	}
-	
+
 	@Path(value = "/*", httpMethod = HttpMethod.ALL)
 	static void handle(Request req, Response res) throws Exception {
 		logger.debug(req.toString());
 		res.setResponseCode(404);
 	}
-	
+
 	static ByteBuffer iconBytes = null;
 
 	@Path(value = "/favicon.ico", httpMethod = HttpMethod.GET)
@@ -244,9 +405,17 @@ public class RequestUtil {
 		res.putHeader("Content-Type", "image/x-icon");
 	}
 }
-class Ref{
+
+class Ref {
 	String uri = null;
 	int rc;
 	byte[] headerBytes;
 	byte[] bodyBytes;
+}
+
+final class RequestUriTokens {
+	String[] uriTokens;
+	int[] paramIdx;
+	int[] argsIdx;
+	int reqIdx = -1, resIdx = -1;
 }

@@ -11,9 +11,10 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.MemoryMappedFiles;
@@ -24,12 +25,14 @@ import org.slf4j.LoggerFactory;
 
 class Route {
 	private static final Logger logger = LoggerFactory.getLogger(Route.class);
-	
+
 	final String uri;
 	final org.arivu.nioserver.HttpMethod httpMethod;
 	final Class<?> klass;
 	final Method method;
 	final boolean isStatic;
+	final MethodInvoker invoker;
+	final RequestUriTokens rut;
 	Threadlocal<Object> tl;
 
 	Route(String uri, org.arivu.nioserver.HttpMethod httpMethod) {
@@ -39,11 +42,10 @@ class Route {
 	/**
 	 * @param uri
 	 * @param httpMethod
-	 * @param klass
 	 * @param httpMethod
+	 * @param klass
 	 */
-	Route(String uri, org.arivu.nioserver.HttpMethod httpMethod, Class<?> klass, Method method,
-			boolean isStatic) {
+	Route(String uri, org.arivu.nioserver.HttpMethod httpMethod, Class<?> klass, Method method, boolean isStatic) {
 		super();
 		this.uri = uri;
 		this.httpMethod = httpMethod;
@@ -51,34 +53,63 @@ class Route {
 		this.method = method;
 		this.isStatic = isStatic;
 		if (klass != null) {
-			this.tl = new Threadlocal<Object>(new Threadlocal.Factory<Object>() {
-
-				@Override
-				public Object create(Map<String, Object> params) {
-					try {
-						return Route.this.klass.newInstance();
-					} catch (InstantiationException e) {
-						logger.error("Error on creating new instance "+Route.this.klass.getName()+" :: ", e);
-					} catch (IllegalAccessException e) {
-						logger.error("Error on creating new instance "+Route.this.klass.getName()+" :: ", e);
+			int is = uri.indexOf('{');
+			if (is == -1) {
+				this.invoker = RequestUtil.getMethodInvoker(method);
+				this.rut = null;
+			} else {
+				this.invoker = MethodInvoker.variable;
+				this.rut = RequestUtil.parseRequestUriTokens(uri, method);
+			}
+			if(!isStatic){
+				this.tl = new Threadlocal<Object>(new Threadlocal.Factory<Object>() {
+					
+					@Override
+					public Object create(Map<String, Object> params) {
+						try {
+							return Route.this.klass.newInstance();
+						} catch (InstantiationException e) {
+							logger.error("Error on creating new instance " + Route.this.klass.getName() + " :: ", e);
+						} catch (IllegalAccessException e) {
+							logger.error("Error on creating new instance " + Route.this.klass.getName() + " :: ", e);
+						}
+						return null;
 					}
-					return null;
-				}
-			}, 30000);
+				}, 30000);
+			}
 		} else {
+			this.rut = null;
+			this.invoker = null;
 			this.tl = null;
 		}
+	}
+
+	boolean match(String requri) {
+		if (uri.equals(requri))
+			return true;
+
+		return false;
 	}
 
 	Response getResponse(Request req) {
 		return new ResponseImpl(req, Configuration.defaultResponseHeader);
 	}
 
-	public void handle(Request req, Response res) throws Exception {
-		if (isStatic)
-			method.invoke(null, req, res);
-		else
-			method.invoke(tl.get(null), req, res);
+	public void handle(Request req, Response res) {
+		try {
+			StaticRef.set(req, res, this);
+			this.invoker.handle(req, res, isStatic, method, tl, this.rut);
+		} catch (Throwable e) {
+			logger.error("Failed in route " + this + " :: ", e);
+			res.setResponseCode(400);
+			try {
+				res.append(RequestUtil.getStackTrace(e));
+			} catch (IOException e1) {
+				logger.error("Failed in route " + this + " :: ", e1);
+			}
+		}finally {
+			StaticRef.clear();
+		}
 	}
 
 	@Override
@@ -118,6 +149,7 @@ class Route {
 }
 
 final class ProxyRoute extends Route {
+	private static final Logger logger = LoggerFactory.getLogger(ProxyRoute.class);
 
 	String name;
 	String proxy_pass;
@@ -133,9 +165,8 @@ final class ProxyRoute extends Route {
 	 * @param httpMethod
 	 * @param isStatic
 	 */
-	ProxyRoute(String name, String proxy_pass, String dir, String uri,
-			org.arivu.nioserver.HttpMethod httpMethod, Class<?> klass, Method method, boolean isStatic,
-			Map<String, Object> defaultResponseHeader) {
+	ProxyRoute(String name, String proxy_pass, String dir, String uri, org.arivu.nioserver.HttpMethod httpMethod,
+			Class<?> klass, Method method, boolean isStatic, Map<String, Object> defaultResponseHeader) {
 		super(uri, httpMethod, klass, method, isStatic);
 		this.name = name;
 		this.proxy_pass = proxy_pass;
@@ -168,18 +199,29 @@ final class ProxyRoute extends Route {
 	}
 
 	@Override
-	public void handle(Request req, Response res) throws Exception {
-		if (!NullCheck.isNullOrEmpty(dir)) {
-			handleDirectory(req, res);
-		} else {
-			handleProxy(req, res);
+	public void handle(Request req, Response res) {
+		try {
+			if (!NullCheck.isNullOrEmpty(dir)) {
+				handleDirectory(req, res);
+			} else {
+				handleProxy(req, res);
+			}
+		} catch (Throwable e) {
+			logger.error("Failed in route " + this + " :: ", e);
+			res.setResponseCode(400);
+			try {
+				res.append(RequestUtil.getStackTrace(e));
+			} catch (IOException e1) {
+				logger.error("Failed in route " + this + " :: ", e1);
+			}
 		}
 	}
 
 	void handleProxy(Request req, Response res) throws IOException {
-		String queryStr = URLDecoder.decode(req.getUriWithParams().substring(req.getUriWithParams().indexOf("?")), RequestUtil.ENC_UTF_8) ;
+		String queryStr = URLDecoder.decode(req.getUriWithParams().substring(req.getUriWithParams().indexOf("?")),
+				RequestUtil.ENC_UTF_8);
 		String loc = this.proxy_pass + req.getUri().substring(this.uri.length()) + queryStr;
-//		System.out.println("loc :: " + loc);
+		// System.out.println("loc :: " + loc);
 		HttpMethodCall httpMethodCall = proxyTh.get(null);
 		ProxyRes pres = null;
 		switch (req.getMethod()) {
@@ -218,49 +260,52 @@ final class ProxyRoute extends Route {
 	}
 
 	void handleDirectory(Request req, Response res) throws IOException {
-		String file = this.dir + URLDecoder.decode( req.getUri().substring(this.uri.length()), RequestUtil.ENC_UTF_8);
+		String file = this.dir + URLDecoder.decode(req.getUri().substring(this.uri.length()), RequestUtil.ENC_UTF_8);
 		File f = new File(file);
-//			System.out.println("file :: "+file+" exists "+f.exists());
-		if(!f.exists()){
+		// System.out.println("file :: "+file+" exists "+f.exists());
+		if (!f.exists()) {
 			res.setResponseCode(404);
-		}else if(f.isDirectory()){
+		} else if (f.isDirectory()) {
 			boolean endsWith = req.getUri().endsWith("/");
 			String pathSep = "";
-			if(!endsWith)
-				pathSep = req.getUri()+"/";
-			
+			if (!endsWith)
+				pathSep = req.getUri() + "/";
+
 			File[] listFiles = f.listFiles();
 			StringBuffer buf = new StringBuffer("<html><body>");
 			buf.append("<a href=\"").append("..").append("\" >").append("..").append("</a>").append("<br>");
-			for(File f1:listFiles){
-				if( f1.isDirectory() )
-					buf.append("<a href=\"").append(pathSep).append(f1.getName()).append("/").append("\" >").append(f1.getName()).append("</a>").append("<br>");
+			for (File f1 : listFiles) {
+				if (f1.isDirectory())
+					buf.append("<a href=\"").append(pathSep).append(f1.getName()).append("/").append("\" >")
+							.append(f1.getName()).append("</a>").append("<br>");
 				else
-					buf.append("<a href=\"").append(pathSep).append(f1.getName()).append("\" >").append(f1.getName()).append("</a>").append("&ensp;").append(f1.length()).append("&nbsp;bytes").append("<br>");
+					buf.append("<a href=\"").append(pathSep).append(f1.getName()).append("\" >").append(f1.getName())
+							.append("</a>").append("&ensp;").append(f1.length()).append("&nbsp;bytes").append("<br>");
 			}
 			buf.append("</body></html>");
 			res.setResponseCode(200);
 			res.append(buf.toString());
 			res.putHeader("Content-Type", "text/html;charset=UTF-8");
 			res.putHeader("Content-Length", buf.length());
-		}else{
-			if(!NullCheck.isNullOrEmpty(Configuration.defaultMimeType)){
+		} else {
+			if (!NullCheck.isNullOrEmpty(Configuration.defaultMimeType)) {
 				String[] split = f.getName().split("\\.(?=[^\\.]+$)");
-				final String ext = "."+split[split.length-1];
-				Map<String, Object> map = Configuration.defaultMimeType.get(ext);
-				if (map!=null) {
+				final String ext = "." + split[split.length - 1];
+//				System.out.println(" ext %"+ext+"% ");
+				Map<String, Object> map = Configuration.defaultMimeType.get(ext.toLowerCase(Locale.getDefault()));
+				if (map != null) {
 					Object typeObj = map.get("type");
-//						System.out.println(" ext :: " + ext + " type :: " + typeObj);
 					if (typeObj != null) {
+//						System.out.println(" ext :: " + ext + " type :: " +typeObj);
 						res.putHeader("Content-Type", typeObj);
-					} 
+					}
 				}
 			}
 			ByteBuffer bytes = files.getBytes(file);
 			if (bytes == null) {
 				bytes = files.addBytes(file);
 			}
-//			System.out.println("Read bytes "+bytes.remaining());
+			// System.out.println("Read bytes "+bytes.remaining());
 			byte[] array = new byte[bytes.remaining()];
 			bytes.get(array, 0, array.length);
 			res.append(array);
@@ -299,13 +344,13 @@ final class ProxyRes {
 
 interface HttpMethodCall {
 	ProxyRes trace(String uri, Map<String, String> headers) throws IOException;
-	
+
 	ProxyRes head(String uri, Map<String, String> headers) throws IOException;
-	
+
 	ProxyRes connect(String uri, Map<String, String> headers) throws IOException;
-	
+
 	ProxyRes options(String uri, String body, Map<String, String> headers) throws IOException;
-	
+
 	ProxyRes get(String uri, Map<String, String> headers) throws IOException;
 
 	ProxyRes post(String uri, String body, Map<String, String> headers) throws IOException;
@@ -398,7 +443,7 @@ class JavaHttpMethodCall implements HttpMethodCall {
 		int responseCode = con.getResponseCode();
 
 		Map<String, List<String>> map = con.getHeaderFields();
-		
+
 		final StringBuffer response = new StringBuffer();
 		final BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
 		try {
@@ -412,7 +457,7 @@ class JavaHttpMethodCall implements HttpMethodCall {
 		ProxyRes proxyRes = new ProxyRes(responseCode, response.toString());
 		for (Map.Entry<String, List<String>> entry : map.entrySet()) {
 			final String key = entry.getKey();
-			if( !NullCheck.isNullOrEmpty(key) && !NullCheck.isNullOrEmpty(entry.getValue()) )
+			if (!NullCheck.isNullOrEmpty(key) && !NullCheck.isNullOrEmpty(entry.getValue()))
 				proxyRes.headers.put(key, entry.getValue().get(0));
 		}
 		return proxyRes;
@@ -466,6 +511,118 @@ class JavaHttpMethodCall implements HttpMethodCall {
 			wr.close();
 		}
 		return extractResponse(con);
+	}
+
+}
+
+enum MethodInvoker {
+	none {
+
+		@Override
+		public void handle(Request req, Response res, boolean isStatic, Method method, Threadlocal<Object> tl,
+				RequestUriTokens rut) throws Exception {
+			if (isStatic)
+				method.invoke(null);
+			else
+				method.invoke(tl.get(null));
+		}
+
+	},
+	variable {
+
+		@Override
+		public void handle(final Request req, final Response res, final boolean isStatic, final Method method,
+				final Threadlocal<Object> tl, final RequestUriTokens rut) throws Exception {
+
+			final Object[] args = new Object[method.getParameters().length];
+			String[] split = req.getUri().split("/");
+			int arid = 0;
+			for (int pi : rut.paramIdx) {
+				if (pi != -1) {
+					args[rut.argsIdx[arid++]] = split[pi];
+				}
+			}
+			
+//			System.out.println(" rut uriParts   size "+rut.uriParts.size());
+//			for (int i = 0; i < rut.uriParts.size(); i++) {
+//				System.out.println("  uri  "+i+" "+rut.uriParts.get(i));
+//			}
+//			System.out.println(" rut tokenParts size "+rut.tokenParts.size());
+//			for (int i = 0; i < rut.tokenParts.size(); i++) {
+//				System.out.println("  token "+i+" "+rut.tokenParts.get(i));
+//			}
+			
+//			final String inUrl = req.getUri();
+//			int idx = rut.uriParts.get(0).length();
+//			for (int i = 0; i < rut.tokenParts.size(); i++) {
+//				int endIndex = inUrl.indexOf(rut.uriParts.get(i + 1), idx);
+//				if (i == rut.tokenParts.size() - 1) {
+//					if (rut.tokenParts.size() == rut.uriParts.size() + 1) {
+//						args[rut.tokenParts.get(i).indx] = inUrl.substring(idx, endIndex);
+//					} else {
+//						args[rut.tokenParts.get(i).indx] = inUrl.substring(idx, endIndex);
+//					}
+//				} else {
+//					args[rut.tokenParts.get(i).indx] = inUrl.substring(idx, endIndex);
+//				}
+//				idx = endIndex;
+//			}
+
+			if (rut.resIdx != -1)
+				args[rut.resIdx] = res;
+			if (rut.reqIdx != -1)
+				args[rut.reqIdx] = req;
+
+			if (isStatic)
+				method.invoke(null, args);
+			else
+				method.invoke(tl.get(null), args);
+		}
+
+	},
+	defalt, onlyReq {
+
+		@Override
+		public void handle(Request req, Response res, boolean isStatic, Method method, Threadlocal<Object> tl,
+				RequestUriTokens rut) throws Exception {
+			if (isStatic)
+				method.invoke(null, req);
+			else
+				method.invoke(tl.get(null), req);
+		}
+
+	},
+	onlyRes {
+
+		@Override
+		public void handle(Request req, Response res, boolean isStatic, Method method, Threadlocal<Object> tl,
+				RequestUriTokens rut) throws Exception {
+			if (isStatic)
+				method.invoke(null, res);
+			else
+				method.invoke(tl.get(null), res);
+		}
+
+	},
+	reverDef {
+
+		@Override
+		public void handle(Request req, Response res, boolean isStatic, Method method, Threadlocal<Object> tl,
+				RequestUriTokens rut) throws Exception {
+			if (isStatic)
+				method.invoke(null, res, req);
+			else
+				method.invoke(tl.get(null), res, req);
+		}
+
+	};
+
+	public void handle(Request req, Response res, boolean isStatic, Method method, Threadlocal<Object> tl,
+			RequestUriTokens rut) throws Exception {
+		if (isStatic)
+			method.invoke(null, req, res);
+		else
+			method.invoke(tl.get(null), req, res);
 	}
 
 }

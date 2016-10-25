@@ -47,6 +47,8 @@ public class Server {
 	static final String DEFAULT_HOST = Env.getEnv("host", "localhost");
 
 	static final int DEFAULT_PORT = Integer.parseInt(Env.getEnv("port", "8080"));
+	
+	static final boolean SINGLE_THREAD_MODE = Boolean.parseBoolean(Env.getEnv("singleThread", "false"));
 
 	/**
 	 * @param args
@@ -88,7 +90,7 @@ final class SelectorHandler {
 	volatile boolean shutdown = false;
 	Selector clientSelector = null;
 	String beanNameStr = null;
-	final ExecutorService exe = Executors.newCachedThreadPool();
+	final ExecutorService exe;
 	final ServerMXBean mxBean = new ServerMXBean() {
 
 		@Override
@@ -125,7 +127,7 @@ final class SelectorHandler {
 		}
 	};
 
-	final Pool<Connection> connectionPool = new ConcurrentPool<Connection>(new PoolFactory<Connection>(){
+	final Pool<Connection> connectionPool = new ConcurrentPool<Connection>(new PoolFactory<Connection>() {
 
 		@Override
 		public Connection create(Map<String, Object> params) {
@@ -134,23 +136,25 @@ final class SelectorHandler {
 
 		@Override
 		public void close(Connection t) {
-			if(t!=null)
+			if (t != null)
 				t.pool = null;
 		}
 
 		@Override
 		public void clear(Connection t) {
-			if(t!=null)
+			if (t != null)
 				t.reset();
-			
-		}},Connection.class);
-	
+
+		}
+	}, Connection.class);
+
 	SelectorHandler() {
 		super();
-		connectionPool.setMaxPoolSize(-1);
-		connectionPool.setMaxReuseCount(-1);
-		connectionPool.setLifeSpan(-1);
-		connectionPool.setIdleTimeout(30000);
+		this.connectionPool.setMaxPoolSize(-1);
+		this.connectionPool.setMaxReuseCount(-1);
+		this.connectionPool.setLifeSpan(-1);
+		this.connectionPool.setIdleTimeout(30000);
+		this.exe = Executors.newCachedThreadPool();
 	}
 
 	void registerMXBean() {
@@ -182,6 +186,7 @@ final class SelectorHandler {
 		ssc.configureBlocking(false);
 		InetSocketAddress sa = new InetSocketAddress(InetAddress.getLoopbackAddress(), Server.DEFAULT_PORT);
 		ssc.socket().bind(sa);
+		logger.info("Server started at " + sa);
 		ssc.register(clientSelector, SelectionKey.OP_ACCEPT);
 
 		while (!shutdown) {
@@ -192,31 +197,24 @@ final class SelectorHandler {
 				for (Iterator<SelectionKey> it = readySet.iterator(); it.hasNext();) {
 					final SelectionKey key = it.next();
 					it.remove();
-					if(!key.isValid()){
+					if (!key.isValid()) {
 						continue;
-					}else if (key.isAcceptable()) {
+					} else if (key.isAcceptable()) {
 						SocketChannel clientSocket = ssc.accept();
 						clientSocket.configureBlocking(false);
 						SelectionKey key1 = clientSocket.register(clientSelector, SelectionKey.OP_READ);
 						key1.attach(connectionPool.get(null));
 					} else {
 						key.interestOps(0);
-						exe.execute(new Runnable() {
-							public void run() {
-								try {
-									Connection client = (Connection) key.attachment();
-									if (key.isReadable()) {
-										client.read(key);
-									} else {
-										client.write(key);
-									}
-									clientSelector.wakeup();
-								} catch (IOException e) {
-									e.printStackTrace();
-									logger.error("Failed with Error::", e);
+						if(Server.SINGLE_THREAD_MODE){
+							process(key);
+						}else{
+							exe.execute(new Runnable() {
+								public void run() {
+									process(key);
 								}
-							}
-						});
+							});
+						}
 					}
 				}
 			} catch (IOException e) {
@@ -247,6 +245,23 @@ final class SelectorHandler {
 			logger.error("Failed to close connectionPool::", e);
 		}
 		logger.info("Server stopped!");
+		System.exit(0);
+	}
+
+	void process(final SelectionKey key) {
+		try {
+			Connection client = (Connection) key.attachment();
+			if (key.isReadable()) {
+				client.read(key);
+			} else {
+				client.write(key);
+			}
+			clientSelector.wakeup();
+		} catch (IOException e) {
+			e.printStackTrace();
+			
+			logger.error("Failed with Error::", e);
+		}
 	}
 }
 
@@ -260,6 +275,7 @@ final class Connection {
 	Ref resBuff = null;
 	int writeLen = 0;
 	Pool<Connection> pool;
+
 	public Connection(Pool<Connection> pool) {
 		super();
 		reset();
@@ -272,35 +288,45 @@ final class Connection {
 		writeLen = 0;
 	}
 
-
 	void write(SelectionKey key) throws IOException {
-		logger.debug(" write  :: "+resBuff);
+		logger.debug(" write  :: " + resBuff);
 		if (resBuff != null) {
-			if (resBuff.headerBytes != null) {
-				((SocketChannel) key.channel()).write(ByteBuffer.wrap(resBuff.headerBytes));
-				resBuff.headerBytes = null;
-			}
-			if (resBuff.bodyBytes != null && resBuff.bodyBytes.length > 0) {
-				int subArrLen = Math.min(resBuff.bodyBytes.length, writeLen + Configuration.defaultChunkSize);
-				((SocketChannel) key.channel())
-						.write(ByteBuffer.wrap(resBuff.bodyBytes, writeLen, subArrLen - writeLen));
-				writeLen = subArrLen;
-				if (writeLen == resBuff.bodyBytes.length) {
-					finish(key);
-				} else {
-					key.interestOps(SelectionKey.OP_WRITE);
+			try {
+				SocketChannel socketChannel = (SocketChannel) key.channel();
+				if (resBuff.headerBytes != null) {
+					socketChannel.write(ByteBuffer.wrap(resBuff.headerBytes));
+					resBuff.headerBytes = null;
 				}
-			} else {
+				if (resBuff.bodyBytes != null && resBuff.bodyBytes.length > 0) {
+					int subArrLen = Math.min(resBuff.bodyBytes.length, writeLen + Configuration.defaultChunkSize);
+					socketChannel
+							.write(ByteBuffer.wrap(resBuff.bodyBytes, writeLen, subArrLen - writeLen));
+//					System.out.println( "  write bytes from  :: "+writeLen+"  length :: "+(subArrLen - writeLen) +" to :: "+subArrLen);
+					writeLen = subArrLen;
+					if (writeLen == resBuff.bodyBytes.length) {
+						finish(key);
+					} else {
+						key.interestOps(SelectionKey.OP_WRITE);
+					}
+				} else {
+					finish(key);
+				}
+			}catch (IOException e) {
+				logger.error("Failed in write :: ", e);
 				finish(key);
+				throw e;
 			}
 		}
 	}
 
 	void finish(SelectionKey key) throws IOException {
-		 SocketAddress remoteSocketAddress = ((SocketChannel) key.channel()).socket().getRemoteSocketAddress();
-		((SocketChannel) key.channel()).close();
+		SocketChannel channel = (SocketChannel) key.channel();
+		SocketAddress remoteSocketAddress = channel.socket().getRemoteSocketAddress();
+		channel.finishConnect();
+		channel.close();
 		key.cancel();
-		RequestUtil.accessLog(resBuff.rc, resBuff.uri, startTime, System.currentTimeMillis(), resBuff.bodyBytes.length, remoteSocketAddress);
+		RequestUtil.accessLog(resBuff.rc, resBuff.uri, startTime, System.currentTimeMillis(), resBuff.bodyBytes.length,
+				remoteSocketAddress);
 		buff = null;
 		inBuffer = null;
 		writeLen = 0;
@@ -310,17 +336,22 @@ final class Connection {
 	void read(final SelectionKey key) throws IOException {
 		int bytesRead = 0;
 		byte EOL0 = 1;
-		if ((bytesRead = ((SocketChannel) key.channel()).read(buff)) > 0) {
-			EOL0 = buff.get(buff.position() - 1);
-			buff.flip();
-			inBuffer.append(Charset.defaultCharset().decode(buff).array());
-			buff.clear();
+		try {
+			if ((bytesRead = ((SocketChannel) key.channel()).read(buff)) > 0) {
+				EOL0 = buff.get(buff.position() - 1);
+				buff.flip();
+				inBuffer.append(Charset.defaultCharset().decode(buff).array());
+				buff.clear();
+			}
+			if ((bytesRead == -1 || EOL0 == RequestUtil.BYTE_10))
+				processRequest(key);
+			else
+				key.interestOps(SelectionKey.OP_READ);
+		} catch (IOException e) {
+			logger.error("Failed in read :: ", e);
+			finish(key);
+			throw e;
 		}
-
-		if ((bytesRead == -1 || EOL0 == RequestUtil.BYTE_10))
-			processRequest(key);
-		else
-			key.interestOps(SelectionKey.OP_READ);
 	}
 
 	public void processRequest(final SelectionKey key) {
@@ -329,9 +360,9 @@ final class Connection {
 		Response response = null;
 		logger.debug("process connection from " + ((SocketChannel) key.channel()).socket().getRemoteSocketAddress());
 		try {
-			request = RequestUtil.parse(inBuffer, startTime);
-//			System.out.println(" request :: " + request.toString());
-			route = get(Configuration.routes, request);
+			request = RequestUtil.parseRequest(inBuffer);
+			// System.out.println(" request :: " + request.toString());
+			route = RequestUtil.getMatchingRoute(Configuration.routes, request.getUri(), request.getHttpMethod(), false);
 			if (route != null) {
 				response = route.getResponse(request);
 			}
@@ -343,7 +374,10 @@ final class Connection {
 			if (response != null) {
 				route.handle(request, response);
 				resBuff = RequestUtil.getResponseBytes(request, response);
-				logger.debug(" request :: " + request.toString()+" response :: "+resBuff.bodyBytes.length);
+				if( resBuff!=null && resBuff.bodyBytes!=null && resBuff.bodyBytes.length > Configuration.defaultChunkSize ){
+					((SocketChannel) key.channel()).socket().setSoTimeout(0);
+				}
+				logger.debug(" request :: " + request.toString() + " response :: " + resBuff.bodyBytes.length);
 			}
 			request = null;
 			route = null;
@@ -358,10 +392,8 @@ final class Connection {
 	}
 
 	void handleErrorReq(Throwable e, SelectionKey key) {
-		StringBuffer access = new StringBuffer();
 		String formatDate = RequestUtil.dateFormat.format(new Date());
-		errorAccessLog(access, formatDate);
-		Server.accessLog.append(access.toString());
+		errorAccessLog(formatDate);
 		logger.error("Failed in request parse(" + formatDate + ") :: " + inBuffer);
 		logger.error("Failed in request parse(" + formatDate + ") :: ", e);
 		try {
@@ -373,39 +405,11 @@ final class Connection {
 			key.cancel();
 	}
 
-	private void errorAccessLog(StringBuffer access, String formatDate) {
-//		String[] split = inBuffer.toString().split(" ");
-//		if( NullCheck.isNullOrEmpty(split) ){
-			access.append("[").append(formatDate).append("] ").append(inBuffer.toString()).append(" ")
-			.append("400");
-//		}else{
-//			if( split.length == 0 ){
-//				access.append("[").append(formatDate).append("] ").append(inBuffer.toString()).append(" ")
-//				.append("400");
-//			}else{
-//				access.append("[").append(formatDate).append("] ").append(split[1]).append(" ")
-//				.append("400");
-//			}
-//		}
+	private void errorAccessLog(String formatDate) {
+		StringBuffer access = new StringBuffer();
+		access.append("[").append(formatDate).append("] ").append(inBuffer.toString()).append(" ").append("500");
+		Server.accessLog.append(access.toString());
 	}
 
-	static Route get(Collection<Route> paths, Request req) {
-		Route df = null;
-		Route in = new Route(req.getUri(), req.getMethod());
-		for (Route rq : paths) {
-			if (in.equals(rq))
-				return rq;
-			else if (rq.httpMethod == HttpMethod.ALL) {
-				if (rq.uri.equals("/*"))
-					df = rq;
-				else if (rq.uri.equals(req.getUri()))
-					return rq;
-				else if (rq instanceof ProxyRoute && req.getUri().startsWith(rq.uri))
-					return rq;
-			} else if (rq instanceof ProxyRoute && req.getUri().startsWith(rq.uri)) {
-				return rq;
-			}
-		}
-		return df;
-	}
+	
 }

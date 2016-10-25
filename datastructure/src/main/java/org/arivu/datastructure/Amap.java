@@ -10,7 +10,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 
 import org.arivu.utils.NullCheck;
@@ -39,7 +39,7 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 	private static final long serialVersionUID = -997810275912377568L;
 
 	final Btree binaryTree;
-	final AtomicInteger size = new AtomicInteger(0);
+	final AtomicLong size = new AtomicLong(0);
 	/**
 	 */
 	public Amap(Map<? extends K, ? extends V> m) {
@@ -65,10 +65,13 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 
 	@Override
 	public int size() {
-//		return binaryTree.size() + nc;
-		return size.get();
+		return (int)size.get();
 	}
 
+	public long sizeL() {
+		return size.get();
+	}
+	
 	@Override
 	public boolean isEmpty() {
 		return size() == 0;

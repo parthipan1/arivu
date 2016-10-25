@@ -17,6 +17,8 @@ final class ResponseImpl implements Response {
 
 	final Request request;
 
+	String redirectUrl = null;
+	
 	ResponseImpl(Request request, Map<String, Object> headers) {
 		this.request = request;
 		if (!NullCheck.isNullOrEmpty(headers)) {
@@ -122,11 +124,34 @@ final class ResponseImpl implements Response {
 		out.write(s);
 	}
 
+	/* (non-Javadoc)
+	 * @see org.arivu.nioserver.Response#getOut()
+	 */
 	@Override
 	public ByteArrayOutputStream getOut() {
 		return out;
 	}
 
+	/* (non-Javadoc)
+	 * @see org.arivu.nioserver.Response#sendRedirect(java.lang.String)
+	 */
+	@Override
+	public void sendRedirect(String url){
+		this.responseCode = 301;
+		this.headers.clear();
+		this.headers.put("X-Redirect-Src", request.getUriWithParams());
+		this.headers.put("Location", url);
+		this.redirectUrl = url;
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.arivu.nioserver.Response#getSendRedirectUrl()
+	 */
+	@Override
+	public String getSendRedirectUrl(){
+		return this.redirectUrl;
+	}
+	
 //	volatile boolean closed = false;
 //
 //	@Override
