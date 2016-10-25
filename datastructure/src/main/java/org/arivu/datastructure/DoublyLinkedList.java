@@ -9,7 +9,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Queue;
 import java.util.concurrent.locks.Lock;
 
 import org.arivu.utils.NullCheck;
@@ -20,7 +19,7 @@ import org.arivu.utils.lock.NoLock;
  * @author P
  *
  */
-public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
+public final class DoublyLinkedList<T> implements Alist<T> {
 	/**
 	 * 
 	 */
@@ -296,9 +295,14 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 
 	@Override
 	public int size() {
-		return size.get();
+		return (int) size.get();
 	}
 
+	@Override
+	public long sizeL() {
+		return size.get();
+	}
+	
 	@Override
 	public boolean contains(Object o) {
 		DoublyLinkedList<T> search = search(o);
@@ -566,7 +570,7 @@ public final class DoublyLinkedList<T> implements List<T>, Queue<T> {
 	@Override
 	public int lastIndexOf(Object o) {
 		DoublyLinkedList<T> ref = this.left;
-		int idx = size.get() - 1;
+		int idx = (int) (size.get() - 1);
 		while (ref != this) {
 			if (compareStrategy.compare(o, ref.obj)) {
 				return idx;

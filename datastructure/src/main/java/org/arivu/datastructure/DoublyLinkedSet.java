@@ -7,8 +7,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.locks.Lock;
 
 import org.arivu.utils.NullCheck;
@@ -18,7 +16,7 @@ import org.arivu.utils.lock.AtomicWFReentrantLock;
  * @author P
  *
  */
-public final class DoublyLinkedSet<T> implements Set<T>, Queue<T> {
+public final class DoublyLinkedSet<T> implements Aset<T> {
 	/**
 	 * 
 	 */
@@ -266,9 +264,17 @@ public final class DoublyLinkedSet<T> implements Set<T>, Queue<T> {
 		if (size == null)
 			return 0;
 		else
+			return (int) size.get();
+	}
+	
+	@Override
+	public long sizeL() {
+		if (size == null)
+			return 0l;
+		else
 			return size.get();
 	}
-
+	
 	@Override
 	public boolean contains(Object o) {
 		DoublyLinkedSet<T> search = search(o);
@@ -762,21 +768,21 @@ enum CompareStrategy {
  *
  */
 final class Counter {
-	volatile int cnt = 0;
+	volatile long cnt = 0;
 
 	void set(int v) {
 		cnt = v;
 	}
 
-	int incrementAndGet() {
+	long incrementAndGet() {
 		return ++cnt;
 	}
 
-	int decrementAndGet() {
+	long decrementAndGet() {
 		return --cnt;
 	}
 
-	int get() {
+	long get() {
 		return cnt;
 	}
 }

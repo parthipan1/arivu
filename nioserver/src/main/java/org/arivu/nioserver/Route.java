@@ -98,7 +98,7 @@ class Route {
 		try {
 			this.invoker.handle(req, res, isStatic, method, tl, this.rut);
 		} catch (Throwable e) {
-			e.printStackTrace();
+//			e.printStackTrace();
 			logger.error("Failed in route " + this + " :: ", e);
 			res.setResponseCode(400);
 			try {
