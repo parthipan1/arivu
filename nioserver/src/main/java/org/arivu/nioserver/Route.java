@@ -97,9 +97,9 @@ class Route {
 
 	public void handle(Request req, Response res) {
 		try {
+			StaticRef.set(req, res, this);
 			this.invoker.handle(req, res, isStatic, method, tl, this.rut);
 		} catch (Throwable e) {
-//			e.printStackTrace();
 			logger.error("Failed in route " + this + " :: ", e);
 			res.setResponseCode(400);
 			try {
@@ -107,6 +107,8 @@ class Route {
 			} catch (IOException e1) {
 				logger.error("Failed in route " + this + " :: ", e1);
 			}
+		}finally {
+			StaticRef.clear();
 		}
 	}
 
