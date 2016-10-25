@@ -11,6 +11,7 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -288,12 +289,12 @@ final class ProxyRoute extends Route {
 			if (!NullCheck.isNullOrEmpty(Configuration.defaultMimeType)) {
 				String[] split = f.getName().split("\\.(?=[^\\.]+$)");
 				final String ext = "." + split[split.length - 1];
-				Map<String, Object> map = Configuration.defaultMimeType.get(ext);
+//				System.out.println(" ext %"+ext+"% ");
+				Map<String, Object> map = Configuration.defaultMimeType.get(ext.toLowerCase(Locale.getDefault()));
 				if (map != null) {
 					Object typeObj = map.get("type");
-					// System.out.println(" ext :: " + ext + " type :: " +
-					// typeObj);
 					if (typeObj != null) {
+//						System.out.println(" ext :: " + ext + " type :: " +typeObj);
 						res.putHeader("Content-Type", typeObj);
 					}
 				}

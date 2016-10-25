@@ -259,6 +259,7 @@ final class SelectorHandler {
 			clientSelector.wakeup();
 		} catch (IOException e) {
 			e.printStackTrace();
+			
 			logger.error("Failed with Error::", e);
 		}
 	}
@@ -290,29 +291,39 @@ final class Connection {
 	void write(SelectionKey key) throws IOException {
 		logger.debug(" write  :: " + resBuff);
 		if (resBuff != null) {
-			if (resBuff.headerBytes != null) {
-				((SocketChannel) key.channel()).write(ByteBuffer.wrap(resBuff.headerBytes));
-				resBuff.headerBytes = null;
-			}
-			if (resBuff.bodyBytes != null && resBuff.bodyBytes.length > 0) {
-				int subArrLen = Math.min(resBuff.bodyBytes.length, writeLen + Configuration.defaultChunkSize);
-				((SocketChannel) key.channel())
-						.write(ByteBuffer.wrap(resBuff.bodyBytes, writeLen, subArrLen - writeLen));
-				writeLen = subArrLen;
-				if (writeLen == resBuff.bodyBytes.length) {
-					finish(key);
-				} else {
-					key.interestOps(SelectionKey.OP_WRITE);
+			try {
+				SocketChannel socketChannel = (SocketChannel) key.channel();
+				if (resBuff.headerBytes != null) {
+					socketChannel.write(ByteBuffer.wrap(resBuff.headerBytes));
+					resBuff.headerBytes = null;
 				}
-			} else {
+				if (resBuff.bodyBytes != null && resBuff.bodyBytes.length > 0) {
+					int subArrLen = Math.min(resBuff.bodyBytes.length, writeLen + Configuration.defaultChunkSize);
+					socketChannel
+							.write(ByteBuffer.wrap(resBuff.bodyBytes, writeLen, subArrLen - writeLen));
+//					System.out.println( "  write bytes from  :: "+writeLen+"  length :: "+(subArrLen - writeLen) +" to :: "+subArrLen);
+					writeLen = subArrLen;
+					if (writeLen == resBuff.bodyBytes.length) {
+						finish(key);
+					} else {
+						key.interestOps(SelectionKey.OP_WRITE);
+					}
+				} else {
+					finish(key);
+				}
+			}catch (IOException e) {
+				logger.error("Failed in write :: ", e);
 				finish(key);
+				throw e;
 			}
 		}
 	}
 
 	void finish(SelectionKey key) throws IOException {
-		SocketAddress remoteSocketAddress = ((SocketChannel) key.channel()).socket().getRemoteSocketAddress();
-		((SocketChannel) key.channel()).close();
+		SocketChannel channel = (SocketChannel) key.channel();
+		SocketAddress remoteSocketAddress = channel.socket().getRemoteSocketAddress();
+		channel.finishConnect();
+		channel.close();
 		key.cancel();
 		RequestUtil.accessLog(resBuff.rc, resBuff.uri, startTime, System.currentTimeMillis(), resBuff.bodyBytes.length,
 				remoteSocketAddress);
@@ -325,17 +336,22 @@ final class Connection {
 	void read(final SelectionKey key) throws IOException {
 		int bytesRead = 0;
 		byte EOL0 = 1;
-		if ((bytesRead = ((SocketChannel) key.channel()).read(buff)) > 0) {
-			EOL0 = buff.get(buff.position() - 1);
-			buff.flip();
-			inBuffer.append(Charset.defaultCharset().decode(buff).array());
-			buff.clear();
+		try {
+			if ((bytesRead = ((SocketChannel) key.channel()).read(buff)) > 0) {
+				EOL0 = buff.get(buff.position() - 1);
+				buff.flip();
+				inBuffer.append(Charset.defaultCharset().decode(buff).array());
+				buff.clear();
+			}
+			if ((bytesRead == -1 || EOL0 == RequestUtil.BYTE_10))
+				processRequest(key);
+			else
+				key.interestOps(SelectionKey.OP_READ);
+		} catch (IOException e) {
+			logger.error("Failed in read :: ", e);
+			finish(key);
+			throw e;
 		}
-
-		if ((bytesRead == -1 || EOL0 == RequestUtil.BYTE_10))
-			processRequest(key);
-		else
-			key.interestOps(SelectionKey.OP_READ);
 	}
 
 	public void processRequest(final SelectionKey key) {
@@ -358,6 +374,9 @@ final class Connection {
 			if (response != null) {
 				route.handle(request, response);
 				resBuff = RequestUtil.getResponseBytes(request, response);
+				if( resBuff!=null && resBuff.bodyBytes!=null && resBuff.bodyBytes.length > Configuration.defaultChunkSize ){
+					((SocketChannel) key.channel()).socket().setSoTimeout(0);
+				}
 				logger.debug(" request :: " + request.toString() + " response :: " + resBuff.bodyBytes.length);
 			}
 			request = null;
