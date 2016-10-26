@@ -299,7 +299,7 @@ final class ProxyRoute extends Route {
 					
 				}
 			}
-			ByteBuffer bytes = files.getOriginalBytes(file);
+			ByteBuffer bytes = files.getBytes(file);//getOriginalBytes(file);
 			if (bytes == null) {
 				bytes = files.addBytes(file);
 			}

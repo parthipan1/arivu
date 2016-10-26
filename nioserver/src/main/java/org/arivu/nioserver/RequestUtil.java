@@ -94,7 +94,7 @@ public class RequestUtil {
 		return new RequestImpl(valueOf, uri, uriWithParams, protocol, tempparams, Utils.unmodifiableMap(tempheaders));
 	}
 
-	static String convert(final List<ByteBuffer> messages) {
+	public static String convert(final List<ByteBuffer> messages) {
 		StringBuffer metadataBuf = new StringBuffer();
 		for( ByteBuffer bb:messages ){
 //			metadataBuf.append(new String(bb.array()));
