@@ -1,23 +1,28 @@
 package org.arivu.nioserver;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import org.arivu.datastructure.Amap;
+import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.utils.NullCheck;
 
 final class ResponseImpl implements Response {
 
 	final Map<String, Object> headers = new Amap<String, Object>();
 
-	final ByteArrayOutputStream out = new ByteArrayOutputStream();
+	final List<ByteBuffer> out = new DoublyLinkedList<>();
 
 	int responseCode = Configuration.defaultResCode;
 
 	final Request request;
 
 	String redirectUrl = null;
+	
+	int contentLength = 0;
 	
 	ResponseImpl(Request request, Map<String, Object> headers) {
 		this.request = request;
@@ -121,15 +126,36 @@ final class ResponseImpl implements Response {
 	 */
 	@Override
 	public void append(byte[] s) throws IOException {
-		out.write(s);
+		if (s != null){
+			append(ByteBuffer.wrap(s));
+		}
 	}
 
+	/* (non-Javadoc)
+	 * @see org.arivu.nioserver.Response#append(java.nio.ByteBuffer)
+	 */
+	@Override
+	public void append(ByteBuffer buf) throws IOException {
+		if(buf!=null){
+			out.add(buf);
+			contentLength += buf.remaining();
+		}
+	}
+	
 	/* (non-Javadoc)
 	 * @see org.arivu.nioserver.Response#getOut()
 	 */
 	@Override
-	public ByteArrayOutputStream getOut() {
-		return out;
+	public List<ByteBuffer> getOut() {
+		return Collections.unmodifiableList(out);
+	}
+
+	/* (non-Javadoc)
+	 * @see org.arivu.nioserver.Response#getContentLength()
+	 */
+	@Override
+	public int getContentLength() {
+		return contentLength;
 	}
 
 	/* (non-Javadoc)

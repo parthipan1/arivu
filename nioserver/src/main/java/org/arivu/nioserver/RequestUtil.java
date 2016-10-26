@@ -1,7 +1,6 @@
 package org.arivu.nioserver;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -24,6 +23,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Queue;
 import java.util.regex.Pattern;
 
 import org.arivu.datastructure.Amap;
@@ -302,12 +302,18 @@ public class RequestUtil {
 	}
 
 	static Ref getResponseBytes(Request request, Response response) {
-		return RequestUtil.getResponseBytes(response.getResponseCode(), response.getHeaders(), response.getOut(),
-				request.getProtocol(), request.getUri());
+		Ref responseBytes = RequestUtil.getResponseBytes(response.getResponseCode(), response.getHeaders(), response.getOut(),
+				request.getProtocol(), request.getUri(), response.getContentLength());
+		if( response instanceof ResponseImpl ){
+			ResponseImpl im = (ResponseImpl)response;
+			im.out.clear();
+			im.headers.clear();
+		}
+		return responseBytes;
 	}
 
-	static Ref getResponseBytes(int responseCode, Map<String, Object> headers, ByteArrayOutputStream out,
-			String protocol, String uri) {
+	static Ref getResponseBytes(int responseCode, Map<String, Object> headers, Collection<ByteBuffer> out,
+			String protocol, String uri, int contentLen) {
 		final StringBuffer responseBody = new StringBuffer();
 
 		Object rescodetxt = null;
@@ -332,9 +338,12 @@ public class RequestUtil {
 		Ref ref = new Ref();
 		ref.rc = responseCode;
 		ref.uri = uri;
-		ref.headerBytes = responseBody.toString().getBytes();
-		ref.bodyBytes = out.toByteArray();
+//		ref.headerBytes = responseBody.toString().getBytes();
+//		ref.bodyBytes = out.toByteArray();
 
+		ref.queue.add(ByteBuffer.wrap(responseBody.toString().getBytes()));
+		ref.queue.addAll(out);
+		ref.cl = contentLen;
 		// ByteBuffer resBytes =
 		// ByteBuffer.allocate(headerBytes.length+bodyBytes.length);
 		// resBytes.put(headerBytes);
@@ -411,8 +420,10 @@ public class RequestUtil {
 class Ref {
 	String uri = null;
 	int rc;
-	byte[] headerBytes;
-	byte[] bodyBytes;
+	int cl = 0;
+//	byte[] headerBytes;
+//	byte[] bodyBytes;
+	Queue<ByteBuffer> queue = new DoublyLinkedList<>();
 }
 
 final class RequestUriTokens {

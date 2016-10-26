@@ -3,7 +3,7 @@ package org.arivu.nioserver;
 public interface ServerMXBean {
 
 	/**
-	 * @return
+	 * @return arr
 	 */
 	String[] getAllRoute();
 
@@ -11,6 +11,12 @@ public interface ServerMXBean {
 	 * @param route
 	 */
 	void removeRoute(String route);
+	
+	/**
+	 * @param route
+	 * @return header
+	 */
+	String getRouteResponseHeader(String route);
 	
 	/**
 	 * @param packageName
@@ -46,7 +52,7 @@ public interface ServerMXBean {
 	void addRouteHeader(String uri, String header, String value);
 
 	/**
-	 * @return
+	 * @return size
 	 */
 	int getRequestBufferSize();
 
@@ -56,7 +62,7 @@ public interface ServerMXBean {
 	void setRequestBufferSize(int size);
 
 	/**
-	 * @return
+	 * @return chunkSize
 	 */
 	int getResponseChunkSize();
 
@@ -66,7 +72,7 @@ public interface ServerMXBean {
 	void setResponseChunkSize(int size);
 
 	/**
-	 * @return
+	 * @return resHeader
 	 */
 	String getResponseHeader();
 

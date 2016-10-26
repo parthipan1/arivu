@@ -263,7 +263,6 @@ final class ProxyRoute extends Route {
 	void handleDirectory(Request req, Response res) throws IOException {
 		String file = this.dir + URLDecoder.decode(req.getUri().substring(this.uri.length()), RequestUtil.ENC_UTF_8);
 		File f = new File(file);
-		// System.out.println("file :: "+file+" exists "+f.exists());
 		if (!f.exists()) {
 			res.setResponseCode(404);
 		} else if (f.isDirectory()) {
@@ -292,21 +291,18 @@ final class ProxyRoute extends Route {
 			if (!NullCheck.isNullOrEmpty(Configuration.defaultMimeType)) {
 				String[] split = f.getName().split("\\.(?=[^\\.]+$)");
 				final String ext = "." + split[split.length - 1];
-//				System.out.println(" ext %"+ext+"% ");
 				Map<String, Object> map = Configuration.defaultMimeType.get(ext.toLowerCase(Locale.getDefault()));
 				if (map != null) {
 					Object typeObj = map.get("type");
-					if (typeObj != null) {
-//						System.out.println(" ext :: " + ext + " type :: " +typeObj);
+					if (typeObj != null) 
 						res.putHeader("Content-Type", typeObj);
-					}
+					
 				}
 			}
-			ByteBuffer bytes = files.getBytes(file);
+			ByteBuffer bytes = files.getOriginalBytes(file);
 			if (bytes == null) {
 				bytes = files.addBytes(file);
 			}
-			// System.out.println("Read bytes "+bytes.remaining());
 			byte[] array = new byte[bytes.remaining()];
 			bytes.get(array, 0, array.length);
 			res.append(array);

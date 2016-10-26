@@ -69,6 +69,10 @@ public final class MemoryMappedFiles {
 		return copy(bufferMap.get(file));
 	}
 
+	public ByteBuffer getOriginalBytes(final String file) {
+		return bufferMap.get(file);
+	}
+	
 	public String get(final String file) {
 		return convert(getBytes(file));
 	}

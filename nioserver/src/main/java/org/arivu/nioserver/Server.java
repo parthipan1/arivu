@@ -115,12 +115,13 @@ final class SelectorHandler {
 
 		@Override
 		public void removeRoute(String route) {
-			Route route2 = get(route);
+			Route route2 = getRoute(route);
 			if(route2!=null)
 				Configuration.routes.remove(route2);
 		}
 		
-		Route get(String route) {
+		Route getRoute(String route) {
+			if( NullCheck.isNullOrEmpty(route) ) return null;
 			Collection<Route> rts = Configuration.routes;
 			for (Route rt : rts) {
 				if ((rt.uri + " " + rt.httpMethod).equals(route))
@@ -174,7 +175,7 @@ final class SelectorHandler {
 
 		@Override
 		public void removeRouteHeader(String route, String header) {
-			Route route2 = get(route);
+			Route route2 = getRoute(route);
 			if (route2 != null && !NullCheck.isNullOrEmpty(route2.headers)) {
 				route2.headers.remove(header);
 			}
@@ -182,7 +183,7 @@ final class SelectorHandler {
 
 		@Override
 		public void addRouteHeader(String route, String header, String value) {
-			Route route2 = get(route);
+			Route route2 = getRoute(route);
 			if (route2 != null && !NullCheck.isNullOrEmpty(route2.headers)) {
 				route2.headers.put(header, value);
 			}
@@ -227,9 +228,14 @@ final class SelectorHandler {
 
 		@Override
 		public String getResponseHeader() {
-			if (Configuration.defaultResponseHeader == null)
+			Map<String, Object> defaultresponseheader = Configuration.defaultResponseHeader;
+			return getString(defaultresponseheader);
+		}
+
+		String getString(Map<String, Object> defaultresponseheader) {
+			if (defaultresponseheader == null)
 				return "";
-			Set<Entry<String, Object>> entrySet = Configuration.defaultResponseHeader.entrySet();
+			Set<Entry<String, Object>> entrySet = defaultresponseheader.entrySet();
 			StringBuffer buf = new StringBuffer();
 			for (Entry<String, Object> e : entrySet) {
 				buf.append(e.getKey()).append("=").append(e.getValue().toString()).append(",");
@@ -241,6 +247,13 @@ final class SelectorHandler {
 		public void addJar(String jars) {
 			// TODO Auto-generated method stub
 			
+		}
+
+		@Override
+		public String getRouteResponseHeader(String route) {
+			Route route2 = getRoute(route);
+			if( route2!= null ) return getString(route2.headers);
+			return null;
 		}
 
 	};
@@ -405,31 +418,45 @@ final class Connection {
 		buff = ByteBuffer.allocateDirect(Configuration.defaultRequestBuffer);
 		writeLen = 0;
 	}
-
+	
+	ByteBuffer poll = null;
+	int pos = 0;
+	int rem = 0;
+	final byte[] dst = new byte[Configuration.defaultChunkSize];
+	
 	void write(SelectionKey key) throws IOException {
 		logger.debug(" write  :: " + resBuff);
 		if (resBuff != null) {
 			try {
-				SocketChannel socketChannel = (SocketChannel) key.channel();
-				if (resBuff.headerBytes != null) {
-					socketChannel.write(ByteBuffer.wrap(resBuff.headerBytes));
-					resBuff.headerBytes = null;
-				}
-				if (resBuff.bodyBytes != null && resBuff.bodyBytes.length > 0) {
-					int subArrLen = Math.min(resBuff.bodyBytes.length, writeLen + Configuration.defaultChunkSize);
-					socketChannel.write(ByteBuffer.wrap(resBuff.bodyBytes, writeLen, subArrLen - writeLen));
-					logger.debug("  write bytes from  :: " + writeLen + "  length :: " + (subArrLen - writeLen)
-							+ " to :: " + subArrLen);
-					writeLen = subArrLen;
-					if (writeLen == resBuff.bodyBytes.length) {
+				if( poll == null ){
+					poll = resBuff.queue.poll();
+					if( poll != null ){
+						rem = poll.remaining();
+						logger.debug(resBuff+" 1 write next ByteBuff size :: "+rem+" queueSize :: "+resBuff.queue.size());
+					}else{
+						logger.debug(resBuff+" 2 write next ByteBuff is null! finish! ");
 						finish(key);
-					} else {
-						key.interestOps(SelectionKey.OP_WRITE);
+						return;
 					}
-				} else {
-					finish(key);
 				}
-			} catch (IOException e) {
+				
+				int length = Math.min(Configuration.defaultChunkSize, rem-pos);
+				logger.debug(resBuff+"  3 write bytes from  :: " + pos + "  length :: " + (length)
+						+ " to :: " + (pos+length)+" size :: "+rem);
+				byte[] dstt = dst;// new byte[length];
+				if(length==Configuration.defaultChunkSize){
+					for( int i=0;i<dstt.length;i++ )
+						dstt[i] = poll.get(i+pos);
+				}else{
+					dstt = new byte[length];
+					for( int i=0;i<dstt.length;i++ )
+						dstt[i] = poll.get(i+pos);
+				}
+				SocketChannel socketChannel = (SocketChannel) key.channel();
+				socketChannel.write(ByteBuffer.wrap(dstt));
+				pos += length;
+				finishByteBuff(key, socketChannel);
+			} catch (Throwable e) {
 				logger.error("Failed in write :: ", e);
 				finish(key);
 				throw e;
@@ -437,13 +464,28 @@ final class Connection {
 		}
 	}
 
+	void finishByteBuff(SelectionKey key, SocketChannel socketChannel) throws IOException {
+		boolean empty = resBuff.queue.isEmpty();
+		logger.debug(resBuff+" 4 finishByteBuff! empty :: "+empty+" queueSize :: "+resBuff.queue.size()+" read :: "+pos+" size :: "+rem);
+		if( rem == pos ){
+			poll = null;
+			pos = 0;
+			rem = 0;
+			if(empty){
+				finish(key);
+				return;
+			}
+		}
+		key.interestOps(SelectionKey.OP_WRITE);
+	}
+	
 	void finish(SelectionKey key) throws IOException {
 		SocketChannel channel = (SocketChannel) key.channel();
 		SocketAddress remoteSocketAddress = channel.socket().getRemoteSocketAddress();
 		channel.finishConnect();
 		channel.close();
 		key.cancel();
-		RequestUtil.accessLog(resBuff.rc, resBuff.uri, startTime, System.currentTimeMillis(), resBuff.bodyBytes.length,
+		RequestUtil.accessLog(resBuff.rc, resBuff.uri, startTime, System.currentTimeMillis(), resBuff.cl,
 				remoteSocketAddress);
 		buff = null;
 		inBuffer = null;
@@ -493,11 +535,11 @@ final class Connection {
 			if (response != null) {
 				route.handle(request, response);
 				resBuff = RequestUtil.getResponseBytes(request, response);
-				if (resBuff != null && resBuff.bodyBytes != null
-						&& resBuff.bodyBytes.length > Configuration.defaultChunkSize) {
+				if (resBuff != null 
+						&& resBuff.cl > Configuration.defaultChunkSize) {
 					((SocketChannel) key.channel()).socket().setSoTimeout(0);
 				}
-				logger.debug(" request :: " + request.toString() + " response :: " + resBuff.bodyBytes.length);
+				logger.debug(" request :: " + request.toString() + " response :: " + resBuff.cl);
 			}
 			request = null;
 			route = null;

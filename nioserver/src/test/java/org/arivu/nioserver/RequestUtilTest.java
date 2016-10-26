@@ -4,7 +4,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import org.arivu.datastructure.DoublyLinkedList;
@@ -171,7 +173,9 @@ public class RequestUtilTest {
 		Response res = varia.getResponse(req);
 	 	varia.handle(req, res);
 		
-	 	assertTrue( new String( res.getOut().toByteArray() ).equals("1"));
+	 	List<ByteBuffer> out = res.getOut();
+		ByteBuffer poll = out.get(0);
+	 	assertTrue( new String( poll.array() ).equals("1"));
 	}
 }
 
