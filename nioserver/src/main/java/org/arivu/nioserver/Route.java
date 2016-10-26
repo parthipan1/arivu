@@ -230,7 +230,7 @@ final class ProxyRoute extends Route {
 			pres = httpMethodCall.head(loc, req.getHeaders());
 			break;
 		case OPTIONS:
-			pres = httpMethodCall.options(loc, req.getBody(), req.getHeaders());
+			pres = httpMethodCall.options(loc, RequestUtil.convert(req.getBody()) , req.getHeaders());
 			break;
 		case CONNECT:
 			pres = httpMethodCall.connect(loc, req.getHeaders());
@@ -242,10 +242,10 @@ final class ProxyRoute extends Route {
 			pres = httpMethodCall.get(loc, req.getHeaders());
 			break;
 		case POST:
-			pres = httpMethodCall.post(loc, req.getBody(), req.getHeaders());
+			pres = httpMethodCall.post(loc, RequestUtil.convert(req.getBody()), req.getHeaders());
 			break;
 		case PUT:
-			pres = httpMethodCall.put(loc, req.getBody(), req.getHeaders());
+			pres = httpMethodCall.put(loc, RequestUtil.convert(req.getBody()), req.getHeaders());
 			break;
 		case DELETE:
 			pres = httpMethodCall.delete(loc, req.getHeaders());

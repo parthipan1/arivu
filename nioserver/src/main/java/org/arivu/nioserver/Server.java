@@ -14,10 +14,11 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -29,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
+import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.log.Appender;
 import org.arivu.log.appender.Appenders;
 import org.arivu.pool.ConcurrentPool;
@@ -402,7 +404,7 @@ final class Connection {
 	final long startTime = System.currentTimeMillis();
 
 	StringBuffer inBuffer = null;
-	ByteBuffer buff = null;
+//	ByteBuffer buff = null;
 	Ref resBuff = null;
 	int writeLen = 0;
 	Pool<Connection> pool;
@@ -415,8 +417,10 @@ final class Connection {
 
 	void reset() {
 		inBuffer = new StringBuffer();
-		buff = ByteBuffer.allocateDirect(Configuration.defaultRequestBuffer);
+//		buff = ByteBuffer.allocateDirect(Configuration.defaultRequestBuffer);
 		writeLen = 0;
+		in.clear();
+		req = null;
 	}
 	
 	ByteBuffer poll = null;
@@ -487,21 +491,42 @@ final class Connection {
 		key.cancel();
 		RequestUtil.accessLog(resBuff.rc, resBuff.uri, startTime, System.currentTimeMillis(), resBuff.cl,
 				remoteSocketAddress);
-		buff = null;
+//		buff = null;
 		inBuffer = null;
 		writeLen = 0;
 		pool.put(this);
 	}
 
+	final List<ByteBuffer> in = new DoublyLinkedList<>();
+	RequestImpl req = null;
 	void read(final SelectionKey key) throws IOException {
 		int bytesRead = 0;
 		byte EOL0 = 1;
 		try {
-			if ((bytesRead = ((SocketChannel) key.channel()).read(buff)) > 0) {
-				EOL0 = buff.get(buff.position() - 1);
-				buff.flip();
-				inBuffer.append(Charset.defaultCharset().decode(buff).array());
-				buff.clear();
+			byte[] readBuf = new byte[Configuration.defaultRequestBuffer];
+			ByteBuffer wrap = ByteBuffer.wrap(readBuf);
+			if ((bytesRead = ((SocketChannel) key.channel()).read(wrap)) > 0) {
+				EOL0 = wrap.get(wrap.position() - 1);
+				if( req==null ){
+					int headerIndex = RequestUtil.getHeaderIndex(readBuf);
+					if( headerIndex == -1 ){
+						in.add(wrap);
+					}else{
+						List<ByteBuffer> h = new DoublyLinkedList<>();
+						h.addAll(in);
+						h.add( ByteBuffer.wrap(Arrays.copyOfRange(readBuf, 0, headerIndex-1)) );
+						in.clear();
+						req = RequestUtil.parseRequest(h);
+						logger.debug(" Got Request :: "+req);
+						req.body.add( ByteBuffer.wrap(Arrays.copyOfRange(readBuf, headerIndex, bytesRead)) );
+					}
+				}else{
+					req.body.add(wrap);
+				}
+				
+//				buff.flip();
+//				inBuffer.append(Charset.defaultCharset().decode(buff).array());
+//				buff.clear();
 			}
 			if ((bytesRead == -1 || EOL0 == RequestUtil.BYTE_10))
 				processRequest(key);
@@ -515,12 +540,12 @@ final class Connection {
 	}
 
 	public void processRequest(final SelectionKey key) {
-		Request request = null;
+		Request request = req;
 		Route route = null;
 		Response response = null;
 		logger.debug("process connection from " + ((SocketChannel) key.channel()).socket().getRemoteSocketAddress());
 		try {
-			request = RequestUtil.parseRequest(inBuffer);
+//			request = req;//RequestUtil.parseRequest(inBuffer);
 			// System.out.println(" request :: " + request.toString());
 			route = RequestUtil.getMatchingRoute(Configuration.routes, request.getUri(), request.getHttpMethod(),
 					false);

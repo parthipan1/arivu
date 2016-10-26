@@ -1,6 +1,8 @@
 package org.arivu.nioserver;
 
+import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 public interface Request {
@@ -13,7 +15,7 @@ public interface Request {
 
 	HttpMethod getMethod();
 
-	String getBody();
+	List<ByteBuffer> getBody();
 
 	String getProtocol();
 

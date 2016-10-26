@@ -16,11 +16,13 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
@@ -42,34 +44,29 @@ public class RequestUtil {
 	static final byte BYTE_10 = (byte) 10;
 	static final String divider = System.lineSeparator() + System.lineSeparator();
 
-	static Request parseRequest(final StringBuffer buffer) {
-		String content = buffer.toString();
-		byte[] bytes = content.getBytes();
-		int indexOf = -1;
-		for (int i = 3; i < bytes.length; i++) {
-			if (bytes[i] == bytes[i - 2] && bytes[i] == BYTE_10 && bytes[i - 1] == bytes[i - 3]
-					&& bytes[i - 1] == BYTE_13) {
-				indexOf = i;
-				break;
-			}
-		}
+	static RequestImpl parseRequest(final List<ByteBuffer> messages) {
+//		String content = buffer.toString();
+//		byte[] bytes = content.getBytes();
+//		int indexOf = getHeaderIndex(bytes);
+//
+//		String metadata = null;
+//		String body = null;
+//
+//		if (indexOf == -1) {
+//			metadata = content;
+//		} else {
+//			metadata = content.substring(0, indexOf - 1);
+//			body = content.substring(indexOf);
+//		}
 
-		String metadata = null;
-		String body = null;
-
-		if (indexOf == -1) {
-			metadata = content;
-		} else {
-			metadata = content.substring(0, indexOf - 1);
-			body = content.substring(indexOf);
-		}
-
+		String metadata = convert(messages);
+		
 		String[] split = metadata.split(System.lineSeparator());
 
 		String[] split2 = split[0].split(" ");
 
 		// System.out.println("REQ METHOD :: "+split2[0]);
-		logger.debug("Parsing RequestImpl :: " + content);
+//		logger.debug("Parsing RequestImpl :: " + content);
 		HttpMethod valueOf = HttpMethod.valueOf(split2[0]);
 		if (valueOf == null)
 			throw new IllegalArgumentException("Unknown RequestImpl " + metadata);
@@ -94,8 +91,30 @@ public class RequestUtil {
 			uri = uriWithParams.substring(0, indexOf3);
 			tempparams = parseParams(uriWithParams.substring(indexOf3 + 1));
 		}
-		return new RequestImpl(valueOf, uri, uriWithParams, protocol, tempparams, Utils.unmodifiableMap(tempheaders),
-				body);
+		return new RequestImpl(valueOf, uri, uriWithParams, protocol, tempparams, Utils.unmodifiableMap(tempheaders));
+	}
+
+	static String convert(final List<ByteBuffer> messages) {
+		StringBuffer metadataBuf = new StringBuffer();
+		for( ByteBuffer bb:messages ){
+//			metadataBuf.append(new String(bb.array()));
+			metadataBuf.append(new String(Charset.defaultCharset().decode(bb).array()));
+		}
+		
+		String metadata = metadataBuf.toString();
+		return metadata;
+	}
+
+	static int getHeaderIndex(byte[] bytes) {
+		int indexOf = -1;
+		for (int i = 3; i < bytes.length; i++) {
+			if (bytes[i] == bytes[i - 2] && bytes[i] == BYTE_10 && bytes[i - 1] == bytes[i - 3]
+					&& bytes[i - 1] == BYTE_13) {
+				indexOf = i;
+				break;
+			}
+		}
+		return indexOf;
 	}
 
 	public static Map<String, Collection<String>> parseParams(String uriparams) {

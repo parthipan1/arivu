@@ -1,7 +1,12 @@
 package org.arivu.nioserver;
 
+import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+
+import org.arivu.datastructure.DoublyLinkedList;
 
 final class RequestImpl implements Request {
 
@@ -33,7 +38,7 @@ final class RequestImpl implements Request {
 	/**
 	 * 
 	 */
-	final String body;
+	final List<ByteBuffer> body = new DoublyLinkedList<>();
 
 	/**
 	 * 
@@ -55,7 +60,7 @@ final class RequestImpl implements Request {
 	 * @param body
 	 */
 	RequestImpl(HttpMethod httpMethod, String uri, String uriWithParams, String protocol, Map<String, Collection<String>> params,
-			Map<String, String> headers, String body) {
+			Map<String, String> headers) {
 		super();
 		this.httpMethod = httpMethod;
 		this.uri = uri;
@@ -63,7 +68,7 @@ final class RequestImpl implements Request {
 		this.protocol = protocol;
 		this.params = params;
 		this.headers = headers;
-		this.body = body;
+//		this.body = body;
 	}
 
 	/* (non-Javadoc)
@@ -118,8 +123,8 @@ final class RequestImpl implements Request {
 	 * @see org.arivu.nioserver.Request#getBody()
 	 */
 	@Override
-	public String getBody() {
-		return body;
+	public List<ByteBuffer> getBody() {
+		return Collections.unmodifiableList(body);
 	}
 
 	/* (non-Javadoc)
