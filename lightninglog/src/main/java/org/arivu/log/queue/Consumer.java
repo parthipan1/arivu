@@ -206,23 +206,29 @@ public final class Consumer<T> implements AutoCloseable {
 	}
 
 	public void flush() {
-		int limit = 0;
-		StringBuffer sb = new StringBuffer();
-		for (int i = 0; i < buffer.length; i++) {
-			Object obj = buffer[i];
-			buffer[i] = null;
-			if (obj != null) {
-				sb.append(obj).append(AppenderProperties.separator);
-				++limit;
-				if (limit == batchSize) {
-					write(sb.toString());
-					limit = 0;
-					sb = new StringBuffer();
+		final int length = buffer.length;
+		if(length==1){
+			write((String)buffer[0]);
+			buffer[0] = null;
+		}else{
+			int limit = 0;
+			StringBuffer sb = new StringBuffer();
+			for (int i = 0; i < length; i++) {
+				Object obj = buffer[i];
+				buffer[i] = null;
+				if (obj != null) {
+					sb.append(obj).append(AppenderProperties.separator);
+					++limit;
+					if (limit == batchSize) {
+						write(sb.toString());
+						limit = 0;
+						sb = new StringBuffer();
+					}
 				}
 			}
-		}
-		if (sb.length()>0) {
-			write(sb.toString());
+			if (sb.length()>0) {
+				write(sb.toString());
+			}
 		}
 	}
 

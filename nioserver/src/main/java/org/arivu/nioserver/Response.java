@@ -1,7 +1,7 @@
 package org.arivu.nioserver;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 public interface Response {
@@ -24,12 +24,16 @@ public interface Response {
 
 	void append(byte[] s) throws IOException;
 
-	ByteArrayOutputStream getOut();
+	List<ByteData> getOut();
 
 	Map<String, Object> getHeaders();
 
 	void sendRedirect(String url);
 
 	String getSendRedirectUrl();
+
+	int getContentLength();
+
+	void append(ByteData buf) throws IOException;
 
 }

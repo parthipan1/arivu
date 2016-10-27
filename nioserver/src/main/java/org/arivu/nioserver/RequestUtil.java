@@ -1,7 +1,6 @@
 package org.arivu.nioserver;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -19,11 +18,15 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Queue;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.arivu.datastructure.Amap;
@@ -38,38 +41,172 @@ public class RequestUtil {
 	private static final Logger logger = LoggerFactory.getLogger(RequestUtil.class);
 
 	static final String ENC_UTF_8 = "UTF-8";
-	private static final byte BYTE_13 = (byte) 13;
+	static final byte BYTE_13 = (byte) 13;
 	static final byte BYTE_10 = (byte) 10;
 	static final String divider = System.lineSeparator() + System.lineSeparator();
 
-	static Request parseRequest(final StringBuffer buffer) {
-		String content = buffer.toString();
-		byte[] bytes = content.getBytes();
-		int indexOf = -1;
-		for (int i = 3; i < bytes.length; i++) {
-			if (bytes[i] == bytes[i - 2] && bytes[i] == BYTE_10 && bytes[i - 1] == bytes[i - 3]
-					&& bytes[i - 1] == BYTE_13) {
-				indexOf = i;
-				break;
+	static <K, V> String getString(Map<K, V> headers) {
+		if (headers == null)
+			return "";
+		Set<Entry<K, V>> entrySet = headers.entrySet();
+		StringBuffer buf = new StringBuffer();
+		for (Entry<K, V> e : entrySet) {
+			buf.append(e.getKey()).append("=").append(e.getValue()).append(",");
+		}
+		return buf.toString();
+	}
+
+	final static int BYTE_SEARCH_DEFLT = Integer.MIN_VALUE;
+
+	static int searchPattern(byte[] content, byte[] pattern, int start, int disp) {
+		int mi = disp;
+		for (int i = start; i < content.length; i++) {
+			if (content[i] == pattern[mi++]) {
+				if (mi == pattern.length)
+					return i + 1 - mi;
+			} else {
+				mi = 0;
 			}
 		}
 
-		String metadata = null;
-		String body = null;
+		if (mi != 0)
+			return -1 * mi;
+		else
+			return BYTE_SEARCH_DEFLT;
+	}
 
-		if (indexOf == -1) {
-			metadata = content;
-		} else {
-			metadata = content.substring(0, indexOf - 1);
-			body = content.substring(indexOf);
+//	static void parseAndSetMultiPart(RequestImpl req) {
+//		Collection<List<ByteBuffer>> partsAsBuffer = parsePartsAsBuffer(req);
+//		int cnt = 0;
+//		Map<String, MultiPart> parts = new Amap<>();
+//		for (List<ByteBuffer> list : partsAsBuffer){
+//			MultiPart parseAsMultiPart = parseAsMultiPart(list);
+//			if(NullCheck.isNullOrEmpty(parseAsMultiPart.name)){
+//				parts.put(String.valueOf(cnt++), parseAsMultiPart);
+//			}else{
+//				parts.put(parseAsMultiPart.name, parseAsMultiPart);
+//			}
+//		}
+//		req.multiParts = Utils.unmodifiableMap(parts);
+//	}
+
+	static MultiPart parseAsMultiPart(List<ByteData> list) {
+		List<ByteData> body = new DoublyLinkedList<ByteData>();
+		StringBuffer headers = new StringBuffer();
+		for (ByteData bb : list) {
+			byte[] content = bb.array();
+			if (body.isEmpty()) {
+				int headerIndex = RequestUtil.getHeaderIndex(content, RequestUtil.BYTE_13, RequestUtil.BYTE_10, 2);
+				if (headerIndex == -1) {
+					headers.append(new String(content));
+				} else if (headerIndex != -1) {
+					headers.append(new String(Arrays.copyOfRange(content, 0, headerIndex - 1)));
+					body.add(ByteData.wrap(Arrays.copyOfRange(content, headerIndex + 1, content.length)));
+				}
+			} else {
+				body.add(bb);
+			}
 		}
 
+		Map<String, String> unmodifiableMap = Utils.unmodifiableMap(parseMultipartHeader(headers.toString()));
+		
+		String name=null,filename=null,contentType=null,contentDisposition=null;
+		// Content-Disposition=form-data; name="upload";
+		// filename="README.md",Content-Type
+		contentType = unmodifiableMap.get("Content-Type");
+
+		String cd = unmodifiableMap.get("Content-Disposition");
+
+		if (!NullCheck.isNullOrEmpty(cd)) {
+			String[] split = cd.split(";");
+			contentDisposition = split[0];
+			if (split.length > 1) {
+				for (int i = 1; i < split.length; i++) {
+					if (split[i].indexOf("filename=") != -1) {
+						String v = Utils.replaceAll(split[i], "filename=", "");
+						v = Utils.replaceAll(v, "\"", "").trim();
+						filename = v;
+					} else if (split[i].indexOf("name=") != -1) {
+						String v = Utils.replaceAll(split[i], "name=", "");
+						v = Utils.replaceAll(v, "\"", "").trim();
+						name = v;
+					} 
+				}
+			}
+		}
+
+		return new MultiPart(unmodifiableMap, Utils.unmodifiableList(body),name,filename,contentType,contentDisposition);
+	}
+
+//	static Collection<List<ByteBuffer>> parsePartsAsBuffer(RequestImpl req) {
+//		Collection<List<ByteBuffer>> bufferParts = new DoublyLinkedList<>();
+//		List<ByteBuffer> part = new DoublyLinkedList<>();
+//		int start = req.boundary.length + 1;
+//		int mi = 0;
+//		ByteBuffer rollOver = null;
+//		for (ByteBuffer bb : req.body) {
+//			byte[] content = bb.array();
+//			do {
+//				int searchPattern = RequestUtil.searchPattern(content, req.boundary, start, mi);
+//				if (searchPattern == RequestUtil.BYTE_SEARCH_DEFLT) {
+//					part.add(ByteBuffer.wrap(Arrays.copyOfRange(content, start, content.length)));
+//					start = 0;
+//					mi = 0;
+//					break;
+//				} else if (searchPattern < 0) {
+//					mi = searchPattern * -1 - 1;
+//					rollOver = ByteBuffer.wrap(Arrays.copyOfRange(content, start, content.length - mi));
+//					start = 0;
+//				} else if (searchPattern > 0) {
+//					part.add(ByteBuffer.wrap(Arrays.copyOfRange(content, start, searchPattern - 2)));
+//					bufferParts.add(part);
+//					part = new DoublyLinkedList<>();
+//					start = searchPattern + req.boundary.length + 1;
+//					mi = 0;
+//				} else if (searchPattern == 0) {
+//					if (mi > 0) {
+//						part.add(rollOver);
+//						bufferParts.add(part);
+//						part = new DoublyLinkedList<>();
+//						rollOver = null;
+//						start = req.boundary.length + 1 - mi;
+//						mi = 0;
+//					} else {
+//						bufferParts.add(part);
+//						part = new DoublyLinkedList<>();
+//						rollOver = null;
+//						start = req.boundary.length + 1;
+//						mi = 0;
+//					}
+//				}
+//			} while (true);
+//		}
+//
+//		return bufferParts;
+//	}
+
+	static Map<String, String> parseMultipartHeader(String metadata) {
+//		 System.out.println(" parseMultipartHeader :: "+metadata);
 		String[] split = metadata.split(System.lineSeparator());
+		Map<String, String> tempheaders = new Amap<String, String>();
+		for (int i = 0; i < split.length; i++) {
+			String h = split[i];
+			int indexOf2 = h.indexOf(":");
+			if (indexOf2 == -1) {
+				// tempheaders.put(h, "");
+			} else {
+				tempheaders.put(h.substring(0, indexOf2), h.substring(indexOf2 + 1).trim());
+			}
+		}
+		return tempheaders;
+	}
 
+	static RequestImpl parseRequest(final List<ByteData> messages) {
+		String metadata = convert(messages);
+		String[] split = metadata.split(System.lineSeparator());
 		String[] split2 = split[0].split(" ");
-
 		// System.out.println("REQ METHOD :: "+split2[0]);
-		logger.debug("Parsing RequestImpl :: " + content);
+		// System.out.println("parseRequest :: " + metadata);
 		HttpMethod valueOf = HttpMethod.valueOf(split2[0]);
 		if (valueOf == null)
 			throw new IllegalArgumentException("Unknown RequestImpl " + metadata);
@@ -79,11 +216,11 @@ public class RequestUtil {
 		Map<String, String> tempheaders = new Amap<String, String>();
 		for (int i = 1; i < split.length; i++) {
 			String h = split[i];
-			int indexOf2 = h.indexOf(": ");
+			int indexOf2 = h.indexOf(":");
 			if (indexOf2 == -1) {
 				tempheaders.put(h, "");
 			} else {
-				tempheaders.put(h.substring(0, indexOf2), h.substring(indexOf2 + 2));
+				tempheaders.put(h.substring(0, indexOf2), h.substring(indexOf2 + 1).trim());
 			}
 		}
 
@@ -94,8 +231,59 @@ public class RequestUtil {
 			uri = uriWithParams.substring(0, indexOf3);
 			tempparams = parseParams(uriWithParams.substring(indexOf3 + 1));
 		}
-		return new RequestImpl(valueOf, uri, uriWithParams, protocol, tempparams, Utils.unmodifiableMap(tempheaders),
-				body);
+
+		RequestImpl requestImpl = new RequestImpl(valueOf, uri, uriWithParams, protocol, tempparams,
+				Utils.unmodifiableMap(tempheaders));
+		String contType = requestImpl.headers.get("Content-Type");
+		if (!NullCheck.isNullOrEmpty(contType)) {
+			requestImpl.isMultipart = contType.contains("multipart/form-data");
+			if (requestImpl.isMultipart) {
+				contType = Utils.replaceAll(contType, "multipart/form-data;", "").trim();
+				contType = Utils.replaceAll(contType, "boundary=", "").trim();
+				requestImpl.boundary = ("--" + contType).getBytes();
+			}
+		}
+
+		return requestImpl;
+	}
+
+	public static String convert(final List<ByteData> messages) {
+		StringBuffer metadataBuf = new StringBuffer();
+		for (ByteData bb : messages) {
+			// metadataBuf.append(new String(bb.array()));
+			metadataBuf.append(convert(bb));
+		}
+
+		String metadata = metadataBuf.toString();
+		return metadata;
+	}
+
+	static String convert(ByteData bb) {
+		// return new String(Charset.defaultCharset().decode(bb).array());
+		return new String(bb.array());
+	}
+
+	static int getHeaderIndex(byte[] bytes, byte first, byte second, int cnt) {
+		int indexOf = -1;
+		if (cnt == 2) {
+			for (int i = 3; i < bytes.length; i++) {
+				// System.out.println(" %"+bytes[i]+"% %"+BYTE_10+"%");
+				if (bytes[i] == bytes[i - 2] && bytes[i] == second && bytes[i - 1] == bytes[i - 3]
+						&& bytes[i - 1] == first) {
+					indexOf = i;
+					break;
+				}
+			}
+		} else if (cnt == 1) {
+			for (int i = 1; i < bytes.length; i++) {
+				// System.out.println(" %"+bytes[i]+"% %"+BYTE_10+"%");
+				if (bytes[i] == second && bytes[i - 1] == first) {
+					indexOf = i;
+					break;
+				}
+			}
+		}
+		return indexOf;
 	}
 
 	public static Map<String, Collection<String>> parseParams(String uriparams) {
@@ -174,24 +362,25 @@ public class RequestUtil {
 		}
 	}
 
-	static final Pattern validUrl = Pattern.compile("^[a-zA-Z0-9-_]*$");//"[a-zA-Z0-9_-]"
-//	static final Pattern validName = Pattern.compile("[a-zA-Z0-9_]");
+	static final Pattern validUrl = Pattern.compile("^[a-zA-Z0-9-_]*$");// "[a-zA-Z0-9_-]"
+	// static final Pattern validName = Pattern.compile("[a-zA-Z0-9_]");
 
 	static boolean validateRouteUri(final String uri) {
-		if( NullCheck.isNullOrEmpty(uri) ) return false;
-		else if( !uri.startsWith("/") ) return false;
+		if (NullCheck.isNullOrEmpty(uri))
+			return false;
+		else if (!uri.startsWith("/"))
+			return false;
 		String[] split = uri.split("/");
-		for (int i=1;i<split.length;i++) {
+		for (int i = 1; i < split.length; i++) {
 			String uritkn = split[i];
 			int si = uritkn.indexOf("{");
 			if (si == -1) {
-				if(!validUrl.matcher(uritkn).matches())
+				if (!validUrl.matcher(uritkn).matches())
 					return false;
 			} else {
 				int ei = uritkn.indexOf("}");
 				String paramName = uritkn.substring(1, uritkn.length() - 1);
-				if (ei < si || si != 0 && ei != uritkn.length() - 1 
-						|| NullCheck.isNullOrEmpty(paramName)
+				if (ei < si || si != 0 && ei != uritkn.length() - 1 || NullCheck.isNullOrEmpty(paramName)
 						|| !validUrl.matcher(paramName).matches()) {
 					return false;
 				}
@@ -200,39 +389,38 @@ public class RequestUtil {
 		return true;
 	}
 
+	
 	static Route getMatchingRoute(Collection<Route> paths, final String uri, final HttpMethod httpMethod,
 			final boolean retNull) {
-		Route df = null;
+		
 		final Route in = new Route(uri, httpMethod);
-		for (Route rq : paths) {
-			if (rq.rut == null) {
-				if (in.equals(rq))
-					return rq;
-				else if (rq.httpMethod == HttpMethod.ALL) {
-					if (rq.uri.equals("/*"))
-						df = rq;
-					else if (rq.uri.equals(uri))
-						return rq;
-					else if (rq instanceof ProxyRoute && uri.startsWith(rq.uri))
-						return rq;
-				} else if (rq instanceof ProxyRoute && uri.startsWith(rq.uri)) {
-					return rq;
+		for (Route route : paths) {
+			if (route.rut == null) {
+				if (in.equals(route))
+					return route;
+				else if (route.httpMethod == HttpMethod.ALL) {
+					if (route.uri.equals(uri))
+						return route;
+					else if (route instanceof ProxyRoute && uri.startsWith(route.uri))
+						return route;
+				} else if (route instanceof ProxyRoute && uri.startsWith(route.uri)) {
+					return route;
 				}
 			} else {
-				if (rq.httpMethod == HttpMethod.ALL || rq.httpMethod == httpMethod) {
+				if (route.httpMethod == HttpMethod.ALL || route.httpMethod == httpMethod) {
 					String[] split = uri.split("/");
-					if (rq.rut.uriTokens.length == split.length) {
+					if (route.rut.uriTokens.length == split.length) {
 						boolean match = true;
 						for (int i = 0; i < split.length; i++) {
-							if (rq.rut.paramIdx[i] == -1) {
-								if (!rq.rut.uriTokens[i].equals(split[i])) {
+							if (route.rut.paramIdx[i] == -1) {
+								if (!route.rut.uriTokens[i].equals(split[i])) {
 									match = false;
 									break;
 								}
 							}
 						}
 						if (match)
-							return rq;
+							return route;
 					}
 				}
 			}
@@ -240,7 +428,7 @@ public class RequestUtil {
 		if (retNull)
 			return null;
 		else
-			return df;
+			return Configuration.defaultRoute;
 	}
 
 	static RequestUriTokens parseRequestUriTokens(String uri, Method method) {
@@ -302,12 +490,18 @@ public class RequestUtil {
 	}
 
 	static Ref getResponseBytes(Request request, Response response) {
-		return RequestUtil.getResponseBytes(response.getResponseCode(), response.getHeaders(), response.getOut(),
-				request.getProtocol(), request.getUri());
+		Ref responseBytes = RequestUtil.getResponseBytes(response.getResponseCode(), response.getHeaders(),
+				response.getOut(), request.getProtocol(), request.getUri(), response.getContentLength());
+		if (response instanceof ResponseImpl) {
+			ResponseImpl im = (ResponseImpl) response;
+			im.out.clear();
+			im.headers.clear();
+		}
+		return responseBytes;
 	}
 
-	static Ref getResponseBytes(int responseCode, Map<String, Object> headers, ByteArrayOutputStream out,
-			String protocol, String uri) {
+	static Ref getResponseBytes(int responseCode, Map<String, Object> headers, Collection<ByteData> out,
+			String protocol, String uri, int contentLen) {
 		final StringBuffer responseBody = new StringBuffer();
 
 		Object rescodetxt = null;
@@ -332,15 +526,10 @@ public class RequestUtil {
 		Ref ref = new Ref();
 		ref.rc = responseCode;
 		ref.uri = uri;
-		ref.headerBytes = responseBody.toString().getBytes();
-		ref.bodyBytes = out.toByteArray();
 
-		// ByteBuffer resBytes =
-		// ByteBuffer.allocate(headerBytes.length+bodyBytes.length);
-		// resBytes.put(headerBytes);
-		// resBytes.put(bodyBytes);
-		// ref.buf = resBytes;
-		// ref.len = bodyBytes.length;
+		ref.queue.add(new ByteData(responseBody.toString().getBytes()));
+		ref.queue.addAll(out);
+		ref.cl = contentLen;
 		return ref;
 	}
 
@@ -375,15 +564,17 @@ public class RequestUtil {
 	}
 
 	@Path(value = "/*", httpMethod = HttpMethod.ALL)
-	static void handle(Request req, Response res) throws Exception {
-		logger.debug(req.toString());
+	static void handle404() throws Exception {
+		Response res = StaticRef.getResponse();
+		logger.debug(StaticRef.getRequest().toString());
 		res.setResponseCode(404);
 	}
 
 	static ByteBuffer iconBytes = null;
 
 	@Path(value = "/favicon.ico", httpMethod = HttpMethod.GET)
-	static void handleIcon(Request req, Response res) throws Exception {
+	static void handleIcon() throws Exception {
+		Response res = StaticRef.getResponse();
 		res.setResponseCode(200);
 
 		if (iconBytes == null) {
@@ -409,8 +600,10 @@ public class RequestUtil {
 class Ref {
 	String uri = null;
 	int rc;
-	byte[] headerBytes;
-	byte[] bodyBytes;
+	int cl = 0;
+	// byte[] headerBytes;
+	// byte[] bodyBytes;
+	Queue<ByteData> queue = new DoublyLinkedList<ByteData>();
 }
 
 final class RequestUriTokens {

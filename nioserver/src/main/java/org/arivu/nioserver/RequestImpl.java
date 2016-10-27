@@ -1,50 +1,57 @@
 package org.arivu.nioserver;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+
+import org.arivu.datastructure.Amap;
+import org.arivu.datastructure.DoublyLinkedList;
 
 final class RequestImpl implements Request {
 
 	/**
 	 * 
 	 */
-	final Map<String,String> headers;
-	
+	final Map<String, String> headers;
+
 	/**
 	 * 
 	 */
 	final String uri;
-	
+
 	/**
 	 * 
 	 */
 	final String uriWithParams;
-	
+
 	/**
 	 * 
 	 */
-	final Map<String,Collection<String>> params ;
-	
+	final Map<String, Collection<String>> params;
+
 	/**
 	 * 
 	 */
 	final HttpMethod httpMethod;
-	
+
 	/**
 	 * 
 	 */
-	final String body;
+	final List<ByteData> body = new DoublyLinkedList<ByteData>();
 
 	/**
 	 * 
 	 */
 	final String protocol;
-	
+
 	/**
 	 * 
 	 */
-//	final long startTime;
-	
+	boolean isMultipart = false;
+	byte[] boundary = null;
+	Map<String, MultiPart> multiParts = new Amap<String, MultiPart>();
+
 	/**
 	 * @param httpMethod
 	 * @param uri
@@ -54,8 +61,8 @@ final class RequestImpl implements Request {
 	 * @param headers
 	 * @param body
 	 */
-	RequestImpl(HttpMethod httpMethod, String uri, String uriWithParams, String protocol, Map<String, Collection<String>> params,
-			Map<String, String> headers, String body) {
+	RequestImpl(HttpMethod httpMethod, String uri, String uriWithParams, String protocol,
+			Map<String, Collection<String>> params, Map<String, String> headers) {
 		super();
 		this.httpMethod = httpMethod;
 		this.uri = uri;
@@ -63,10 +70,11 @@ final class RequestImpl implements Request {
 		this.protocol = protocol;
 		this.params = params;
 		this.headers = headers;
-		this.body = body;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.arivu.nioserver.Request#getHttpMethod()
 	 */
 	@Override
@@ -74,15 +82,17 @@ final class RequestImpl implements Request {
 		return httpMethod;
 	}
 
-//	/* (non-Javadoc)
-//	 * @see org.arivu.nioserver.Request#getStartTime()
-//	 */
-//	@Override
-//	public long getStartTime() {
-//		return startTime;
-//	}
+	// /* (non-Javadoc)
+	// * @see org.arivu.nioserver.Request#getStartTime()
+	// */
+	// @Override
+	// public long getStartTime() {
+	// return startTime;
+	// }
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.arivu.nioserver.Request#getHeaders()
 	 */
 	@Override
@@ -90,7 +100,9 @@ final class RequestImpl implements Request {
 		return headers;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.arivu.nioserver.Request#getUri()
 	 */
 	@Override
@@ -98,7 +110,9 @@ final class RequestImpl implements Request {
 		return uri;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.arivu.nioserver.Request#getParams()
 	 */
 	@Override
@@ -106,7 +120,9 @@ final class RequestImpl implements Request {
 		return params;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.arivu.nioserver.Request#getMethod()
 	 */
 	@Override
@@ -114,15 +130,19 @@ final class RequestImpl implements Request {
 		return httpMethod;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.arivu.nioserver.Request#getBody()
 	 */
 	@Override
-	public String getBody() {
-		return body;
+	public List<ByteData> getBody() {
+		return Collections.unmodifiableList(body);
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.arivu.nioserver.Request#getProtocol()
 	 */
 	@Override
@@ -130,7 +150,19 @@ final class RequestImpl implements Request {
 		return protocol;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.arivu.nioserver.Request#isMultipart()
+	 */
+	@Override
+	public boolean isMultipart() {
+		return isMultipart;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.arivu.nioserver.Request#getUriWithParams()
 	 */
 	@Override
@@ -138,10 +170,30 @@ final class RequestImpl implements Request {
 		return uriWithParams;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.arivu.nioserver.Request#getMultiParts()
+	 */
+	@Override
+	public Map<String, MultiPart> getMultiParts() {
+		return multiParts;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.arivu.nioserver.Request#getBoundary()
+	 */
+	@Override
+	public byte[] getBoundary() {
+		return boundary;
+	}
+
 	@Override
 	public String toString() {
-		return "RequestImpl [headers=" + headers + ", uri=" + uri + ", params=" + params + ", httpMethod=" + httpMethod + ", body="
-				+ body + ", protocol=" + protocol + "]";
+		return "RequestImpl [headers=" + RequestUtil.getString(headers) + ", uri=" + uri + ", params=" + params
+				+ ", httpMethod=" + httpMethod + ", body=" + body + ", protocol=" + protocol + "]";
 	}
-	
+
 }

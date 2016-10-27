@@ -2,6 +2,7 @@ package org.arivu.utils;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 public class Utils {
@@ -20,6 +21,13 @@ public class Utils {
 			return null;
 	}
 
+	public static <T> List<T> unmodifiableList(List<T> col) {
+		if (!NullCheck.isNullOrEmpty(col))
+			return Collections.unmodifiableList(col);
+		else
+			return null;
+	}
+	
 	public static String replaceAll(String txt, String key, String value) {
 		int index = txt.indexOf(key);
 		while (index >= 0) {

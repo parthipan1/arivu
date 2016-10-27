@@ -28,12 +28,16 @@ class PackageScanner {
 		Collection<Route> reqPaths = new DoublyLinkedSet<Route>();
 
 		for (String pkgName : packageNames) {
-			for (Class<?> kcs : getClassesForPackage(pkgName)) {
-				addMethod(reqPaths, kcs);
-			}
+			getPaths(reqPaths, pkgName);
 		}
 
 		return reqPaths;
+	}
+
+	static void getPaths(Collection<Route> reqPaths, String pkgName) throws ClassNotFoundException {
+		for (Class<?> kcs : getClassesForPackage(pkgName)) {
+			addMethod(reqPaths, kcs);
+		}
 	}
 
 	static Collection<Class<?>> getClassesForPackage(String pckgname) throws ClassNotFoundException {
@@ -134,7 +138,7 @@ class PackageScanner {
 				try {
 					jarFile.close();
 				} catch (IOException e) {
-					logger.error("Error on close Stream getClasseNamesInPackage :: ", e);
+					logger.error("Error on Scanning getClasseNamesInPackage :: ", e);
 				}
 		}
 		return classes;
@@ -153,7 +157,7 @@ class PackageScanner {
 						org.arivu.nioserver.HttpMethod httpMethod = path.httpMethod();
 						if (!NullCheck.isNullOrEmpty(uri) && httpMethod != null) {
 							boolean validateRouteUri = RequestUtil.validateRouteUri(uri);
-							if( validateRouteUri ){
+							if( uri.equals("/*") || uri.equals("/favicon.ico") || validateRouteUri ){
 								boolean isStatic = Modifier.isStatic(method.getModifiers());
 								Route e = new Route(uri, httpMethod, clazz, method, isStatic);
 								Route matchingRoute = RequestUtil.getMatchingRoute(reqPaths, uri, httpMethod, true);
@@ -165,6 +169,9 @@ class PackageScanner {
 									logger.info("Duplicate request handler discovered ignoring :: " + clazz.getName()
 									+ " httpMethod " + method.getName());
 								}
+							}else{
+								logger.info("Invalid request Uri ("+uri+") handler discovered ignoring :: " + clazz.getName()
+								+ " httpMethod " + method.getName());
 							}
 						}else{
 							logger.info("Invalid request Uri ("+uri+") handler discovered ignoring :: " + clazz.getName()
