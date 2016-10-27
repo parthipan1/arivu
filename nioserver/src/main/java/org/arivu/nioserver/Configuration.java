@@ -21,6 +21,7 @@ final class Configuration {
 	static final Map<String, Object> defaultResponseCodes;
 	static final Map<String, Map<String, Object>> defaultMimeType;
 	static Collection<Route> routes;
+	static Route defaultRoute = null;
 	static final int defaultResCode;
 	static int defaultChunkSize;
 	static int defaultRequestBuffer;
@@ -86,8 +87,15 @@ final class Configuration {
 			tempRequestPaths.addAll(PackageScanner.getPaths(scanPackages));
 //			routes = Utils.unmodifiableCollection(tempRequestPaths);
 			routes = tempRequestPaths;
-			for (Route r : routes)
-				logger.info("Route discovered :: " + r);
+			for (Route r : routes){
+				if ( defaultRoute == null && r.uri.equals("/*") && r.httpMethod == HttpMethod.ALL ){
+					defaultRoute = r;
+					logger.info("Default Route discovered :: " + r);
+				}else{
+					logger.info("Route discovered :: " + r);
+				}
+//				logger.info("Route discovered :: " + r);
+			}
 		} catch (Exception e) {
 			logger.error("Failed in packagescan :: ", e);
 			throw new IllegalStateException(e);

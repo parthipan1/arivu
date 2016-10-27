@@ -150,7 +150,7 @@ class PackageScanner {
 						org.arivu.nioserver.HttpMethod httpMethod = path.httpMethod();
 						if (!NullCheck.isNullOrEmpty(uri) && httpMethod != null) {
 							boolean validateRouteUri = RequestUtil.validateRouteUri(uri);
-							if( validateRouteUri ){
+							if( uri.equals("/*") || uri.equals("/favicon.ico") || validateRouteUri ){
 								boolean isStatic = Modifier.isStatic(method.getModifiers());
 								Route e = new Route(uri, httpMethod, clazz, method, isStatic);
 								Route matchingRoute = RequestUtil.getMatchingRoute(reqPaths, uri, httpMethod, true);
@@ -162,6 +162,9 @@ class PackageScanner {
 									logger.info("Duplicate request handler discovered ignoring :: " + clazz.getName()
 									+ " httpMethod " + method.getName());
 								}
+							}else{
+								logger.info("Invalid request Uri ("+uri+") handler discovered ignoring :: " + clazz.getName()
+								+ " httpMethod " + method.getName());
 							}
 						}else{
 							logger.info("Invalid request Uri ("+uri+") handler discovered ignoring :: " + clazz.getName()

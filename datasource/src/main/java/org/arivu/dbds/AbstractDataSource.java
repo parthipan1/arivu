@@ -173,7 +173,7 @@ abstract class AbstractDataSource implements DataSource {
 		try {
 			Runtime.getRuntime().addShutdownHook(hook);
 		} catch (Throwable e) {
-			e.printStackTrace();
+			logger.error("Error on addshutdownhook::"+e);
 		}
 	}
 

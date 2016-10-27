@@ -75,20 +75,20 @@ public class RequestUtil {
 			return BYTE_SEARCH_DEFLT;
 	}
 
-	static void parseAndSetMultiPart(RequestImpl req) {
-		Collection<List<ByteBuffer>> partsAsBuffer = parsePartsAsBuffer(req);
-		int cnt = 0;
-		Map<String, MultiPart> parts = new Amap<>();
-		for (List<ByteBuffer> list : partsAsBuffer){
-			MultiPart parseAsMultiPart = parseAsMultiPart(list);
-			if(NullCheck.isNullOrEmpty(parseAsMultiPart.name)){
-				parts.put(String.valueOf(cnt++), parseAsMultiPart);
-			}else{
-				parts.put(parseAsMultiPart.name, parseAsMultiPart);
-			}
-		}
-		req.multiParts = Utils.unmodifiableMap(parts);
-	}
+//	static void parseAndSetMultiPart(RequestImpl req) {
+//		Collection<List<ByteBuffer>> partsAsBuffer = parsePartsAsBuffer(req);
+//		int cnt = 0;
+//		Map<String, MultiPart> parts = new Amap<>();
+//		for (List<ByteBuffer> list : partsAsBuffer){
+//			MultiPart parseAsMultiPart = parseAsMultiPart(list);
+//			if(NullCheck.isNullOrEmpty(parseAsMultiPart.name)){
+//				parts.put(String.valueOf(cnt++), parseAsMultiPart);
+//			}else{
+//				parts.put(parseAsMultiPart.name, parseAsMultiPart);
+//			}
+//		}
+//		req.multiParts = Utils.unmodifiableMap(parts);
+//	}
 
 	static MultiPart parseAsMultiPart(List<ByteBuffer> list) {
 		List<ByteBuffer> body = new DoublyLinkedList<>();
@@ -138,55 +138,55 @@ public class RequestUtil {
 		return new MultiPart(unmodifiableMap, Utils.unmodifiableList(body),name,filename,contentType,contentDisposition);
 	}
 
-	static Collection<List<ByteBuffer>> parsePartsAsBuffer(RequestImpl req) {
-		Collection<List<ByteBuffer>> bufferParts = new DoublyLinkedList<>();
-		List<ByteBuffer> part = new DoublyLinkedList<>();
-		int start = req.boundary.length + 1;
-		int mi = 0;
-		ByteBuffer rollOver = null;
-		for (ByteBuffer bb : req.body) {
-			byte[] content = bb.array();
-			do {
-				int searchPattern = RequestUtil.searchPattern(content, req.boundary, start, mi);
-				if (searchPattern == RequestUtil.BYTE_SEARCH_DEFLT) {
-					part.add(ByteBuffer.wrap(Arrays.copyOfRange(content, start, content.length)));
-					start = 0;
-					mi = 0;
-					break;
-				} else if (searchPattern < 0) {
-					mi = searchPattern * -1 - 1;
-					rollOver = ByteBuffer.wrap(Arrays.copyOfRange(content, start, content.length - mi));
-					start = 0;
-				} else if (searchPattern > 0) {
-					part.add(ByteBuffer.wrap(Arrays.copyOfRange(content, start, searchPattern - 2)));
-					bufferParts.add(part);
-					part = new DoublyLinkedList<>();
-					start = searchPattern + req.boundary.length + 1;
-					mi = 0;
-				} else if (searchPattern == 0) {
-					if (mi > 0) {
-						part.add(rollOver);
-						bufferParts.add(part);
-						part = new DoublyLinkedList<>();
-						rollOver = null;
-						start = req.boundary.length + 1 - mi;
-						mi = 0;
-					} else {
-						bufferParts.add(part);
-						part = new DoublyLinkedList<>();
-						rollOver = null;
-						start = req.boundary.length + 1;
-						mi = 0;
-					}
-				}
-			} while (true);
-		}
-
-		return bufferParts;
-	}
+//	static Collection<List<ByteBuffer>> parsePartsAsBuffer(RequestImpl req) {
+//		Collection<List<ByteBuffer>> bufferParts = new DoublyLinkedList<>();
+//		List<ByteBuffer> part = new DoublyLinkedList<>();
+//		int start = req.boundary.length + 1;
+//		int mi = 0;
+//		ByteBuffer rollOver = null;
+//		for (ByteBuffer bb : req.body) {
+//			byte[] content = bb.array();
+//			do {
+//				int searchPattern = RequestUtil.searchPattern(content, req.boundary, start, mi);
+//				if (searchPattern == RequestUtil.BYTE_SEARCH_DEFLT) {
+//					part.add(ByteBuffer.wrap(Arrays.copyOfRange(content, start, content.length)));
+//					start = 0;
+//					mi = 0;
+//					break;
+//				} else if (searchPattern < 0) {
+//					mi = searchPattern * -1 - 1;
+//					rollOver = ByteBuffer.wrap(Arrays.copyOfRange(content, start, content.length - mi));
+//					start = 0;
+//				} else if (searchPattern > 0) {
+//					part.add(ByteBuffer.wrap(Arrays.copyOfRange(content, start, searchPattern - 2)));
+//					bufferParts.add(part);
+//					part = new DoublyLinkedList<>();
+//					start = searchPattern + req.boundary.length + 1;
+//					mi = 0;
+//				} else if (searchPattern == 0) {
+//					if (mi > 0) {
+//						part.add(rollOver);
+//						bufferParts.add(part);
+//						part = new DoublyLinkedList<>();
+//						rollOver = null;
+//						start = req.boundary.length + 1 - mi;
+//						mi = 0;
+//					} else {
+//						bufferParts.add(part);
+//						part = new DoublyLinkedList<>();
+//						rollOver = null;
+//						start = req.boundary.length + 1;
+//						mi = 0;
+//					}
+//				}
+//			} while (true);
+//		}
+//
+//		return bufferParts;
+//	}
 
 	static Map<String, String> parseMultipartHeader(String metadata) {
-		 System.out.println(" parseMultipartHeader :: "+metadata);
+//		 System.out.println(" parseMultipartHeader :: "+metadata);
 		String[] split = metadata.split(System.lineSeparator());
 		Map<String, String> tempheaders = new Amap<String, String>();
 		for (int i = 0; i < split.length; i++) {
@@ -389,39 +389,38 @@ public class RequestUtil {
 		return true;
 	}
 
+	
 	static Route getMatchingRoute(Collection<Route> paths, final String uri, final HttpMethod httpMethod,
 			final boolean retNull) {
-		Route df = null;
+		
 		final Route in = new Route(uri, httpMethod);
-		for (Route rq : paths) {
-			if (rq.rut == null) {
-				if (in.equals(rq))
-					return rq;
-				else if (rq.httpMethod == HttpMethod.ALL) {
-					if (rq.uri.equals("/*"))
-						df = rq;
-					else if (rq.uri.equals(uri))
-						return rq;
-					else if (rq instanceof ProxyRoute && uri.startsWith(rq.uri))
-						return rq;
-				} else if (rq instanceof ProxyRoute && uri.startsWith(rq.uri)) {
-					return rq;
+		for (Route route : paths) {
+			if (route.rut == null) {
+				if (in.equals(route))
+					return route;
+				else if (route.httpMethod == HttpMethod.ALL) {
+					if (route.uri.equals(uri))
+						return route;
+					else if (route instanceof ProxyRoute && uri.startsWith(route.uri))
+						return route;
+				} else if (route instanceof ProxyRoute && uri.startsWith(route.uri)) {
+					return route;
 				}
 			} else {
-				if (rq.httpMethod == HttpMethod.ALL || rq.httpMethod == httpMethod) {
+				if (route.httpMethod == HttpMethod.ALL || route.httpMethod == httpMethod) {
 					String[] split = uri.split("/");
-					if (rq.rut.uriTokens.length == split.length) {
+					if (route.rut.uriTokens.length == split.length) {
 						boolean match = true;
 						for (int i = 0; i < split.length; i++) {
-							if (rq.rut.paramIdx[i] == -1) {
-								if (!rq.rut.uriTokens[i].equals(split[i])) {
+							if (route.rut.paramIdx[i] == -1) {
+								if (!route.rut.uriTokens[i].equals(split[i])) {
 									match = false;
 									break;
 								}
 							}
 						}
 						if (match)
-							return rq;
+							return route;
 					}
 				}
 			}
@@ -429,7 +428,7 @@ public class RequestUtil {
 		if (retNull)
 			return null;
 		else
-			return df;
+			return Configuration.defaultRoute;
 	}
 
 	static RequestUriTokens parseRequestUriTokens(String uri, Method method) {
