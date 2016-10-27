@@ -1,7 +1,6 @@
 package org.arivu.nioserver;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 
@@ -25,7 +24,7 @@ public interface Response {
 
 	void append(byte[] s) throws IOException;
 
-	List<ByteBuffer> getOut();
+	List<ByteData> getOut();
 
 	Map<String, Object> getHeaders();
 
@@ -35,6 +34,6 @@ public interface Response {
 
 	int getContentLength();
 
-	void append(ByteBuffer buf) throws IOException;
+	void append(ByteData buf) throws IOException;
 
 }

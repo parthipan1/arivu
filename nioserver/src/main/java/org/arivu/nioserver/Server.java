@@ -5,6 +5,8 @@ package org.arivu.nioserver;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -12,6 +14,7 @@ import java.util.concurrent.TimeUnit;
 import org.arivu.log.Appender;
 import org.arivu.log.appender.Appenders;
 import org.arivu.utils.Env;
+import org.arivu.utils.NullCheck;
 
 /**
  * @author P
@@ -44,25 +47,25 @@ public class Server {
 
 	static Appender accessLog = null;
 
-//	@Path(value = "/multipart", httpMethod = HttpMethod.POST)
-//	static void multiPart() throws Exception {
-//		StaticRef.getResponse().setResponseCode(200);
-//		
-//		Map<String, MultiPart> multiParts = StaticRef.getRequest().getMultiParts();
-//		for(Entry<String,MultiPart> e:multiParts.entrySet()){
-//			MultiPart mp = e.getValue();
-//			if(NullCheck.isNullOrEmpty(mp.filename)){
-//				System.out.println( "Headers :: \n"+RequestUtil.getString(mp.headers) );
-//				System.out.println( "body :: \n"+RequestUtil.convert(mp.body) );
-//			}else{
-//				File file = new File("1_"+mp.filename);
-//				System.out.println( "Headers :: \n"+RequestUtil.getString(mp.headers) );
-//				System.out.println("uploaded file to :: "+file.getAbsolutePath());
-//				mp.writeTo(file, true);
-//			}
-//			System.out.println("*********************************************************************************");
-//		}
-//	}
+	@Path(value = "/multipart", httpMethod = HttpMethod.POST)
+	static void multiPart() throws Exception {
+		StaticRef.getResponse().setResponseCode(200);
+		
+		Map<String, MultiPart> multiParts = StaticRef.getRequest().getMultiParts();
+		for(Entry<String,MultiPart> e:multiParts.entrySet()){
+			MultiPart mp = e.getValue();
+			if(NullCheck.isNullOrEmpty(mp.filename)){
+				System.out.println( "Headers :: \n"+RequestUtil.getString(mp.headers) );
+				System.out.println( "body :: \n"+RequestUtil.convert(mp.body) );
+			}else{
+				File file = new File("1_"+mp.filename);
+				System.out.println( "Headers :: \n"+RequestUtil.getString(mp.headers) );
+				System.out.println("uploaded file to :: "+file.getAbsolutePath());
+				mp.writeTo(file, true);
+			}
+			System.out.println("*********************************************************************************");
+		}
+	}
 	
 	@Path(value = Configuration.stopUri, httpMethod = HttpMethod.GET)
 	static void stop() throws Exception {

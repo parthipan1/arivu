@@ -4,7 +4,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -38,13 +37,13 @@ public class RequestUtilTest {
 
 	@Test
 	public void testParse_GETRequest() {
-		List<ByteBuffer> messages = new DoublyLinkedList<>();
+		List<ByteData> messages = new DoublyLinkedList<>();
 
-		messages.add(ByteBuffer.wrap(("GET /static/248.png?t1=1quater HTTP/1.1" + System.lineSeparator()).getBytes()));
-		messages.add(ByteBuffer.wrap(("Accept-Encoding: gzip,deflate" + System.lineSeparator()).getBytes()));
-		messages.add(ByteBuffer.wrap(("Host: localhost:8080" + System.lineSeparator()).getBytes()));
-		messages.add(ByteBuffer.wrap(("Connection: Keep-Alive" + System.lineSeparator()).getBytes()));
-		messages.add(ByteBuffer.wrap(
+		messages.add(ByteData.wrap(("GET /static/248.png?t1=1quater HTTP/1.1" + System.lineSeparator()).getBytes()));
+		messages.add(ByteData.wrap(("Accept-Encoding: gzip,deflate" + System.lineSeparator()).getBytes()));
+		messages.add(ByteData.wrap(("Host: localhost:8080" + System.lineSeparator()).getBytes()));
+		messages.add(ByteData.wrap(("Connection: Keep-Alive" + System.lineSeparator()).getBytes()));
+		messages.add(ByteData.wrap(
 				("User-Agent: Apache-HttpClient/4.1.1 (java 1.5)" + System.lineSeparator() + System.lineSeparator())
 						.getBytes()));
 
@@ -81,19 +80,19 @@ public class RequestUtilTest {
 		byte[] eolBytes = new byte[] { (byte) 13, (byte) 10 };
 		String EOL = new String(eolBytes);
 
-		List<ByteBuffer> messages = new DoublyLinkedList<>();
+		List<ByteData> messages = new DoublyLinkedList<>();
 
-		messages.add(ByteBuffer.wrap(("POST /all/postman/arelazy HTTP/1.1" + System.lineSeparator()).getBytes()));
-		messages.add(ByteBuffer.wrap(("Content-Type: application/json" + System.lineSeparator()).getBytes()));
-		messages.add(ByteBuffer.wrap(("X-ID: 12345" + System.lineSeparator()).getBytes()));
-		messages.add(ByteBuffer.wrap(("Content-Length: 55" + System.lineSeparator()).getBytes()));
-		messages.add(ByteBuffer.wrap(("Host: localhost:8080" + System.lineSeparator()).getBytes()));
-		messages.add(ByteBuffer.wrap(("Connection: Keep-Alive" + System.lineSeparator()).getBytes()));
-		messages.add(ByteBuffer.wrap(("User-Agent: Apache-HttpClient/4.1.1 (java 1.5)" + EOL + EOL).getBytes()));
+		messages.add(ByteData.wrap(("POST /all/postman/arelazy HTTP/1.1" + System.lineSeparator()).getBytes()));
+		messages.add(ByteData.wrap(("Content-Type: application/json" + System.lineSeparator()).getBytes()));
+		messages.add(ByteData.wrap(("X-ID: 12345" + System.lineSeparator()).getBytes()));
+		messages.add(ByteData.wrap(("Content-Length: 55" + System.lineSeparator()).getBytes()));
+		messages.add(ByteData.wrap(("Host: localhost:8080" + System.lineSeparator()).getBytes()));
+		messages.add(ByteData.wrap(("Connection: Keep-Alive" + System.lineSeparator()).getBytes()));
+		messages.add(ByteData.wrap(("User-Agent: Apache-HttpClient/4.1.1 (java 1.5)" + EOL + EOL).getBytes()));
 
 		RequestImpl parse = RequestUtil.parseRequest(messages);
 
-		parse.body.add(ByteBuffer.wrap(strBody.getBytes()));
+		parse.body.add(ByteData.wrap(strBody.getBytes()));
 
 		// StringBuffer buf = new StringBuffer();
 		// buf.append("POST /all/postman/arelazy
@@ -210,8 +209,8 @@ public class RequestUtilTest {
 		Response res = varia.getResponse(req);
 		varia.handle(req, res);
 
-		List<ByteBuffer> out = res.getOut();
-		ByteBuffer poll = out.get(0);
+		List<ByteData> out = res.getOut();
+		ByteData poll = out.get(0);
 		assertTrue(new String(poll.array()).equals("1"));
 	}
 

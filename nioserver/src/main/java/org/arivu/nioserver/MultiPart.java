@@ -8,9 +8,11 @@ import java.nio.channels.FileChannel;
 import java.util.List;
 import java.util.Map;
 
+import org.arivu.utils.Utils;
+
 public final class MultiPart {
 	final Map<String, String> headers;
-	final List<ByteBuffer> body;
+	final List<ByteData> body;
 
 	final String name, filename, contentType, contentDisposition;
 
@@ -22,7 +24,7 @@ public final class MultiPart {
 	 * @param contentType
 	 * @param contentDisposition
 	 */
-	MultiPart(Map<String, String> headers, List<ByteBuffer> body, String name, String filename, String contentType,
+	MultiPart(Map<String, String> headers, List<ByteData> body, String name, String filename, String contentType,
 			String contentDisposition) {
 		super();
 		this.headers = headers;
@@ -37,8 +39,8 @@ public final class MultiPart {
 		return headers;
 	}
 
-	public List<ByteBuffer> getBody() {
-		return body;
+	public List<ByteData> getBody() {
+		return Utils.unmodifiableList(body) ;
 	}
 
 	public String getName() {
@@ -60,8 +62,8 @@ public final class MultiPart {
 	public void writeTo(File file, boolean append) throws IOException {
 		try (FileOutputStream fileOutputStream = new FileOutputStream(file, append);
 				FileChannel channel = fileOutputStream.getChannel();) {
-			for (ByteBuffer bb : body) {
-				channel.write(bb);
+			for (ByteData bb : body) {
+				channel.write(ByteBuffer.wrap(bb.array()));
 			}
 		}
 	}

@@ -25,7 +25,6 @@ final class Connection {
 	private static final Logger logger = LoggerFactory.getLogger(Connection.class);
 
 	final long startTime = System.currentTimeMillis();
-
 	
 	Pool<Connection> pool;
 
@@ -44,26 +43,12 @@ final class Connection {
 	Ref resBuff = null;
 	
 	void reset() {
-//		writeLen = 0;
 		wh.reset();
 		rh.reset();
 		req = null;
 		route = null;
 		resBuff = null;
-//		part = new DoublyLinkedList<>();
-//		in.clear();
-//		start = 0;
-//		mi = 0;
-//		rollOver = null;
-//		onceFlag = false;
-		// total = 0;
 	}
-
-//	int writeLen = 0;
-//	ByteBuffer poll = null;
-//	int pos = 0;
-//	int rem = 0;
-//	final byte[] dst = new byte[Configuration.defaultChunkSize];
 
 	void write(SelectionKey key) throws IOException {
 		logger.debug(" write  :: " + resBuff);
@@ -72,7 +57,7 @@ final class Connection {
 				if (wh.poll == null) {
 					wh.poll = resBuff.queue.poll();
 					if (wh.poll != null) {
-						wh.rem = wh.poll.remaining();
+						wh.rem = wh.poll.array().length;
 						logger.debug(resBuff + " 1 write next ByteBuff size :: " + wh.rem + " queueSize :: "
 								+ resBuff.queue.size());
 					} else {
@@ -85,15 +70,7 @@ final class Connection {
 				int length = Math.min(Configuration.defaultChunkSize, wh.rem - wh.pos);
 				logger.debug(resBuff + "  3 write bytes from  :: " + wh.pos + "  length :: " + (length) + " to :: "
 						+ (wh.pos + length) + " size :: " + wh.rem);
-				byte[] dstt = wh.dst;// new byte[length];
-				if (length == Configuration.defaultChunkSize) {
-					for (int i = 0; i < dstt.length; i++)
-						dstt[i] = wh.poll.get(i + wh.pos);
-				} else {
-					dstt = new byte[length];
-					for (int i = 0; i < dstt.length; i++)
-						dstt[i] = wh.poll.get(i + wh.pos);
-				}
+				byte[] dstt = Arrays.copyOfRange(wh.poll.array(), wh.pos, wh.pos+length);
 				SocketChannel socketChannel = (SocketChannel) key.channel();
 				socketChannel.write(ByteBuffer.wrap(dstt));
 				wh.pos += length;
@@ -133,13 +110,6 @@ final class Connection {
 		pool.put(this);
 	}
 
-//	List<ByteBuffer> part = new DoublyLinkedList<>();
-//	final List<ByteBuffer> in = new DoublyLinkedList<>();
-//	boolean onceFlag = false;
-//	int start = 0;
-//	int mi = 0;
-//	ByteBuffer rollOver = null;
-	
 	void processMultipartInBytes(final byte[] content) {
 		do {
 			int searchPattern = RequestUtil.searchPattern(content, req.boundary, rh.start, rh.mi);
@@ -149,27 +119,27 @@ final class Connection {
 				// :: "+start+" mi "+mi);
 				if (rh.rollOver != null)
 					req.body.add(rh.rollOver);
-				req.body.add(ByteBuffer.wrap(Arrays.copyOfRange(content, rh.start, content.length)));
+				req.body.add(ByteData.wrap(Arrays.copyOfRange(content, rh.start, content.length)));
 				rh.setValue(0, 0, null);
 				break;
 			} else if (searchPattern < 0) {
 				// System.err.println(" searchPattern :: "+searchPattern+" start
 				// :: "+start+" mi "+mi);
-				rh.setValue(0, searchPattern * -1 - 1, ByteBuffer.wrap(Arrays.copyOfRange(content,rh.start, content.length)));
+				rh.setValue(0, searchPattern * -1 - 1, ByteData.wrap(Arrays.copyOfRange(content,rh.start, content.length)));
 				break;
 			} else if (searchPattern > 0) {
 				// System.err.println(" searchPattern :: "+searchPattern+" start
 				// :: "+start+" mi "+mi);
 				if (rh.rollOver != null)
 					req.body.add(rh.rollOver);
-				req.body.add(ByteBuffer.wrap(Arrays.copyOfRange(content, rh.start, searchPattern - 2)));
+				req.body.add(ByteData.wrap(Arrays.copyOfRange(content, rh.start, searchPattern - 2)));
 				addMultiPart();
 				req.body.clear();
 				rh.setValue(searchPattern + req.boundary.length + 1, 0, null);
 			} else if (searchPattern == 0) {
 				if (rh.mi > 0) {
 					byte[] prevContent = rh.rollOver.array();
-					req.body.add(ByteBuffer.wrap(Arrays.copyOfRange(prevContent, 0, prevContent.length - rh.mi)));
+					req.body.add(ByteData.wrap(Arrays.copyOfRange(prevContent, 0, prevContent.length - rh.mi)));
 					addMultiPart();
 					req.body.clear();
 					rh.setValue(req.boundary.length + 1 - rh.mi, 0, null);
@@ -199,12 +169,12 @@ final class Connection {
 					int headerIndex = RequestUtil.getHeaderIndex(readBuf, RequestUtil.BYTE_13, RequestUtil.BYTE_10, 2);
 					if (headerIndex == -1) {
 						if (bytesRead == readBuf.length) {
-							rh.in.add(wrap);
+							rh.in.add(ByteData.wrap(readBuf));
 						} else {
-							rh.in.add(ByteBuffer.wrap(Arrays.copyOfRange(readBuf, 0, bytesRead)));
+							rh.in.add(ByteData.wrap(Arrays.copyOfRange(readBuf, 0, bytesRead)));
 						}
 					} else {
-						rh.in.add(ByteBuffer.wrap(Arrays.copyOfRange(readBuf, 0, headerIndex - 1)));
+						rh.in.add(ByteData.wrap(Arrays.copyOfRange(readBuf, 0, headerIndex - 1)));
 						req = RequestUtil.parseRequest(rh.in);
 						route = RequestUtil.getMatchingRoute(Configuration.routes, req.getUri(), req.getHttpMethod(),
 								false);
@@ -224,7 +194,7 @@ final class Connection {
 								rh.onceFlag = true;
 								processMultipartInBytes(Arrays.copyOfRange(readBuf, headerIndex + 1, bytesRead));
 							} else {
-								req.body.add(ByteBuffer.wrap(Arrays.copyOfRange(readBuf, headerIndex + 1, bytesRead)));
+								req.body.add(ByteData.wrap(Arrays.copyOfRange(readBuf, headerIndex + 1, bytesRead)));
 							}
 						}
 					}
@@ -242,9 +212,9 @@ final class Connection {
 						}
 					} else {
 						if (bytesRead == readBuf.length) {
-							req.body.add(wrap);
+							req.body.add(ByteData.wrap(readBuf));
 						} else {
-							req.body.add(ByteBuffer.wrap(Arrays.copyOfRange(readBuf, 0, bytesRead)));
+							req.body.add(ByteData.wrap(Arrays.copyOfRange(readBuf, 0, bytesRead)));
 						}
 					}
 				}
@@ -280,7 +250,6 @@ final class Connection {
 					key.interestOps(SelectionKey.OP_READ);
 			}
 		} catch (Throwable e) {
-			// e.printStackTrace();
 			logger.error("Failed in read :: ", e);
 			finish(key);
 			throw e;
@@ -301,35 +270,22 @@ final class Connection {
 	}
 
 	public void processRequest(final SelectionKey key) {
-		// Request request = req;
-		Response response = null;
 		logger.debug("process connection from " + ((SocketChannel) key.channel()).socket().getRemoteSocketAddress());
-		// try {
-		// request = req;//RequestUtil.parseRequest(inBuffer);
-		// System.out.println(" request :: " + request.toString());
-		// route = RequestUtil.getMatchingRoute(Configuration.routes,
-		// req.getUri(), req.getHttpMethod(),
-		// false);
-		if (route != null) {
-			response = route.getResponse(req);
-		}
-		// } catch (Throwable e) {
-		// handleErrorReq(e, key);
-		// return;
-		// }
 		try {
-			if (response != null) {
-				route.handle(req, response);
-				resBuff = RequestUtil.getResponseBytes(req, response);
-				if (resBuff != null && resBuff.cl > Configuration.defaultChunkSize) {
-					((SocketChannel) key.channel()).socket().setSoTimeout(0);
+			if (route != null) {
+				Response response = route.getResponse(req);
+				if (response != null) {
+					route.handle(req, response);
+					resBuff = RequestUtil.getResponseBytes(req, response);
+					if (resBuff != null && resBuff.cl > Configuration.defaultChunkSize) {
+						((SocketChannel) key.channel()).socket().setSoTimeout(0);
+					}
+					logger.debug(" request :: " + req.toString() + " response :: " + resBuff.cl);
 				}
-				logger.debug(" request :: " + req.toString() + " response :: " + resBuff.cl);
+				req = null;
+				route = null;
+				response = null;
 			}
-			// request = null;
-			req = null;
-			route = null;
-			response = null;
 		} catch (Throwable e) {
 			String formatDate = RequestUtil.dateFormat.format(new Date());
 			logger.error("Failed in route.handle(" + formatDate + ") :: " + RequestUtil.convert(rh.in));
@@ -362,10 +318,10 @@ final class Connection {
 }
 final class WriteHelper{
 	int writeLen = 0;
-	ByteBuffer poll = null;
+	ByteData poll = null;
 	int pos = 0;
 	int rem = 0;
-	final byte[] dst = new byte[Configuration.defaultChunkSize];
+//	final byte[] dst = new byte[Configuration.defaultChunkSize];
 	
 	void reset() {
 		writeLen = 0;
@@ -381,11 +337,11 @@ final class WriteHelper{
 	}
 }
 final class ReadHelper{
-	final List<ByteBuffer> in = new DoublyLinkedList<>();
+	final List<ByteData> in = new DoublyLinkedList<>();
 	boolean onceFlag = false;
 	int start = 0;
 	int mi = 0;
-	ByteBuffer rollOver = null;
+	ByteData rollOver = null;
 	
 	void reset(){
 		in.clear();
@@ -395,7 +351,7 @@ final class ReadHelper{
 		rollOver = null;
 	}
 	
-	void setValue(int s,int m, ByteBuffer bb){
+	void setValue(int s,int m, ByteData bb){
 		start = s;
 		mi = m;
 		rollOver = bb;

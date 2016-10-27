@@ -90,10 +90,10 @@ public class RequestUtil {
 //		req.multiParts = Utils.unmodifiableMap(parts);
 //	}
 
-	static MultiPart parseAsMultiPart(List<ByteBuffer> list) {
-		List<ByteBuffer> body = new DoublyLinkedList<>();
+	static MultiPart parseAsMultiPart(List<ByteData> list) {
+		List<ByteData> body = new DoublyLinkedList<>();
 		StringBuffer headers = new StringBuffer();
-		for (ByteBuffer bb : list) {
+		for (ByteData bb : list) {
 			byte[] content = bb.array();
 			if (body.isEmpty()) {
 				int headerIndex = RequestUtil.getHeaderIndex(content, RequestUtil.BYTE_13, RequestUtil.BYTE_10, 2);
@@ -101,7 +101,7 @@ public class RequestUtil {
 					headers.append(new String(content));
 				} else if (headerIndex != -1) {
 					headers.append(new String(Arrays.copyOfRange(content, 0, headerIndex - 1)));
-					body.add(ByteBuffer.wrap(Arrays.copyOfRange(content, headerIndex + 1, content.length)));
+					body.add(ByteData.wrap(Arrays.copyOfRange(content, headerIndex + 1, content.length)));
 				}
 			} else {
 				body.add(bb);
@@ -201,7 +201,7 @@ public class RequestUtil {
 		return tempheaders;
 	}
 
-	static RequestImpl parseRequest(final List<ByteBuffer> messages) {
+	static RequestImpl parseRequest(final List<ByteData> messages) {
 		String metadata = convert(messages);
 		String[] split = metadata.split(System.lineSeparator());
 		String[] split2 = split[0].split(" ");
@@ -247,9 +247,9 @@ public class RequestUtil {
 		return requestImpl;
 	}
 
-	public static String convert(final List<ByteBuffer> messages) {
+	public static String convert(final List<ByteData> messages) {
 		StringBuffer metadataBuf = new StringBuffer();
-		for (ByteBuffer bb : messages) {
+		for (ByteData bb : messages) {
 			// metadataBuf.append(new String(bb.array()));
 			metadataBuf.append(convert(bb));
 		}
@@ -258,7 +258,7 @@ public class RequestUtil {
 		return metadata;
 	}
 
-	static String convert(ByteBuffer bb) {
+	static String convert(ByteData bb) {
 		// return new String(Charset.defaultCharset().decode(bb).array());
 		return new String(bb.array());
 	}
@@ -500,7 +500,7 @@ public class RequestUtil {
 		return responseBytes;
 	}
 
-	static Ref getResponseBytes(int responseCode, Map<String, Object> headers, Collection<ByteBuffer> out,
+	static Ref getResponseBytes(int responseCode, Map<String, Object> headers, Collection<ByteData> out,
 			String protocol, String uri, int contentLen) {
 		final StringBuffer responseBody = new StringBuffer();
 
@@ -527,7 +527,7 @@ public class RequestUtil {
 		ref.rc = responseCode;
 		ref.uri = uri;
 
-		ref.queue.add(ByteBuffer.wrap(responseBody.toString().getBytes()));
+		ref.queue.add(new ByteData(responseBody.toString().getBytes()));
 		ref.queue.addAll(out);
 		ref.cl = contentLen;
 		return ref;
@@ -603,7 +603,7 @@ class Ref {
 	int cl = 0;
 	// byte[] headerBytes;
 	// byte[] bodyBytes;
-	Queue<ByteBuffer> queue = new DoublyLinkedList<>();
+	Queue<ByteData> queue = new DoublyLinkedList<>();
 }
 
 final class RequestUriTokens {

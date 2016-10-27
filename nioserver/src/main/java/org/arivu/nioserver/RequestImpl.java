@@ -1,6 +1,5 @@
 package org.arivu.nioserver;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -39,7 +38,7 @@ final class RequestImpl implements Request {
 	/**
 	 * 
 	 */
-	final List<ByteBuffer> body = new DoublyLinkedList<>();
+	final List<ByteData> body = new DoublyLinkedList<>();
 
 	/**
 	 * 
@@ -137,7 +136,7 @@ final class RequestImpl implements Request {
 	 * @see org.arivu.nioserver.Request#getBody()
 	 */
 	@Override
-	public List<ByteBuffer> getBody() {
+	public List<ByteData> getBody() {
 		return Collections.unmodifiableList(body);
 	}
 

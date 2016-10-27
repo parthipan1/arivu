@@ -329,7 +329,7 @@ final class ProxyRoute extends Route {
 					readLock.unlock();
 				}
 			}
-			byte[] array = bytes.data;//bytes.array();//new byte[bytes.remaining()];
+			byte[] array = bytes.array();//bytes.array();//new byte[bytes.remaining()];
 //			bytes.get(array, 0, array.length);
 			res.append(array);
 			res.putHeader("Content-Length", array.length);
@@ -363,16 +363,6 @@ final class ProxyRes {
 		this.response = response;
 	}
 
-}
-
-final class ByteData{
-	final byte[] data;
-
-	ByteData(byte[] data) {
-		super();
-		this.data = data;
-	}
-	
 }
 
 interface HttpMethodCall {

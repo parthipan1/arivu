@@ -1,7 +1,6 @@
 package org.arivu.nioserver;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -14,7 +13,7 @@ final class ResponseImpl implements Response {
 
 	final Map<String, Object> headers = new Amap<String, Object>();
 
-	final List<ByteBuffer> out = new DoublyLinkedList<>();
+	final List<ByteData> out = new DoublyLinkedList<>();
 
 	int responseCode = Configuration.defaultResCode;
 
@@ -127,18 +126,18 @@ final class ResponseImpl implements Response {
 	@Override
 	public void append(byte[] s) throws IOException {
 		if (s != null){
-			append(ByteBuffer.wrap(s));
+			append(new ByteData(s));
 		}
 	}
 
 	/* (non-Javadoc)
-	 * @see org.arivu.nioserver.Response#append(java.nio.ByteBuffer)
+	 * @see org.arivu.nioserver.Response#append(ByteData)
 	 */
 	@Override
-	public void append(ByteBuffer buf) throws IOException {
+	public void append(ByteData buf) throws IOException {
 		if(buf!=null){
 			out.add(buf);
-			contentLength += buf.remaining();
+			contentLength += buf.array().length;//remaining();
 		}
 	}
 	
@@ -146,7 +145,7 @@ final class ResponseImpl implements Response {
 	 * @see org.arivu.nioserver.Response#getOut()
 	 */
 	@Override
-	public List<ByteBuffer> getOut() {
+	public List<ByteData> getOut() {
 		return Collections.unmodifiableList(out);
 	}
 
