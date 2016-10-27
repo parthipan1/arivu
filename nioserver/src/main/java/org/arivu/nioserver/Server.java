@@ -73,6 +73,25 @@ public class Server {
 
 	static Appender accessLog = null;
 
+	@Path(value = "/multipart", httpMethod = HttpMethod.POST)
+	static void multiPart() throws Exception {
+		StaticRef.getResponse().setResponseCode(200);
+		
+		Map<String, MultiPart> multiParts = StaticRef.getRequest().getMultiParts();
+		for(Entry<String,MultiPart> e:multiParts.entrySet()){
+			MultiPart mp = e.getValue();
+			if(NullCheck.isNullOrEmpty(mp.filename)){
+				System.out.println( "Headers :: \n"+RequestUtil.getString(mp.headers) );
+				System.out.println( "body :: \n"+RequestUtil.convert(mp.body) );
+				System.out.println("*********************************************************************************");
+			}else{
+				File file = new File("uploaded.zip");
+				System.out.println("file :: "+file.getAbsolutePath());
+				mp.writeTo(file, true);
+			}
+		}
+	}
+	
 	@Path(value = Configuration.stopUri, httpMethod = HttpMethod.GET)
 	static void stop() throws Exception {
 		StaticRef.getResponse().setResponseCode(200);
@@ -231,18 +250,7 @@ final class SelectorHandler {
 		@Override
 		public String getResponseHeader() {
 			Map<String, Object> defaultresponseheader = Configuration.defaultResponseHeader;
-			return getString(defaultresponseheader);
-		}
-
-		String getString(Map<String, Object> defaultresponseheader) {
-			if (defaultresponseheader == null)
-				return "";
-			Set<Entry<String, Object>> entrySet = defaultresponseheader.entrySet();
-			StringBuffer buf = new StringBuffer();
-			for (Entry<String, Object> e : entrySet) {
-				buf.append(e.getKey()).append("=").append(e.getValue().toString()).append(",");
-			}
-			return buf.toString();
+			return RequestUtil.getString(defaultresponseheader);
 		}
 
 		@Override
@@ -254,7 +262,7 @@ final class SelectorHandler {
 		@Override
 		public String getRouteResponseHeader(String route) {
 			Route route2 = getRoute(route);
-			if( route2!= null ) return getString(route2.headers);
+			if( route2!= null ) return RequestUtil.getString(route2.headers);
 			return null;
 		}
 
@@ -403,8 +411,6 @@ final class Connection {
 
 	final long startTime = System.currentTimeMillis();
 
-	StringBuffer inBuffer = null;
-//	ByteBuffer buff = null;
 	Ref resBuff = null;
 	int writeLen = 0;
 	Pool<Connection> pool;
@@ -416,11 +422,15 @@ final class Connection {
 	}
 
 	void reset() {
-		inBuffer = new StringBuffer();
-//		buff = ByteBuffer.allocateDirect(Configuration.defaultRequestBuffer);
 		writeLen = 0;
 		in.clear();
 		req = null;
+		
+		part = new DoublyLinkedList<>();
+		start = 0;
+		mi = 0;
+		rollOver = null;
+		onceFlag = false;
 	}
 	
 	ByteBuffer poll = null;
@@ -491,14 +501,70 @@ final class Connection {
 		key.cancel();
 		RequestUtil.accessLog(resBuff.rc, resBuff.uri, startTime, System.currentTimeMillis(), resBuff.cl,
 				remoteSocketAddress);
-//		buff = null;
-		inBuffer = null;
+//		inBuffer = null;
 		writeLen = 0;
 		pool.put(this);
 	}
+	
+//	Collection<List<ByteBuffer>> bufferParts = new DoublyLinkedList<>();
+//	Collection<List<ByteBuffer>> 
+	List<ByteBuffer> part = new DoublyLinkedList<>();
+	int start = 0;
+	int mi = 0;
+	ByteBuffer rollOver = null;
 
+	void processMultipartInBytes(byte[] content){
+//		byte[] content = bb.array();
+		do {
+			int searchPattern = RequestUtil.searchPattern(content, req.boundary, start, mi);
+			logger.debug(" searchPattern :: "+searchPattern+" start :: "+start+" mi "+mi);
+			if (searchPattern == RequestUtil.BYTE_SEARCH_DEFLT) {
+				part.add(ByteBuffer.wrap(Arrays.copyOfRange(content, start, content.length)));
+				start = 0;
+				mi = 0;
+				break;
+			} else if (searchPattern < 0) {
+				mi = searchPattern * -1 - 1;
+				rollOver = ByteBuffer.wrap(Arrays.copyOfRange(content, start, content.length - mi));
+				start = 0;
+				break;
+			} else if (searchPattern > 0) {
+				part.add(ByteBuffer.wrap(Arrays.copyOfRange(content, start, searchPattern - 2)));
+//				bufferParts.add(part);
+				MultiPart parseAsMultiPart = RequestUtil.parseAsMultiPart(part);
+				req.multiParts.put(parseAsMultiPart.name, parseAsMultiPart);
+				part = new DoublyLinkedList<>();
+				start = searchPattern + req.boundary.length + 1;
+				mi = 0;
+			} else if (searchPattern == 0) {
+				if (mi > 0) {
+					part.add(rollOver);
+//					bufferParts.add(part);
+					MultiPart parseAsMultiPart = RequestUtil.parseAsMultiPart(part);
+					req.multiParts.put(parseAsMultiPart.name, parseAsMultiPart);
+					part = new DoublyLinkedList<>();
+					rollOver = null;
+					start = req.boundary.length + 1 - mi;
+					mi = 0;
+				} else {
+//					bufferParts.add(part);
+					MultiPart parseAsMultiPart = RequestUtil.parseAsMultiPart(part);
+					req.multiParts.put(parseAsMultiPart.name, parseAsMultiPart);
+					part = new DoublyLinkedList<>();
+					rollOver = null;
+					start = req.boundary.length + 1;
+					mi = 0;
+				}
+			}
+		} while (true);
+	}
+	
 	final List<ByteBuffer> in = new DoublyLinkedList<>();
 	RequestImpl req = null;
+//	String boundary = null;
+	int total = 0;
+	boolean onceFlag = false;
+	
 	void read(final SelectionKey key) throws IOException {
 		int bytesRead = 0;
 		byte EOL0 = 1;
@@ -508,35 +574,96 @@ final class Connection {
 			if ((bytesRead = ((SocketChannel) key.channel()).read(wrap)) > 0) {
 				EOL0 = wrap.get(wrap.position() - 1);
 				if( req==null ){
-					int headerIndex = RequestUtil.getHeaderIndex(readBuf);
+					int headerIndex = RequestUtil.getHeaderIndex(readBuf, RequestUtil.BYTE_13, RequestUtil.BYTE_10, 2);
 					if( headerIndex == -1 ){
-						in.add(wrap);
+						if( bytesRead==readBuf.length ){
+							in.add(wrap);
+						}else{
+							in.add( ByteBuffer.wrap(Arrays.copyOfRange(readBuf, 0, bytesRead)) );
+						}
 					}else{
-						List<ByteBuffer> h = new DoublyLinkedList<>();
-						h.addAll(in);
-						h.add( ByteBuffer.wrap(Arrays.copyOfRange(readBuf, 0, headerIndex-1)) );
+						in.add( ByteBuffer.wrap(Arrays.copyOfRange(readBuf, 0, headerIndex-1)) );
+						req = RequestUtil.parseRequest(in);
 						in.clear();
-						req = RequestUtil.parseRequest(h);
 						logger.debug(" Got Request :: "+req);
-						req.body.add( ByteBuffer.wrap(Arrays.copyOfRange(readBuf, headerIndex, bytesRead)) );
+//						System.out.println(" Got Request :: "+req+"\n total "+(total+headerIndex)+"");
+						if( headerIndex+1 < bytesRead){
+							start = req.boundary.length + 1;
+							onceFlag = true;
+							if(req.isMultipart){
+								processMultipartInBytes(Arrays.copyOfRange(readBuf, headerIndex+1, bytesRead));
+							}else{
+								req.body.add( ByteBuffer.wrap(Arrays.copyOfRange(readBuf, headerIndex+1, bytesRead)) );
+							}
+						}
 					}
 				}else{
-					req.body.add(wrap);
+					if(req.isMultipart){
+						if(!onceFlag){
+							onceFlag = true;
+							start = req.boundary.length + 1;
+						}
+						if( bytesRead==readBuf.length ){
+							processMultipartInBytes(readBuf);
+//							req.body.add(wrap);
+						}else{
+							byte[] arr = Arrays.copyOfRange(readBuf, 0, bytesRead);
+							processMultipartInBytes(arr);
+//							req.body.add( ByteBuffer.wrap(arr) );
+						}
+					}else{
+						if( bytesRead==readBuf.length ){
+							req.body.add(wrap);
+						}else{
+							req.body.add( ByteBuffer.wrap(Arrays.copyOfRange(readBuf, 0, bytesRead)) );
+						}
+					}
 				}
-				
-//				buff.flip();
-//				inBuffer.append(Charset.defaultCharset().decode(buff).array());
-//				buff.clear();
 			}
-			if ((bytesRead == -1 || EOL0 == RequestUtil.BYTE_10))
-				processRequest(key);
-			else
-				key.interestOps(SelectionKey.OP_READ);
-		} catch (IOException e) {
+			total += bytesRead;
+//			System.out.println(" read :: "+bytesRead+" req.isMultipart "+req.isMultipart+" total "+total);
+			if(req.isMultipart){
+				int size = part.size();
+//				System.out.println(" req.isMultipart read :: "+bytesRead+" size "+size);
+				if(size==0){
+					key.interestOps(SelectionKey.OP_READ);
+					return;
+				}
+				String endOfLine = getEndOfLine(bytesRead, wrap);
+//				System.out.println(" req.isMultipart read :: "+bytesRead+" endOfLine "+endOfLine);
+				String string = new String(req.boundary);
+				if ( bytesRead == -1 || (EOL0 == RequestUtil.BYTE_10 && endOfLine.startsWith(string+"--"))){
+//					System.out.println(" proces request  before parseAndSetMultiPart cl "+req.);
+//					RequestUtil.parseAndSetMultiPart(req);
+//					System.out.println(" proces request after parseAndSetMultiPart ");
+					processRequest(key);
+				}else
+					key.interestOps(SelectionKey.OP_READ);
+			}else{
+				if ((bytesRead == -1 || EOL0 == RequestUtil.BYTE_10))
+					processRequest(key);
+				else
+					key.interestOps(SelectionKey.OP_READ);
+			}
+		} catch (Throwable e) {
+			e.printStackTrace();
 			logger.error("Failed in read :: ", e);
 			finish(key);
 			throw e;
 		}
+	}
+
+	String getEndOfLine(int bytesRead, ByteBuffer bb) {
+		byte[] array = bb.array();
+		StringBuffer endOfLineBuf = new StringBuffer();
+		int start = bytesRead-req.boundary.length-4;
+		if( start >= 0 ){
+			for( int i=start;i<array.length-1;i++ )
+				endOfLineBuf.append((char)array[i]);
+		}
+		
+		String endOfLine = endOfLineBuf.toString();
+		return endOfLine;
 	}
 
 	public void processRequest(final SelectionKey key) {
@@ -571,7 +698,7 @@ final class Connection {
 			response = null;
 		} catch (Throwable e) {
 			String formatDate = RequestUtil.dateFormat.format(new Date());
-			logger.error("Failed in route.handle(" + formatDate + ") :: " + inBuffer);
+			logger.error("Failed in route.handle(" + formatDate + ") :: " + RequestUtil.convert(in));
 			logger.error("Failed in route.handle(" + formatDate + ") :: ", e);
 		} finally {
 			key.interestOps(SelectionKey.OP_WRITE);
@@ -581,7 +708,7 @@ final class Connection {
 	void handleErrorReq(Throwable e, SelectionKey key) {
 		String formatDate = RequestUtil.dateFormat.format(new Date());
 		errorAccessLog(formatDate);
-		logger.error("Failed in request parse(" + formatDate + ") :: " + inBuffer);
+		logger.error("Failed in request parse(" + formatDate + ") :: " + RequestUtil.convert(in));
 		logger.error("Failed in request parse(" + formatDate + ") :: ", e);
 		try {
 			((SocketChannel) key.channel()).close();
@@ -594,7 +721,7 @@ final class Connection {
 
 	private void errorAccessLog(String formatDate) {
 		StringBuffer access = new StringBuffer();
-		access.append("[").append(formatDate).append("] ").append(inBuffer.toString()).append(" ").append("500");
+		access.append("[").append(formatDate).append("] ").append(RequestUtil.convert(in)).append(" ").append("500");
 		Server.accessLog.append(access.toString());
 	}
 

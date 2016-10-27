@@ -23,4 +23,10 @@ public interface Request {
 
 	HttpMethod getHttpMethod();
 
+	boolean isMultipart();
+
+	byte[] getBoundary();
+
+	Map<String, MultiPart> getMultiParts();
+
 }
