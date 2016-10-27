@@ -6,7 +6,6 @@ package org.arivu.nioserver;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -251,8 +250,8 @@ final class SelectorHandler {
 		clientSelector = Selector.open();
 		ServerSocketChannel ssc = ServerSocketChannel.open();
 		ssc.configureBlocking(false);
-		InetSocketAddress sa = new InetSocketAddress(InetAddress.getByName(Server.DEFAULT_HOST), Server.DEFAULT_PORT);
-		ssc.socket().bind(sa);
+		InetSocketAddress sa = new InetSocketAddress(Server.DEFAULT_PORT);//InetAddress.getByName(Server.DEFAULT_HOST),
+		ssc.socket().bind(sa, 1024);
 		logger.info("Server started at " + sa);
 		ssc.register(clientSelector, SelectionKey.OP_ACCEPT);
 

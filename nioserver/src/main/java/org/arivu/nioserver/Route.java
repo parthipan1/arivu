@@ -5,21 +5,24 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.RandomAccessFile;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
 
 import org.arivu.datastructure.Amap;
-import org.arivu.datastructure.MemoryMappedFiles;
 import org.arivu.datastructure.Threadlocal;
 import org.arivu.utils.NullCheck;
+import org.arivu.utils.lock.AtomicWFReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -156,7 +159,7 @@ final class ProxyRoute extends Route {
 	String name;
 	String proxy_pass;
 	String dir;
-	MemoryMappedFiles files = null;
+	Map<String,ByteData> files;
 	Threadlocal<HttpMethodCall> proxyTh;
 
 	/**
@@ -178,7 +181,8 @@ final class ProxyRoute extends Route {
 		} else if (!NullCheck.isNullOrEmpty(proxy_pass) && !NullCheck.isNullOrEmpty(dir)) {
 			throw new IllegalArgumentException("Invalid config " + name + " !");
 		} else if (!NullCheck.isNullOrEmpty(dir)) {
-			files = new MemoryMappedFiles();
+//			files = new MemoryMappedFiles();
+			files = new Amap<>();
 		} else if (!NullCheck.isNullOrEmpty(proxy_pass)) {
 			this.proxyTh = new Threadlocal<HttpMethodCall>(new Threadlocal.Factory<HttpMethodCall>() {
 
@@ -260,6 +264,8 @@ final class ProxyRoute extends Route {
 		}
 	}
 
+	final Lock readLock = new AtomicWFReentrantLock();
+	
 	void handleDirectory(Request req, Response res) throws IOException {
 		String file = this.dir + URLDecoder.decode(req.getUri().substring(this.uri.length()), RequestUtil.ENC_UTF_8);
 		File f = new File(file);
@@ -299,12 +305,32 @@ final class ProxyRoute extends Route {
 					
 				}
 			}
-			ByteBuffer bytes = files.getBytes(file);//getOriginalBytes(file);
+			ByteData bytes = files.get(file);//getOriginalBytes(file);
 			if (bytes == null) {
-				bytes = files.addBytes(file);
+				readLock.lock();
+				RandomAccessFile randomAccessFile = null;
+				bytes = files.get(file);
+				if( bytes == null ){
+					try {
+						randomAccessFile = new RandomAccessFile(new File(file), "r");
+						final FileChannel fileChannel = randomAccessFile.getChannel();
+						ByteBuffer bb = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size());
+						byte[] data = new byte[bb.remaining()];
+						bb.get(data, 0, data.length);
+						bytes = new ByteData(data);
+						files.put(file, bytes);
+					} finally {
+						readLock.unlock();
+						if (randomAccessFile != null) {
+							randomAccessFile.close();
+						}
+					}
+				}else{
+					readLock.unlock();
+				}
 			}
-			byte[] array = new byte[bytes.remaining()];
-			bytes.get(array, 0, array.length);
+			byte[] array = bytes.data;//bytes.array();//new byte[bytes.remaining()];
+//			bytes.get(array, 0, array.length);
 			res.append(array);
 			res.putHeader("Content-Length", array.length);
 		}
@@ -337,6 +363,16 @@ final class ProxyRes {
 		this.response = response;
 	}
 
+}
+
+final class ByteData{
+	final byte[] data;
+
+	ByteData(byte[] data) {
+		super();
+		this.data = data;
+	}
+	
 }
 
 interface HttpMethodCall {
