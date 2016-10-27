@@ -47,25 +47,25 @@ public class Server {
 
 	static Appender accessLog = null;
 
-	@Path(value = "/multipart", httpMethod = HttpMethod.POST)
-	static void multiPart() throws Exception {
-		StaticRef.getResponse().setResponseCode(200);
-		
-		Map<String, MultiPart> multiParts = StaticRef.getRequest().getMultiParts();
-		for(Entry<String,MultiPart> e:multiParts.entrySet()){
-			MultiPart mp = e.getValue();
-			if(NullCheck.isNullOrEmpty(mp.filename)){
-				System.out.println( "Headers :: \n"+RequestUtil.getString(mp.headers) );
-				System.out.println( "body :: \n"+RequestUtil.convert(mp.body) );
-			}else{
-				File file = new File("1_"+mp.filename);
-				System.out.println( "Headers :: \n"+RequestUtil.getString(mp.headers) );
-				System.out.println("uploaded file to :: "+file.getAbsolutePath());
-				mp.writeTo(file, true);
-			}
-			System.out.println("*********************************************************************************");
-		}
-	}
+//	@Path(value = "/multipart", httpMethod = HttpMethod.POST)
+//	static void multiPart() throws Exception {
+//		StaticRef.getResponse().setResponseCode(200);
+//		
+//		Map<String, MultiPart> multiParts = StaticRef.getRequest().getMultiParts();
+//		for(Entry<String,MultiPart> e:multiParts.entrySet()){
+//			MultiPart mp = e.getValue();
+//			if(NullCheck.isNullOrEmpty(mp.filename)){
+//				System.out.println( "Headers :: \n"+RequestUtil.getString(mp.headers) );
+//				System.out.println( "body :: \n"+RequestUtil.convert(mp.body) );
+//			}else{
+//				File file = new File("1_"+mp.filename);
+//				System.out.println( "Headers :: \n"+RequestUtil.getString(mp.headers) );
+//				System.out.println("uploaded file to :: "+file.getAbsolutePath());
+//				mp.writeTo(file, true);
+//			}
+//			System.out.println("*********************************************************************************");
+//		}
+//	}
 	
 	@Path(value = Configuration.stopUri, httpMethod = HttpMethod.GET)
 	static void stop() throws Exception {
