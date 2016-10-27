@@ -251,7 +251,7 @@ final class SelectorHandler {
 		clientSelector = Selector.open();
 		ServerSocketChannel ssc = ServerSocketChannel.open();
 		ssc.configureBlocking(false);
-		InetSocketAddress sa = new InetSocketAddress(InetAddress.getLoopbackAddress(), Server.DEFAULT_PORT);
+		InetSocketAddress sa = new InetSocketAddress(InetAddress.getByName(Server.DEFAULT_HOST), Server.DEFAULT_PORT);
 		ssc.socket().bind(sa);
 		logger.info("Server started at " + sa);
 		ssc.register(clientSelector, SelectionKey.OP_ACCEPT);

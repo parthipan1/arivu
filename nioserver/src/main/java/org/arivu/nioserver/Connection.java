@@ -26,8 +26,7 @@ final class Connection {
 
 	final long startTime = System.currentTimeMillis();
 
-	Ref resBuff = null;
-	int writeLen = 0;
+	
 	Pool<Connection> pool;
 
 	public Connection(Pool<Connection> pool) {
@@ -36,33 +35,45 @@ final class Connection {
 		this.pool = pool;
 	}
 
-	void reset() {
-		writeLen = 0;
-		in.clear();
-		req = null;
+	final WriteHelper wh = new WriteHelper();
 
-		part = new DoublyLinkedList<>();
-		start = 0;
-		mi = 0;
-		rollOver = null;
-		onceFlag = false;
+	final ReadHelper rh = new ReadHelper();
+
+	RequestImpl req = null;
+	Route route = null;
+	Ref resBuff = null;
+	
+	void reset() {
+//		writeLen = 0;
+		wh.reset();
+		rh.reset();
+		req = null;
+		route = null;
+		resBuff = null;
+//		part = new DoublyLinkedList<>();
+//		in.clear();
+//		start = 0;
+//		mi = 0;
+//		rollOver = null;
+//		onceFlag = false;
 		// total = 0;
 	}
 
-	ByteBuffer poll = null;
-	int pos = 0;
-	int rem = 0;
-	final byte[] dst = new byte[Configuration.defaultChunkSize];
+//	int writeLen = 0;
+//	ByteBuffer poll = null;
+//	int pos = 0;
+//	int rem = 0;
+//	final byte[] dst = new byte[Configuration.defaultChunkSize];
 
 	void write(SelectionKey key) throws IOException {
 		logger.debug(" write  :: " + resBuff);
 		if (resBuff != null) {
 			try {
-				if (poll == null) {
-					poll = resBuff.queue.poll();
-					if (poll != null) {
-						rem = poll.remaining();
-						logger.debug(resBuff + " 1 write next ByteBuff size :: " + rem + " queueSize :: "
+				if (wh.poll == null) {
+					wh.poll = resBuff.queue.poll();
+					if (wh.poll != null) {
+						wh.rem = wh.poll.remaining();
+						logger.debug(resBuff + " 1 write next ByteBuff size :: " + wh.rem + " queueSize :: "
 								+ resBuff.queue.size());
 					} else {
 						logger.debug(resBuff + " 2 write next ByteBuff is null! finish! ");
@@ -71,21 +82,21 @@ final class Connection {
 					}
 				}
 
-				int length = Math.min(Configuration.defaultChunkSize, rem - pos);
-				logger.debug(resBuff + "  3 write bytes from  :: " + pos + "  length :: " + (length) + " to :: "
-						+ (pos + length) + " size :: " + rem);
-				byte[] dstt = dst;// new byte[length];
+				int length = Math.min(Configuration.defaultChunkSize, wh.rem - wh.pos);
+				logger.debug(resBuff + "  3 write bytes from  :: " + wh.pos + "  length :: " + (length) + " to :: "
+						+ (wh.pos + length) + " size :: " + wh.rem);
+				byte[] dstt = wh.dst;// new byte[length];
 				if (length == Configuration.defaultChunkSize) {
 					for (int i = 0; i < dstt.length; i++)
-						dstt[i] = poll.get(i + pos);
+						dstt[i] = wh.poll.get(i + wh.pos);
 				} else {
 					dstt = new byte[length];
 					for (int i = 0; i < dstt.length; i++)
-						dstt[i] = poll.get(i + pos);
+						dstt[i] = wh.poll.get(i + wh.pos);
 				}
 				SocketChannel socketChannel = (SocketChannel) key.channel();
 				socketChannel.write(ByteBuffer.wrap(dstt));
-				pos += length;
+				wh.pos += length;
 				finishByteBuff(key, socketChannel);
 			} catch (Throwable e) {
 				logger.error("Failed in write :: ", e);
@@ -98,11 +109,9 @@ final class Connection {
 	void finishByteBuff(SelectionKey key, SocketChannel socketChannel) throws IOException {
 		boolean empty = resBuff.queue.isEmpty();
 		logger.debug(resBuff + " 4 finishByteBuff! empty :: " + empty + " queueSize :: " + resBuff.queue.size()
-				+ " read :: " + pos + " size :: " + rem);
-		if (rem == pos) {
-			poll = null;
-			pos = 0;
-			rem = 0;
+				+ " read :: " + wh.pos + " size :: " + wh.rem);
+		if (wh.rem == wh.pos) {
+			wh.clearBytes();
 			if (empty) {
 				finish(key);
 				return;
@@ -120,77 +129,63 @@ final class Connection {
 		if (resBuff != null)
 			RequestUtil.accessLog(resBuff.rc, resBuff.uri, startTime, System.currentTimeMillis(), resBuff.cl,
 					remoteSocketAddress);
-		writeLen = 0;
+		wh.writeLen = 0;
 		pool.put(this);
 	}
 
-	List<ByteBuffer> part = new DoublyLinkedList<>();
-	int start = 0;
-	int mi = 0;
-	ByteBuffer rollOver = null;
-
+//	List<ByteBuffer> part = new DoublyLinkedList<>();
+//	final List<ByteBuffer> in = new DoublyLinkedList<>();
+//	boolean onceFlag = false;
+//	int start = 0;
+//	int mi = 0;
+//	ByteBuffer rollOver = null;
+	
 	void processMultipartInBytes(final byte[] content) {
 		do {
-			int searchPattern = RequestUtil.searchPattern(content, req.boundary, start, mi);
-			logger.debug(" searchPattern :: " + searchPattern + " start :: " + start + " mi " + mi);
+			int searchPattern = RequestUtil.searchPattern(content, req.boundary, rh.start, rh.mi);
+			logger.debug(" searchPattern :: " + searchPattern + " start :: " + rh.start + " mi " + rh.mi);
 			if (searchPattern == RequestUtil.BYTE_SEARCH_DEFLT) {
 				// System.out.println(" searchPattern :: "+searchPattern+" start
 				// :: "+start+" mi "+mi);
-				if (rollOver != null)
-					part.add(rollOver);
-				part.add(ByteBuffer.wrap(Arrays.copyOfRange(content, start, content.length)));
-				start = 0;
-				mi = 0;
-				rollOver = null;
+				if (rh.rollOver != null)
+					req.body.add(rh.rollOver);
+				req.body.add(ByteBuffer.wrap(Arrays.copyOfRange(content, rh.start, content.length)));
+				rh.setValue(0, 0, null);
 				break;
 			} else if (searchPattern < 0) {
 				// System.err.println(" searchPattern :: "+searchPattern+" start
 				// :: "+start+" mi "+mi);
-				mi = searchPattern * -1 - 1;
-				rollOver = ByteBuffer.wrap(Arrays.copyOfRange(content, start, content.length));
-				start = 0;
+				rh.setValue(0, searchPattern * -1 - 1, ByteBuffer.wrap(Arrays.copyOfRange(content,rh.start, content.length)));
 				break;
 			} else if (searchPattern > 0) {
 				// System.err.println(" searchPattern :: "+searchPattern+" start
 				// :: "+start+" mi "+mi);
-				if (rollOver != null)
-					part.add(rollOver);
-				part.add(ByteBuffer.wrap(Arrays.copyOfRange(content, start, searchPattern - 2)));
+				if (rh.rollOver != null)
+					req.body.add(rh.rollOver);
+				req.body.add(ByteBuffer.wrap(Arrays.copyOfRange(content, rh.start, searchPattern - 2)));
 				addMultiPart();
-				part = new DoublyLinkedList<>();
-				start = searchPattern + req.boundary.length + 1;
-				rollOver = null;
-				mi = 0;
+				req.body.clear();
+				rh.setValue(searchPattern + req.boundary.length + 1, 0, null);
 			} else if (searchPattern == 0) {
-				if (mi > 0) {
-					byte[] prevContent = rollOver.array();
-					part.add(ByteBuffer.wrap(Arrays.copyOfRange(prevContent, 0, prevContent.length - mi)));
+				if (rh.mi > 0) {
+					byte[] prevContent = rh.rollOver.array();
+					req.body.add(ByteBuffer.wrap(Arrays.copyOfRange(prevContent, 0, prevContent.length - rh.mi)));
 					addMultiPart();
-					part = new DoublyLinkedList<>();
-					rollOver = null;
-					start = req.boundary.length + 1 - mi;
-					mi = 0;
+					req.body.clear();
+					rh.setValue(req.boundary.length + 1 - rh.mi, 0, null);
 				} else {
 					addMultiPart();
-					part = new DoublyLinkedList<>();
-					rollOver = null;
-					start = req.boundary.length + 1;
-					mi = 0;
+					req.body.clear();
+					rh.setValue(req.boundary.length + 1 , 0, null);
 				}
 			}
 		} while (true);
 	}
 
 	void addMultiPart() {
-		MultiPart parseAsMultiPart = RequestUtil.parseAsMultiPart(part);
+		MultiPart parseAsMultiPart = RequestUtil.parseAsMultiPart(req.body);
 		req.multiParts.put(parseAsMultiPart.name, parseAsMultiPart);
 	}
-
-	final List<ByteBuffer> in = new DoublyLinkedList<>();
-	RequestImpl req = null;
-	Route route = null;
-	// int total = 0;
-	boolean onceFlag = false;
 
 	void read(final SelectionKey key) throws IOException {
 		int bytesRead = 0;
@@ -204,16 +199,16 @@ final class Connection {
 					int headerIndex = RequestUtil.getHeaderIndex(readBuf, RequestUtil.BYTE_13, RequestUtil.BYTE_10, 2);
 					if (headerIndex == -1) {
 						if (bytesRead == readBuf.length) {
-							in.add(wrap);
+							rh.in.add(wrap);
 						} else {
-							in.add(ByteBuffer.wrap(Arrays.copyOfRange(readBuf, 0, bytesRead)));
+							rh.in.add(ByteBuffer.wrap(Arrays.copyOfRange(readBuf, 0, bytesRead)));
 						}
 					} else {
-						in.add(ByteBuffer.wrap(Arrays.copyOfRange(readBuf, 0, headerIndex - 1)));
-						req = RequestUtil.parseRequest(in);
+						rh.in.add(ByteBuffer.wrap(Arrays.copyOfRange(readBuf, 0, headerIndex - 1)));
+						req = RequestUtil.parseRequest(rh.in);
 						route = RequestUtil.getMatchingRoute(Configuration.routes, req.getUri(), req.getHttpMethod(),
 								false);
-						in.clear();
+						rh.in.clear();
 						logger.debug(" Got Request :: " + req);
 						// System.out.println(" Got Request :: "+req+" route
 						// "+route);
@@ -225,8 +220,8 @@ final class Connection {
 						// "+(total+headerIndex)+"");
 						if (headerIndex + 1 < bytesRead) {
 							if (req.isMultipart) {
-								start = req.boundary.length + 1;
-								onceFlag = true;
+								rh.start = req.boundary.length + 1;
+								rh.onceFlag = true;
 								processMultipartInBytes(Arrays.copyOfRange(readBuf, headerIndex + 1, bytesRead));
 							} else {
 								req.body.add(ByteBuffer.wrap(Arrays.copyOfRange(readBuf, headerIndex + 1, bytesRead)));
@@ -235,9 +230,9 @@ final class Connection {
 					}
 				} else {
 					if (req.isMultipart) {
-						if (!onceFlag) {
-							onceFlag = true;
-							start = req.boundary.length + 1;
+						if (!rh.onceFlag) {
+							rh.onceFlag = true;
+							rh.start = req.boundary.length + 1;
 						}
 						if (bytesRead == readBuf.length) {
 							processMultipartInBytes(readBuf);
@@ -258,7 +253,7 @@ final class Connection {
 			// logger.debug(" read :: "+bytesRead+" req.isMultipart
 			// "+req.isMultipart+" total "+total);
 			if (req != null && req.isMultipart) {
-				int size = part.size();
+				int size = req.body.size();
 				// System.out.println(" req.isMultipart read :: "+bytesRead+"
 				// size "+size);
 				if (size == 0) {
@@ -337,7 +332,7 @@ final class Connection {
 			response = null;
 		} catch (Throwable e) {
 			String formatDate = RequestUtil.dateFormat.format(new Date());
-			logger.error("Failed in route.handle(" + formatDate + ") :: " + RequestUtil.convert(in));
+			logger.error("Failed in route.handle(" + formatDate + ") :: " + RequestUtil.convert(rh.in));
 			logger.error("Failed in route.handle(" + formatDate + ") :: ", e);
 		} finally {
 			key.interestOps(SelectionKey.OP_WRITE);
@@ -347,7 +342,7 @@ final class Connection {
 	void handleErrorReq(Throwable e, SelectionKey key) {
 		String formatDate = RequestUtil.dateFormat.format(new Date());
 		errorAccessLog(formatDate);
-		logger.error("Failed in request parse(" + formatDate + ") :: " + RequestUtil.convert(in));
+		logger.error("Failed in request parse(" + formatDate + ") :: " + RequestUtil.convert(rh.in));
 		logger.error("Failed in request parse(" + formatDate + ") :: ", e);
 		try {
 			((SocketChannel) key.channel()).close();
@@ -360,8 +355,49 @@ final class Connection {
 
 	private void errorAccessLog(String formatDate) {
 		StringBuffer access = new StringBuffer();
-		access.append("[").append(formatDate).append("] ").append(RequestUtil.convert(in)).append(" ").append("500");
+		access.append("[").append(formatDate).append("] ").append(RequestUtil.convert(rh.in)).append(" ").append("500");
 		Server.accessLog.append(access.toString());
 	}
 
+}
+final class WriteHelper{
+	int writeLen = 0;
+	ByteBuffer poll = null;
+	int pos = 0;
+	int rem = 0;
+	final byte[] dst = new byte[Configuration.defaultChunkSize];
+	
+	void reset() {
+		writeLen = 0;
+		poll = null;
+		pos = 0;
+		rem = 0;
+	}
+
+	void clearBytes() {
+		poll = null;
+		pos = 0;
+		rem = 0;	
+	}
+}
+final class ReadHelper{
+	final List<ByteBuffer> in = new DoublyLinkedList<>();
+	boolean onceFlag = false;
+	int start = 0;
+	int mi = 0;
+	ByteBuffer rollOver = null;
+	
+	void reset(){
+		in.clear();
+		onceFlag = false;
+		start = 0;
+		mi = 0;
+		rollOver = null;
+	}
+	
+	void setValue(int s,int m, ByteBuffer bb){
+		start = s;
+		mi = m;
+		rollOver = bb;
+	}
 }
