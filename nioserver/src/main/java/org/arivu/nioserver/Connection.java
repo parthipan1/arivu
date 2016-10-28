@@ -124,6 +124,7 @@ final class Connection {
 				rh.setValue(0, 0, null);
 				break;
 			} else if (searchPattern < 0) {
+//				logger.debug(" searchPattern :: "+searchPattern+" content("+content.length+") :: "+new String(content)+" boundary("+req.boundary.length+") :: "+new String(req.boundary));
 				// System.err.println(" searchPattern :: "+searchPattern+" start
 				// :: "+start+" mi "+mi);
 				rh.setValue(0, searchPattern * -1 - 1, ByteData.wrap(Arrays.copyOfRange(content,rh.start, content.length)));

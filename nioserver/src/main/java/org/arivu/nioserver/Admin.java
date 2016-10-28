@@ -4,6 +4,8 @@
 package org.arivu.nioserver;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.MalformedURLException;
@@ -17,6 +19,8 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
@@ -31,27 +35,26 @@ import org.slf4j.LoggerFactory;
  */
 final class Admin {
 	private static final Logger logger = LoggerFactory.getLogger(Admin.class);
-
-	// @Path(value = "/multipart", httpMethod = HttpMethod.POST)
-	// static void multiPart() throws Exception {
-	// StaticRef.getResponse().setResponseCode(200);
-	//
-	// Map<String, MultiPart> multiParts =
-	// StaticRef.getRequest().getMultiParts();
-	// for(Entry<String,MultiPart> e:multiParts.entrySet()){
-	// MultiPart mp = e.getValue();
-	// if(NullCheck.isNullOrEmpty(mp.filename)){
-	// System.out.println( "Headers :: \n"+RequestUtil.getString(mp.headers) );
-	// System.out.println( "body :: \n"+RequestUtil.convert(mp.body) );
-	// }else{
-	// File file = new File("1_"+mp.filename);
-	// System.out.println( "Headers :: \n"+RequestUtil.getString(mp.headers) );
-	// System.out.println("uploaded file to :: "+file.getAbsolutePath());
-	// mp.writeTo(file, true);
-	// }
-	// System.out.println("*********************************************************************************");
-	// }
-	// }
+//
+//	@Path(value = "/multipart", httpMethod = HttpMethod.POST)
+//	static void multiPart() throws Exception {
+//		StaticRef.getResponse().setResponseCode(200);
+//
+//		Map<String, MultiPart> multiParts = StaticRef.getRequest().getMultiParts();
+//		for (Entry<String, MultiPart> e : multiParts.entrySet()) {
+//			MultiPart mp = e.getValue();
+//			if (NullCheck.isNullOrEmpty(mp.filename)) {
+//				System.out.println("Headers :: \n" + RequestUtil.getString(mp.headers));
+//				System.out.println("body :: \n" + RequestUtil.convert(mp.body));
+//			} else {
+//				File file = new File("1_" + mp.filename);
+//				System.out.println("Headers :: \n" + RequestUtil.getString(mp.headers));
+//				System.out.println("uploaded file to :: " + file.getAbsolutePath());
+//				mp.writeTo(file, true);
+//			}
+//			System.out.println("*********************************************************************************");
+//		}
+//	}
 
 	@Path(value = Configuration.stopUri, httpMethod = HttpMethod.GET)
 	static void stop() throws Exception {
@@ -245,51 +248,50 @@ final class Admin {
 		if (!destinationFolder.exists())
 			destinationFolder.mkdirs();
 
-		String exe = "unzip " + zipFile.getAbsolutePath() + " -d " + destinationFolder.getAbsolutePath();
-		Runtime.getRuntime().exec(exe).waitFor();
+		// String exe = "unzip " + zipFile.getAbsolutePath() + " -d " +
+		// destinationFolder.getAbsolutePath();
+		// Runtime.getRuntime().exec(exe).waitFor();
 
-		// byte[] buffer = new byte[2048];
-		//
-		// try (FileInputStream fInput = new FileInputStream(zipFile);
-		// ZipInputStream zipInput = new ZipInputStream(fInput);) {
-		//
-		// ZipEntry entry = zipInput.getNextEntry();
-		//
-		// while (entry != null) {
-		// String entryName = entry.getName();
-		// File file = new File(destinationFolder.getAbsolutePath() +
-		// File.separator + entryName);
-		//
-		// logger.info("Hotdeploy :: Unzip file " + entryName + " to " +
-		// file.getAbsolutePath());
-		//
-		// // create the directories of the zip directory
-		// if (entry.isDirectory()) {
-		// File newDir = new File(file.getAbsolutePath());
-		// if (!newDir.exists()) {
-		// boolean success = newDir.mkdirs();
-		// if (success == false) {
-		// logger.info("Problem creating Folder");
-		// }
-		// }
-		// } else {
-		// FileOutputStream fOutput = new FileOutputStream(file);
-		// int count = 0;
-		// while ((count = zipInput.read(buffer)) > 0) {
-		// // write 'count' bytes to the file output stream
-		// fOutput.write(buffer, 0, count);
-		// }
-		// fOutput.close();
-		// }
-		// // close ZipEntry and take the next one
-		// zipInput.closeEntry();
-		// entry = zipInput.getNextEntry();
-		// }
-		//
-		// // close the last ZipEntry
-		// zipInput.closeEntry();
-		//
-		// }
+		byte[] buffer = new byte[2048];
+
+		try (FileInputStream fInput = new FileInputStream(zipFile);
+				ZipInputStream zipInput = new ZipInputStream(fInput);) {
+
+			ZipEntry entry = zipInput.getNextEntry();
+
+			while (entry != null) {
+				String entryName = entry.getName();
+				File file = new File(destinationFolder.getAbsolutePath() + File.separator + entryName);
+
+				logger.info("Hotdeploy :: Unzip file " + entryName + " to " + file.getAbsolutePath());
+
+				// create the directories of the zip directory
+				if (entry.isDirectory()) {
+					File newDir = new File(file.getAbsolutePath());
+					if (!newDir.exists()) {
+						boolean success = newDir.mkdirs();
+						if (success == false) {
+							logger.info("Problem creating Folder");
+						}
+					}
+				} else {
+					FileOutputStream fOutput = new FileOutputStream(file);
+					int count = 0;
+					while ((count = zipInput.read(buffer)) > 0) {
+						// write 'count' bytes to the file output stream
+						fOutput.write(buffer, 0, count);
+					}
+					fOutput.close();
+				}
+				// close ZipEntry and take the next one
+				zipInput.closeEntry();
+				entry = zipInput.getNextEntry();
+			}
+
+			// close the last ZipEntry
+			zipInput.closeEntry();
+
+		}
 	}
 
 	static void del(File f) {

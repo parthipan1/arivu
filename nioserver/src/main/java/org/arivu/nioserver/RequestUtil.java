@@ -59,15 +59,19 @@ public class RequestUtil {
 		for (int i = start; i < content.length; i++) {
 			if (content[i] == pattern[mi]) {
 				mi++;
-				if (mi == pattern.length)
+				if (mi == pattern.length){
+//					logger.debug(" searchPattern 1 "+(i + 1 - mi));
 					return i + 1 - mi;
+				}
 			} else {
 				mi = 0;
 			}
 		}
 
-		if (mi != 0)
+		if (mi != 0){
+//			logger.debug(" searchPattern 2 "+(-1 * mi)+" c%"+content[content.length-1]+"%  p%"+pattern[0]+"% ap%"+new String(pattern)+"%");			
 			return -1 * mi;
+		}
 		else
 			return BYTE_SEARCH_DEFLT;
 	}
