@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -159,7 +160,7 @@ final class ProxyRoute extends Route {
 	String name;
 	String proxy_pass;
 	String dir;
-	Map<String,ByteData> files;
+	Map<String,WeakReference<ByteData>> files;
 	Threadlocal<HttpMethodCall> proxyTh;
 
 	/**
@@ -305,11 +306,11 @@ final class ProxyRoute extends Route {
 					
 				}
 			}
-			ByteData bytes = files.get(file);//getOriginalBytes(file);
+			ByteData bytes = getWr(files.get(file)) ;//getOriginalBytes(file);
 			if (bytes == null) {
 				readLock.lock();
 				RandomAccessFile randomAccessFile = null;
-				bytes = files.get(file);
+				bytes = getWr(files.get(file));
 				if( bytes == null ){
 					try {
 						randomAccessFile = new RandomAccessFile(new File(file), "r");
@@ -318,7 +319,7 @@ final class ProxyRoute extends Route {
 						byte[] data = new byte[bb.remaining()];
 						bb.get(data, 0, data.length);
 						bytes = new ByteData(data);
-						files.put(file, bytes);
+						files.put(file, new WeakReference<ByteData>(bytes) );
 					} finally {
 						readLock.unlock();
 						if (randomAccessFile != null) {
@@ -336,6 +337,11 @@ final class ProxyRoute extends Route {
 		}
 	}
 
+	ByteData getWr(WeakReference<ByteData> ref){
+		if( ref == null ) return null;
+		else return ref.get();
+	}
+	
 	@Override
 	Response getResponse(Request req) {
 		if (!NullCheck.isNullOrEmpty(dir)) {
