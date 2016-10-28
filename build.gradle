@@ -337,7 +337,7 @@ dependencies {
 	createDir(deployDir+FS+"dist"+FS+"bin")
 	createDir(deployDir+FS+"dist"+FS+"conf")
 	createDir(deployDir+FS+"dist"+FS+"logs")
-	createDir(deployDir+FS+"dist"+FS+"hotdeploy")
+	createDir(deployDir+FS+"dist"+FS+"apps")
 	
 	new File(deployDir+FS+"dist"+FS+"bin"+FS+"start.sh") << "java -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:ParallelGCThreads=4 -XX:ConcGCThreads=2 -classpath ../libs/*:../conf/*:../hotdeploy/* -Dlightninglog.json=../conf/lightninglog.json -Darivu.nioserver.json=../conf/arivu.nioserver.json -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=12345 -Djava.rmi.server.hostname=localhost -Dcom.sun.management.jmxremote.rmi.port=12345 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false org.arivu.nioserver.Server start"
 	new File(deployDir+FS+"dist"+FS+"bin"+FS+"start.cmd") << "java -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:ParallelGCThreads=4 -XX:ConcGCThreads=2 -classpath ..\\libs\\*:..\\conf\\*:..\\hotdeploy\\* -Dlightninglog.json=..\\conf\\lightninglog.json -Darivu.nioserver.json=../conf/arivu.nioserver.json -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=12345 -Djava.rmi.server.hostname=localhost -Dcom.sun.management.jmxremote.rmi.port=12345 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false org.arivu.nioserver.Server start"

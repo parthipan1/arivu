@@ -275,7 +275,7 @@ final class SelectorHandler {
 						key1.attach(connectionPool.get(null).assign());
 					} else {
 						key.interestOps(0);
-						if (Server.SINGLE_THREAD_MODE) {
+						if (Configuration.SINGLE_THREAD_MODE) {
 							process(key);
 						} else {
 							exe.execute(new Runnable() {

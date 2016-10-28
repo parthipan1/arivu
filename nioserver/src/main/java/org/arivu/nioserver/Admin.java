@@ -14,7 +14,6 @@ import java.nio.channels.FileChannel;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -137,18 +136,21 @@ final class Admin {
 	@Path(value = "/__admin/deploy", httpMethod = HttpMethod.POST)
 	static void hotdeploy() throws IOException, ClassNotFoundException {
 
-		Map<String, MultiPart> multiParts = StaticRef.getRequest().getMultiParts();
-		for (Entry<String, MultiPart> e : multiParts.entrySet()) {
-			MultiPart mp = e.getValue();
-			if (NullCheck.isNullOrEmpty(mp.filename)) {
-				System.out.println(e.getKey()+"  Headers :: \n" + RequestUtil.getString(mp.headers));
-				System.out.println("body :: \n" + RequestUtil.convert(mp.body));
-			} else {
-//				File file = new File("1_" + mp.filename);
-				System.out.println(e.getKey()+"  Headers :: \n" + RequestUtil.getString(mp.headers));
-				System.out.println("uploaded file to :: " + mp.filename);
-			}
-		}
+		// Map<String, MultiPart> multiParts =
+		// StaticRef.getRequest().getMultiParts();
+		// for (Entry<String, MultiPart> e : multiParts.entrySet()) {
+		// MultiPart mp = e.getValue();
+		// if (NullCheck.isNullOrEmpty(mp.filename)) {
+		// System.out.println(e.getKey()+" Headers :: \n" +
+		// RequestUtil.getString(mp.headers));
+		// System.out.println("body :: \n" + RequestUtil.convert(mp.body));
+		// } else {
+		//// File file = new File("1_" + mp.filename);
+		// System.out.println(e.getKey()+" Headers :: \n" +
+		// RequestUtil.getString(mp.headers));
+		// System.out.println("uploaded file to :: " + mp.filename);
+		// }
+		// }
 
 		Request request = StaticRef.getRequest();
 		Response res = StaticRef.getResponse();
@@ -157,7 +159,7 @@ final class Admin {
 			res.append("Invalid Request for hot deploy!");
 			return;
 		}
-		// Map<String, MultiPart> multiParts = request.getMultiParts();
+		Map<String, MultiPart> multiParts = request.getMultiParts();
 
 		MultiPart namePart = multiParts.get("name");
 		MultiPart scanpackagesPart = multiParts.get("scanpackages");
@@ -168,31 +170,29 @@ final class Admin {
 			String scanpackages = RequestUtil.convert(scanpackagesPart.getBody());
 			List<ByteData> zipFileBody = distPart.getBody();
 			if (!NullCheck.isNullOrEmpty(name) && !NullCheck.isNullOrEmpty(scanpackages)
-					&& !NullCheck.isNullOrEmpty(zipFileBody) && RequestUtil.validUrl.matcher(name).matches() ) {
+					&& !NullCheck.isNullOrEmpty(zipFileBody) && RequestUtil.validUrl.matcher(name).matches()) {
 
-				String deployDirPathname = ".." + File.separator + "hotdeploy" + File.separator + name;
+				String deployDirPathname = Configuration.DEPLOY_LOC + File.separator + name;
 				HotDeploy hd = new HotDeploy(name, scanpackages, new File(deployDirPathname));
 				if (hd.rootDir.mkdirs()) {
 					try {
-						File zipFile = new File(".." + File.separator + "hotdeploy" + File.separator + name + File.separator
+						File zipFile = new File(Configuration.DEPLOY_LOC + File.separator + name + File.separator
 								+ distPart.getFilename());
 						distPart.writeTo(zipFile, false);
-						scanpackagesPart.writeTo(new File(".." + File.separator + "hotdeploy" + File.separator + name
-								+ File.separator + "scanpackages"), false);
+						scanpackagesPart.writeTo(new File(
+								Configuration.DEPLOY_LOC + File.separator + name + File.separator + "scanpackages"),
+								false);
 						File libsFile = new File(
-								".." + File.separator + "hotdeploy" + File.separator + name + File.separator + "libs");
+								Configuration.DEPLOY_LOC + File.separator + name + File.separator + "libs");
 						unzip(libsFile, zipFile);
 						List<URL> urls = new DoublyLinkedList<>();
 						allUrls(libsFile, urls);
-						Object[] objarr = urls.toArray();
-						URL[] array = new URL[objarr.length];
-						for(int i=0;i<objarr.length;i++)
-							array[i] = (URL)objarr[i];
-						hd.dynamicClassLoader = new URLClassLoader(array, Admin.class.getClassLoader());
+						hd.dynamicClassLoader = new URLClassLoader(toArray(urls), Admin.class.getClassLoader());
 
 						String[] split = scanpackages.split(",");
 						for (String pkgName : split) {
-							for (Class<?> kcs : PackageScanner.getClassesForPackage(hd.dynamicClassLoader, pkgName, true)) {
+							for (Class<?> kcs : PackageScanner.getClassesForPackage(hd.dynamicClassLoader, pkgName,
+									true)) {
 								PackageScanner.addMethod(hd.reqPaths, kcs);
 							}
 						}
@@ -200,7 +200,7 @@ final class Admin {
 						Configuration.routes.addAll(hd.reqPaths);
 						allHotDeployedArtifacts.put(name, hd);
 					} catch (Throwable e1) {
-						e1.printStackTrace();
+						logger.error("Failed in hotdeploy :: ", e1);
 					}
 
 				} else {
@@ -215,6 +215,14 @@ final class Admin {
 			res.setResponseCode(400);
 			res.append("Invalid Request for hot deploy!");
 		}
+	}
+
+	static URL[] toArray(List<URL> urls) {
+		Object[] objarr = urls.toArray();
+		URL[] array = new URL[objarr.length];
+		for (int i = 0; i < objarr.length; i++)
+			array[i] = (URL) objarr[i];
+		return array;
 	}
 
 	private static void allUrls(File root, List<URL> urls) throws MalformedURLException {
@@ -237,49 +245,51 @@ final class Admin {
 		if (!destinationFolder.exists())
 			destinationFolder.mkdirs();
 
-		String exe = "unzip "+zipFile.getAbsolutePath()+" -d "+ destinationFolder.getAbsolutePath();
+		String exe = "unzip " + zipFile.getAbsolutePath() + " -d " + destinationFolder.getAbsolutePath();
 		Runtime.getRuntime().exec(exe).waitFor();
-		
-//		byte[] buffer = new byte[2048];
-//
-//		try (FileInputStream fInput = new FileInputStream(zipFile);
-//				ZipInputStream zipInput = new ZipInputStream(fInput);) {
-//
-//			ZipEntry entry = zipInput.getNextEntry();
-//
-//			while (entry != null) {
-//				String entryName = entry.getName();
-//				File file = new File(destinationFolder.getAbsolutePath() + File.separator + entryName);
-//
-//				logger.info("Hotdeploy :: Unzip file " + entryName + " to " + file.getAbsolutePath());
-//
-//				// create the directories of the zip directory
-//				if (entry.isDirectory()) {
-//					File newDir = new File(file.getAbsolutePath());
-//					if (!newDir.exists()) {
-//						boolean success = newDir.mkdirs();
-//						if (success == false) {
-//							logger.info("Problem creating Folder");
-//						}
-//					}
-//				} else {
-//					FileOutputStream fOutput = new FileOutputStream(file);
-//					int count = 0;
-//					while ((count = zipInput.read(buffer)) > 0) {
-//						// write 'count' bytes to the file output stream
-//						fOutput.write(buffer, 0, count);
-//					}
-//					fOutput.close();
-//				}
-//				// close ZipEntry and take the next one
-//				zipInput.closeEntry();
-//				entry = zipInput.getNextEntry();
-//			}
-//
-//			// close the last ZipEntry
-//			zipInput.closeEntry();
-//
-//		}
+
+		// byte[] buffer = new byte[2048];
+		//
+		// try (FileInputStream fInput = new FileInputStream(zipFile);
+		// ZipInputStream zipInput = new ZipInputStream(fInput);) {
+		//
+		// ZipEntry entry = zipInput.getNextEntry();
+		//
+		// while (entry != null) {
+		// String entryName = entry.getName();
+		// File file = new File(destinationFolder.getAbsolutePath() +
+		// File.separator + entryName);
+		//
+		// logger.info("Hotdeploy :: Unzip file " + entryName + " to " +
+		// file.getAbsolutePath());
+		//
+		// // create the directories of the zip directory
+		// if (entry.isDirectory()) {
+		// File newDir = new File(file.getAbsolutePath());
+		// if (!newDir.exists()) {
+		// boolean success = newDir.mkdirs();
+		// if (success == false) {
+		// logger.info("Problem creating Folder");
+		// }
+		// }
+		// } else {
+		// FileOutputStream fOutput = new FileOutputStream(file);
+		// int count = 0;
+		// while ((count = zipInput.read(buffer)) > 0) {
+		// // write 'count' bytes to the file output stream
+		// fOutput.write(buffer, 0, count);
+		// }
+		// fOutput.close();
+		// }
+		// // close ZipEntry and take the next one
+		// zipInput.closeEntry();
+		// entry = zipInput.getNextEntry();
+		// }
+		//
+		// // close the last ZipEntry
+		// zipInput.closeEntry();
+		//
+		// }
 	}
 
 	static void del(File f) {
@@ -289,7 +299,7 @@ final class Admin {
 					f.delete();
 				} else {
 					for (String t : f.list())
-						del(new File(f,t));
+						del(new File(f, t));
 
 					if (f.list().length == 0) {
 						f.delete();
@@ -299,7 +309,7 @@ final class Admin {
 				f.delete();
 			}
 		} catch (Throwable e) {
-			e.printStackTrace();
+			logger.error("Failed in delete file :: ", e);
 		}
 	}
 

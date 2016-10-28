@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.utils.Ason;
+import org.arivu.utils.Env;
 import org.arivu.utils.NullCheck;
 import org.arivu.utils.Utils;
 import org.slf4j.Logger;
@@ -102,4 +103,6 @@ final class Configuration {
 		}
 	}
 
+	static final boolean SINGLE_THREAD_MODE = Boolean.parseBoolean(Env.getEnv("singleThread", "false"));
+	static final String DEPLOY_LOC = Env.getEnv("deployLoc", ".." + File.separator + "apps");
 }

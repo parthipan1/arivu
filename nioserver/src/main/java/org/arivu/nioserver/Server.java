@@ -16,12 +16,6 @@ import org.arivu.utils.Env;
  */
 public class Server {
 
-	static final String DEFAULT_HOST = Env.getEnv("host", "localhost");
-
-	static final int DEFAULT_PORT = Integer.parseInt(Env.getEnv("port", "8080"));
-
-	static final boolean SINGLE_THREAD_MODE = Boolean.parseBoolean(Env.getEnv("singleThread", "false"));
-
 	/**
 	 * @param args
 	 * @throws InterruptedException
@@ -40,6 +34,10 @@ public class Server {
 	static SelectorHandler handler = null;
 
 	static Appender accessLog = null;
+
+	static final String DEFAULT_HOST = Env.getEnv("host", "localhost");
+
+	static final int DEFAULT_PORT = Integer.parseInt(Env.getEnv("port", "8080"));
 
 	
 }
