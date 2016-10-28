@@ -1,11 +1,9 @@
 package org.arivu.nioserver;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.io.RandomAccessFile;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
@@ -14,8 +12,6 @@ import java.net.HttpURLConnection;
 import java.net.SocketAddress;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -61,7 +57,8 @@ public class RequestUtil {
 	static int searchPattern(byte[] content, byte[] pattern, int start, int disp) {
 		int mi = disp;
 		for (int i = start; i < content.length; i++) {
-			if (content[i] == pattern[mi++]) {
+			if (content[i] == pattern[mi]) {
+				mi++;
 				if (mi == pattern.length)
 					return i + 1 - mi;
 			} else {
@@ -563,38 +560,6 @@ public class RequestUtil {
 
 	}
 
-	@Path(value = "/*", httpMethod = HttpMethod.ALL)
-	static void handle404() throws Exception {
-		Response res = StaticRef.getResponse();
-		logger.debug(StaticRef.getRequest().toString());
-		res.setResponseCode(404);
-	}
-
-	static ByteBuffer iconBytes = null;
-
-	@Path(value = "/favicon.ico", httpMethod = HttpMethod.GET)
-	static void handleIcon() throws Exception {
-		Response res = StaticRef.getResponse();
-		res.setResponseCode(200);
-
-		if (iconBytes == null) {
-			RandomAccessFile randomAccessFile = null;
-			try {
-				randomAccessFile = new RandomAccessFile(new File("favicon.ico"), "r");
-				final FileChannel fileChannel = randomAccessFile.getChannel();
-				iconBytes = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size());
-			} finally {
-				if (randomAccessFile != null) {
-					randomAccessFile.close();
-				}
-			}
-		}
-		byte[] array = new byte[iconBytes.remaining()];
-		iconBytes.get(array, 0, array.length);
-		res.append(array);
-		res.putHeader("Content-Length", array.length);
-		res.putHeader("Content-Type", "image/x-icon");
-	}
 }
 
 class Ref {

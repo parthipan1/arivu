@@ -77,7 +77,7 @@ final class Connection {
 				wh.pos += length;
 				finishByteBuff(key, socketChannel);
 			} catch (Throwable e) {
-				logger.error("Failed in write :: ", e);
+				logger.error("Failed in write req "+req+" :: ", e);
 				finish(key);
 //				throw e;
 			}

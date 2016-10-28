@@ -62,8 +62,11 @@ final class SelectorHandler {
 		@Override
 		public void removeRoute(String route) {
 			Route route2 = getRoute(route);
-			if(route2!=null)
-				Configuration.routes.remove(route2);
+			if(route2!=null){
+				if(Configuration.routes.remove(route2)){
+					route2.close();
+				}
+			}
 		}
 		
 		Route getRoute(String route) {

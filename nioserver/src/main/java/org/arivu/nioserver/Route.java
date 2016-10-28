@@ -32,8 +32,8 @@ class Route {
 
 	final String uri;
 	final org.arivu.nioserver.HttpMethod httpMethod;
-	final Class<?> klass;
-	final Method method;
+	Class<?> klass;
+	Method method;
 	final boolean isStatic;
 	final MethodInvoker invoker;
 	final RequestUriTokens rut;
@@ -118,6 +118,15 @@ class Route {
 		}
 	}
 
+	void close(){
+		if(tl!=null){
+			tl.close();
+			tl.clearAll();
+		}
+		klass = null;
+		method = null;
+	}
+	
 	@Override
 	public int hashCode() {
 		final int prime = 31;
