@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.utils.Ason;
+import org.arivu.utils.Env;
 import org.arivu.utils.NullCheck;
 import org.arivu.utils.Utils;
 import org.slf4j.Logger;
@@ -16,7 +17,11 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("unchecked")
 final class Configuration {
 	private static final Logger logger = LoggerFactory.getLogger(Configuration.class);
+	
 	static final String stopUri = "/__admin/shutdown";
+	static final boolean SINGLE_THREAD_MODE = Boolean.parseBoolean(Env.getEnv("singleThread", "false"));
+	static final String DEPLOY_LOC = Env.getEnv("deployLoc", ".." + File.separator + "apps");
+	
 	static final Map<String, Object> defaultResponseHeader;
 	static final Map<String, Object> defaultResponseCodes;
 	static final Map<String, Map<String, Object>> defaultMimeType;
@@ -87,6 +92,7 @@ final class Configuration {
 			tempRequestPaths.addAll(PackageScanner.getPaths(scanPackages));
 //			routes = Utils.unmodifiableCollection(tempRequestPaths);
 			routes = tempRequestPaths;
+			RequestUtil.scanApps(new File(DEPLOY_LOC));
 			for (Route r : routes){
 				if ( defaultRoute == null && r.uri.equals("/*") && r.httpMethod == HttpMethod.ALL ){
 					defaultRoute = r;

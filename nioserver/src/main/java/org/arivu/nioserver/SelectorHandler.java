@@ -62,8 +62,11 @@ final class SelectorHandler {
 		@Override
 		public void removeRoute(String route) {
 			Route route2 = getRoute(route);
-			if(route2!=null)
-				Configuration.routes.remove(route2);
+			if(route2!=null){
+				if(Configuration.routes.remove(route2)){
+					route2.close();
+				}
+			}
 		}
 		
 		Route getRoute(String route) {
@@ -269,10 +272,10 @@ final class SelectorHandler {
 						SocketChannel clientSocket = ssc.accept();
 						clientSocket.configureBlocking(false);
 						SelectionKey key1 = clientSocket.register(clientSelector, SelectionKey.OP_READ);
-						key1.attach(connectionPool.get(null));
+						key1.attach(connectionPool.get(null).assign());
 					} else {
 						key.interestOps(0);
-						if (Server.SINGLE_THREAD_MODE) {
+						if (Configuration.SINGLE_THREAD_MODE) {
 							process(key);
 						} else {
 							exe.execute(new Runnable() {
@@ -292,12 +295,26 @@ final class SelectorHandler {
 	void stop() {
 		shutdown = true;
 		try {
-			clientSelector.close();
-		} catch (IOException e) {
-			logger.error("Failed in clientSelector close :: ", e);
+			try {
+				clientSelector.close();
+			} catch (IOException e) {
+				logger.error("Failed in clientSelector close :: ", e);
+			}
+			exe.shutdownNow();
+			unregisterMXBean();
+			closeAccessLog();
+			try {
+				connectionPool.close();
+			} catch (Exception e) {
+				logger.error("Failed to close connectionPool::", e);
+			} 
+		} finally {
+			logger.info("Server stopped!");
+			System.exit(0);
 		}
-		exe.shutdownNow();
-		unregisterMXBean();
+	}
+
+	void closeAccessLog() {
 		if (Server.accessLog != null) {
 			try {
 				Server.accessLog.close();
@@ -305,13 +322,6 @@ final class SelectorHandler {
 				logger.error("Failed to close accesslog::", e);
 			}
 		}
-		try {
-			connectionPool.close();
-		} catch (Exception e) {
-			logger.error("Failed to close connectionPool::", e);
-		}
-		logger.info("Server stopped!");
-		System.exit(0);
 	}
 
 	void process(final SelectionKey key) {

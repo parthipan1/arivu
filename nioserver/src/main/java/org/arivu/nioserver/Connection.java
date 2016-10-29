@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 final class Connection {
 	private static final Logger logger = LoggerFactory.getLogger(Connection.class);
 
-	final long startTime = System.currentTimeMillis();
+	long startTime = System.currentTimeMillis();
 	
 	Pool<Connection> pool;
 
@@ -35,48 +35,49 @@ final class Connection {
 	}
 
 	final WriteHelper wh = new WriteHelper();
-
 	final ReadHelper rh = new ReadHelper();
-
 	RequestImpl req = null;
 	Route route = null;
-	Ref resBuff = null;
+	
+	Connection assign(){
+		startTime = System.currentTimeMillis();
+		return this;
+	}
 	
 	void reset() {
 		wh.reset();
 		rh.reset();
 		req = null;
 		route = null;
-		resBuff = null;
+		startTime = 0;
 	}
 
 	void write(SelectionKey key) throws IOException {
-		logger.debug(" write  :: " + resBuff);
-		if (resBuff != null) {
+		logger.debug(" write  :: " + wh.resBuff);
+		if (wh.resBuff != null) {
 			try {
 				if (wh.poll == null) {
-					wh.poll = resBuff.queue.poll();
+					wh.poll = wh.resBuff.queue.poll();
 					if (wh.poll != null) {
 						wh.rem = wh.poll.array().length;
-						logger.debug(resBuff + " 1 write next ByteBuff size :: " + wh.rem + " queueSize :: "
-								+ resBuff.queue.size());
+						logger.debug(wh.resBuff + " 1 write next ByteBuff size :: " + wh.rem + " queueSize :: "
+								+ wh.resBuff.queue.size());
 					} else {
-						logger.debug(resBuff + " 2 write next ByteBuff is null! finish! ");
+						logger.debug(wh.resBuff + " 2 write next ByteBuff is null! finish! ");
 						finish(key);
 						return;
 					}
 				}
 
 				int length = Math.min(Configuration.defaultChunkSize, wh.rem - wh.pos);
-				logger.debug(resBuff + "  3 write bytes from  :: " + wh.pos + "  length :: " + (length) + " to :: "
+				logger.debug(wh.resBuff + "  3 write bytes from  :: " + wh.pos + "  length :: " + (length) + " to :: "
 						+ (wh.pos + length) + " size :: " + wh.rem);
-				byte[] dstt = Arrays.copyOfRange(wh.poll.array(), wh.pos, wh.pos+length);
 				SocketChannel socketChannel = (SocketChannel) key.channel();
-				socketChannel.write(ByteBuffer.wrap(dstt));
+				socketChannel.write(ByteBuffer.wrap(Arrays.copyOfRange(wh.poll.array(), wh.pos, wh.pos+length)));
 				wh.pos += length;
 				finishByteBuff(key, socketChannel);
 			} catch (Throwable e) {
-				logger.error("Failed in write :: ", e);
+				logger.error("Failed in write req "+req+" :: ", e);
 				finish(key);
 //				throw e;
 			}
@@ -84,8 +85,8 @@ final class Connection {
 	}
 
 	void finishByteBuff(SelectionKey key, SocketChannel socketChannel) throws IOException {
-		boolean empty = resBuff.queue.isEmpty();
-		logger.debug(resBuff + " 4 finishByteBuff! empty :: " + empty + " queueSize :: " + resBuff.queue.size()
+		boolean empty = wh.resBuff.queue.isEmpty();
+		logger.debug(wh.resBuff + " 4 finishByteBuff! empty :: " + empty + " queueSize :: " + wh.resBuff.queue.size()
 				+ " read :: " + wh.pos + " size :: " + wh.rem);
 		if (wh.rem == wh.pos) {
 			wh.clearBytes();
@@ -103,8 +104,8 @@ final class Connection {
 		channel.finishConnect();
 		channel.close();
 		key.cancel();
-		if (resBuff != null)
-			RequestUtil.accessLog(resBuff.rc, resBuff.uri, startTime, System.currentTimeMillis(), resBuff.cl,
+		if (wh.resBuff != null)
+			RequestUtil.accessLog(wh.resBuff.rc, wh.resBuff.uri, startTime, System.currentTimeMillis(), wh.resBuff.cl,
 					remoteSocketAddress);
 		wh.writeLen = 0;
 		pool.put(this);
@@ -123,8 +124,14 @@ final class Connection {
 				rh.setValue(0, 0, null);
 				break;
 			} else if (searchPattern < 0) {
+//				logger.debug(" searchPattern :: "+searchPattern+" content("+content.length+") :: "+new String(content)+" boundary("+req.boundary.length+") :: "+new String(req.boundary));
 				// System.err.println(" searchPattern :: "+searchPattern+" start
 				// :: "+start+" mi "+mi);
+				if (rh.mi > 0) {
+					if (rh.rollOver != null){
+						req.body.add(rh.rollOver);
+					}
+				}
 				rh.setValue(0, searchPattern * -1 - 1, ByteData.wrap(Arrays.copyOfRange(content,rh.start, content.length)));
 				break;
 			} else if (searchPattern > 0) {
@@ -138,8 +145,10 @@ final class Connection {
 				rh.setValue(searchPattern + req.boundary.length + 1, 0, null);
 			} else if (searchPattern == 0) {
 				if (rh.mi > 0) {
-					byte[] prevContent = rh.rollOver.array();
-					req.body.add(ByteData.wrap(Arrays.copyOfRange(prevContent, 0, prevContent.length - rh.mi)));
+					if (rh.rollOver != null){
+						byte[] prevContent = rh.rollOver.array();
+						req.body.add(ByteData.wrap(Arrays.copyOfRange(prevContent, 0, prevContent.length - rh.mi)));
+					}
 					addMultiPart();
 					req.body.clear();
 					rh.setValue(req.boundary.length + 1 - rh.mi, 0, null);
@@ -219,29 +228,13 @@ final class Connection {
 					}
 				}
 			}
-			// total += bytesRead;
-			// logger.debug(" read :: "+bytesRead+" req.isMultipart
-			// "+req.isMultipart+" total "+total);
 			if (req != null && req.isMultipart) {
 				int size = req.body.size();
-				// System.out.println(" req.isMultipart read :: "+bytesRead+"
-				// size "+size);
-				if (size == 0) {
+				if (size == 0) 
 					key.interestOps(SelectionKey.OP_READ);
-					return;
-				}
-				String endOfLine = getEndOfLine(bytesRead, wrap);
-				// System.out.println(" req.isMultipart read :: "+bytesRead+"
-				// endOfLine "+endOfLine);
-				String string = new String(req.boundary);
-				if (bytesRead == -1 || (EOL0 == RequestUtil.BYTE_10 && endOfLine.startsWith(string + "--"))) {
-					// System.out.println(" proces request before
-					// parseAndSetMultiPart cl "+req.);
-					// RequestUtil.parseAndSetMultiPart(req);
-					// System.out.println(" proces request after
-					// parseAndSetMultiPart ");
+				else  if (bytesRead == -1 || (EOL0 == RequestUtil.BYTE_10 && isEndOfLine(bytesRead, readBuf))) 
 					processRequest(key);
-				} else
+				else
 					key.interestOps(SelectionKey.OP_READ);
 			} else {
 				if ((bytesRead == -1 || EOL0 == RequestUtil.BYTE_10))
@@ -256,17 +249,16 @@ final class Connection {
 		}
 	}
 
-	String getEndOfLine(int bytesRead, ByteBuffer bb) {
-		byte[] array = bb.array();
+	boolean isEndOfLine(int bytesRead, byte[] array) {
 		StringBuffer endOfLineBuf = new StringBuffer();
 		int start = bytesRead - req.boundary.length - 4;
 		if (start >= 0) {
 			for (int i = start; i < array.length - 1; i++)
 				endOfLineBuf.append((char) array[i]);
 		}
-
-		String endOfLine = endOfLineBuf.toString();
-		return endOfLine;
+		String string = new String(req.boundary);
+		return endOfLineBuf.toString().startsWith(string + "--");
+//		return endOfLineBuf.toString();
 	}
 
 	public void processRequest(final SelectionKey key) {
@@ -276,11 +268,11 @@ final class Connection {
 				Response response = route.getResponse(req);
 				if (response != null) {
 					route.handle(req, response);
-					resBuff = RequestUtil.getResponseBytes(req, response);
-					if (resBuff != null && resBuff.cl > Configuration.defaultChunkSize) {
+					wh.resBuff = RequestUtil.getResponseBytes(req, response);
+					if (wh.resBuff != null && wh.resBuff.cl > Configuration.defaultChunkSize) {
 						((SocketChannel) key.channel()).socket().setSoTimeout(0);
 					}
-					logger.debug(" request :: " + req.toString() + " response :: " + resBuff.cl);
+					logger.debug(" request :: " + req.toString() + " response :: " + wh.resBuff.cl);
 				}
 				req = null;
 				route = null;
@@ -321,11 +313,12 @@ final class WriteHelper{
 	ByteData poll = null;
 	int pos = 0;
 	int rem = 0;
-//	final byte[] dst = new byte[Configuration.defaultChunkSize];
+	Ref resBuff = null;
 	
 	void reset() {
 		writeLen = 0;
 		poll = null;
+		resBuff = null;
 		pos = 0;
 		rem = 0;
 	}

@@ -35,16 +35,16 @@ class PackageScanner {
 	}
 
 	static void getPaths(Collection<Route> reqPaths, String pkgName) throws ClassNotFoundException {
-		for (Class<?> kcs : getClassesForPackage(pkgName)) {
+		for (Class<?> kcs : getClassesForPackage(Thread.currentThread().getContextClassLoader(), pkgName, false)) {
 			addMethod(reqPaths, kcs);
 		}
 	}
 
-	static Collection<Class<?>> getClassesForPackage(String pckgname) throws ClassNotFoundException {
+	static Collection<Class<?>> getClassesForPackage(ClassLoader cld, String pckgname, boolean isHotDeploy) throws ClassNotFoundException {
 		List<File> directories = new DoublyLinkedList<File>();
 		String packageToPath = pckgname.replace('.', '/');
 		try {
-			ClassLoader cld = Thread.currentThread().getContextClassLoader();
+			// ClassLoader cld = Thread.currentThread().getContextClassLoader();
 			if (cld == null) {
 				throw new ClassNotFoundException("Can't get class loader.");
 			}
@@ -80,11 +80,10 @@ class PackageScanner {
 						try {
 							String className = packagePrefix + '.'
 									+ file.getName().substring(0, file.getName().length() - 6);
-							if("org.arivu.nioserver.Configuration.class".equals(className)||
-								"org.arivu.nioserver.PackageScanner.class".equals(className)
-									){
+							if ("org.arivu.nioserver.Configuration.class".equals(className)
+									|| "org.arivu.nioserver.PackageScanner.class".equals(className)) {
 								continue;
-							}else{
+							} else {
 								classes.add(Class.forName(className));
 							}
 						} catch (NoClassDefFoundError e) {
@@ -96,36 +95,41 @@ class PackageScanner {
 				}
 			} else {
 				int indexOf = path.indexOf("!");
-				if(indexOf==-1){
+				if (indexOf == -1) {
 					logger.error(pckgname + " (" + path + ") does not appear to be a valid package");
 					throw new ClassNotFoundException(
 							pckgname + " (" + path + ") does not appear to be a valid package");
-				}else{
-					classes.addAll(getClasseNamesInPackage(path.substring(0, indexOf),pckgname));
+				} else {
+					classes.addAll(getClasseNamesInPackage(cld, path.substring(0, indexOf), pckgname, isHotDeploy));
 				}
 			}
 		}
 		return classes;
 	}
 
-	static Collection<Class<?>> getClasseNamesInPackage(String jarName, String packageName) {
+	static Collection<Class<?>> getClasseNamesInPackage(ClassLoader cld, String jarName, String packageName, boolean isHotDeploy) {
 		Collection<Class<?>> classes = new DoublyLinkedList<Class<?>>();
-		jarName = Utils.replaceAll(jarName, "file:", "");//jarName.replaceFirst("file:", "");
+		jarName = Utils.replaceAll(jarName, "file:", "");// jarName.replaceFirst("file:",
+															// "");
 		packageName = packageName.replaceAll("\\.", "/");
 		JarInputStream jarFile = null;
-		try{
+		try  {
 			jarFile = new JarInputStream(new FileInputStream(new File(jarName)));
 			JarEntry jarEntry;
-			while ( (jarEntry = jarFile.getNextJarEntry()) != null ) {
+			while ((jarEntry = jarFile.getNextJarEntry()) != null) {
 				if ((jarEntry.getName().startsWith(packageName)) && (jarEntry.getName().endsWith(".class"))) {
 					String className = jarEntry.getName().replaceAll("/", "\\.");
-					if("org.arivu.nioserver.Configuration.class".equals(className)||
-							"org.arivu.nioserver.PackageScanner.class".equals(className)){
+					if ("org.arivu.nioserver.Configuration.class".equals(className)
+							|| "org.arivu.nioserver.PackageScanner.class".equals(className)) {
 						continue;
-					}else{
+					} else {
 						try {
-							classes.add(Class.forName( Utils.replaceAll(className, ".class", "") ));
-						}  catch (NoClassDefFoundError e) {
+							if(isHotDeploy){
+								classes.add(Class.forName (Utils.replaceAll(className, ".class", ""), true, cld));
+							}else{
+								classes.add(Class.forName(Utils.replaceAll(className, ".class", "")));
+							}
+						} catch (NoClassDefFoundError e) {
 							logger.error("Error on Scanning annotation :: ", e);
 						}
 					}
@@ -157,25 +161,25 @@ class PackageScanner {
 						org.arivu.nioserver.HttpMethod httpMethod = path.httpMethod();
 						if (!NullCheck.isNullOrEmpty(uri) && httpMethod != null) {
 							boolean validateRouteUri = RequestUtil.validateRouteUri(uri);
-							if( uri.equals("/*") || uri.equals("/favicon.ico") || validateRouteUri ){
+							if (uri.equals("/*") || uri.equals("/favicon.ico") || validateRouteUri) {
 								boolean isStatic = Modifier.isStatic(method.getModifiers());
 								Route e = new Route(uri, httpMethod, clazz, method, isStatic);
 								Route matchingRoute = RequestUtil.getMatchingRoute(reqPaths, uri, httpMethod, true);
-								if (matchingRoute==null) {
+								if (matchingRoute == null) {
 									reqPaths.add(e);
 									logger.debug("Discovered request handler :: " + clazz.getName() + " httpMethod "
 											+ method.getName());
 								} else {
 									logger.info("Duplicate request handler discovered ignoring :: " + clazz.getName()
-									+ " httpMethod " + method.getName());
+											+ " httpMethod " + method.getName());
 								}
-							}else{
-								logger.info("Invalid request Uri ("+uri+") handler discovered ignoring :: " + clazz.getName()
-								+ " httpMethod " + method.getName());
+							} else {
+								logger.info("Invalid request Uri (" + uri + ") handler discovered ignoring :: "
+										+ clazz.getName() + " httpMethod " + method.getName());
 							}
-						}else{
-							logger.info("Invalid request Uri ("+uri+") handler discovered ignoring :: " + clazz.getName()
-							+ " httpMethod " + method.getName());
+						} else {
+							logger.info("Invalid request Uri (" + uri + ") handler discovered ignoring :: "
+									+ clazz.getName() + " httpMethod " + method.getName());
 
 						}
 					} catch (IllegalArgumentException e) {
@@ -185,5 +189,5 @@ class PackageScanner {
 			}
 		}
 	}
-	
+
 }

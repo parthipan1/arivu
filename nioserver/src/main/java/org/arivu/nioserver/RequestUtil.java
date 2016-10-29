@@ -2,6 +2,10 @@ package org.arivu.nioserver;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileFilter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -11,6 +15,7 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.SocketAddress;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -23,11 +28,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
@@ -61,16 +69,21 @@ public class RequestUtil {
 	static int searchPattern(byte[] content, byte[] pattern, int start, int disp) {
 		int mi = disp;
 		for (int i = start; i < content.length; i++) {
-			if (content[i] == pattern[mi++]) {
-				if (mi == pattern.length)
+			if (content[i] == pattern[mi]) {
+				mi++;
+				if (mi == pattern.length){
+//					logger.debug(" searchPattern 1 "+(i + 1 - mi));
 					return i + 1 - mi;
+				}
 			} else {
 				mi = 0;
 			}
 		}
 
-		if (mi != 0)
+		if (mi != 0){
+//			logger.debug(" searchPattern 2 "+(-1 * mi)+" c%"+content[content.length-1]+"%  p%"+pattern[0]+"% ap%"+new String(pattern)+"%");			
 			return -1 * mi;
+		}
 		else
 			return BYTE_SEARCH_DEFLT;
 	}
@@ -563,37 +576,152 @@ public class RequestUtil {
 
 	}
 
-	@Path(value = "/*", httpMethod = HttpMethod.ALL)
-	static void handle404() throws Exception {
-		Response res = StaticRef.getResponse();
-		logger.debug(StaticRef.getRequest().toString());
-		res.setResponseCode(404);
+	static URL[] toArray(List<URL> urls) {
+		Object[] objarr = urls.toArray();
+		URL[] array = new URL[objarr.length];
+		for (int i = 0; i < objarr.length; i++)
+			array[i] = (URL) objarr[i];
+		return array;
 	}
 
-	static ByteBuffer iconBytes = null;
-
-	@Path(value = "/favicon.ico", httpMethod = HttpMethod.GET)
-	static void handleIcon() throws Exception {
-		Response res = StaticRef.getResponse();
-		res.setResponseCode(200);
-
-		if (iconBytes == null) {
-			RandomAccessFile randomAccessFile = null;
-			try {
-				randomAccessFile = new RandomAccessFile(new File("favicon.ico"), "r");
-				final FileChannel fileChannel = randomAccessFile.getChannel();
-				iconBytes = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size());
-			} finally {
-				if (randomAccessFile != null) {
-					randomAccessFile.close();
-				}
+	static void allUrls(File root, List<URL> urls) throws MalformedURLException {
+		File[] list = root.listFiles(new FilenameFilter() {
+	
+			@Override
+			public boolean accept(File dir, String name) {
+				if(NullCheck.isNullOrEmpty(name)) return false;
+				final String ln = name.toLowerCase(Locale.getDefault());
+				return ln.endsWith(".jar") || ln.endsWith(".properties") || ln.endsWith(".xml")
+						|| ln.endsWith(".json");
+			}
+		});
+		if (NullCheck.isNullOrEmpty(list))
+			return;
+	
+		for (File f : list) {
+			if (f.isDirectory()) {
+				allUrls(f, urls);
+			} else {
+				urls.add(f.toURI().toURL());
+				logger.info("Hotdeploy :: Added file " + f.getAbsoluteFile());
 			}
 		}
-		byte[] array = new byte[iconBytes.remaining()];
-		iconBytes.get(array, 0, array.length);
-		res.append(array);
-		res.putHeader("Content-Length", array.length);
-		res.putHeader("Content-Type", "image/x-icon");
+	}
+
+	static void unzip(File destinationFolder, File zipFile) throws IOException, InterruptedException {
+	
+		if (!destinationFolder.exists())
+			destinationFolder.mkdirs();
+	
+		// String exe = "unzip " + zipFile.getAbsolutePath() + " -d " +
+		// destinationFolder.getAbsolutePath();
+		// Runtime.getRuntime().exec(exe).waitFor();
+	
+		byte[] buffer = new byte[2048];
+		FileInputStream fInput = null;
+		ZipInputStream zipInput = null;
+		try {
+			fInput = new FileInputStream(zipFile);
+			zipInput = new ZipInputStream(fInput);
+			
+			ZipEntry entry = zipInput.getNextEntry();
+	
+			while (entry != null) {
+				String entryName = entry.getName();
+				File file = new File(destinationFolder.getAbsolutePath() + File.separator + entryName);
+	
+				logger.info("Hotdeploy :: Unzip file " + entryName + " to " + file.getAbsolutePath());
+	
+				// create the directories of the zip directory
+				if (entry.isDirectory()) {
+					File newDir = new File(file.getAbsolutePath());
+					if (!newDir.exists()) {
+						boolean success = newDir.mkdirs();
+						if (success == false) {
+							logger.info("Problem creating Folder");
+						}
+					}
+				} else {
+					FileOutputStream fOutput = new FileOutputStream(file);
+					int count = 0;
+					while ((count = zipInput.read(buffer)) > 0) {
+						// write 'count' bytes to the file output stream
+						fOutput.write(buffer, 0, count);
+					}
+					fOutput.close();
+				}
+				// close ZipEntry and take the next one
+				zipInput.closeEntry();
+				entry = zipInput.getNextEntry();
+			}
+	
+			// close the last ZipEntry
+			zipInput.closeEntry();
+	
+		}finally {
+			if( fInput!=null )
+				fInput.close();
+			if( zipInput!=null )
+				zipInput.close();
+		}
+	}
+
+	static void del(File f) {
+		try {
+			if (f.isDirectory()) {
+				if (f.list().length == 0) {
+					f.delete();
+				} else {
+					for (String t : f.list())
+						del(new File(f, t));
+	
+					if (f.list().length == 0) {
+						f.delete();
+					}
+				}
+			} else {
+				f.delete();
+			}
+		} catch (Throwable e) {
+			logger.error("Failed in delete file :: ", e);
+		}
+	}
+
+	public static byte[] read(File file) throws IOException{
+		RandomAccessFile randomAccessFile = null;
+		try {
+			randomAccessFile = new RandomAccessFile(file, "r");
+			final FileChannel fileChannel = randomAccessFile.getChannel();
+			ByteBuffer bb = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size());
+			byte[] data = new byte[bb.remaining()];
+			bb.get(data, 0, data.length);
+			return data;
+		} finally {
+			if (randomAccessFile != null) {
+				randomAccessFile.close();
+			}
+		}
+	}
+	
+	static void scanApps(File root)  {
+		File[] list = root.listFiles(new FileFilter() {
+			
+			@Override
+			public boolean accept(File pathname) {
+				return pathname.isDirectory();
+			}
+		});
+		if (NullCheck.isNullOrEmpty(list))
+			return;
+	
+		for (File f : list) {
+			try {
+			   new App( f.getName(), new String(read(new File(f,"scanpackages"))) ).deploy();
+			} catch (Exception e) {
+				logger.error("Failed in scan Apps :: ", e);
+			}
+		}
+		logger.info("Discovered Apps :: "+Admin.allHotDeployedArtifacts.keySet());
 	}
 }
 

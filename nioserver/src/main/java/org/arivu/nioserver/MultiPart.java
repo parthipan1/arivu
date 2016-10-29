@@ -68,12 +68,11 @@ public final class MultiPart {
 			for (ByteData bb : body) {
 				channel.write(ByteBuffer.wrap(bb.array()));
 			}
-		}finally{
-			if(fileOutputStream!=null)
-				fileOutputStream.close();
-			
+		}finally {
 			if(channel!=null)
 				channel.close();
+			if(fileOutputStream!=null)
+				fileOutputStream.close();
 		}
 	}
 

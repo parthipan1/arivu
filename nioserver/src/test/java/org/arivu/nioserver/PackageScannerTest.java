@@ -55,7 +55,7 @@ public class PackageScannerTest {
 		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
 		System.setProperty("access.log", "./access.log");
 		
-		Collection<Class<?>> classesForPackage = PackageScanner.getClassesForPackage("org.arivu.nioserver");
+		Collection<Class<?>> classesForPackage = PackageScanner.getClassesForPackage(Thread.currentThread().getContextClassLoader(),"org.arivu.nioserver",false);
 		assertFalse(NullCheck.isNullOrEmpty(classesForPackage));
 //		for( Class<?> c:classesForPackage )
 //			System.out.println(c.getName());
@@ -69,7 +69,7 @@ public class PackageScannerTest {
 		PackageScanner.addMethod(reqPaths, Connection.class);
 		assertTrue(NullCheck.isNullOrEmpty(reqPaths));
 		
-		PackageScanner.addMethod(reqPaths, Server.class);
+		PackageScanner.addMethod(reqPaths, Admin.class);
 		assertFalse(NullCheck.isNullOrEmpty(reqPaths));
 		
 	}

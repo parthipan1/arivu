@@ -5,13 +5,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.RandomAccessFile;
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -31,8 +29,8 @@ class Route {
 
 	final String uri;
 	final org.arivu.nioserver.HttpMethod httpMethod;
-	final Class<?> klass;
-	final Method method;
+	Class<?> klass;
+	Method method;
 	final boolean isStatic;
 	final MethodInvoker invoker;
 	final RequestUriTokens rut;
@@ -117,6 +115,15 @@ class Route {
 		}
 	}
 
+	void close(){
+		if(tl!=null){
+			tl.close();
+			tl.clearAll();
+		}
+		klass = null;
+		method = null;
+	}
+	
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -159,7 +166,7 @@ final class ProxyRoute extends Route {
 	String name;
 	String proxy_pass;
 	String dir;
-	Map<String,ByteData> files;
+	Map<String,WeakReference<ByteData>> files;
 	Threadlocal<HttpMethodCall> proxyTh;
 
 	/**
@@ -182,7 +189,7 @@ final class ProxyRoute extends Route {
 			throw new IllegalArgumentException("Invalid config " + name + " !");
 		} else if (!NullCheck.isNullOrEmpty(dir)) {
 //			files = new MemoryMappedFiles();
-			files = new Amap<String,ByteData>();
+			files = new Amap<String,WeakReference<ByteData>>();
 		} else if (!NullCheck.isNullOrEmpty(proxy_pass)) {
 			this.proxyTh = new Threadlocal<HttpMethodCall>(new Threadlocal.Factory<HttpMethodCall>() {
 
@@ -305,25 +312,17 @@ final class ProxyRoute extends Route {
 					
 				}
 			}
-			ByteData bytes = files.get(file);//getOriginalBytes(file);
+			ByteData bytes = getWr(files.get(file)) ;//getOriginalBytes(file);
 			if (bytes == null) {
 				readLock.lock();
-				RandomAccessFile randomAccessFile = null;
-				bytes = files.get(file);
+				bytes = getWr(files.get(file));
 				if( bytes == null ){
 					try {
-						randomAccessFile = new RandomAccessFile(new File(file), "r");
-						final FileChannel fileChannel = randomAccessFile.getChannel();
-						ByteBuffer bb = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size());
-						byte[] data = new byte[bb.remaining()];
-						bb.get(data, 0, data.length);
+						byte[] data = RequestUtil.read(new File(file));//new byte[bb.remaining()];
 						bytes = new ByteData(data);
-						files.put(file, bytes);
+						files.put(file, new WeakReference<ByteData>(bytes) );
 					} finally {
 						readLock.unlock();
-						if (randomAccessFile != null) {
-							randomAccessFile.close();
-						}
 					}
 				}else{
 					readLock.unlock();
@@ -336,6 +335,11 @@ final class ProxyRoute extends Route {
 		}
 	}
 
+	ByteData getWr(WeakReference<ByteData> ref){
+		if( ref == null ) return null;
+		else return ref.get();
+	}
+	
 	@Override
 	Response getResponse(Request req) {
 		if (!NullCheck.isNullOrEmpty(dir)) {
