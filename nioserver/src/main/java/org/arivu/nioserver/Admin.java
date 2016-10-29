@@ -5,12 +5,9 @@ package org.arivu.nioserver;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -68,6 +65,18 @@ final class Admin {
 
 	}
 
+	@Path(value = "/__admin", httpMethod = HttpMethod.GET)
+	static void adminhome() throws Exception {
+		Response res = StaticRef.getResponse();
+		StringBuffer buf = new StringBuffer("<html><body>");
+		buf.append("<H1> Welcome to Arivu NIO server!</H1>");
+		buf.append("</body></html>");
+		res.setResponseCode(200);
+		res.append(buf.toString());
+		res.putHeader("Content-Type", "text/html;charset=UTF-8");
+		res.putHeader("Content-Length", buf.length());
+	}
+	
 	@Path(value = "/*", httpMethod = HttpMethod.ALL)
 	static void handle404() throws Exception {
 		Response res = StaticRef.getResponse();
@@ -75,30 +84,19 @@ final class Admin {
 		res.setResponseCode(404);
 	}
 
-	static ByteBuffer iconBytes = null;
+	static byte[] iconBytes = null;
 
 	@Path(value = "/favicon.ico", httpMethod = HttpMethod.GET)
 	static void handleIcon() throws Exception {
 		Response res = StaticRef.getResponse();
 		res.setResponseCode(200);
-
 		if (iconBytes == null) {
-			RandomAccessFile randomAccessFile = null;
-			try {
-				randomAccessFile = new RandomAccessFile(new File("favicon.ico"), "r");
-				final FileChannel fileChannel = randomAccessFile.getChannel();
-				iconBytes = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size());
-			} finally {
-				if (randomAccessFile != null) {
-					randomAccessFile.close();
-				}
-			}
+			iconBytes = RequestUtil.read(new File("favicon.ico"));
 		}
-		byte[] array = new byte[iconBytes.remaining()];
-		iconBytes.get(array, 0, array.length);
-		res.append(array);
-		res.putHeader("Content-Length", array.length);
+		res.append(iconBytes);
+		res.putHeader("Content-Length", iconBytes.length);
 		res.putHeader("Content-Type", "image/x-icon");
+		res.putHeader("Cache-Control", "max-age=31536000");
 	}
 
 	static final Map<String, App> allHotDeployedArtifacts = new Amap<>();

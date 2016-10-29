@@ -680,7 +680,7 @@ public class RequestUtil {
 		}
 	}
 
-	static byte[] read(File file) throws IOException{
+	public static byte[] read(File file) throws IOException{
 		RandomAccessFile randomAccessFile = null;
 		try {
 			randomAccessFile = new RandomAccessFile(file, "r");
