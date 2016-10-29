@@ -127,6 +127,11 @@ final class Connection {
 //				logger.debug(" searchPattern :: "+searchPattern+" content("+content.length+") :: "+new String(content)+" boundary("+req.boundary.length+") :: "+new String(req.boundary));
 				// System.err.println(" searchPattern :: "+searchPattern+" start
 				// :: "+start+" mi "+mi);
+				if (rh.mi > 0) {
+					if (rh.rollOver != null){
+						req.body.add(rh.rollOver);
+					}
+				}
 				rh.setValue(0, searchPattern * -1 - 1, ByteData.wrap(Arrays.copyOfRange(content,rh.start, content.length)));
 				break;
 			} else if (searchPattern > 0) {

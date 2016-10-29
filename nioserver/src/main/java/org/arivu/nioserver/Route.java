@@ -5,14 +5,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.RandomAccessFile;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -318,22 +315,14 @@ final class ProxyRoute extends Route {
 			ByteData bytes = getWr(files.get(file)) ;//getOriginalBytes(file);
 			if (bytes == null) {
 				readLock.lock();
-				RandomAccessFile randomAccessFile = null;
 				bytes = getWr(files.get(file));
 				if( bytes == null ){
 					try {
-						randomAccessFile = new RandomAccessFile(new File(file), "r");
-						final FileChannel fileChannel = randomAccessFile.getChannel();
-						ByteBuffer bb = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size());
-						byte[] data = new byte[bb.remaining()];
-						bb.get(data, 0, data.length);
+						byte[] data = RequestUtil.read(new File(file));//new byte[bb.remaining()];
 						bytes = new ByteData(data);
 						files.put(file, new WeakReference<ByteData>(bytes) );
 					} finally {
 						readLock.unlock();
-						if (randomAccessFile != null) {
-							randomAccessFile.close();
-						}
 					}
 				}else{
 					readLock.unlock();

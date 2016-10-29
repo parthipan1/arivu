@@ -4,8 +4,6 @@
 package org.arivu.nioserver;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.MalformedURLException;
@@ -19,8 +17,6 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
@@ -35,26 +31,27 @@ import org.slf4j.LoggerFactory;
  */
 final class Admin {
 	private static final Logger logger = LoggerFactory.getLogger(Admin.class);
-//
-//	@Path(value = "/multipart", httpMethod = HttpMethod.POST)
-//	static void multiPart() throws Exception {
-//		StaticRef.getResponse().setResponseCode(200);
-//
-//		Map<String, MultiPart> multiParts = StaticRef.getRequest().getMultiParts();
-//		for (Entry<String, MultiPart> e : multiParts.entrySet()) {
-//			MultiPart mp = e.getValue();
-//			if (NullCheck.isNullOrEmpty(mp.filename)) {
-//				System.out.println("Headers :: \n" + RequestUtil.getString(mp.headers));
-//				System.out.println("body :: \n" + RequestUtil.convert(mp.body));
-//			} else {
-//				File file = new File("1_" + mp.filename);
-//				System.out.println("Headers :: \n" + RequestUtil.getString(mp.headers));
-//				System.out.println("uploaded file to :: " + file.getAbsolutePath());
-//				mp.writeTo(file, true);
-//			}
-//			System.out.println("*********************************************************************************");
-//		}
-//	}
+	//
+	// @Path(value = "/multipart", httpMethod = HttpMethod.POST)
+	// static void multiPart() throws Exception {
+	// StaticRef.getResponse().setResponseCode(200);
+	//
+	// Map<String, MultiPart> multiParts =
+	// StaticRef.getRequest().getMultiParts();
+	// for (Entry<String, MultiPart> e : multiParts.entrySet()) {
+	// MultiPart mp = e.getValue();
+	// if (NullCheck.isNullOrEmpty(mp.filename)) {
+	// System.out.println("Headers :: \n" + RequestUtil.getString(mp.headers));
+	// System.out.println("body :: \n" + RequestUtil.convert(mp.body));
+	// } else {
+	// File file = new File("1_" + mp.filename);
+	// System.out.println("Headers :: \n" + RequestUtil.getString(mp.headers));
+	// System.out.println("uploaded file to :: " + file.getAbsolutePath());
+	// mp.writeTo(file, true);
+	// }
+	// System.out.println("*********************************************************************************");
+	// }
+	// }
 
 	@Path(value = Configuration.stopUri, httpMethod = HttpMethod.GET)
 	static void stop() throws Exception {
@@ -104,7 +101,7 @@ final class Admin {
 		res.putHeader("Content-Type", "image/x-icon");
 	}
 
-	private static final Map<String, HotDeploy> allHotDeployedArtifacts = new Amap<>();
+	static final Map<String, App> allHotDeployedArtifacts = new Amap<>();
 
 	@Path(value = "/__admin/undeploy", httpMethod = HttpMethod.GET)
 	static void hotundeploy() throws IOException, ClassNotFoundException {
@@ -118,14 +115,9 @@ final class Admin {
 		}
 		String name = collection.toArray()[0].toString();
 		if (!NullCheck.isNullOrEmpty(name)) {
-			HotDeploy hotDeploy = allHotDeployedArtifacts.get(name);
+			App hotDeploy = allHotDeployedArtifacts.get(name);
 			if (hotDeploy != null) {
-				Configuration.routes.removeAll(hotDeploy.reqPaths);
-				for (Route r : hotDeploy.reqPaths) {
-					r.close();
-				}
-				hotDeploy.dynamicClassLoader.close();
-				del(hotDeploy.rootDir);
+				hotDeploy.undeploy();
 			} else {
 				res.setResponseCode(301);
 				return;
@@ -162,54 +154,34 @@ final class Admin {
 			res.append("Invalid Request for hot deploy!");
 			return;
 		}
-		Map<String, MultiPart> multiParts = request.getMultiParts();
+		final Map<String, MultiPart> multiParts = request.getMultiParts();
 
-		MultiPart namePart = multiParts.get("name");
-		MultiPart scanpackagesPart = multiParts.get("scanpackages");
-		MultiPart distPart = multiParts.get("dist");
-
+		final MultiPart namePart = multiParts.get("name");
+		final MultiPart scanpackagesPart = multiParts.get("scanpackages");
+		final MultiPart distPart = multiParts.get("dist");
+		
 		if (namePart != null && scanpackagesPart != null && distPart != null) {
-			String name = RequestUtil.convert(namePart.getBody());
-			String scanpackages = RequestUtil.convert(scanpackagesPart.getBody());
-			List<ByteData> zipFileBody = distPart.getBody();
+			final String name = RequestUtil.convert(namePart.getBody());
+			final String scanpackages = RequestUtil.convert(scanpackagesPart.getBody());
 			if (!NullCheck.isNullOrEmpty(name) && !NullCheck.isNullOrEmpty(scanpackages)
-					&& !NullCheck.isNullOrEmpty(zipFileBody) && RequestUtil.validUrl.matcher(name).matches()) {
+					&& !NullCheck.isNullOrEmpty(distPart.getBody()) && RequestUtil.validUrl.matcher(name).matches()) {
 
-				String deployDirPathname = Configuration.DEPLOY_LOC + File.separator + name;
-				HotDeploy hd = new HotDeploy(name, scanpackages, new File(deployDirPathname));
-				if (hd.rootDir.mkdirs()) {
-					try {
-						File zipFile = new File(Configuration.DEPLOY_LOC + File.separator + name + File.separator
-								+ distPart.getFilename());
-						distPart.writeTo(zipFile, false);
-						scanpackagesPart.writeTo(new File(
-								Configuration.DEPLOY_LOC + File.separator + name + File.separator + "scanpackages"),
-								false);
-						File libsFile = new File(
-								Configuration.DEPLOY_LOC + File.separator + name + File.separator + "libs");
-						unzip(libsFile, zipFile);
-						List<URL> urls = new DoublyLinkedList<>();
-						allUrls(libsFile, urls);
-						hd.dynamicClassLoader = new URLClassLoader(toArray(urls), Admin.class.getClassLoader());
-
-						String[] split = scanpackages.split(",");
-						for (String pkgName : split) {
-							for (Class<?> kcs : PackageScanner.getClassesForPackage(hd.dynamicClassLoader, pkgName,
-									true)) {
-								PackageScanner.addMethod(hd.reqPaths, kcs);
-							}
-						}
-
-						Configuration.routes.addAll(hd.reqPaths);
-						allHotDeployedArtifacts.put(name, hd);
-					} catch (Throwable e1) {
-						logger.error("Failed in hotdeploy :: ", e1);
-					}
-
-				} else {
-					res.setResponseCode(400);
-					res.append("Unable to create directory!");
+				res.setResponseCode(200);
+				App hd = new App(name, scanpackages);
+				App dup = allHotDeployedArtifacts.remove(name);
+				if(dup!=null){
+					dup.undeploy();
 				}
+				try {
+					hd.deploy(scanpackagesPart, distPart);
+				} catch (Throwable e) {
+					logger.error("Failed on hotdeploy!", e);
+					dup = allHotDeployedArtifacts.remove(name);
+					if(dup!=null){
+						dup.undeploy();
+					}
+				}
+				
 			} else {
 				res.setResponseCode(400);
 				res.append("Invalid Request for hot deploy!");
@@ -220,114 +192,82 @@ final class Admin {
 		}
 	}
 
-	static URL[] toArray(List<URL> urls) {
-		Object[] objarr = urls.toArray();
-		URL[] array = new URL[objarr.length];
-		for (int i = 0; i < objarr.length; i++)
-			array[i] = (URL) objarr[i];
-		return array;
-	}
-
-	private static void allUrls(File root, List<URL> urls) throws MalformedURLException {
-		File[] list = root.listFiles();
-		if (NullCheck.isNullOrEmpty(list))
-			return;
-
-		for (File f : list) {
-			if (f.isDirectory()) {
-				allUrls(f, urls);
-			} else {
-				urls.add(f.toURI().toURL());
-				logger.info("Hotdeploy :: Added file " + f.getAbsoluteFile());
-			}
-		}
-	}
-
-	private static void unzip(File destinationFolder, File zipFile) throws IOException, InterruptedException {
-
-		if (!destinationFolder.exists())
-			destinationFolder.mkdirs();
-
-		// String exe = "unzip " + zipFile.getAbsolutePath() + " -d " +
-		// destinationFolder.getAbsolutePath();
-		// Runtime.getRuntime().exec(exe).waitFor();
-
-		byte[] buffer = new byte[2048];
-
-		try (FileInputStream fInput = new FileInputStream(zipFile);
-				ZipInputStream zipInput = new ZipInputStream(fInput);) {
-
-			ZipEntry entry = zipInput.getNextEntry();
-
-			while (entry != null) {
-				String entryName = entry.getName();
-				File file = new File(destinationFolder.getAbsolutePath() + File.separator + entryName);
-
-				logger.info("Hotdeploy :: Unzip file " + entryName + " to " + file.getAbsolutePath());
-
-				// create the directories of the zip directory
-				if (entry.isDirectory()) {
-					File newDir = new File(file.getAbsolutePath());
-					if (!newDir.exists()) {
-						boolean success = newDir.mkdirs();
-						if (success == false) {
-							logger.info("Problem creating Folder");
-						}
-					}
-				} else {
-					FileOutputStream fOutput = new FileOutputStream(file);
-					int count = 0;
-					while ((count = zipInput.read(buffer)) > 0) {
-						// write 'count' bytes to the file output stream
-						fOutput.write(buffer, 0, count);
-					}
-					fOutput.close();
-				}
-				// close ZipEntry and take the next one
-				zipInput.closeEntry();
-				entry = zipInput.getNextEntry();
-			}
-
-			// close the last ZipEntry
-			zipInput.closeEntry();
-
-		}
-	}
-
-	static void del(File f) {
-		try {
-			if (f.isDirectory()) {
-				if (f.list().length == 0) {
-					f.delete();
-				} else {
-					for (String t : f.list())
-						del(new File(f, t));
-
-					if (f.list().length == 0) {
-						f.delete();
-					}
-				}
-			} else {
-				f.delete();
-			}
-		} catch (Throwable e) {
-			logger.error("Failed in delete file :: ", e);
-		}
-	}
-
 }
 
-final class HotDeploy {
+final class App {
+	private static final Logger logger = LoggerFactory.getLogger(App.class);
+
 	final String name, scanpackages;
 	final File rootDir;
 	final Collection<Route> reqPaths = new DoublyLinkedSet<Route>();
 	URLClassLoader dynamicClassLoader;
 
-	HotDeploy(String name, String scanpackages, File rootDir) {
+	App(String name, String scanpackages) {
 		super();
 		this.name = name;
 		this.scanpackages = scanpackages;
-		this.rootDir = rootDir;
+		this.rootDir = new File(Configuration.DEPLOY_LOC + File.separator + name);
+	}
+
+	void deploy() throws MalformedURLException, ClassNotFoundException {
+		File libsFile = new File(Configuration.DEPLOY_LOC + File.separator + name + File.separator + "libs");
+		List<URL> urls = new DoublyLinkedList<>();
+		RequestUtil.allUrls(libsFile, urls);
+		dynamicClassLoader = new URLClassLoader(RequestUtil.toArray(urls), Admin.class.getClassLoader());
+
+		String[] split = scanpackages.split(",");
+		for (String pkgName : split) {
+			for (Class<?> kcs : PackageScanner.getClassesForPackage(dynamicClassLoader, pkgName, true)) {
+				PackageScanner.addMethod(reqPaths, kcs);
+			}
+		}
+		Collection<Route> dupReqPaths = new DoublyLinkedSet<Route>();
+		for (Route r : reqPaths) {
+			if (Configuration.routes.contains(r)) {
+				dupReqPaths.add(r);
+				logger.info("Duplicate route discovered ignoring :: " + r);
+				r.close();
+			} else {
+				Configuration.routes.add(r);
+				logger.info("Discovered new route in app(" + name + ") :: " + r);
+			}
+		}
+		reqPaths.removeAll(dupReqPaths);
+		if (NullCheck.isNullOrEmpty(reqPaths)) {
+			logger.info("Discovered no valid route undeploying " + name);
+			undeploy();
+		} else {
+			Admin.allHotDeployedArtifacts.put(name, this);
+		}
+	}
+	
+	void deploy(final MultiPart scanpackagesPart, final MultiPart distPart)
+			throws IOException, InterruptedException, MalformedURLException, ClassNotFoundException {
+		if (!rootDir.mkdirs()){
+			logger.info("Unable to create directory! "+rootDir.getAbsolutePath());
+			return;
+		}
+		File zipFile = new File(
+				Configuration.DEPLOY_LOC + File.separator + name + File.separator + distPart.getFilename());
+		distPart.writeTo(zipFile, false);
+		scanpackagesPart.writeTo(
+				new File(Configuration.DEPLOY_LOC + File.separator + name + File.separator + "scanpackages"), false);
+		File libsFile = new File(Configuration.DEPLOY_LOC + File.separator + name + File.separator + "libs");
+		RequestUtil.unzip(libsFile, zipFile);
+		deploy();
+	}
+
+	void undeploy() {
+		Configuration.routes.removeAll(reqPaths);
+		for (Route r : reqPaths) {
+			r.close();
+		}
+		try {
+			dynamicClassLoader.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		RequestUtil.del(rootDir);
 	}
 
 }
