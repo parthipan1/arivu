@@ -49,11 +49,11 @@ final class Configuration {
 		final Map<String, Object> json = Ason.loadProperties(CONFIGURATION_FILE);
 
 //		headers = Utils.unmodifiableMap((Map<String, Object>) Ason.getObj(json, "response.header", null));
-		defaultResponseHeader = (Map<String, Object>) Ason.getObj(json, "response.header", new Amap<>());
+		defaultResponseHeader = (Map<String, Object>) Ason.getObj(json, "response.header", new Amap<String, Object>());
 
 		defaultResCode = Ason.getNumber(json, "response.defaultcode", 200).intValue();
 		defaultChunkSize = Ason.getNumber(json, "response.chunkSize", 1024).intValue();
-		defaultRequestBuffer = Ason.getNumber(json, "request.buffer", 1024).intValue();
+		defaultRequestBuffer = Ason.getNumber(json, "request.buffer", 10240).intValue();
 
 		Collection<String> array = Ason.getArray(json, "request.scanpackages", null);
 		if (NullCheck.isNullOrEmpty(array)) {

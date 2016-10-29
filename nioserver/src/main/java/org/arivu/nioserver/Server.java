@@ -38,6 +38,7 @@ public class Server {
 	static final String DEFAULT_HOST = Env.getEnv("host", "localhost");
 
 	static final int DEFAULT_PORT = Integer.parseInt(Env.getEnv("port", "8080"));
+	static final int DEFAULT_SOCKET_BACKLOG = Integer.parseInt(Env.getEnv("socket.backlog", "1024"));
 
 	
 }
