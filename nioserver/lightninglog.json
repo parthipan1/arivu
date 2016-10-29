@@ -1,12 +1,11 @@
 {
-	"appenders":["file"],
+	"appenders":["file","console"],
 	"loggers":{
-		"root":"info",
-		"org.arivu":"info"
+		"root":"debug"
 	},
 	"buffer":{
-		"batch":50,
-		"ring":50
+		"batch":1,
+		"ring":1
 	},
 	"log":{
 		"showDateTime":true,

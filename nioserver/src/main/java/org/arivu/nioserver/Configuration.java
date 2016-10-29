@@ -53,7 +53,7 @@ final class Configuration {
 
 		defaultResCode = Ason.getNumber(json, "response.defaultcode", 200).intValue();
 		defaultChunkSize = Ason.getNumber(json, "response.chunkSize", 1024).intValue();
-		defaultRequestBuffer = Ason.getNumber(json, "request.buffer", 1024).intValue();
+		defaultRequestBuffer = Ason.getNumber(json, "request.buffer", 10240).intValue();
 
 		Collection<String> array = Ason.getArray(json, "request.scanpackages", null);
 		if (NullCheck.isNullOrEmpty(array)) {
