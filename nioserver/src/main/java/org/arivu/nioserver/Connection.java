@@ -195,9 +195,12 @@ final class Connection {
 							processRequest(key);
 							return;
 						}
-						String conLenStrHdr = req.getHeaders().get("Content-Length");
-						if(!NullCheck.isNullOrEmpty(conLenStrHdr)){
-							rh.contentLen = Integer.parseInt(conLenStrHdr);
+						List<Object> list = req.getHeaders().get("Content-Length");
+						if (!NullCheck.isNullOrEmpty(list)) {
+							String conLenStrHdr = list.get(0).toString();
+							if (!NullCheck.isNullOrEmpty(conLenStrHdr)) {
+								rh.contentLen = Integer.parseInt(conLenStrHdr);
+							} 
 						}
 						// System.out.println(" Got Request :: "+req+"\n total
 						// "+(total+headerIndex)+"");

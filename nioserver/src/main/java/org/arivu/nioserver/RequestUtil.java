@@ -232,14 +232,26 @@ public class RequestUtil {
 		String uriWithParams = split2[1];
 		String protocol = split2[2];
 
-		Map<String, String> tempheaders = new Amap<String, String>();
+		Map<String, List<Object>> tempheaders = new Amap<String, List<Object>>();
 		for (int i = 1; i < split.length; i++) {
 			String h = split[i];
 			int indexOf2 = h.indexOf(":");
 			if (indexOf2 == -1) {
-				tempheaders.put(h, "");
+				String key = h;
+				List<Object> list = tempheaders.get(key);
+				if( list == null ){
+					list = new DoublyLinkedList<>();
+					tempheaders.put(key, list);
+				}
 			} else {
-				tempheaders.put(h.substring(0, indexOf2), h.substring(indexOf2 + 1).trim());
+				String key = h.substring(0, indexOf2);
+				String value = h.substring(indexOf2 + 1).trim();
+				List<Object> list = tempheaders.get(key);
+				if( list == null ){
+					list = new DoublyLinkedList<>();
+					tempheaders.put(key, list);
+				}
+				list.add(value);
 			}
 		}
 
@@ -253,7 +265,11 @@ public class RequestUtil {
 
 		RequestImpl requestImpl = new RequestImpl(valueOf, uri, uriWithParams, protocol, tempparams,
 				Utils.unmodifiableMap(tempheaders));
-		String contType = requestImpl.headers.get("Content-Type");
+		String contType = null;
+		List<Object> list = requestImpl.getHeaders().get("Content-Length");
+		if (!NullCheck.isNullOrEmpty(list)) {
+			contType = list.get(0).toString();
+		}
 		if (!NullCheck.isNullOrEmpty(contType)) {
 			requestImpl.isMultipart = contType.contains("multipart/form-data");
 			if (requestImpl.isMultipart) {
@@ -521,7 +537,7 @@ public class RequestUtil {
 		return responseBytes;
 	}
 
-	static Ref getResponseBytes(int responseCode, Map<String, Object> headers, Collection<ByteData> out,
+	static Ref getResponseBytes(int responseCode, Map<String, List<Object>> headers, Collection<ByteData> out,
 			String protocol, String uri, int contentLen, HttpMethod method) {
 		final StringBuffer responseBody = new StringBuffer();
 
@@ -539,8 +555,13 @@ public class RequestUtil {
 		Date enddate = new Date();
 		responseBody.append("Date: ").append(enddate.toString()).append(LINE_SEPARATOR);
 
-		for (Entry<String, Object> e : headers.entrySet()) {
-			responseBody.append(e.getKey()).append(": ").append(e.getValue()).append(LINE_SEPARATOR);
+		for (Entry<String, List<Object>> e : headers.entrySet()) {
+			List<Object> value = e.getValue();
+			if( !NullCheck.isNullOrEmpty(value) ){
+				for(Object ov:value){
+					responseBody.append(e.getKey()).append(": ").append(ov).append(LINE_SEPARATOR);
+				}
+			}
 		}
 		responseBody.append(LINE_SEPARATOR);
 
@@ -767,6 +788,19 @@ public class RequestUtil {
 		}
 		Configuration.routes.add(prp);
 		logger.info("Added Proxy setting ::" + prp.toString());
+	}
+	
+	static Map<String, List<Object>> transform(Map<String, Object> in){
+		Map<String, List<Object>> out = new Amap<>();
+		for(Entry<String, Object> e:in.entrySet()){
+			List<Object> list = out.get(e.getKey());
+			if(list==null){
+				list = new DoublyLinkedList<>();
+				out.put(e.getKey(), list);
+			}
+			list.add(e.getValue());
+		}
+		return out;
 	}
 }
 

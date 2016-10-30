@@ -2,6 +2,7 @@ package org.arivu.nioserver;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -24,7 +25,7 @@ final class Configuration {
 	static final String DEPLOY_LOC = Env.getEnv("deployLoc", ".." + File.separator + "apps");
 	static final String ADMIN_LOC = Env.getEnv("adminLoc", ".." + File.separator + "admin");
 	
-	static final Map<String, Object> defaultResponseHeader;
+	static final Map<String, List<Object>> defaultResponseHeader;
 	static final Map<String, Object> defaultResponseCodes;
 	static final Map<String, Map<String, Object>> defaultMimeType;
 	static Collection<Route> routes;
@@ -50,9 +51,8 @@ final class Configuration {
 
 		final Map<String, Object> json = Ason.loadProperties(CONFIGURATION_FILE);
 
-//		headers = Utils.unmodifiableMap((Map<String, Object>) Ason.getObj(json, "response.header", null));
-		defaultResponseHeader = (Map<String, Object>) Ason.getObj(json, "response.header", new Amap<String, Object>());
-
+		defaultResponseHeader = RequestUtil.transform((Map<String, Object>) Ason.getObj(json, "response.header", new Amap<String, Object>())) ;
+		
 		defaultResCode = Ason.getNumber(json, "response.defaultcode", 200).intValue();
 		defaultChunkSize = Ason.getNumber(json, "response.chunkSize", 1024).intValue();
 		defaultRequestBuffer = Ason.getNumber(json, "request.buffer", 10240).intValue();
@@ -85,7 +85,7 @@ final class Configuration {
 					dir = Utils.replaceAll(dir, "$home", new File(".").getAbsolutePath());
 				}
 				ProxyRoute prp = new ProxyRoute(name, proxy_pass, dir, Ason.getStr(proxy, "location", null), httpMethod,
-						null, null, false, header);
+						null, null, false, RequestUtil.transform(header));
 				logger.debug("Discovered Proxy setting ::" + prp.toString());
 				tempRequestPaths.add(prp);
 			}

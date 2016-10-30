@@ -13,7 +13,7 @@ final class RequestImpl implements Request {
 	/**
 	 * 
 	 */
-	final Map<String, String> headers;
+	final Map<String, List<Object>> headers;
 
 	/**
 	 * 
@@ -62,7 +62,7 @@ final class RequestImpl implements Request {
 	 * @param body
 	 */
 	RequestImpl(HttpMethod httpMethod, String uri, String uriWithParams, String protocol,
-			Map<String, Collection<String>> params, Map<String, String> headers) {
+			Map<String, Collection<String>> params, Map<String, List<Object>> headers) {
 		super();
 		this.httpMethod = httpMethod;
 		this.uri = uri;
@@ -96,7 +96,7 @@ final class RequestImpl implements Request {
 	 * @see org.arivu.nioserver.Request#getHeaders()
 	 */
 	@Override
-	public Map<String, String> getHeaders() {
+	public Map<String, List<Object>> getHeaders() {
 		return headers;
 	}
 

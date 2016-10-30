@@ -12,6 +12,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -20,6 +21,7 @@ import java.util.concurrent.Executors;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
+import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.pool.ConcurrentPool;
 import org.arivu.pool.Pool;
 import org.arivu.pool.PoolFactory;
@@ -93,7 +95,12 @@ final class SelectorHandler {
 		public void addRouteHeader(String route, String header, String value) {
 			Route route2 = getRoute(route);
 			if (route2 != null && !NullCheck.isNullOrEmpty(route2.headers)) {
-				route2.headers.put(header, value);
+				List<Object> list = route2.headers.get(header);
+				if(list==null){
+					list = new DoublyLinkedList<>();
+					route2.headers.put(header, list);
+				}
+				list.add(value);
 			}
 		}
 
@@ -131,12 +138,17 @@ final class SelectorHandler {
 
 		@Override
 		public void addResponseHeader(String header, String value) {
-			Configuration.defaultResponseHeader.put(header, value);
+			List<Object> list = Configuration.defaultResponseHeader.get(header);
+			if(list==null){
+				list = new DoublyLinkedList<>();
+				Configuration.defaultResponseHeader.put(header, list);
+			}
+			list.add(value);
 		}
 
 		@Override
 		public String getResponseHeader() {
-			Map<String, Object> defaultresponseheader = Configuration.defaultResponseHeader;
+			Map<String, List<Object>> defaultresponseheader = Configuration.defaultResponseHeader;
 			return RequestUtil.getString(defaultresponseheader);
 		}
 

@@ -66,10 +66,10 @@ public class RequestUtilTest {
 		assertTrue(parse.getProtocol().equals("HTTP/1.1"));
 		assertTrue(parse.getUri().equals("/static/248.png"));
 		assertTrue(parse.getUriWithParams().equals("/static/248.png?t1=1quater"));
-		assertTrue(parse.getHeaders().get("Accept-Encoding").equals("gzip,deflate"));
-		assertTrue(parse.getHeaders().get("Host").equals("localhost:8080"));
-		assertTrue(parse.getHeaders().get("Connection").equals("Keep-Alive"));
-		assertTrue(parse.getHeaders().get("User-Agent").equals("Apache-HttpClient/4.1.1 (java 1.5)"));
+		assertTrue(parse.getHeaders().get("Accept-Encoding").get(0).equals("gzip,deflate"));
+		assertTrue(parse.getHeaders().get("Host").get(0).equals("localhost:8080"));
+		assertTrue(parse.getHeaders().get("Connection").get(0).equals("Keep-Alive"));
+		assertTrue(parse.getHeaders().get("User-Agent").get(0).equals("Apache-HttpClient/4.1.1 (java 1.5)"));
 
 	}
 
@@ -116,11 +116,11 @@ public class RequestUtilTest {
 		assertTrue(parse.getHttpMethod() == HttpMethod.POST);
 		assertTrue(parse.getProtocol().equals("HTTP/1.1"));
 		assertTrue(parse.getUri().equals("/all/postman/arelazy"));
-		assertTrue(parse.getHeaders().get("Content-Type").equals("application/json"));
-		assertTrue(parse.getHeaders().get("X-ID").equals("12345"));
-		assertTrue(parse.getHeaders().get("Content-Length").equals("55"));
-		assertTrue(parse.getHeaders().get("Host").equals("localhost:8080"));
-		assertTrue(parse.getHeaders().get("Connection").equals("Keep-Alive"));
+		assertTrue(parse.getHeaders().get("Content-Type").get(0).equals("application/json"));
+		assertTrue(parse.getHeaders().get("X-ID").get(0).equals("12345"));
+		assertTrue(parse.getHeaders().get("Content-Length").get(0).equals("55"));
+		assertTrue(parse.getHeaders().get("Host").get(0).equals("localhost:8080"));
+		assertTrue(parse.getHeaders().get("Connection").get(0).equals("Keep-Alive"));
 		// assertTrue("Expected :: %Apache-HttpClient/4.1.1 (java 1.5)%
 		// GOT::%"+parse.getHeaders().get("User-Agent")+"%",parse.getHeaders().get("User-Agent").equals("Apache-HttpClient/4.1.1
 		// (java 1.5)"));

@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 final class ResponseImpl implements Response {
 	private static final Logger logger = LoggerFactory.getLogger(ResponseImpl.class);
 	
-	final Map<String, Object> headers = new Amap<String, Object>();
+	final Map<String, List<Object>> headers = new Amap<String, List<Object>>();
 
 	final List<ByteData> out = new DoublyLinkedList<>();
 
@@ -26,7 +26,7 @@ final class ResponseImpl implements Response {
 	
 	int contentLength = 0;
 	
-	ResponseImpl(Request request, Map<String, Object> headers) {
+	ResponseImpl(Request request, Map<String, List<Object>> headers) {
 		this.request = request;
 		if (!NullCheck.isNullOrEmpty(headers)) {
 			this.headers.putAll(headers);
@@ -54,7 +54,7 @@ final class ResponseImpl implements Response {
 	}
 
 	@Override
-	public Map<String, Object> getHeaders() {
+	public Map<String, List<Object>> getHeaders() {
 		return headers;
 	}
 
@@ -64,7 +64,7 @@ final class ResponseImpl implements Response {
 	 * @see org.arivu.nioserver.Response#getHeader(java.lang.Object)
 	 */
 	@Override
-	public Object getHeader(Object key) {
+	public List<Object> getHeader(Object key) {
 		return headers.get(key);
 	}
 
@@ -76,7 +76,13 @@ final class ResponseImpl implements Response {
 	 */
 	@Override
 	public Object putHeader(String key, Object value) {
-		return headers.put(key, value);
+		List<Object> list = this.headers.get(key);
+		if( list==null ){
+			list = new DoublyLinkedList<>();
+			this.headers.put(key, list);
+		}
+		list.add(value);
+		return value;
 	}
 
 	/*
@@ -85,7 +91,7 @@ final class ResponseImpl implements Response {
 	 * @see org.arivu.nioserver.Response#removeHeader(java.lang.Object)
 	 */
 	@Override
-	public Object removeHeader(Object key) {
+	public List<Object> removeHeader(Object key) {
 		return headers.remove(key);
 	}
 
@@ -95,20 +101,20 @@ final class ResponseImpl implements Response {
 	 * @see org.arivu.nioserver.Response#putAllHeader(java.util.Map)
 	 */
 	@Override
-	public void putAllHeader(Map<? extends String, ? extends String> m) {
+	public void putAllHeader(Map<? extends String, ? extends List<Object>> m) {
 		headers.putAll(m);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.arivu.nioserver.Response#replaceHeader(java.lang.String,
-	 * java.lang.Object)
-	 */
-	@Override
-	public Object replaceHeader(String key, Object value) {
-		return headers.replace(key, value);
-	}
+//	/*
+//	 * (non-Javadoc)
+//	 * 
+//	 * @see org.arivu.nioserver.Response#replaceHeader(java.lang.String,
+//	 * java.lang.Object)
+//	 */
+//	@Override
+//	public Object replaceHeader(String key, Object value) {
+//		return headers.replace(key, value);
+//	}
 
 	/*
 	 * (non-Javadoc)
@@ -167,8 +173,8 @@ final class ResponseImpl implements Response {
 	public void sendRedirect(String url){
 		this.responseCode = 301;
 		this.headers.clear();
-		this.headers.put("X-Redirect-Src", request.getUriWithParams());
-		this.headers.put("Location", url);
+		putHeader("X-Redirect-Src", request.getUriWithParams());
+		putHeader("Location", url);
 		this.redirectUrl = url;
 		try {
 			append("<!DOCTYPE html><head><meta http-equiv=\"refresh\" content=\"0; url="+url+"\"></head><body><p>The page has moved to:<a href=\""+url+"\">this page</a></p></body></html>");
