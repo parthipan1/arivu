@@ -50,6 +50,56 @@ final class Admin {
 	// }
 	// }
 
+//	private static final String serverInfo = "Arivu Nio Server 1.0.1";
+
+//	@Path(value = "/__admin/greet", httpMethod = HttpMethod.GET)
+//	static void greet() {
+//		Response response = StaticRef.getResponse();
+//		Request request = StaticRef.getRequest();
+//		System.out.println(" request :: " + request);
+//		try {
+//			response.append("Hello, " + request.getParams().get("txt").toArray()[0] + "!<br><br>I am running "
+//					+ serverInfo + ".<br><br>It looks like you are using:<br>");
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+//		response.setResponseCode(200);
+//	}
+
+	@Path(value = "/__admin/routes", httpMethod = HttpMethod.GET)
+	static void allRoutes() throws IOException {
+		Response response = StaticRef.getResponse();
+//		Request request = StaticRef.getRequest();
+		Collection<Route> routes = Configuration.routes;
+		StringBuffer buf = new StringBuffer("[");
+		for (Route route : routes) {
+			if (route.uri.equals("/*")) {
+				continue;
+			} else if (route.uri.startsWith("/__admin")) {
+				continue;
+			} else if (route.uri.startsWith("/favicon.ico")) {
+				continue;
+			} else if (route.uri.startsWith("/admin")) {
+				continue;
+			} else {
+				boolean proxy = route instanceof ProxyRoute;
+				HttpMethod httpMethod = route.httpMethod;
+				if( httpMethod == null )
+					httpMethod = HttpMethod.ALL;
+				
+				if (buf.length() > 1) {
+					buf.append(",");
+				}
+				buf.append("{\"uri\":\""+route.uri+"\",\"method\":\""+httpMethod+"\",\"proxy\":\""+proxy+"\"}");
+			}
+		}
+		buf.append("]");
+		response.append(buf.toString());
+		response.putHeader("Content-Length", buf.length());
+		response.putHeader("Content-Type", "application/json");
+		response.setResponseCode(200);
+	}
+
 	@Path(value = Configuration.stopUri, httpMethod = HttpMethod.GET)
 	static void stop() throws Exception {
 		StaticRef.getResponse().setResponseCode(200);
@@ -65,23 +115,16 @@ final class Admin {
 
 	}
 
-	@Path(value = "/__admin", httpMethod = HttpMethod.GET)
-	static void adminhome() throws Exception {
-		Response res = StaticRef.getResponse();
-		StringBuffer buf = new StringBuffer("<html><body>");
-		buf.append("<H1> Welcome to Arivu NIO server!</H1>");
-		buf.append("</body></html>");
-		res.setResponseCode(200);
-		res.append(buf.toString());
-		res.putHeader("Content-Type", "text/html;charset=UTF-8");
-		res.putHeader("Content-Length", buf.length());
-	}
-	
 	@Path(value = "/*", httpMethod = HttpMethod.ALL)
 	static void handle404() throws Exception {
+		Request request = StaticRef.getRequest();
 		Response res = StaticRef.getResponse();
-		logger.debug(StaticRef.getRequest().toString());
-		res.setResponseCode(404);
+		if( Configuration.ADMIN_MODULE_ENABLED && request.getUri().equals("/") ){
+			res.sendRedirect("/admin/Admin.html");
+		}else{
+			logger.debug(StaticRef.getRequest().toString());
+			res.setResponseCode(404);
+		}
 	}
 
 	static byte[] iconBytes = null;
@@ -157,7 +200,7 @@ final class Admin {
 		final MultiPart namePart = multiParts.get("name");
 		final MultiPart scanpackagesPart = multiParts.get("scanpackages");
 		final MultiPart distPart = multiParts.get("dist");
-		
+
 		if (namePart != null && scanpackagesPart != null && distPart != null) {
 			final String name = RequestUtil.convert(namePart.getBody());
 			final String scanpackages = RequestUtil.convert(scanpackagesPart.getBody());
@@ -167,7 +210,7 @@ final class Admin {
 				res.setResponseCode(200);
 				App hd = new App(name, scanpackages);
 				App dup = allHotDeployedArtifacts.remove(name);
-				if(dup!=null){
+				if (dup != null) {
 					dup.undeploy();
 				}
 				try {
@@ -175,11 +218,11 @@ final class Admin {
 				} catch (Throwable e) {
 					logger.error("Failed on hotdeploy!", e);
 					dup = allHotDeployedArtifacts.remove(name);
-					if(dup!=null){
+					if (dup != null) {
 						dup.undeploy();
 					}
 				}
-				
+
 			} else {
 				res.setResponseCode(400);
 				res.append("Invalid Request for hot deploy!");
@@ -238,11 +281,11 @@ final class App {
 			Admin.allHotDeployedArtifacts.put(name, this);
 		}
 	}
-	
+
 	void deploy(final MultiPart scanpackagesPart, final MultiPart distPart)
 			throws IOException, InterruptedException, MalformedURLException, ClassNotFoundException {
-		if (!rootDir.mkdirs()){
-			logger.info("Unable to create directory! "+rootDir.getAbsolutePath());
+		if (!rootDir.mkdirs()) {
+			logger.info("Unable to create directory! " + rootDir.getAbsolutePath());
 			return;
 		}
 		File zipFile = new File(

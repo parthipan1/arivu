@@ -492,10 +492,10 @@ public class RequestUtil {
 	private static final String LINE_SEPARATOR = System.lineSeparator();
 
 	static void accessLog(int responseCode, String uri, long start, long end, int size,
-			SocketAddress remoteSocketAddress) {
+			SocketAddress remoteSocketAddress, HttpMethod method) {
 		if (!uri.equals(Configuration.stopUri)) {
 			StringBuffer access = new StringBuffer();
-			access.append("[").append(dateFormat.format(new Date(start))).append("] ").append(uri).append(" ")
+			access.append("[").append(dateFormat.format(new Date(start))).append("] ").append(uri).append(" ").append(method).append(" ")
 					.append(responseCode).append(" ").append(size).append(" [").append((end - start)).append("] ")
 					.append(remoteSocketAddress.toString());
 			Server.accessLog.append(access.toString());
@@ -504,7 +504,7 @@ public class RequestUtil {
 
 	static Ref getResponseBytes(Request request, Response response) {
 		Ref responseBytes = RequestUtil.getResponseBytes(response.getResponseCode(), response.getHeaders(),
-				response.getOut(), request.getProtocol(), request.getUri(), response.getContentLength());
+				response.getOut(), request.getProtocol(), request.getUri(), response.getContentLength(), request.getMethod());
 		if (response instanceof ResponseImpl) {
 			ResponseImpl im = (ResponseImpl) response;
 			im.out.clear();
@@ -514,7 +514,7 @@ public class RequestUtil {
 	}
 
 	static Ref getResponseBytes(int responseCode, Map<String, Object> headers, Collection<ByteData> out,
-			String protocol, String uri, int contentLen) {
+			String protocol, String uri, int contentLen, HttpMethod method) {
 		final StringBuffer responseBody = new StringBuffer();
 
 		Object rescodetxt = null;
@@ -539,6 +539,7 @@ public class RequestUtil {
 		Ref ref = new Ref();
 		ref.rc = responseCode;
 		ref.uri = uri;
+		ref.method = method;
 
 		ref.queue.add(new ByteData(responseBody.toString().getBytes()));
 		ref.queue.addAll(out);
@@ -681,6 +682,8 @@ public class RequestUtil {
 	}
 
 	public static byte[] read(File file) throws IOException{
+		if(file==null) return null;
+		else if( !file.exists() ) return null;
 		RandomAccessFile randomAccessFile = null;
 		try {
 			randomAccessFile = new RandomAccessFile(file, "r");
@@ -722,6 +725,7 @@ class Ref {
 	String uri = null;
 	int rc;
 	int cl = 0;
+	HttpMethod method = null;
 	// byte[] headerBytes;
 	// byte[] bodyBytes;
 	Queue<ByteData> queue = new DoublyLinkedList<>();

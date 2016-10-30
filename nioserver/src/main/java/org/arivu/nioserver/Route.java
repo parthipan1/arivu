@@ -160,13 +160,13 @@ class Route {
 
 }
 
-final class ProxyRoute extends Route {
+class ProxyRoute extends Route {
 	private static final Logger logger = LoggerFactory.getLogger(ProxyRoute.class);
 
 	String name;
 	String proxy_pass;
 	String dir;
-	Map<String,WeakReference<ByteData>> files;
+	Map<String,FileData> files;
 	Threadlocal<HttpMethodCall> proxyTh;
 
 	/**
@@ -275,7 +275,8 @@ final class ProxyRoute extends Route {
 	
 	void handleDirectory(Request req, Response res) throws IOException {
 		String file = this.dir + URLDecoder.decode(req.getUri().substring(this.uri.length()), RequestUtil.ENC_UTF_8);
-		File f = new File(file);
+		File file2 = new File(file);
+		File f = file2;
 		if (!f.exists()) {
 			res.setResponseCode(404);
 		} else if (f.isDirectory()) {
@@ -318,9 +319,11 @@ final class ProxyRoute extends Route {
 				bytes = getWr(files.get(file));
 				if( bytes == null ){
 					try {
-						byte[] data = RequestUtil.read(new File(file));//new byte[bb.remaining()];
-						bytes = new ByteData(data);
-						files.put(file, new WeakReference<ByteData>(bytes) );
+						byte[] data = RequestUtil.read(file2);//new byte[bb.remaining()];
+						if (data!=null) {
+							bytes = new ByteData(data);
+							files.put(file, new FileData(new WeakReference<ByteData>(bytes), file2));
+						}
 					} finally {
 						readLock.unlock();
 					}
@@ -328,16 +331,30 @@ final class ProxyRoute extends Route {
 					readLock.unlock();
 				}
 			}
-			byte[] array = bytes.array();//bytes.array();//new byte[bytes.remaining()];
-//			bytes.get(array, 0, array.length);
-			res.append(array);
-			res.putHeader("Content-Length", array.length);
+			if (bytes != null) {
+				byte[] array = bytes.array();//bytes.array();//new byte[bytes.remaining()];
+				//			bytes.get(array, 0, array.length);
+				res.append(array);
+				res.putHeader("Content-Length", array.length);
+			}else{
+				res.setResponseCode(404);
+			}
 		}
 	}
 
-	ByteData getWr(WeakReference<ByteData> ref){
+	ByteData getWr(FileData ref){
 		if( ref == null ) return null;
-		else return ref.get();
+		else{
+			if(!ref.file.exists()){
+				files.remove(ref.file.getAbsolutePath());
+				return null;
+			}else if ( ref.time < ref.file.lastModified() ){
+				files.remove(ref.file.getAbsolutePath());
+				return null;
+			}else{
+				return ref.data.get();
+			}
+		} 
 	}
 	
 	@Override
@@ -355,7 +372,34 @@ final class ProxyRoute extends Route {
 	}
 
 }
+final class AdminRoute extends ProxyRoute {
+//	private static final Logger logger = LoggerFactory.getLogger(AdminRoute.class);
+	
+	AdminRoute() {
+		super("adminSite", null, "admin", "/admin", HttpMethod.ALL, null, null, false, Configuration.defaultResponseHeader);
+	}
 
+	@Override
+	public void handle(Request req, Response res) {
+		if("/admin".equals(req.getUri())){
+			res.sendRedirect("/admin/Admin.html");
+		}else{
+			super.handle(req, res);
+		}
+	}
+}
+final class FileData{
+	final long time;
+	final WeakReference<ByteData> data;
+	final File file;
+	FileData(WeakReference<ByteData> data,File file) {
+		super();
+		this.data = data;
+		this.file = file;
+		this.time = file.lastModified();
+	}
+	
+}
 final class ProxyRes {
 	final String response;
 	final int responseCode;

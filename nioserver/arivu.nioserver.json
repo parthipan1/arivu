@@ -1,10 +1,10 @@
 {  
    "request":{  
-	  "buffer":1024,   	
+	  "buffer":10240,   	
       "scanpackages":[  
            "org.test.nio"
       ],
-      "proxies":{  
+      "proxies":{
          "googleSite":{  
             "header":{  
                "Expires":-1,

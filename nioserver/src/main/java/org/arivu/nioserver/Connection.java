@@ -106,7 +106,7 @@ final class Connection {
 		key.cancel();
 		if (wh.resBuff != null)
 			RequestUtil.accessLog(wh.resBuff.rc, wh.resBuff.uri, startTime, System.currentTimeMillis(), wh.resBuff.cl,
-					remoteSocketAddress);
+					remoteSocketAddress, wh.resBuff.method);
 		wh.writeLen = 0;
 		pool.put(this);
 	}
@@ -279,6 +279,7 @@ final class Connection {
 				response = null;
 			}
 		} catch (Throwable e) {
+			e.printStackTrace();
 			String formatDate = RequestUtil.dateFormat.format(new Date());
 			logger.error("Failed in route.handle(" + formatDate + ") :: " + RequestUtil.convert(rh.in));
 			logger.error("Failed in route.handle(" + formatDate + ") :: ", e);
@@ -314,6 +315,7 @@ final class WriteHelper{
 	int pos = 0;
 	int rem = 0;
 	Ref resBuff = null;
+	
 	
 	void reset() {
 		writeLen = 0;

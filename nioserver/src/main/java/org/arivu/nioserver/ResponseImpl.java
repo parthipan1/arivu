@@ -8,9 +8,12 @@ import java.util.Map;
 import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.utils.NullCheck;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class ResponseImpl implements Response {
-
+	private static final Logger logger = LoggerFactory.getLogger(ResponseImpl.class);
+	
 	final Map<String, Object> headers = new Amap<String, Object>();
 
 	final List<ByteData> out = new DoublyLinkedList<>();
@@ -167,6 +170,11 @@ final class ResponseImpl implements Response {
 		this.headers.put("X-Redirect-Src", request.getUriWithParams());
 		this.headers.put("Location", url);
 		this.redirectUrl = url;
+		try {
+			append("<!DOCTYPE html><head><meta http-equiv=\"refresh\" content=\"0; url="+url+"\"></head><body><p>The page has moved to:<a href=\""+url+"\">this page</a></p></body></html>");
+		} catch (IOException e) {
+			logger.error("Failed on sendredirect :: ", e);
+		}
 	}
 	
 	/* (non-Javadoc)
@@ -176,20 +184,6 @@ final class ResponseImpl implements Response {
 	public String getSendRedirectUrl(){
 		return this.redirectUrl;
 	}
-	
-//	volatile boolean closed = false;
-//
-//	@Override
-//	public void close() throws Exception {
-//		if (closed)
-//			return;
-//		closed = true;
-//		RequestUtil.getResponseBytes(this.getResponseCode(), this.getHeaders(), this.getOut(), request.getProtocol());
-//		
-//		this.socketChannel.close();
-//		this.out.close();
-//	}
-
 	
 }
 // class ProxyResponse extends ResponseImpl{

@@ -20,6 +20,7 @@ final class Configuration {
 	
 	static final String stopUri = "/__admin/shutdown";
 	static final boolean SINGLE_THREAD_MODE = Boolean.parseBoolean(Env.getEnv("singleThread", "false"));
+	static final boolean ADMIN_MODULE_ENABLED = Boolean.parseBoolean(Env.getEnv("adminMod", "false"));
 	static final String DEPLOY_LOC = Env.getEnv("deployLoc", ".." + File.separator + "apps");
 	
 	static final Map<String, Object> defaultResponseHeader;
@@ -93,6 +94,8 @@ final class Configuration {
 //			routes = Utils.unmodifiableCollection(tempRequestPaths);
 			routes = tempRequestPaths;
 			RequestUtil.scanApps(new File(DEPLOY_LOC));
+			if(ADMIN_MODULE_ENABLED)
+				routes.add(new AdminRoute());
 			for (Route r : routes){
 				if ( defaultRoute == null && r.uri.equals("/*") && r.httpMethod == HttpMethod.ALL ){
 					defaultRoute = r;
