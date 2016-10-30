@@ -266,7 +266,7 @@ public class RequestUtil {
 		RequestImpl requestImpl = new RequestImpl(valueOf, uri, uriWithParams, protocol, tempparams,
 				Utils.unmodifiableMap(tempheaders));
 		String contType = null;
-		List<Object> list = requestImpl.getHeaders().get("Content-Length");
+		List<Object> list = requestImpl.getHeaders().get("Content-Type");
 		if (!NullCheck.isNullOrEmpty(list)) {
 			contType = list.get(0).toString();
 		}
