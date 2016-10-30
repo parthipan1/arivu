@@ -50,38 +50,38 @@ public class Admin implements EntryPoint {
 	 * This is the entry point method.
 	 */
 	public void onModuleLoad() {
-		
 		// Add styles to elements in the stock list table.
 		routesFlexTable.addStyleName("watchList");
-		
+
 		// Routes Table
 		routesFlexTable.getRowFormatter().addStyleName(0, "watchListHeader");
-		routesFlexTable.setText(0, 0, "Uri");
-		routesFlexTable.setText(0, 1, "HttpMethod");
-		routesFlexTable.setText(0, 2, "Proxy");
-		routesFlexTable.setText(0, 3, "Remove");
+		routesFlexTable.setText(0, 0, "Name");
+		routesFlexTable.setText(0, 1, "Uri");
+		routesFlexTable.setText(0, 2, "HttpMethod");
+		routesFlexTable.setText(0, 3, "Proxy");
+		routesFlexTable.setText(0, 4, "Remove");
 
 		// Assemble Add Route panel.
 		addPanel.add(routeNameTextBox);
 		addPanel.add(packageTextBox);
 		addPanel.add(addRouteButton);
 		addPanel.addStyleName("addPanel");
-		
+
 		// Assemble Main panel.
 		mainPanel.add(routesFlexTable);
 		mainPanel.add(addPanel);
 		mainPanel.add(lastUpdatedLabel);
-
+		
 		// Associate the Main panel with the HTML host page.
 		RootPanel.get("pathList").add(mainPanel);
 
 		// Move cursor focus to the input box.
 		routeNameTextBox.setFocus(true);
-		
+
 		routeNameTextBox.setTitle("Enter new route name:");
 		packageTextBox.setTitle("Enter new package name:");
 		addRouteButton.setTitle("Press to add jar file!");
-		
+
 		// Listen for mouse events on the Add button.
 		addRouteButton.addClickHandler(new ClickHandler() {
 			public void onClick(ClickEvent event) {
@@ -90,11 +90,84 @@ public class Admin implements EntryPoint {
 		});
 
 		refreshTable();
-
 	}
 
 	void refreshTable() {
-		// Create the popup dialog box
+		routeRequest(RequestBuilder.GET,null);
+	}
+
+	@SuppressWarnings("deprecation")
+	void updateTable(JsArray<RouteData> routes) {
+		
+		for (int i = 0; i < allRoutes.size(); i++) {
+			routesFlexTable.removeRow(i+1);
+		}
+		allRoutes.clear();
+		
+		for (int i = 0; i < routes.length(); i++) {
+			final RouteData routeData = routes.get(i);
+			final int row = 1+i;
+			allRoutes.add(routeData);
+			routesFlexTable.setText(row, 0, routeData.getName());
+			routesFlexTable.setText(row, 1, routeData.getUri());
+			routesFlexTable.setText(row, 2, routeData.getMethod());
+			routesFlexTable.setText(row, 3, routeData.getProxy());
+			
+			String active = routeData.getActive();
+			if( "true".equals(active) ){
+				Button removeRouteButton = new Button("x");
+				removeRouteButton.addStyleDependentName("remove");
+				removeRouteButton.addClickHandler(new ClickHandler() {
+					public void onClick(ClickEvent event) {
+						disable(routeData);
+					}
+				});
+				routesFlexTable.setWidget(row, 4, removeRouteButton);
+			}else{
+				Button removeRouteButton = new Button("+");
+				removeRouteButton.addStyleDependentName("remove");
+				removeRouteButton.addClickHandler(new ClickHandler() {
+					public void onClick(ClickEvent event) {
+						enable(routeData);
+					}
+				});
+				routesFlexTable.setWidget(row, 4, removeRouteButton);
+			}
+			routesFlexTable.getCellFormatter().addStyleName(row, 0, "watchListColumn");
+			routesFlexTable.getCellFormatter().addStyleName(row, 1, "watchListFirstColumn");
+			routesFlexTable.getCellFormatter().addStyleName(row, 2, "watchListColumn");
+			routesFlexTable.getCellFormatter().addStyleName(row, 3, "watchListColumn");
+			routesFlexTable.getCellFormatter().addStyleName(row, 4, "watchListRemoveColumn");
+		}
+
+//		mainPanel.remove(routesFlexTable);
+//		mainPanel.add(routesFlexTable);
+		// Display timestamp showing last refresh.
+		lastUpdatedLabel.setText("Last update : " + DateTimeFormat.getMediumDateTimeFormat().format(new Date()));
+
+		
+		// Clear any errors.
+		// errorMsgLabel.setVisible(false);
+
+	}
+
+	protected void removeRoute(RouteData route) {
+		disable(route);
+	}
+
+	protected void addRoute() {
+
+	}
+
+	protected void disable(RouteData route) {
+		routeRequest(RequestBuilder.PUT,"{\"uri\":\"" + route.getUri() + "\",\"method\":\"" + route.getMethod() + "\",\"active\":\"false\"}");
+	}
+
+	protected void enable(RouteData route) {
+		routeRequest(RequestBuilder.PUT,"{\"uri\":\"" + route.getUri() + "\",\"method\":\"" + route.getMethod() + "\",\"active\":\"true\"}");
+	}
+
+	protected void routeRequest(RequestBuilder.Method method,String body) {
 		final DialogBox dialogBox = new DialogBox();
 		dialogBox.setText("Remote Procedure Call");
 		dialogBox.setAnimationEnabled(true);
@@ -122,11 +195,11 @@ public class Admin implements EntryPoint {
 		});
 
 		String url = "/__admin/routes";
-		RequestBuilder builder = new RequestBuilder(RequestBuilder.GET, URL.encode(url));
+		RequestBuilder builder = new RequestBuilder(method, URL.encode(url));
 
 		try {
 			// Request request =
-			builder.sendRequest(null, new RequestCallback() {
+			builder.sendRequest(body, new RequestCallback() {
 				public void onError(Request request, Throwable exception) {
 					// Couldn't connect to server (could be timeout, SOP
 					// violation, etc.)
@@ -140,21 +213,21 @@ public class Admin implements EntryPoint {
 				public void onResponseReceived(Request request, Response response) {
 					if (200 == response.getStatusCode()) {
 						routesFlexTable.clear();
-						
+
 						// Routes Table
 						routesFlexTable.getRowFormatter().addStyleName(0, "watchListHeader");
-						routesFlexTable.setText(0, 0, "Uri");
-						routesFlexTable.setText(0, 1, "HttpMethod");
-						routesFlexTable.setText(0, 2, "Proxy");
-						routesFlexTable.setText(0, 3, "Remove");
+						routesFlexTable.setText(0, 0, "Name");
+						routesFlexTable.setText(0, 1, "Uri");
+						routesFlexTable.setText(0, 2, "HttpMethod");
+						routesFlexTable.setText(0, 3, "Proxy");
+						routesFlexTable.setText(0, 4, "Remove");
 
 						allRoutes.clear();
-						
+
 						updateTable(JsonUtils.<JsArray<RouteData>>safeEval(response.getText()));
-						
+
 					} else {
 						// Handle the error. Can get the status text from
-						// response.getStatusText()
 						dialogBox.setText("Remote Procedure Call - Failure " + response.getStatusText());
 						serverResponseLabel.addStyleName("serverResponseLabelError");
 						serverResponseLabel.setHTML(SERVER_ERROR);
@@ -167,49 +240,6 @@ public class Admin implements EntryPoint {
 			// Couldn't connect to server
 		}
 	}
-
-	@SuppressWarnings("deprecation")
-	void updateTable(JsArray<RouteData> routes) {
-		allRoutes.clear();
-		for (int i = 0; i < routes.length(); i++) {
-			final RouteData routeData = routes.get(i);
-			final int row = routesFlexTable.getRowCount();
-			allRoutes.add(routeData);
-			routesFlexTable.setText(row, 0, routeData.getUri());
-			routesFlexTable.setText(row, 1, routeData.getMethod());
-			routesFlexTable.setText(row, 2, routeData.getProxy());
-			Button removeRouteButton = new Button("x");
-			removeRouteButton.addStyleDependentName("remove");
-		    removeRouteButton.addClickHandler(new ClickHandler() {
-		      public void onClick(ClickEvent event) {
-		        int removedIndex = row;
-		        allRoutes.remove(routeData);
-		        routesFlexTable.removeRow(removedIndex);
-		        removeRoute( routeData );
-		      }
-		    });
-			routesFlexTable.setWidget(row, 3, removeRouteButton);
-			routesFlexTable.getCellFormatter().addStyleName(row, 0, "watchListFirstColumn");
-			routesFlexTable.getCellFormatter().addStyleName(row, 1, "watchListColumn");
-			routesFlexTable.getCellFormatter().addStyleName(row, 2, "watchListColumn");
-			routesFlexTable.getCellFormatter().addStyleName(row, 3, "watchListRemoveColumn");
-		}
-
-		// Display timestamp showing last refresh.
-		lastUpdatedLabel.setText("Last update : " + DateTimeFormat.getMediumDateTimeFormat().format(new Date()));
-
-		// Clear any errors.
-		// errorMsgLabel.setVisible(false);
-
-	}
-
-	protected void removeRoute(RouteData routeData) {
-		
-	}
-
-	protected void addRoute() {
-
-	}
 }
 
 class RouteData extends JavaScriptObject {
@@ -217,9 +247,23 @@ class RouteData extends JavaScriptObject {
 	}
 
 	// JSNI methods to get route data.
-	public final native String getUri() /*-{ return this.uri; }-*/;
+	public final native String getUri() /*-{
+		return this.uri;
+	}-*/;
 
-	public final native String getMethod() /*-{ return this.method; }-*/;
+	public final native String getMethod() /*-{
+		return this.method;
+	}-*/;
 
-	public final native String getProxy() /*-{ return this.proxy; }-*/;
+	public final native String getProxy() /*-{
+		return this.proxy;
+	}-*/;
+
+	public final native String getActive() /*-{
+		return this.active;
+	}-*/;
+
+	public final native String getName() /*-{
+		return this.name;
+	}-*/;
 }

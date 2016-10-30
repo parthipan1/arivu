@@ -11,13 +11,18 @@ import java.net.URLClassLoader;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import javax.script.ScriptException;
+
 import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.datastructure.DoublyLinkedSet;
+import org.arivu.utils.Ason;
 import org.arivu.utils.NullCheck;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,11 +55,78 @@ final class Admin {
 	// }
 	// }
 
+	@Path(value = "/__admin/routes", httpMethod = HttpMethod.PUT)
+	static void disableRoute() throws IOException, ScriptException {
+		Response response = StaticRef.getResponse();
+		Request request = StaticRef.getRequest();
+
+		String convert = RequestUtil.convert(request.getBody());
+		System.out.println(" PUt body :: "+convert);
+		Map<String, Object> fromJson = new Ason().fromJson(convert);
+		if (!NullCheck.isNullOrEmpty(fromJson)) {
+			Object uriObj = fromJson.get("uri");
+			Object methodObj = fromJson.get("method");
+			Object activeObj = fromJson.get("active");
+			if (uriObj != null && methodObj != null && activeObj != null) {
+				Route route = getRoute(uriObj.toString(), methodObj.toString());
+				if (route != null) {
+					boolean a = Boolean.parseBoolean(activeObj.toString());
+					if (a)
+						route.enable();
+					else
+						route.disable();
+
+					StringBuffer buf = getAllActiveRoutes();
+					response.append(buf.toString());
+					response.putHeader("Content-Length", buf.length());
+					response.putHeader("Content-Type", "application/json");
+					response.setResponseCode(200);
+					return;
+				}
+			}
+		}
+		response.setResponseCode(304);
+	}
 
 	@Path(value = "/__admin/routes", httpMethod = HttpMethod.GET)
 	static void allRoutes() throws IOException {
 		Response response = StaticRef.getResponse();
-//		Request request = StaticRef.getRequest();
+		// Request request = StaticRef.getRequest();
+		StringBuffer buf = getAllActiveRoutes();
+		response.append(buf.toString());
+		response.putHeader("Content-Length", buf.length());
+		response.putHeader("Content-Type", "application/json");
+		response.setResponseCode(200);
+	}
+
+	@Path(value = "/__admin/apps", httpMethod = HttpMethod.GET)
+	static void allApps() throws IOException {
+		Response response = StaticRef.getResponse();
+		// Request request = StaticRef.getRequest();
+		StringBuffer buf = new StringBuffer("[");
+		Set<Entry<String, App>> entrySet = allHotDeployedArtifacts.entrySet();
+		for (Entry<String, App> e : entrySet) {
+			if (buf.length() > 1) {
+				buf.append(",");
+			}
+			buf.append("{\"name\":\"" + e.getKey() + "\"}");
+		}
+		buf.append("]");
+		response.append(buf.toString());
+		response.putHeader("Content-Length", buf.length());
+		response.putHeader("Content-Type", "application/json");
+		response.setResponseCode(200);
+	}
+	
+	static Route getRoute(String uri, String method) {
+		for (Route route : Configuration.routes) {
+			if (route.uri.equals(uri) && route.httpMethod.toString().equals(method))
+				return route;
+		}
+		return null;
+	}
+
+	static StringBuffer getAllActiveRoutes() {
 		Collection<Route> routes = Configuration.routes;
 		StringBuffer buf = new StringBuffer("[");
 		for (Route route : routes) {
@@ -69,20 +141,18 @@ final class Admin {
 			} else {
 				boolean proxy = route instanceof ProxyRoute;
 				HttpMethod httpMethod = route.httpMethod;
-				if( httpMethod == null )
+				if (httpMethod == null)
 					httpMethod = HttpMethod.ALL;
-				
+
 				if (buf.length() > 1) {
 					buf.append(",");
 				}
-				buf.append("{\"name\":\""+route.name+"\",\"uri\":\""+route.uri+"\",\"method\":\""+httpMethod+"\",\"proxy\":\""+proxy+"\",\"active\":\""+route.active+"\"}");
+				buf.append("{\"name\":\"" + route.name + "\",\"uri\":\"" + route.uri + "\",\"method\":\"" + httpMethod
+						+ "\",\"proxy\":\"" + proxy + "\",\"active\":\"" + route.active + "\"}");
 			}
 		}
 		buf.append("]");
-		response.append(buf.toString());
-		response.putHeader("Content-Length", buf.length());
-		response.putHeader("Content-Type", "application/json");
-		response.setResponseCode(200);
+		return buf;
 	}
 
 	@Path(value = Configuration.stopUri, httpMethod = HttpMethod.GET)
@@ -104,9 +174,9 @@ final class Admin {
 	static void handle404() throws Exception {
 		Request request = StaticRef.getRequest();
 		Response res = StaticRef.getResponse();
-		if( Configuration.ADMIN_MODULE_ENABLED && request.getUri().equals("/") ){
+		if (Configuration.ADMIN_MODULE_ENABLED && request.getUri().equals("/")) {
 			res.sendRedirect("/admin/Admin.html");
-		}else{
+		} else {
 			logger.debug(StaticRef.getRequest().toString());
 			res.setResponseCode(404);
 		}
@@ -205,6 +275,7 @@ final class Admin {
 					dup = allHotDeployedArtifacts.remove(name);
 					if (dup != null) {
 						dup.undeploy();
+						res.setResponseCode(304);
 					}
 				}
 

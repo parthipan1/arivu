@@ -383,6 +383,20 @@ class ProxyRoute extends Route {
 	}
 
 	@Override
+	void disable() {
+		super.disable();
+		if( this.files!=null ) this.files.clear();
+		if( this.proxyTh!=null ) this.proxyTh.clearAll();
+	}
+
+	@Override
+	void close() {
+		super.close();
+		if( this.files!=null ) this.files.clear();
+		if( this.proxyTh!=null ) this.proxyTh.clearAll();
+	}
+
+	@Override
 	public String toString() {
 		return "ProxyRoute [name=" + name + ", uri=" + uri + ", httpMethod=" + httpMethod + "]";
 	}

@@ -413,7 +413,9 @@ public class RequestUtil {
 
 		final Route in = new Route(uri, httpMethod);
 		for (Route route : paths) {
-			if (route.rut == null) {
+			if(!route.active){
+				continue;
+			}else if (route.rut == null) {
 				if (in.equals(route))
 					return route;
 				else if (route.httpMethod == HttpMethod.ALL) {

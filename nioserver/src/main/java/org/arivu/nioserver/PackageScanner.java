@@ -152,18 +152,11 @@ class PackageScanner {
 						org.arivu.nioserver.HttpMethod httpMethod = path.httpMethod();
 						if (!NullCheck.isNullOrEmpty(uri) && httpMethod != null) {
 							boolean validateRouteUri = RequestUtil.validateRouteUri(uri);
-							if (uri.equals("/*") || uri.equals("/favicon.ico") || validateRouteUri) {
-								boolean isStatic = Modifier.isStatic(method.getModifiers());
-								Route e = new Route(name, uri, httpMethod, clazz, method, isStatic);
-								Route matchingRoute = RequestUtil.getMatchingRoute(reqPaths, uri, httpMethod, true);
-								if (matchingRoute == null) {
-									reqPaths.add(e);
-									logger.debug("Discovered request handler :: " + clazz.getName() + " httpMethod "
-											+ method.getName());
-								} else {
-									logger.info("Duplicate request handler discovered ignoring :: " + clazz.getName()
-											+ " httpMethod " + method.getName());
-								}
+							if( uri.equals("/__admin") ){
+								if(Configuration.ADMIN_MODULE_ENABLED )
+									createRoute(name, reqPaths, clazz, method, uri, httpMethod);
+							}else if (uri.equals("/*") || uri.equals("/favicon.ico") || validateRouteUri) {
+								createRoute(name, reqPaths, clazz, method, uri, httpMethod);
 							} else {
 								logger.info("Invalid request Uri (" + uri + ") handler discovered ignoring :: "
 										+ clazz.getName() + " httpMethod " + method.getName());
@@ -178,6 +171,21 @@ class PackageScanner {
 					}
 				}
 			}
+		}
+	}
+
+	static void createRoute(String name, Collection<Route> reqPaths, Class<?> clazz, Method method, String uri,
+			org.arivu.nioserver.HttpMethod httpMethod) {
+		boolean isStatic = Modifier.isStatic(method.getModifiers());
+		Route e = new Route(name, uri, httpMethod, clazz, method, isStatic);
+		Route matchingRoute = RequestUtil.getMatchingRoute(reqPaths, uri, httpMethod, true);
+		if (matchingRoute == null) {
+			reqPaths.add(e);
+			logger.debug("Discovered request handler :: " + clazz.getName() + " httpMethod "
+					+ method.getName());
+		} else {
+			logger.info("Duplicate request handler discovered ignoring :: " + clazz.getName()
+					+ " httpMethod " + method.getName());
 		}
 	}
 

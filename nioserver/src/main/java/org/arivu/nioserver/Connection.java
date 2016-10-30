@@ -14,6 +14,7 @@ import java.util.List;
 
 import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.pool.Pool;
+import org.arivu.utils.NullCheck;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -189,11 +190,14 @@ final class Connection {
 								false);
 						rh.in.clear();
 						logger.debug(" Got Request :: " + req);
-						// System.out.println(" Got Request :: "+req+" route
-						// "+route);
+//						 System.out.println(" Got Request :: "+req+" route "+route);
 						if (route == Configuration.defaultRoute) {
 							processRequest(key);
 							return;
+						}
+						String conLenStrHdr = req.getHeaders().get("Content-Length");
+						if(!NullCheck.isNullOrEmpty(conLenStrHdr)){
+							rh.contentLen = Integer.parseInt(conLenStrHdr);
 						}
 						// System.out.println(" Got Request :: "+req+"\n total
 						// "+(total+headerIndex)+"");
@@ -205,6 +209,7 @@ final class Connection {
 							} else {
 								req.body.add(ByteData.wrap(Arrays.copyOfRange(readBuf, headerIndex + 1, bytesRead)));
 							}
+							rh.contentLen -= (bytesRead-headerIndex - 1);
 						}
 					}
 				} else {
@@ -219,12 +224,14 @@ final class Connection {
 							byte[] arr = Arrays.copyOfRange(readBuf, 0, bytesRead);
 							processMultipartInBytes(arr);
 						}
+						rh.contentLen -= bytesRead;
 					} else {
 						if (bytesRead == readBuf.length) {
 							req.body.add(ByteData.wrap(readBuf));
 						} else {
 							req.body.add(ByteData.wrap(Arrays.copyOfRange(readBuf, 0, bytesRead)));
 						}
+						rh.contentLen -= bytesRead;
 					}
 				}
 			}
@@ -237,7 +244,8 @@ final class Connection {
 				else
 					key.interestOps(SelectionKey.OP_READ);
 			} else {
-				if ((bytesRead == -1 || EOL0 == RequestUtil.BYTE_10))
+//				System.out.println(" bytesRead "+bytesRead+" EOL0 "+EOL0+" req "+rh.contentLen);
+				if ((bytesRead == -1 || rh.contentLen == 0 || EOL0 == RequestUtil.BYTE_10))
 					processRequest(key);
 				else
 					key.interestOps(SelectionKey.OP_READ);
@@ -334,6 +342,7 @@ final class WriteHelper{
 final class ReadHelper{
 	final List<ByteData> in = new DoublyLinkedList<>();
 	boolean onceFlag = false;
+	int contentLen = 0;
 	int start = 0;
 	int mi = 0;
 	ByteData rollOver = null;
@@ -344,6 +353,7 @@ final class ReadHelper{
 		start = 0;
 		mi = 0;
 		rollOver = null;
+		contentLen = 0;
 	}
 	
 	void setValue(int s,int m, ByteData bb){
