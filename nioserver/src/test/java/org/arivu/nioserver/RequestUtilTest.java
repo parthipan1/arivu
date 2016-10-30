@@ -193,7 +193,7 @@ public class RequestUtilTest {
 
 		Collection<String> packages = new DoublyLinkedList<>();
 		packages.add("org.arivu.nioserver");
-		Collection<Route> routes = PackageScanner.getPaths(packages);
+		Collection<Route> routes = PackageScanner.getPaths("System", packages);
 		assertFalse(NullCheck.isNullOrEmpty(routes));
 		Route varia = null;
 		for (Route c : routes) {

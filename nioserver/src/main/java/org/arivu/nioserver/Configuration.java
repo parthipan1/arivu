@@ -91,12 +91,13 @@ final class Configuration {
 			}
 		}
 		try {
-			tempRequestPaths.addAll(PackageScanner.getPaths(scanPackages));
+			tempRequestPaths.addAll(PackageScanner.getPaths("System", scanPackages));
 //			routes = Utils.unmodifiableCollection(tempRequestPaths);
 			routes = tempRequestPaths;
 			RequestUtil.scanApps(new File(DEPLOY_LOC));
 			if(ADMIN_MODULE_ENABLED)
 				routes.add(new AdminRoute());
+			
 			for (Route r : routes){
 				if ( defaultRoute == null && r.uri.equals("/*") && r.httpMethod == HttpMethod.ALL ){
 					defaultRoute = r;
@@ -104,7 +105,6 @@ final class Configuration {
 				}else{
 					logger.info("Route discovered :: " + r);
 				}
-//				logger.info("Route discovered :: " + r);
 			}
 		} catch (Exception e) {
 			logger.error("Failed in packagescan :: ", e);

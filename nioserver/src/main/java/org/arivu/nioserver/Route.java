@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 class Route {
 	private static final Logger logger = LoggerFactory.getLogger(Route.class);
 
+	String name;
 	final String uri;
 	final org.arivu.nioserver.HttpMethod httpMethod;
 	Class<?> klass;
@@ -37,25 +38,29 @@ class Route {
 	Threadlocal<Object> tl;
 	Map<String, Object> headers = null;
 	
+	volatile boolean active = true;
+	
 	Route(String uri, org.arivu.nioserver.HttpMethod httpMethod) {
-		this(uri, httpMethod, null, null, false);
+		this(null, uri, httpMethod, null, null, false);
 	}
 
 	/**
+	 * @param name TODO
 	 * @param uri
 	 * @param httpMethod
 	 * @param httpMethod
 	 * @param klass
 	 */
-	Route(String uri, org.arivu.nioserver.HttpMethod httpMethod, Class<?> klass, Method method, boolean isStatic) {
+	Route(String name, String uri, org.arivu.nioserver.HttpMethod httpMethod, Class<?> klass, Method method, boolean isStatic) {
 		super();
-		this.headers = new Amap<>(Configuration.defaultResponseHeader);
+		this.name = name;
 		this.uri = uri;
 		this.httpMethod = httpMethod;
 		this.klass = klass;
 		this.method = method;
 		this.isStatic = isStatic;
 		if (klass != null) {
+			this.headers = new Amap<>(Configuration.defaultResponseHeader);
 			int is = uri.indexOf('{');
 			if (is == -1) {
 				this.invoker = RequestUtil.getMethodInvoker(method);
@@ -115,6 +120,17 @@ class Route {
 		}
 	}
 
+	void disable(){
+		active = false;
+		if(tl!=null){
+			tl.clearAll();
+		}
+	}
+	
+	void enable(){
+		active = true;
+	}
+	
 	void close(){
 		if(tl!=null){
 			tl.close();
@@ -163,7 +179,6 @@ class Route {
 class ProxyRoute extends Route {
 	private static final Logger logger = LoggerFactory.getLogger(ProxyRoute.class);
 
-	String name;
 	String proxy_pass;
 	String dir;
 	Map<String,FileData> files;
@@ -178,7 +193,7 @@ class ProxyRoute extends Route {
 	 */
 	ProxyRoute(String name, String proxy_pass, String dir, String uri, org.arivu.nioserver.HttpMethod httpMethod,
 			Class<?> klass, Method method, boolean isStatic, Map<String, Object> defaultResponseHeader) {
-		super(uri, httpMethod, klass, method, isStatic);
+		super(null, uri, httpMethod, klass, method, isStatic);
 		this.name = name;
 		this.proxy_pass = proxy_pass;
 		this.dir = dir;
@@ -230,7 +245,8 @@ class ProxyRoute extends Route {
 	}
 
 	void handleProxy(Request req, Response res) throws IOException {
-		String queryStr = URLDecoder.decode(req.getUriWithParams().substring(req.getUriWithParams().indexOf("?")),
+		int indexOf = Math.max(req.getUri().length(), req.getUriWithParams().indexOf("?")) ;
+		String queryStr = URLDecoder.decode(req.getUriWithParams().substring(indexOf),
 				RequestUtil.ENC_UTF_8);
 		String loc = this.proxy_pass + req.getUri().substring(this.uri.length()) + queryStr;
 		// System.out.println("loc :: " + loc);
@@ -373,8 +389,6 @@ class ProxyRoute extends Route {
 
 }
 final class AdminRoute extends ProxyRoute {
-//	private static final Logger logger = LoggerFactory.getLogger(AdminRoute.class);
-	
 	AdminRoute() {
 		super("adminSite", null, Configuration.ADMIN_LOC, "/admin", HttpMethod.ALL, null, null, false, Configuration.defaultResponseHeader);
 	}

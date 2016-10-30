@@ -92,8 +92,4 @@ public interface ServerMXBean {
 	 */
 	void shutdown();
 
-	/**
-	 * @param jars
-	 */
-	void addJar(String jars);
 }

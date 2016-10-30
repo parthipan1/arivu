@@ -50,21 +50,6 @@ final class Admin {
 	// }
 	// }
 
-//	private static final String serverInfo = "Arivu Nio Server 1.0.1";
-
-//	@Path(value = "/__admin/greet", httpMethod = HttpMethod.GET)
-//	static void greet() {
-//		Response response = StaticRef.getResponse();
-//		Request request = StaticRef.getRequest();
-//		System.out.println(" request :: " + request);
-//		try {
-//			response.append("Hello, " + request.getParams().get("txt").toArray()[0] + "!<br><br>I am running "
-//					+ serverInfo + ".<br><br>It looks like you are using:<br>");
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
-//		response.setResponseCode(200);
-//	}
 
 	@Path(value = "/__admin/routes", httpMethod = HttpMethod.GET)
 	static void allRoutes() throws IOException {
@@ -90,7 +75,7 @@ final class Admin {
 				if (buf.length() > 1) {
 					buf.append(",");
 				}
-				buf.append("{\"uri\":\""+route.uri+"\",\"method\":\""+httpMethod+"\",\"proxy\":\""+proxy+"\"}");
+				buf.append("{\"name\":\""+route.name+"\",\"uri\":\""+route.uri+"\",\"method\":\""+httpMethod+"\",\"proxy\":\""+proxy+"\",\"active\":\""+route.active+"\"}");
 			}
 		}
 		buf.append("]");
@@ -259,7 +244,7 @@ final class App {
 		String[] split = scanpackages.split(",");
 		for (String pkgName : split) {
 			for (Class<?> kcs : PackageScanner.getClassesForPackage(dynamicClassLoader, pkgName, true)) {
-				PackageScanner.addMethod(reqPaths, kcs);
+				PackageScanner.addMethod(name, reqPaths, kcs);
 			}
 		}
 		Collection<Route> dupReqPaths = new DoublyLinkedSet<Route>();

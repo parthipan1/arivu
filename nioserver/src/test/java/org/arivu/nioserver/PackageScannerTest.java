@@ -39,11 +39,11 @@ public class PackageScannerTest {
 
 		Collection<String> packageNames = new DoublyLinkedSet<String>();
 
-		Collection<Route> paths = PackageScanner.getPaths(packageNames);
+		Collection<Route> paths = PackageScanner.getPaths("System", packageNames);
 		assertTrue(NullCheck.isNullOrEmpty(paths));
 
 		packageNames.add("org.arivu.nioserver");
-		paths = PackageScanner.getPaths(packageNames);
+		paths = PackageScanner.getPaths("System", packageNames);
 
 		assertFalse(NullCheck.isNullOrEmpty(paths));
 	}
@@ -67,10 +67,10 @@ public class PackageScannerTest {
 		Collection<Route> reqPaths = new DoublyLinkedSet<Route>();
 
 		assertTrue(NullCheck.isNullOrEmpty(reqPaths));
-		PackageScanner.addMethod(reqPaths, Connection.class);
+		PackageScanner.addMethod("System", reqPaths, Connection.class);
 		assertTrue(NullCheck.isNullOrEmpty(reqPaths));
 
-		PackageScanner.addMethod(reqPaths, Admin.class);
+		PackageScanner.addMethod("System", reqPaths, Admin.class);
 		assertFalse(NullCheck.isNullOrEmpty(reqPaths));
 
 	}

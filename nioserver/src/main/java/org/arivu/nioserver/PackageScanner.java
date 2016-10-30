@@ -24,19 +24,19 @@ import org.slf4j.LoggerFactory;
 class PackageScanner {
 	static final Logger logger = LoggerFactory.getLogger(PackageScanner.class);
 
-	static Collection<Route> getPaths(Collection<String> packageNames) throws ClassNotFoundException, IOException {
+	static Collection<Route> getPaths(String name, Collection<String> packageNames) throws ClassNotFoundException, IOException {
 		Collection<Route> reqPaths = new DoublyLinkedSet<Route>();
 
 		for (String pkgName : packageNames) {
-			getPaths(reqPaths, pkgName);
+			getPaths(reqPaths, pkgName, name);
 		}
 
 		return reqPaths;
 	}
 
-	static void getPaths(Collection<Route> reqPaths, String pkgName) throws ClassNotFoundException {
+	static void getPaths(Collection<Route> reqPaths, String pkgName, String name) throws ClassNotFoundException {
 		for (Class<?> kcs : getClassesForPackage(Thread.currentThread().getContextClassLoader(), pkgName, false)) {
-			addMethod(reqPaths, kcs);
+			addMethod(name, reqPaths, kcs);
 		}
 	}
 
@@ -139,7 +139,7 @@ class PackageScanner {
 		return classes;
 	}
 
-	static void addMethod(Collection<Route> reqPaths, Class<?> clazz) {
+	static void addMethod(String name, Collection<Route> reqPaths, Class<?> clazz) {
 		logger.debug("Scanning class " + clazz.getName());
 		Method[] methods = clazz.getDeclaredMethods();// Methods();
 		for (Method method : methods) {
@@ -154,7 +154,7 @@ class PackageScanner {
 							boolean validateRouteUri = RequestUtil.validateRouteUri(uri);
 							if (uri.equals("/*") || uri.equals("/favicon.ico") || validateRouteUri) {
 								boolean isStatic = Modifier.isStatic(method.getModifiers());
-								Route e = new Route(uri, httpMethod, clazz, method, isStatic);
+								Route e = new Route(name, uri, httpMethod, clazz, method, isStatic);
 								Route matchingRoute = RequestUtil.getMatchingRoute(reqPaths, uri, httpMethod, true);
 								if (matchingRoute == null) {
 									reqPaths.add(e);

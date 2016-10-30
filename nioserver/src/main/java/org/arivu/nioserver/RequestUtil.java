@@ -71,8 +71,8 @@ public class RequestUtil {
 		for (int i = start; i < content.length; i++) {
 			if (content[i] == pattern[mi]) {
 				mi++;
-				if (mi == pattern.length){
-//					logger.debug(" searchPattern 1 "+(i + 1 - mi));
+				if (mi == pattern.length) {
+					// logger.debug(" searchPattern 1 "+(i + 1 - mi));
 					return i + 1 - mi;
 				}
 			} else {
@@ -80,28 +80,29 @@ public class RequestUtil {
 			}
 		}
 
-		if (mi != 0){
-//			logger.debug(" searchPattern 2 "+(-1 * mi)+" c%"+content[content.length-1]+"%  p%"+pattern[0]+"% ap%"+new String(pattern)+"%");			
+		if (mi != 0) {
+			// logger.debug(" searchPattern 2 "+(-1 * mi)+"
+			// c%"+content[content.length-1]+"% p%"+pattern[0]+"% ap%"+new
+			// String(pattern)+"%");
 			return -1 * mi;
-		}
-		else
+		} else
 			return BYTE_SEARCH_DEFLT;
 	}
 
-//	static void parseAndSetMultiPart(RequestImpl req) {
-//		Collection<List<ByteBuffer>> partsAsBuffer = parsePartsAsBuffer(req);
-//		int cnt = 0;
-//		Map<String, MultiPart> parts = new Amap<>();
-//		for (List<ByteBuffer> list : partsAsBuffer){
-//			MultiPart parseAsMultiPart = parseAsMultiPart(list);
-//			if(NullCheck.isNullOrEmpty(parseAsMultiPart.name)){
-//				parts.put(String.valueOf(cnt++), parseAsMultiPart);
-//			}else{
-//				parts.put(parseAsMultiPart.name, parseAsMultiPart);
-//			}
-//		}
-//		req.multiParts = Utils.unmodifiableMap(parts);
-//	}
+	// static void parseAndSetMultiPart(RequestImpl req) {
+	// Collection<List<ByteBuffer>> partsAsBuffer = parsePartsAsBuffer(req);
+	// int cnt = 0;
+	// Map<String, MultiPart> parts = new Amap<>();
+	// for (List<ByteBuffer> list : partsAsBuffer){
+	// MultiPart parseAsMultiPart = parseAsMultiPart(list);
+	// if(NullCheck.isNullOrEmpty(parseAsMultiPart.name)){
+	// parts.put(String.valueOf(cnt++), parseAsMultiPart);
+	// }else{
+	// parts.put(parseAsMultiPart.name, parseAsMultiPart);
+	// }
+	// }
+	// req.multiParts = Utils.unmodifiableMap(parts);
+	// }
 
 	static MultiPart parseAsMultiPart(List<ByteData> list) {
 		List<ByteData> body = new DoublyLinkedList<>();
@@ -122,8 +123,8 @@ public class RequestUtil {
 		}
 
 		Map<String, String> unmodifiableMap = Utils.unmodifiableMap(parseMultipartHeader(headers.toString()));
-		
-		String name=null,filename=null,contentType=null,contentDisposition=null;
+
+		String name = null, filename = null, contentType = null, contentDisposition = null;
 		// Content-Disposition=form-data; name="upload";
 		// filename="README.md",Content-Type
 		contentType = unmodifiableMap.get("Content-Type");
@@ -143,63 +144,68 @@ public class RequestUtil {
 						String v = Utils.replaceAll(split[i], "name=", "");
 						v = Utils.replaceAll(v, "\"", "").trim();
 						name = v;
-					} 
+					}
 				}
 			}
 		}
 
-		return new MultiPart(unmodifiableMap, Utils.unmodifiableList(body),name,filename,contentType,contentDisposition);
+		return new MultiPart(unmodifiableMap, Utils.unmodifiableList(body), name, filename, contentType,
+				contentDisposition);
 	}
 
-//	static Collection<List<ByteBuffer>> parsePartsAsBuffer(RequestImpl req) {
-//		Collection<List<ByteBuffer>> bufferParts = new DoublyLinkedList<>();
-//		List<ByteBuffer> part = new DoublyLinkedList<>();
-//		int start = req.boundary.length + 1;
-//		int mi = 0;
-//		ByteBuffer rollOver = null;
-//		for (ByteBuffer bb : req.body) {
-//			byte[] content = bb.array();
-//			do {
-//				int searchPattern = RequestUtil.searchPattern(content, req.boundary, start, mi);
-//				if (searchPattern == RequestUtil.BYTE_SEARCH_DEFLT) {
-//					part.add(ByteBuffer.wrap(Arrays.copyOfRange(content, start, content.length)));
-//					start = 0;
-//					mi = 0;
-//					break;
-//				} else if (searchPattern < 0) {
-//					mi = searchPattern * -1 - 1;
-//					rollOver = ByteBuffer.wrap(Arrays.copyOfRange(content, start, content.length - mi));
-//					start = 0;
-//				} else if (searchPattern > 0) {
-//					part.add(ByteBuffer.wrap(Arrays.copyOfRange(content, start, searchPattern - 2)));
-//					bufferParts.add(part);
-//					part = new DoublyLinkedList<>();
-//					start = searchPattern + req.boundary.length + 1;
-//					mi = 0;
-//				} else if (searchPattern == 0) {
-//					if (mi > 0) {
-//						part.add(rollOver);
-//						bufferParts.add(part);
-//						part = new DoublyLinkedList<>();
-//						rollOver = null;
-//						start = req.boundary.length + 1 - mi;
-//						mi = 0;
-//					} else {
-//						bufferParts.add(part);
-//						part = new DoublyLinkedList<>();
-//						rollOver = null;
-//						start = req.boundary.length + 1;
-//						mi = 0;
-//					}
-//				}
-//			} while (true);
-//		}
-//
-//		return bufferParts;
-//	}
+	// static Collection<List<ByteBuffer>> parsePartsAsBuffer(RequestImpl req) {
+	// Collection<List<ByteBuffer>> bufferParts = new DoublyLinkedList<>();
+	// List<ByteBuffer> part = new DoublyLinkedList<>();
+	// int start = req.boundary.length + 1;
+	// int mi = 0;
+	// ByteBuffer rollOver = null;
+	// for (ByteBuffer bb : req.body) {
+	// byte[] content = bb.array();
+	// do {
+	// int searchPattern = RequestUtil.searchPattern(content, req.boundary,
+	// start, mi);
+	// if (searchPattern == RequestUtil.BYTE_SEARCH_DEFLT) {
+	// part.add(ByteBuffer.wrap(Arrays.copyOfRange(content, start,
+	// content.length)));
+	// start = 0;
+	// mi = 0;
+	// break;
+	// } else if (searchPattern < 0) {
+	// mi = searchPattern * -1 - 1;
+	// rollOver = ByteBuffer.wrap(Arrays.copyOfRange(content, start,
+	// content.length - mi));
+	// start = 0;
+	// } else if (searchPattern > 0) {
+	// part.add(ByteBuffer.wrap(Arrays.copyOfRange(content, start, searchPattern
+	// - 2)));
+	// bufferParts.add(part);
+	// part = new DoublyLinkedList<>();
+	// start = searchPattern + req.boundary.length + 1;
+	// mi = 0;
+	// } else if (searchPattern == 0) {
+	// if (mi > 0) {
+	// part.add(rollOver);
+	// bufferParts.add(part);
+	// part = new DoublyLinkedList<>();
+	// rollOver = null;
+	// start = req.boundary.length + 1 - mi;
+	// mi = 0;
+	// } else {
+	// bufferParts.add(part);
+	// part = new DoublyLinkedList<>();
+	// rollOver = null;
+	// start = req.boundary.length + 1;
+	// mi = 0;
+	// }
+	// }
+	// } while (true);
+	// }
+	//
+	// return bufferParts;
+	// }
 
 	static Map<String, String> parseMultipartHeader(String metadata) {
-//		 System.out.println(" parseMultipartHeader :: "+metadata);
+		// System.out.println(" parseMultipartHeader :: "+metadata);
 		String[] split = metadata.split(System.lineSeparator());
 		Map<String, String> tempheaders = new Amap<String, String>();
 		for (int i = 0; i < split.length; i++) {
@@ -402,10 +408,9 @@ public class RequestUtil {
 		return true;
 	}
 
-	
 	static Route getMatchingRoute(Collection<Route> paths, final String uri, final HttpMethod httpMethod,
 			final boolean retNull) {
-		
+
 		final Route in = new Route(uri, httpMethod);
 		for (Route route : paths) {
 			if (route.rut == null) {
@@ -495,16 +500,17 @@ public class RequestUtil {
 			SocketAddress remoteSocketAddress, HttpMethod method) {
 		if (!uri.equals(Configuration.stopUri)) {
 			StringBuffer access = new StringBuffer();
-			access.append("[").append(dateFormat.format(new Date(start))).append("] ").append(uri).append(" ").append(method).append(" ")
-					.append(responseCode).append(" ").append(size).append(" [").append((end - start)).append("] ")
-					.append(remoteSocketAddress.toString());
+			access.append("[").append(dateFormat.format(new Date(start))).append("] ").append(uri).append(" ")
+					.append(method).append(" ").append(responseCode).append(" ").append(size).append(" [")
+					.append((end - start)).append("] ").append(remoteSocketAddress.toString());
 			Server.accessLog.append(access.toString());
 		}
 	}
 
 	static Ref getResponseBytes(Request request, Response response) {
 		Ref responseBytes = RequestUtil.getResponseBytes(response.getResponseCode(), response.getHeaders(),
-				response.getOut(), request.getProtocol(), request.getUri(), response.getContentLength(), request.getMethod());
+				response.getOut(), request.getProtocol(), request.getUri(), response.getContentLength(),
+				request.getMethod());
 		if (response instanceof ResponseImpl) {
 			ResponseImpl im = (ResponseImpl) response;
 			im.out.clear();
@@ -587,18 +593,18 @@ public class RequestUtil {
 
 	static void allUrls(File root, List<URL> urls) throws MalformedURLException {
 		File[] list = root.listFiles(new FilenameFilter() {
-	
+
 			@Override
 			public boolean accept(File dir, String name) {
-				if(NullCheck.isNullOrEmpty(name)) return false;
+				if (NullCheck.isNullOrEmpty(name))
+					return false;
 				final String ln = name.toLowerCase(Locale.getDefault());
-				return ln.endsWith(".jar") || ln.endsWith(".properties") || ln.endsWith(".xml")
-						|| ln.endsWith(".json");
+				return ln.endsWith(".jar") || ln.endsWith(".properties") || ln.endsWith(".xml") || ln.endsWith(".json");
 			}
 		});
 		if (NullCheck.isNullOrEmpty(list))
 			return;
-	
+
 		for (File f : list) {
 			if (f.isDirectory()) {
 				allUrls(f, urls);
@@ -610,27 +616,27 @@ public class RequestUtil {
 	}
 
 	static void unzip(File destinationFolder, File zipFile) throws IOException, InterruptedException {
-	
+
 		if (!destinationFolder.exists())
 			destinationFolder.mkdirs();
-	
+
 		// String exe = "unzip " + zipFile.getAbsolutePath() + " -d " +
 		// destinationFolder.getAbsolutePath();
 		// Runtime.getRuntime().exec(exe).waitFor();
-	
+
 		byte[] buffer = new byte[2048];
-	
+
 		try (FileInputStream fInput = new FileInputStream(zipFile);
 				ZipInputStream zipInput = new ZipInputStream(fInput);) {
-	
+
 			ZipEntry entry = zipInput.getNextEntry();
-	
+
 			while (entry != null) {
 				String entryName = entry.getName();
 				File file = new File(destinationFolder.getAbsolutePath() + File.separator + entryName);
-	
+
 				logger.info("Hotdeploy :: Unzip file " + entryName + " to " + file.getAbsolutePath());
-	
+
 				// create the directories of the zip directory
 				if (entry.isDirectory()) {
 					File newDir = new File(file.getAbsolutePath());
@@ -653,10 +659,10 @@ public class RequestUtil {
 				zipInput.closeEntry();
 				entry = zipInput.getNextEntry();
 			}
-	
+
 			// close the last ZipEntry
 			zipInput.closeEntry();
-	
+
 		}
 	}
 
@@ -668,7 +674,7 @@ public class RequestUtil {
 				} else {
 					for (String t : f.list())
 						del(new File(f, t));
-	
+
 					if (f.list().length == 0) {
 						f.delete();
 					}
@@ -681,9 +687,11 @@ public class RequestUtil {
 		}
 	}
 
-	public static byte[] read(File file) throws IOException{
-		if(file==null) return null;
-		else if( !file.exists() ) return null;
+	public static byte[] read(File file) throws IOException {
+		if (file == null)
+			return null;
+		else if (!file.exists())
+			return null;
 		RandomAccessFile randomAccessFile = null;
 		try {
 			randomAccessFile = new RandomAccessFile(file, "r");
@@ -698,10 +706,10 @@ public class RequestUtil {
 			}
 		}
 	}
-	
-	static void scanApps(File root)  {
+
+	static void scanApps(File root) {
 		File[] list = root.listFiles(new FileFilter() {
-			
+
 			@Override
 			public boolean accept(File pathname) {
 				return pathname.isDirectory();
@@ -709,15 +717,54 @@ public class RequestUtil {
 		});
 		if (NullCheck.isNullOrEmpty(list))
 			return;
-	
+
 		for (File f : list) {
 			try {
-			   new App( f.getName(), new String(read(new File(f,"scanpackages"))) ).deploy();
+				new App(f.getName(), new String(read(new File(f, "scanpackages")))).deploy();
 			} catch (Exception e) {
 				logger.error("Failed in scan Apps :: ", e);
 			}
 		}
-		logger.info("Discovered Apps :: "+Admin.allHotDeployedArtifacts.keySet());
+		logger.info("Discovered Apps :: " + Admin.allHotDeployedArtifacts.keySet());
+	}
+
+	static void addProxyRouteRuntime(String name, String method, String location, String proxyPass, String dir) {
+		HttpMethod httpMethod = HttpMethod.ALL;
+		if (!NullCheck.isNullOrEmpty(method))
+			httpMethod = HttpMethod.valueOf(method);
+
+		if (!RequestUtil.validateRouteUri(location))
+			throw new IllegalArgumentException("Illegal location(" + location + ") specified!");
+
+		String proxy_pass = proxyPass;
+		boolean notNullProxy = !NullCheck.isNullOrEmpty(proxy_pass);
+		boolean notNullDir = !NullCheck.isNullOrEmpty(dir);
+		if (notNullProxy && notNullDir)
+			throw new IllegalArgumentException("Illegal proxy_pass(" + proxyPass + ") and dir(" + dir + ") specified!");
+		if (notNullProxy) {
+			proxy_pass = Utils.replaceAll(proxy_pass, "$host", Server.DEFAULT_HOST);
+			proxy_pass = Utils.replaceAll(proxy_pass, "$port", String.valueOf(Server.DEFAULT_PORT));
+		}
+		if (notNullDir) {
+			dir = Utils.replaceAll(dir, "$home", new File(".").getAbsolutePath());
+		}
+		ProxyRoute prp = new ProxyRoute(name, proxy_pass, dir, location, httpMethod, null, null, false, null);
+		Collection<Route> rts = Configuration.routes;
+		for (Route rt : rts) {
+			if (rt instanceof ProxyRoute) {
+				ProxyRoute prt = (ProxyRoute) rt;
+				if (prt.uri.equals(location) && (httpMethod == prt.httpMethod || prt.httpMethod == HttpMethod.ALL)) {
+					if (NullCheck.isNullOrEmpty(prt.dir) && !notNullDir && proxy_pass.equals(prt.proxy_pass))
+						throw new IllegalArgumentException(
+								"Duplicate proxy proxy_pass(" + proxyPass + ") and dir(" + dir + ") specified!");
+					else if (NullCheck.isNullOrEmpty(prt.proxy_pass) && !notNullProxy && dir.equals(prt.dir))
+						throw new IllegalArgumentException(
+								"Duplicate proxy proxy_pass(" + proxyPass + ") and dir(" + dir + ") specified!");
+				}
+			}
+		}
+		Configuration.routes.add(prp);
+		logger.info("Added Proxy setting ::" + prp.toString());
 	}
 }
 

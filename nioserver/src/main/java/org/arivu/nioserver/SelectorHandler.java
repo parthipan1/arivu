@@ -3,7 +3,6 @@
  */
 package org.arivu.nioserver;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
@@ -25,7 +24,6 @@ import org.arivu.pool.ConcurrentPool;
 import org.arivu.pool.Pool;
 import org.arivu.pool.PoolFactory;
 import org.arivu.utils.NullCheck;
-import org.arivu.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +51,8 @@ final class SelectorHandler {
 			String[] ret = new String[rts.size()];
 			int i = 0;
 			for (Route rt : rts) {
-				ret[i++] = rt.uri + " " + rt.httpMethod;
+				if(rt.active)
+					ret[i++] = rt.uri + " " + rt.httpMethod;
 			}
 
 			return ret;
@@ -63,9 +62,7 @@ final class SelectorHandler {
 		public void removeRoute(String route) {
 			Route route2 = getRoute(route);
 			if(route2!=null){
-				if(Configuration.routes.remove(route2)){
-					route2.close();
-				}
+				route2.disable();
 			}
 		}
 		
@@ -81,45 +78,7 @@ final class SelectorHandler {
 
 		@Override
 		public void addProxyRoute(String name, String method, String location, String proxyPass, String dir) {
-			HttpMethod httpMethod = HttpMethod.ALL;
-			if (!NullCheck.isNullOrEmpty(method))
-				httpMethod = HttpMethod.valueOf(method);
-
-			if(!RequestUtil.validateRouteUri(location))
-				throw new IllegalArgumentException(
-						"Illegal location(" + location + ") specified!");
-			
-			String proxy_pass = proxyPass;
-			boolean notNullProxy = !NullCheck.isNullOrEmpty(proxy_pass);
-			boolean notNullDir = !NullCheck.isNullOrEmpty(dir);
-			if (notNullProxy && notNullDir)
-				throw new IllegalArgumentException(
-						"Illegal proxy_pass(" + proxyPass + ") and dir(" + dir + ") specified!");
-			if (notNullProxy) {
-				proxy_pass = Utils.replaceAll(proxy_pass, "$host", Server.DEFAULT_HOST);
-				proxy_pass = Utils.replaceAll(proxy_pass, "$port", String.valueOf(Server.DEFAULT_PORT));
-			}
-			if (notNullDir) {
-				dir = Utils.replaceAll(dir, "$home", new File(".").getAbsolutePath());
-			}
-			ProxyRoute prp = new ProxyRoute(name, proxy_pass, dir, location, httpMethod, null, null, false, null);
-			Collection<Route> rts = Configuration.routes;
-			for (Route rt : rts) {
-				if (rt instanceof ProxyRoute) {
-					ProxyRoute prt = (ProxyRoute) rt;
-					if (prt.uri.equals(location)
-							&& (httpMethod == prt.httpMethod || prt.httpMethod == HttpMethod.ALL)) {
-						if (NullCheck.isNullOrEmpty(prt.dir) && !notNullDir && proxy_pass.equals(prt.proxy_pass))
-							throw new IllegalArgumentException(
-									"Duplicate proxy proxy_pass(" + proxyPass + ") and dir(" + dir + ") specified!");
-						else if (NullCheck.isNullOrEmpty(prt.proxy_pass) && !notNullProxy && dir.equals(prt.dir))
-							throw new IllegalArgumentException(
-									"Duplicate proxy proxy_pass(" + proxyPass + ") and dir(" + dir + ") specified!");
-					}
-				}
-			}
-			Configuration.routes.add(prp);
-			logger.info("Added Proxy setting ::" + prp.toString());
+			RequestUtil.addProxyRouteRuntime(name, method, location, proxyPass, dir);
 		}
 
 		@Override
@@ -161,7 +120,7 @@ final class SelectorHandler {
 		@Override
 		public void scanPackage(String packageName) throws Exception {
 			if (!NullCheck.isNullOrEmpty(packageName)) {
-				PackageScanner.getPaths(Configuration.routes, packageName);
+				PackageScanner.getPaths(Configuration.routes, packageName, "System");
 			}
 		}
 
@@ -179,12 +138,6 @@ final class SelectorHandler {
 		public String getResponseHeader() {
 			Map<String, Object> defaultresponseheader = Configuration.defaultResponseHeader;
 			return RequestUtil.getString(defaultresponseheader);
-		}
-
-		@Override
-		public void addJar(String jars) {
-			// TODO Auto-generated method stub
-			
 		}
 
 		@Override
