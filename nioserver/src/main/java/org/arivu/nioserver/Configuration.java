@@ -22,6 +22,7 @@ final class Configuration {
 	static final boolean SINGLE_THREAD_MODE = Boolean.parseBoolean(Env.getEnv("singleThread", "false"));
 	static final boolean ADMIN_MODULE_ENABLED = Boolean.parseBoolean(Env.getEnv("adminMod", "false"));
 	static final String DEPLOY_LOC = Env.getEnv("deployLoc", ".." + File.separator + "apps");
+	static final String ADMIN_LOC = Env.getEnv("adminLoc", ".." + File.separator + "admin");
 	
 	static final Map<String, Object> defaultResponseHeader;
 	static final Map<String, Object> defaultResponseCodes;

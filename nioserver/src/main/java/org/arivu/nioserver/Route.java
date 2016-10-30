@@ -376,7 +376,7 @@ final class AdminRoute extends ProxyRoute {
 //	private static final Logger logger = LoggerFactory.getLogger(AdminRoute.class);
 	
 	AdminRoute() {
-		super("adminSite", null, "admin", "/admin", HttpMethod.ALL, null, null, false, Configuration.defaultResponseHeader);
+		super("adminSite", null, Configuration.ADMIN_LOC, "/admin", HttpMethod.ALL, null, null, false, Configuration.defaultResponseHeader);
 	}
 
 	@Override
