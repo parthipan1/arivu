@@ -20,8 +20,10 @@ import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.DialogBox;
 import com.google.gwt.user.client.ui.FlexTable;
 import com.google.gwt.user.client.ui.HTML;
+import com.google.gwt.user.client.ui.HasAlignment;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.Label;
+import com.google.gwt.user.client.ui.ListBox;
 import com.google.gwt.user.client.ui.RootPanel;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
@@ -35,7 +37,9 @@ public class Admin implements EntryPoint {
 	private FlexTable routesFlexTable = new FlexTable();
 	private HorizontalPanel addPanel = new HorizontalPanel();
 	private TextBox routeNameTextBox = new TextBox();
-	private TextBox packageTextBox = new TextBox();
+	private TextBox uriTextBox = new TextBox();
+	private TextBox locationTextBox = new TextBox();
+	private ListBox dropDownList = new ListBox();
 	private Button addRouteButton = new Button("Add");
 	private Label lastUpdatedLabel = new Label();
 	private ArrayList<RouteData> allRoutes = new ArrayList<RouteData>();
@@ -63,7 +67,9 @@ public class Admin implements EntryPoint {
 
 		// Assemble Add Route panel.
 		addPanel.add(routeNameTextBox);
-		addPanel.add(packageTextBox);
+		addPanel.add(uriTextBox);
+		addPanel.add(locationTextBox);
+		addPanel.add(dropDownList);
 		addPanel.add(addRouteButton);
 		addPanel.addStyleName("addPanel");
 
@@ -79,8 +85,12 @@ public class Admin implements EntryPoint {
 		routeNameTextBox.setFocus(true);
 
 		routeNameTextBox.setTitle("Enter new route name:");
-		packageTextBox.setTitle("Enter new package name:");
-		addRouteButton.setTitle("Press to add jar file!");
+		uriTextBox.setTitle("Enter new uri name:");
+		locationTextBox.setTitle("Enter new location name:");
+		addRouteButton.setTitle("Press to add route!");
+		
+		dropDownList.addItem("browser");
+		dropDownList.addItem("proxy");
 
 		// Listen for mouse events on the Add button.
 		addRouteButton.addClickHandler(new ClickHandler() {
@@ -151,12 +161,63 @@ public class Admin implements EntryPoint {
 
 	}
 
+	boolean isNullOrEmpty(final String v) {
+	    return !(v != null && v.length() > 0);
+	  }
+	
 	protected void removeRoute(RouteData route) {
 		disable(route);
 	}
-
+	
+	DialogBox alertWidget(final String header, final String content) {
+        final DialogBox box = new DialogBox();
+        final VerticalPanel panel = new VerticalPanel();
+        box.setText(header);
+        panel.add(new Label(content));
+        final Button buttonClose = new Button("Close",new ClickHandler() {
+            @Override
+            public void onClick(final ClickEvent event) {
+                box.hide();
+            }
+        });
+        // few empty labels to make widget larger
+        final Label emptyLabel = new Label("");
+        emptyLabel.setSize("auto","25px");
+        panel.add(emptyLabel);
+        panel.add(emptyLabel);
+        buttonClose.setWidth("90px");
+        panel.add(buttonClose);
+        panel.setCellHorizontalAlignment(buttonClose, HasAlignment.ALIGN_RIGHT);
+        box.add(panel);
+        return box;
+    }
+	
 	protected void addRoute() {
-
+		String uri = uriTextBox.getText();
+		String name = routeNameTextBox.getText();
+		String loc = locationTextBox.getText();
+		String typeRoute = dropDownList.getSelectedValue();
+		if( isNullOrEmpty(uri) ){
+			alertWidget("Adding route failed",
+	                "Invalid uri :: "+uri).center();
+			return;
+		}
+		if( isNullOrEmpty(name) ){
+			alertWidget("Adding route failed",
+	                "Invalid name :: "+name).center();
+			return;
+		}
+		if( isNullOrEmpty(loc) ){
+			alertWidget("Adding route failed",
+	                "Invalid loc :: "+loc).center();
+			return;
+		}
+		if( isNullOrEmpty(typeRoute) ){
+			alertWidget("Adding route failed",
+	                "Invalid route type :: "+typeRoute).center();
+			return;
+		}
+		routeRequest(RequestBuilder.POST,"{\"uri\":\"" + uri + "\",\"name\":\"" + name + "\",\"loc\":\"" + loc + "\",\"type\":\"" + typeRoute + "\"}");
 	}
 
 	protected void disable(RouteData route) {

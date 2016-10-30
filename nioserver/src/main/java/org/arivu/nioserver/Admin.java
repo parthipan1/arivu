@@ -54,14 +54,48 @@ final class Admin {
 	// System.out.println("*********************************************************************************");
 	// }
 	// }
+//	{\"uri\":\"" + uri + "\",\"name\":\"" + name + "\",\"loc\":\"" + loc + "\",\"type\":\"" + typeRoute + "\"}
 
+	@Path(value = "/__admin/routes", httpMethod = HttpMethod.POST)
+	static void addProxyRoute() throws IOException, ScriptException {
+		Response response = StaticRef.getResponse();
+		Request request = StaticRef.getRequest();
+
+		String convert = RequestUtil.convert(request.getBody());
+//		System.out.println(" PUt body :: "+convert);
+		Map<String, Object> fromJson = new Ason().fromJson(convert);
+		if (!NullCheck.isNullOrEmpty(fromJson)) {
+			Object uriObj = fromJson.get("uri");
+			Object nameObj = fromJson.get("name");
+			Object locObj = fromJson.get("loc");
+			Object typeObj = fromJson.get("type");
+			if (uriObj != null && nameObj != null && locObj != null && typeObj != null) {
+				Route route = getRoute(uriObj.toString(), nameObj.toString());
+				if (route == null) {
+					if( typeObj.toString().equals("browser")){
+						RequestUtil.addProxyRouteRuntime(nameObj.toString(), "ALL", uriObj.toString(), null, locObj.toString());
+					}else{
+						RequestUtil.addProxyRouteRuntime(nameObj.toString(), "ALL", uriObj.toString(), locObj.toString(), null);
+					}
+					StringBuffer buf = getAllActiveRoutes();
+					response.append(buf.toString());
+					response.putHeader("Content-Length", buf.length());
+					response.putHeader("Content-Type", "application/json");
+					response.setResponseCode(200);
+					return;
+				}
+			}
+		}
+		response.setResponseCode(304);
+	}
+	
 	@Path(value = "/__admin/routes", httpMethod = HttpMethod.PUT)
 	static void disableRoute() throws IOException, ScriptException {
 		Response response = StaticRef.getResponse();
 		Request request = StaticRef.getRequest();
 
 		String convert = RequestUtil.convert(request.getBody());
-		System.out.println(" PUt body :: "+convert);
+//		System.out.println(" PUt body :: "+convert);
 		Map<String, Object> fromJson = new Ason().fromJson(convert);
 		if (!NullCheck.isNullOrEmpty(fromJson)) {
 			Object uriObj = fromJson.get("uri");
