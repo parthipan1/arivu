@@ -396,7 +396,7 @@ final class App {
 		try {
 			dynamicClassLoader.close();
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error("Error closing classloader("+name+") :: " , e);
 		}
 		RequestUtil.del(rootDir);
 	}

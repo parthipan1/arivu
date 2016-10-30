@@ -287,7 +287,7 @@ final class Connection {
 				response = null;
 			}
 		} catch (Throwable e) {
-			e.printStackTrace();
+//			e.printStackTrace();
 			String formatDate = RequestUtil.dateFormat.format(new Date());
 			logger.error("Failed in route.handle(" + formatDate + ") :: " + RequestUtil.convert(rh.in));
 			logger.error("Failed in route.handle(" + formatDate + ") :: ", e);
