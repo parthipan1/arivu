@@ -46,7 +46,10 @@ public class Admin implements EntryPoint {
 	private ListBox dropDownList = new ListBox();
 	private Button addRouteButton = new Button("Add");
 	private Label lastUpdatedLabel = new Label();
-	private ArrayList<RouteData> allRoutes = new ArrayList<RouteData>();
+	
+	private ListBox appsDropdownList = new ListBox();
+	
+	private ArrayList<Data> allRoutes = new ArrayList<Data>();
 	/**
 	 * The message displayed to the user when the server cannot be reached or
 	 * returns an error.
@@ -82,7 +85,8 @@ public class Admin implements EntryPoint {
 		mainPanel.add(addPanel);
 		mainPanel.add(lastUpdatedLabel);
 		
-		addUploadPanel();
+		addDeployPanel();
+		addUnDeployPanel();
 		
 		// Associate the Main panel with the HTML host page.
 		RootPanel.get("pathList").add(mainPanel);
@@ -108,7 +112,80 @@ public class Admin implements EntryPoint {
 		refreshTable();
 	}
 
-	void addUploadPanel(){
+	
+	void addUnDeployPanel(){
+		VerticalPanel panel = new VerticalPanel();
+		panel.add(appsDropdownList);
+		Button undeployButton = new Button("Undeploy");
+		undeployButton.addClickHandler(new ClickHandler() {
+			
+			@Override
+			public void onClick(ClickEvent event) {
+				String selectedValue = appsDropdownList.getSelectedValue();
+				if( !isNullOrEmpty(selectedValue) )
+					undeployApp(selectedValue);
+			}
+		});
+		
+		refreshAppsList();
+		panel.add(undeployButton);
+		
+		mainPanel.add(panel);
+	}
+
+	void undeployApp(String name) {
+		String url = "/__admin/undeploy?name="+name;
+		RequestBuilder builder = new RequestBuilder(RequestBuilder.GET, URL.encode(url));
+
+		try {
+			builder.sendRequest(null, new RequestCallback() {
+				public void onError(Request request, Throwable exception) {
+					alertWidget("Failed on apps", "Error from server :: "+exception.toString());
+				}
+
+				public void onResponseReceived(Request request, Response response) {
+					if (200 == response.getStatusCode()) {
+						refreshAppsList();
+					} else {
+						alertWidget("Failed on apps", "Error from server :: "+response.getText());
+					}
+				}
+			});
+		} catch (RequestException e) {
+			// Couldn't connect to server
+		}
+	}
+	
+	void refreshAppsList() {
+		String url = "/__admin/apps";
+		RequestBuilder builder = new RequestBuilder(RequestBuilder.GET, URL.encode(url));
+
+		try {
+			builder.sendRequest(null, new RequestCallback() {
+				public void onError(Request request, Throwable exception) {
+					alertWidget("Failed on apps", "Error from server :: "+exception.toString());
+				}
+
+				public void onResponseReceived(Request request, Response response) {
+					if (200 == response.getStatusCode()) {
+						for(int i=0;i<appsDropdownList.getItemCount();i++){
+							appsDropdownList.removeItem(i);
+						}
+						JsArray<Data> routes = JsonUtils.<JsArray<Data>>safeEval(response.getText());
+						for (int i = 0; i < routes.length(); i++) {
+							appsDropdownList.addItem(routes.get(i).getName());
+						}
+					} else {
+						alertWidget("Failed on apps", "Error from server :: "+response.getText());
+					}
+				}
+			});
+		} catch (RequestException e) {
+			// Couldn't connect to server
+		}
+	}
+	
+	void addDeployPanel(){
 	    VerticalPanel panel = new VerticalPanel();
 	      //create a FormPanel 
 	      final FormPanel form = new FormPanel();
@@ -164,6 +241,7 @@ public class Admin implements EntryPoint {
 	         @Override
 	         public void onSubmitComplete(SubmitCompleteEvent event) {
 	        	 refreshTable();
+	        	 refreshAppsList();
 	         }
 	      });
 	      panel.setSpacing(10);
@@ -179,7 +257,7 @@ public class Admin implements EntryPoint {
 	}
 
 	@SuppressWarnings("deprecation")
-	void updateTable(JsArray<RouteData> routes) {
+	void updateTable(JsArray<Data> routes) {
 		
 		for (int i = 0; i < allRoutes.size(); i++) {
 			routesFlexTable.removeRow(i+1);
@@ -187,21 +265,21 @@ public class Admin implements EntryPoint {
 		allRoutes.clear();
 		
 		for (int i = 0; i < routes.length(); i++) {
-			final RouteData routeData = routes.get(i);
+			final Data data = routes.get(i);
 			final int row = 1+i;
-			allRoutes.add(routeData);
-			routesFlexTable.setText(row, 0, routeData.getName());
-			routesFlexTable.setText(row, 1, routeData.getUri());
-			routesFlexTable.setText(row, 2, routeData.getMethod());
-			routesFlexTable.setText(row, 3, routeData.getProxy());
+			allRoutes.add(data);
+			routesFlexTable.setText(row, 0, data.getName());
+			routesFlexTable.setText(row, 1, data.getUri());
+			routesFlexTable.setText(row, 2, data.getMethod());
+			routesFlexTable.setText(row, 3, data.getProxy());
 			
-			String active = routeData.getActive();
+			String active = data.getActive();
 			if( "true".equals(active) ){
 				Button removeRouteButton = new Button("x");
 				removeRouteButton.addStyleDependentName("remove");
 				removeRouteButton.addClickHandler(new ClickHandler() {
 					public void onClick(ClickEvent event) {
-						disable(routeData);
+						disable(data);
 					}
 				});
 				routesFlexTable.setWidget(row, 4, removeRouteButton);
@@ -210,7 +288,7 @@ public class Admin implements EntryPoint {
 				removeRouteButton.addStyleDependentName("remove");
 				removeRouteButton.addClickHandler(new ClickHandler() {
 					public void onClick(ClickEvent event) {
-						enable(routeData);
+						enable(data);
 					}
 				});
 				routesFlexTable.setWidget(row, 4, removeRouteButton);
@@ -237,7 +315,7 @@ public class Admin implements EntryPoint {
 	    return !(v != null && v.length() > 0);
 	  }
 	
-	protected void removeRoute(RouteData route) {
+	protected void removeRoute(Data route) {
 		disable(route);
 	}
 	
@@ -292,11 +370,11 @@ public class Admin implements EntryPoint {
 		routeRequest(RequestBuilder.POST,"{\"uri\":\"" + uri + "\",\"name\":\"" + name + "\",\"loc\":\"" + loc + "\",\"type\":\"" + typeRoute + "\"}");
 	}
 
-	protected void disable(RouteData route) {
+	protected void disable(Data route) {
 		routeRequest(RequestBuilder.PUT,"{\"uri\":\"" + route.getUri() + "\",\"method\":\"" + route.getMethod() + "\",\"active\":\"false\"}");
 	}
 
-	protected void enable(RouteData route) {
+	protected void enable(Data route) {
 		routeRequest(RequestBuilder.PUT,"{\"uri\":\"" + route.getUri() + "\",\"method\":\"" + route.getMethod() + "\",\"active\":\"true\"}");
 	}
 
@@ -357,7 +435,7 @@ public class Admin implements EntryPoint {
 
 						allRoutes.clear();
 
-						updateTable(JsonUtils.<JsArray<RouteData>>safeEval(response.getText()));
+						updateTable(JsonUtils.<JsArray<Data>>safeEval(response.getText()));
 
 					} else {
 						// Handle the error. Can get the status text from
@@ -375,8 +453,8 @@ public class Admin implements EntryPoint {
 	}
 }
 
-class RouteData extends JavaScriptObject {
-	protected RouteData() {
+class Data extends JavaScriptObject {
+	protected Data() {
 	}
 
 	// JSNI methods to get route data.
