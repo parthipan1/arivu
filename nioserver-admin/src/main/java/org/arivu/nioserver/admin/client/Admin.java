@@ -16,9 +16,13 @@ import com.google.gwt.http.client.RequestException;
 import com.google.gwt.http.client.Response;
 import com.google.gwt.http.client.URL;
 import com.google.gwt.i18n.client.DateTimeFormat;
+import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.DialogBox;
+import com.google.gwt.user.client.ui.FileUpload;
 import com.google.gwt.user.client.ui.FlexTable;
+import com.google.gwt.user.client.ui.FormPanel;
+import com.google.gwt.user.client.ui.FormPanel.SubmitCompleteEvent;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.HasAlignment;
 import com.google.gwt.user.client.ui.HorizontalPanel;
@@ -78,6 +82,8 @@ public class Admin implements EntryPoint {
 		mainPanel.add(addPanel);
 		mainPanel.add(lastUpdatedLabel);
 		
+		addUploadPanel();
+		
 		// Associate the Main panel with the HTML host page.
 		RootPanel.get("pathList").add(mainPanel);
 
@@ -102,6 +108,72 @@ public class Admin implements EntryPoint {
 		refreshTable();
 	}
 
+	void addUploadPanel(){
+	    VerticalPanel panel = new VerticalPanel();
+	      //create a FormPanel 
+	      final FormPanel form = new FormPanel();
+	      //create a file upload widget
+	      final FileUpload fileUpload = new FileUpload();
+	      //create labels
+	      Label selectLabel = new Label("Select a file:");
+	      //create upload button
+	      Button uploadButton = new Button("Upload App");
+	      //pass action to the form to point to service handling file 
+	      //receiving operation.
+	      form.setAction("/__admin/deploy");
+	      // set form to use the POST method, and multipart MIME encoding.
+	      form.setEncoding(FormPanel.ENCODING_MULTIPART);
+	      form.setMethod(FormPanel.METHOD_POST);
+	    
+	      fileUpload.setName("dist");
+	      
+	      TextBox appNameTextBox = new TextBox();
+	  	  TextBox appPackageTextBox = new TextBox();
+	      
+	  	  appNameTextBox.setTitle("Name of the App");
+	  	  appNameTextBox.setName("name");
+	  	  appPackageTextBox.setTitle("Packages to scan");
+	  	  appPackageTextBox.setName("scanpackages");
+	  	  
+	  	  panel.add(appNameTextBox);
+	  	  panel.add(appPackageTextBox);
+	  	  
+	      //add a label
+	      panel.add(selectLabel);
+	      //add fileUpload widget
+	      panel.add(fileUpload);
+	      
+//	      form.
+	      //add a button to upload the file
+	      panel.add(uploadButton);
+	      uploadButton.addClickHandler(new ClickHandler() {
+	         @Override
+	         public void onClick(ClickEvent event) {
+	            //get the filename to be uploaded
+	            String filename = fileUpload.getFilename();
+	            if (filename.length() == 0) {
+	               Window.alert("No File Specified!");
+	            } else {
+	               //submit the form
+	               form.submit();			          
+	            }				
+	         }
+	      });
+	   
+	      form.addSubmitCompleteHandler(new FormPanel.SubmitCompleteHandler() {
+	         @Override
+	         public void onSubmitComplete(SubmitCompleteEvent event) {
+	        	 refreshTable();
+	         }
+	      });
+	      panel.setSpacing(10);
+		  
+	      // Add form to the root panel.      
+	      form.add(panel);
+	      
+	      mainPanel.add(form);
+	}
+	
 	void refreshTable() {
 		routeRequest(RequestBuilder.GET,null);
 	}
