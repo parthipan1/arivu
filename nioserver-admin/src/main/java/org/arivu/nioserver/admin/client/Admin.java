@@ -17,6 +17,7 @@ import com.google.gwt.http.client.Response;
 import com.google.gwt.http.client.URL;
 import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.user.client.Window;
+import com.google.gwt.user.client.ui.Anchor;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.DialogBox;
 import com.google.gwt.user.client.ui.FileUpload;
@@ -106,10 +107,57 @@ public class Admin implements EntryPoint {
 		addRouteButton.addClickHandler(new ClickHandler() {
 			public void onClick(ClickEvent event) {
 				addRoute();
+//				for (int i = 0; i < allRoutes.size()-1; i++) {
+//					routesFlexTable.removeRow(0);
+//				}
+//				
+//				routesFlexTable.getRowFormatter().addStyleName(0, "watchListHeader");
+//				routesFlexTable.setText(0, 0, "Name");
+//				routesFlexTable.setText(0, 1, "Uri");
+//				routesFlexTable.setText(0, 2, "HttpMethod");
+//				routesFlexTable.setText(0, 3, "Proxy");
+//				routesFlexTable.setText(0, 4, "Remove");
+//				
+//				
+//				int row = 1;
+//				routesFlexTable.setText(row, 0, "name");
+//				
+////				String active = data.getActive();
+////				if( "true".equals(active) ){
+//					routesFlexTable.setHTML(row, 1, "<b><a href=\"uri\" target=\"_blank\">uri</a></b>");
+//					routesFlexTable.setText(row, 2, "test");
+//					routesFlexTable.setText(row, 3, "proxy");
+//					Button removeRouteButton = new Button("x");
+//					removeRouteButton.addStyleDependentName("remove");
+////					removeRouteButton.addClickHandler(new ClickHandler() {
+////						public void onClick(ClickEvent event) {
+////							disable(data);
+////						}
+////					});
+//					routesFlexTable.setWidget(row, 4, removeRouteButton);
+////				}else{
+////					routesFlexTable.setHTML(row, 1, "<b>"+data.getUri()+"</b>");
+////					routesFlexTable.setText(row, 2, data.getMethod());
+////					routesFlexTable.setText(row, 3, data.getProxy());
+////					Button removeRouteButton = new Button("+");
+////					removeRouteButton.addStyleDependentName("remove");
+////					removeRouteButton.addClickHandler(new ClickHandler() {
+////						public void onClick(ClickEvent event) {
+////							enable(data);
+////						}
+////					});
+////					routesFlexTable.setWidget(row, 4, removeRouteButton);
+////				}
+//				routesFlexTable.getCellFormatter().addStyleName(row, 0, "watchListColumn");
+//				routesFlexTable.getCellFormatter().addStyleName(row, 1, "watchListFirstColumn");
+//				routesFlexTable.getCellFormatter().addStyleName(row, 2, "watchListColumn");
+//				routesFlexTable.getCellFormatter().addStyleName(row, 3, "watchListColumn");
+//				routesFlexTable.getCellFormatter().addStyleName(row, 4, "watchListRemoveColumn");
+//				
 			}
 		});
 
-		refreshTable();
+		refreshRoutesTable();
 	}
 
 	
@@ -145,6 +193,7 @@ public class Admin implements EntryPoint {
 
 				public void onResponseReceived(Request request, Response response) {
 					if (200 == response.getStatusCode()) {
+						refreshRoutesTable();
 						refreshAppsList();
 					} else {
 						alertWidget("Failed on apps", "Error from server :: "+response.getText());
@@ -168,8 +217,9 @@ public class Admin implements EntryPoint {
 
 				public void onResponseReceived(Request request, Response response) {
 					if (200 == response.getStatusCode()) {
+						appsDropdownList.clear();
 						for(int i=0;i<appsDropdownList.getItemCount();i++){
-							appsDropdownList.removeItem(i);
+							appsDropdownList.removeItem(0);
 						}
 						JsArray<Data> routes = JsonUtils.<JsArray<Data>>safeEval(response.getText());
 						for (int i = 0; i < routes.length(); i++) {
@@ -240,7 +290,7 @@ public class Admin implements EntryPoint {
 	      form.addSubmitCompleteHandler(new FormPanel.SubmitCompleteHandler() {
 	         @Override
 	         public void onSubmitComplete(SubmitCompleteEvent event) {
-	        	 refreshTable();
+	        	 refreshRoutesTable();
 	        	 refreshAppsList();
 	         }
 	      });
@@ -252,29 +302,36 @@ public class Admin implements EntryPoint {
 	      mainPanel.add(form);
 	}
 	
-	void refreshTable() {
+	void refreshRoutesTable() {
 		routeRequest(RequestBuilder.GET,null);
 	}
 
 	@SuppressWarnings("deprecation")
 	void updateTable(JsArray<Data> routes) {
 		
-		for (int i = 0; i < allRoutes.size(); i++) {
-			routesFlexTable.removeRow(i+1);
+		for (int i = allRoutes.size()-1; i > 1; i--) {
+			routesFlexTable.removeRow(1);
 		}
 		allRoutes.clear();
+		
+		routesFlexTable.getRowFormatter().addStyleName(0, "watchListHeader");
+		routesFlexTable.setText(0, 0, "Name");
+		routesFlexTable.setText(0, 1, "Uri");
+		routesFlexTable.setText(0, 2, "HttpMethod");
+		routesFlexTable.setText(0, 3, "Proxy");
+		routesFlexTable.setText(0, 4, "Remove");
 		
 		for (int i = 0; i < routes.length(); i++) {
 			final Data data = routes.get(i);
 			final int row = 1+i;
 			allRoutes.add(data);
-			routesFlexTable.setText(row, 0, data.getName());
+			routesFlexTable.setWidget(row, 0, new Label(data.getName()));
 			
 			String active = data.getActive();
 			if( "true".equals(active) ){
-				routesFlexTable.setHTML(row, 1, "<b><a href=\""+data.getUri()+"\" target=\"_blank\">"+data.getUri()+"</a></b>");
-				routesFlexTable.setText(row, 2, data.getMethod());
-				routesFlexTable.setText(row, 3, data.getProxy());
+				routesFlexTable.setWidget(row, 1, new Anchor(data.getUri(),data.getUri()));
+				routesFlexTable.setWidget(row, 2, new Label(data.getMethod()));
+				routesFlexTable.setWidget(row, 3, new Label(data.getProxy()));
 				Button removeRouteButton = new Button("x");
 				removeRouteButton.addStyleDependentName("remove");
 				removeRouteButton.addClickHandler(new ClickHandler() {
@@ -284,9 +341,9 @@ public class Admin implements EntryPoint {
 				});
 				routesFlexTable.setWidget(row, 4, removeRouteButton);
 			}else{
-				routesFlexTable.setHTML(row, 1, "<b>"+data.getUri()+"</b>");
-				routesFlexTable.setText(row, 2, data.getMethod());
-				routesFlexTable.setText(row, 3, data.getProxy());
+				routesFlexTable.setWidget(row, 1, new Label(data.getUri()));
+				routesFlexTable.setWidget(row, 2, new Label(data.getMethod()));
+				routesFlexTable.setWidget(row, 3, new Label(data.getProxy()));
 				Button removeRouteButton = new Button("+");
 				removeRouteButton.addStyleDependentName("remove");
 				removeRouteButton.addClickHandler(new ClickHandler() {
@@ -308,7 +365,9 @@ public class Admin implements EntryPoint {
 		// Display timestamp showing last refresh.
 		lastUpdatedLabel.setText("Last update : " + DateTimeFormat.getMediumDateTimeFormat().format(new Date()));
 
-		
+//		mainPanel.removeFromParent();
+		RootPanel.get("pathList").remove(mainPanel);
+		RootPanel.get("pathList").add(mainPanel);
 		// Clear any errors.
 		// errorMsgLabel.setVisible(false);
 

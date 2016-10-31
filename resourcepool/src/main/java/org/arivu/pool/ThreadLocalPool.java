@@ -40,7 +40,7 @@ public final class ThreadLocalPool<T> extends AbstractPool<T> {
 		@Override
 		public State<T> create(Map<String, Object> params) {
 			final State<T> state = new State<T>(factory.create(params));
-			logger.debug("Factory create "+state.t.hashCode()+" Thread "+Thread.currentThread().hashCode());
+			logger.debug("Factory create {} Thread {}", state.t.hashCode(),Thread.currentThread().hashCode());
 			return state;
 		}
 	}  , -1);
@@ -91,7 +91,7 @@ public final class ThreadLocalPool<T> extends AbstractPool<T> {
 	 */
 	@Override
 	public void setMaxPoolSize(int size) {
-		logger.warn(getClass().getName() + " " + this + " setMaxPoolSize(" + size + ") ignored!");
+		logger.warn("{} {} setMaxPoolSize({}) ignored!",getClass().getName() , this, size );
 		super.setMaxPoolSize(-1);
 	}
 

@@ -55,7 +55,7 @@ abstract class BaseDataSourceFactory implements ObjectFactory {
 			RefAddr addr = addrs.nextElement();
 			final String nameAddr = addr.getType();
 			final String value = (String) addr.getContent();
-			logger.info( "datasource nameAddr=" + nameAddr + " value=" + value);
+			logger.info( "datasource nameAddr={} value={}" , nameAddr,  value);
 			// Set the property string to the MyProperty object.
 			if (nameAddr.equals("username")) {
 				ds.setUser(value);

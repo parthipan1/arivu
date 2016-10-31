@@ -140,13 +140,13 @@ class PackageScanner {
 	}
 
 	static void addMethod(String name, Collection<Route> reqPaths, Class<?> clazz) {
-		logger.debug("Scanning class " + clazz.getName());
+		logger.debug("Scanning class {}" , clazz.getName());
 		Method[] methods = clazz.getDeclaredMethods();// Methods();
 		for (Method method : methods) {
 			if (method.isAnnotationPresent(Path.class)) {
 				Path path = method.getAnnotation(Path.class);
 				if (path != null) {
-					logger.debug("Scanning class " + clazz.getName() + " annotation present " + method);
+					logger.debug("Scanning class {} annotation present {}",clazz.getName() , method);
 					try {
 						String uri = path.value();
 						org.arivu.nioserver.HttpMethod httpMethod = path.httpMethod();
@@ -158,13 +158,10 @@ class PackageScanner {
 							}else if (uri.equals("/*") || uri.equals("/favicon.ico") || validateRouteUri) {
 								createRoute(name, reqPaths, clazz, method, uri, httpMethod);
 							} else {
-								logger.info("Invalid request Uri (" + uri + ") handler discovered ignoring :: "
-										+ clazz.getName() + " httpMethod " + method.getName());
+								logger.info("Invalid request Uri ({}) handler discovered ignoring :: {} httpMethod {}", uri, clazz.getName(), method.getName());
 							}
 						} else {
-							logger.info("Invalid request Uri (" + uri + ") handler discovered ignoring :: "
-									+ clazz.getName() + " httpMethod " + method.getName());
-
+							logger.info("Invalid request Uri ({}) handler discovered ignoring :: {} httpMethod {}", uri, clazz.getName(), method.getName());
 						}
 					} catch (IllegalArgumentException e) {
 						logger.error("Error on Scanning annotation addMethod :: ", e);
@@ -181,11 +178,9 @@ class PackageScanner {
 		Route matchingRoute = RequestUtil.getMatchingRoute(reqPaths, uri, httpMethod, true);
 		if (matchingRoute == null) {
 			reqPaths.add(e);
-			logger.debug("Discovered request handler :: " + clazz.getName() + " httpMethod "
-					+ method.getName());
+			logger.debug("Discovered request handler :: {} httpMethod {}",clazz.getName(), method.getName());
 		} else {
-			logger.info("Duplicate request handler discovered ignoring :: " + clazz.getName()
-					+ " httpMethod " + method.getName());
+			logger.info("Duplicate request handler discovered ignoring :: {} httpMethod {}",clazz.getName(), method.getName());
 		}
 	}
 

@@ -204,7 +204,6 @@ class ProxyRoute extends Route {
 		} else if (!NullCheck.isNullOrEmpty(proxy_pass) && !NullCheck.isNullOrEmpty(dir)) {
 			throw new IllegalArgumentException("Invalid config " + name + " !");
 		} else if (!NullCheck.isNullOrEmpty(dir)) {
-//			files = new MemoryMappedFiles();
 			files = new Amap<>();
 		} else if (!NullCheck.isNullOrEmpty(proxy_pass)) {
 			this.proxyTh = new Threadlocal<HttpMethodCall>(new Threadlocal.Factory<HttpMethodCall>() {
@@ -250,7 +249,6 @@ class ProxyRoute extends Route {
 		String queryStr = URLDecoder.decode(req.getUriWithParams().substring(indexOf),
 				RequestUtil.ENC_UTF_8);
 		String loc = this.proxy_pass + req.getUri().substring(this.uri.length()) + queryStr;
-		// System.out.println("loc :: " + loc);
 		HttpMethodCall httpMethodCall = proxyTh.get(null);
 		ProxyRes pres = null;
 		switch (req.getMethod()) {
@@ -657,31 +655,6 @@ enum MethodInvoker {
 				}
 			}
 			
-//			System.out.println(" rut uriParts   size "+rut.uriParts.size());
-//			for (int i = 0; i < rut.uriParts.size(); i++) {
-//				System.out.println("  uri  "+i+" "+rut.uriParts.get(i));
-//			}
-//			System.out.println(" rut tokenParts size "+rut.tokenParts.size());
-//			for (int i = 0; i < rut.tokenParts.size(); i++) {
-//				System.out.println("  token "+i+" "+rut.tokenParts.get(i));
-//			}
-			
-//			final String inUrl = req.getUri();
-//			int idx = rut.uriParts.get(0).length();
-//			for (int i = 0; i < rut.tokenParts.size(); i++) {
-//				int endIndex = inUrl.indexOf(rut.uriParts.get(i + 1), idx);
-//				if (i == rut.tokenParts.size() - 1) {
-//					if (rut.tokenParts.size() == rut.uriParts.size() + 1) {
-//						args[rut.tokenParts.get(i).indx] = inUrl.substring(idx, endIndex);
-//					} else {
-//						args[rut.tokenParts.get(i).indx] = inUrl.substring(idx, endIndex);
-//					}
-//				} else {
-//					args[rut.tokenParts.get(i).indx] = inUrl.substring(idx, endIndex);
-//				}
-//				idx = endIndex;
-//			}
-
 			if (rut.resIdx != -1)
 				args[rut.resIdx] = res;
 			if (rut.reqIdx != -1)

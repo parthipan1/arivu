@@ -173,7 +173,7 @@ abstract class AbstractDataSource implements DataSource {
 		try {
 			Runtime.getRuntime().addShutdownHook(hook);
 		} catch (Throwable e) {
-			logger.error("Error on addshutdownhook::"+e);
+			logger.error("Error on addshutdownhook::",e);
 		}
 	}
 
@@ -205,11 +205,11 @@ abstract class AbstractDataSource implements DataSource {
 			if( name == null ){
 				String name2 = "org.arivu.dbds:type="+getClass().getSimpleName()+"."+(beanInstanceCnt++);
 				mxbeanName = new ObjectName(name2);
-				logger.debug( "Registered MXBean Bean "+name2);
+				logger.debug( "Registered MXBean Bean {}",name2);
 			}else{
 				String name2 = "org.arivu.dbds:type="+getClass().getSimpleName()+"."+name+(beanInstanceCnt++);
 				mxbeanName = new ObjectName(name2);
-				logger.debug( "Registered MXBean Bean "+name2);
+				logger.debug( "Registered MXBean Bean {}",name2);
 			}
 			mbs.registerMBean(getConnectionPoolMXBean() , mxbeanName);
 		} catch (InstanceAlreadyExistsException e) {
@@ -273,13 +273,13 @@ abstract class AbstractDataSource implements DataSource {
 			@Override
 			public void setMaxPoolSize(int size) {
 				if( size == 0) throw new IllegalArgumentException("Zero not allowed for maxPoolSize!");
-				logger.info("JMX reset maxPoolSize value "+size+" old value "+pool.getMaxPoolSize());
+				logger.info("JMX reset maxPoolSize value {} old value {}",size,pool.getMaxPoolSize());
 				that.setMaxPoolSize(size);
 			}
 			@Override
 			public void setMaxUsedCnt(int cnt) {
 				if( cnt == 0) throw new IllegalArgumentException("Zero not allowed for maxConnectionReuseCount!");
-				logger.info("JMX reset maxConnectionReuseCount value "+cnt+" old value "+pool.getMaxReuseCount());
+				logger.info("JMX reset maxConnectionReuseCount value {} old value {}", cnt, pool.getMaxReuseCount());
 				pool.setMaxReuseCount(cnt);
 			}
 			@Override
@@ -289,7 +289,7 @@ abstract class AbstractDataSource implements DataSource {
 			@Override
 			public void setMaxConnectionReuseTime(int time) {
 				if( time == 0) throw new IllegalArgumentException("Zero not allowed for maxConnectionReuseTime!");
-				logger.info("JMX reset maxConnectionReuseTime value "+time+" old value "+pool.getLifeSpan());
+				logger.info("JMX reset maxConnectionReuseTime value {} old value {}",time,pool.getLifeSpan());
 				pool.setLifeSpan(time);
 			}
 			@Override

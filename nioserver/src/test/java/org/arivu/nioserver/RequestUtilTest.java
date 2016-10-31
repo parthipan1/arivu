@@ -2,13 +2,18 @@ package org.arivu.nioserver;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URL;
+import java.nio.MappedByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.utils.NullCheck;
 import org.junit.After;
@@ -33,6 +38,246 @@ public class RequestUtilTest {
 
 	@After
 	public void tearDown() throws Exception {
+	}
+	
+	@Test
+	public void testSearchPattern(){
+		assertTrue(RequestUtil.searchPattern("123456".getBytes(), "a".getBytes(), 0, 0)==RequestUtil.BYTE_SEARCH_DEFLT);
+		assertTrue(RequestUtil.searchPattern("123456".getBytes(), "6".getBytes(), 0, 0)==5);
+		assertTrue(RequestUtil.searchPattern("123456".getBytes(), "34".getBytes(), 0, 0)==2);
+		assertTrue(RequestUtil.searchPattern("123456".getBytes(), "67".getBytes(), 0, 0)==-1);
+	}
+	
+	@Test
+	public void testParseAsMultiPart(){
+		StringBuffer buf = new StringBuffer("Content-Disposition: multipart/form-data;filename=\"test\";name=\"test\";something=\"ignored\"");
+		byte[] EOL = { RequestUtil.BYTE_13,RequestUtil.BYTE_10,RequestUtil.BYTE_13,RequestUtil.BYTE_10 };
+		buf.append(new String(EOL));
+		String bodyContent = "body";
+		buf.append(bodyContent);
+		
+		List<ByteData> messages = new DoublyLinkedList<>();
+		messages.add(ByteData.wrap(("Content-Type: test"+System.lineSeparator()).getBytes()));
+		messages.add(ByteData.wrap(buf.toString().getBytes()));
+		messages.add(ByteData.wrap(" test".getBytes()));
+		MultiPart parseAsMultiPart = RequestUtil.parseAsMultiPart(messages);
+		assertTrue(parseAsMultiPart.filename!=null);
+		assertTrue(parseAsMultiPart.name!=null);
+		assertFalse(NullCheck.isNullOrEmpty(parseAsMultiPart.body));
+
+		assertTrue(RequestUtil.convert(parseAsMultiPart.body).equals(bodyContent+" test"));
+	}
+	
+	@Test
+	public void testParseAsMultiPart_Case2(){
+		StringBuffer buf = new StringBuffer("Content-Disposition: multipart/form-data");
+		byte[] EOL = { RequestUtil.BYTE_13,RequestUtil.BYTE_10,RequestUtil.BYTE_13,RequestUtil.BYTE_10 };
+		buf.append(new String(EOL));
+		String bodyContent = "body";
+		buf.append(bodyContent);
+		
+		List<ByteData> messages = new DoublyLinkedList<>();
+		messages.add(ByteData.wrap(("Content-Type: test"+System.lineSeparator()).getBytes()));
+		messages.add(ByteData.wrap(buf.toString().getBytes()));
+		messages.add(ByteData.wrap(" test".getBytes()));
+		MultiPart parseAsMultiPart = RequestUtil.parseAsMultiPart(messages);
+		assertTrue(parseAsMultiPart.filename==null);
+		assertTrue(parseAsMultiPart.name==null);
+		assertFalse(NullCheck.isNullOrEmpty(parseAsMultiPart.body));
+
+		assertTrue(RequestUtil.convert(parseAsMultiPart.body).equals(bodyContent+" test"));
+	}
+	
+	@Test
+	public void testParseAsMultiPart_Case3(){
+		StringBuffer buf = new StringBuffer("");
+		byte[] EOL = { RequestUtil.BYTE_13,RequestUtil.BYTE_10,RequestUtil.BYTE_13,RequestUtil.BYTE_10 };
+		buf.append(new String(EOL));
+		String bodyContent = "body";
+		buf.append(bodyContent);
+		
+		List<ByteData> messages = new DoublyLinkedList<>();
+		messages.add(ByteData.wrap(("Content-Type: test"+System.lineSeparator()).getBytes()));
+		messages.add(ByteData.wrap(buf.toString().getBytes()));
+		messages.add(ByteData.wrap(" test".getBytes()));
+		MultiPart parseAsMultiPart = RequestUtil.parseAsMultiPart(messages);
+		assertTrue(parseAsMultiPart.filename==null);
+		assertTrue(parseAsMultiPart.name==null);
+		assertFalse(NullCheck.isNullOrEmpty(parseAsMultiPart.body));
+
+		assertTrue(RequestUtil.convert(parseAsMultiPart.body).equals(bodyContent+" test"));
+	}
+	
+	@Test
+	public void testUnZipAndDel() throws IOException, InterruptedException {
+		File dd = new File("testUnzip");
+		assertFalse(dd.exists());
+		RequestUtil.unzip(dd, new File("download.zip"));
+		assertTrue(dd.exists());
+		List<URL> urls = new DoublyLinkedList<>();
+		RequestUtil.allUrls(dd, urls);
+		assertFalse(urls.isEmpty());
+		assertTrue(urls.size() == RequestUtil.toArray(urls).length);
+		RequestUtil.scanApps(dd);
+		RequestUtil.del(dd);
+		assertFalse(dd.exists());
+	}
+
+	
+	@Test
+	public void testGetStackTrace() throws IOException {
+		assertTrue(RequestUtil.getStackTrace(new Exception())!=null);
+	}
+	
+	@Test
+	public void testReadBB() throws IOException {
+		assertTrue(RequestUtil.readBB(null) == null);
+		assertTrue(RequestUtil.readBB(new File("donotexists")) == null);
+
+		MappedByteBuffer readBB = RequestUtil.readBB(new File("README.md"));
+		assertTrue(readBB != null);
+
+		assertTrue(RequestUtil.read(null) == null);
+		assertTrue(RequestUtil.read(new File("donotexists")) == null);
+		byte[] read = RequestUtil.read(new File("README.md"));
+		assertTrue(read != null);
+		assertTrue(read.length == 1113);
+	}
+
+	@Test
+	public void testAddProxyRouteRuntime() {
+		Collection<Route> routes = new DoublyLinkedList<Route>();
+
+		routes.add(new Route("/one", HttpMethod.ALL));
+		try {
+			RequestUtil.addProxyRouteRuntime("test", null, "uri", "proxyPass", null, routes, null);
+			fail("Failed on uri validation!");
+		} catch (Throwable e) {
+			assertTrue(e != null);
+		}
+
+		try {
+			RequestUtil.addProxyRouteRuntime("test", null, "/uri", null, null, routes, null);
+			fail("Failed on proxy and dir null validation!");
+		} catch (Throwable e) {
+			assertTrue(e != null);
+		}
+
+		try {
+			RequestUtil.addProxyRouteRuntime("test", null, "/uri", "proxyPass", "proxyPass", routes, null);
+			fail("Failed on proxy and dir notnull validation!");
+		} catch (Throwable e) {
+			assertTrue(e != null);
+		}
+
+		// Proxy duplicate
+		RequestUtil.addProxyRouteRuntime("test", null, "/uri", "proxyPass", null, routes, null);
+
+		try {
+			RequestUtil.addProxyRouteRuntime("test", null, "/uri", "proxyPass", null, routes, null);
+			fail("Failed on Duplicate proxy route validation!");
+		} catch (Throwable e) {
+			assertTrue(e != null);
+		}
+
+		routes.clear();
+
+		RequestUtil.addProxyRouteRuntime("test", "ALL", "/uri", "proxyPass", null, routes, null);
+
+		try {
+			RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", "proxyPass", null, routes, null);
+			fail("Failed on Duplicate proxy route validation!");
+		} catch (Throwable e) {
+			assertTrue(e != null);
+		}
+
+		routes.clear();
+
+		RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", "proxyPass", null, routes, null);
+
+		try {
+			RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", "proxyPass", null, routes, null);
+			fail("Failed on Duplicate proxy route validation!");
+		} catch (Throwable e) {
+			assertTrue(e != null);
+		}
+
+		routes.clear();
+
+		RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", "proxyPass", null, routes, null);
+
+		try {
+			RequestUtil.addProxyRouteRuntime("test", "POST", "/uri", "proxyPass", null, routes, null);
+		} catch (Throwable e) {
+			fail("Failed on Duplicate proxy route validation!");
+		}
+
+		// Dir duplicate
+		routes.clear();
+		RequestUtil.addProxyRouteRuntime("test", null, "/uri", null, "dir", routes, null);
+
+		try {
+			RequestUtil.addProxyRouteRuntime("test", null, "/uri", null, "dir", routes, null);
+			fail("Failed on Duplicate dir route validation!");
+		} catch (Throwable e) {
+			assertTrue(e != null);
+		}
+
+		routes.clear();
+
+		RequestUtil.addProxyRouteRuntime("test", "ALL", "/uri", null, "dir", routes, null);
+
+		try {
+			RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", null, "dir", routes, null);
+			fail("Failed on Duplicate dir route validation!");
+		} catch (Throwable e) {
+			assertTrue(e != null);
+		}
+
+		routes.clear();
+
+		RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", null, "dir", routes, null);
+
+		try {
+			RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", null, "dir", routes, null);
+			fail("Failed on Duplicate dir route validation!");
+		} catch (Throwable e) {
+			assertTrue(e != null);
+		}
+
+		routes.clear();
+
+		RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", null, "dir", routes, null);
+
+		try {
+			RequestUtil.addProxyRouteRuntime("test", "POST", "/uri", null, "dir", routes, null);
+		} catch (Throwable e) {
+			fail("Failed on Duplicate dir route validation!");
+		}
+	}
+
+	@Test
+	public void testTransform() {
+		assertTrue(RequestUtil.transform(null) != null);
+		assertTrue(RequestUtil.transform(null).size() == 0);
+
+		Map<String, Object> in = new Amap<String, Object>();
+
+		Map<String, List<Object>> transform = RequestUtil.transform(in);
+		assertTrue(transform != null);
+		assertTrue(transform.size() == 0);
+
+		in.put("one", "one");
+
+		transform = RequestUtil.transform(in);
+		assertTrue(transform != null);
+		assertTrue(transform.size() == 1);
+
+		assertFalse(NullCheck.isNullOrEmpty(transform.get("one")));
+
+		assertTrue(transform.get("one").size() == 1);
+		assertTrue(transform.get("one").get(0).equals("one"));
+
 	}
 
 	@Test
@@ -260,13 +505,14 @@ public class RequestUtilTest {
 
 		assertTrue(RequestUtil.searchPattern(content, pattern, 0, 0) == 0);
 
-		byte[] copyOfRange = Arrays.copyOfRange(content, RequestUtil.searchPattern(content, pattern, 0, 0) + pattern.length+1,
+		byte[] copyOfRange = Arrays.copyOfRange(content,
+				RequestUtil.searchPattern(content, pattern, 0, 0) + pattern.length + 1,
 				RequestUtil.searchPattern(content, pattern, pattern.length, 0));
 		int headerIndex = RequestUtil.getHeaderIndex(copyOfRange, RequestUtil.BYTE_10, RequestUtil.BYTE_10, 1);
-		byte[] header = Arrays.copyOfRange(copyOfRange, 0, headerIndex-1);
-		byte[] body = Arrays.copyOfRange(copyOfRange, headerIndex+1, copyOfRange.length-1);
-		System.out.println("%"+new String(header)+"%");
-		System.out.println("%"+new String(body)+"%");
+		byte[] header = Arrays.copyOfRange(copyOfRange, 0, headerIndex - 1);
+		byte[] body = Arrays.copyOfRange(copyOfRange, headerIndex + 1, copyOfRange.length - 1);
+		System.out.println("%" + new String(header) + "%");
+		System.out.println("%" + new String(body) + "%");
 
 	}
 

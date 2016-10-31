@@ -7,6 +7,7 @@ import java.util.Map;
 
 import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
+import org.arivu.utils.Utils;
 
 final class RequestImpl implements Request {
 
@@ -192,7 +193,7 @@ final class RequestImpl implements Request {
 
 	@Override
 	public String toString() {
-		return "RequestImpl [headers=" + RequestUtil.getString(headers) + ", uri=" + uri + ", params=" + params
+		return "RequestImpl [headers=" + Utils.toString(headers) + ", uri=" + uri + ", params=" + Utils.toString(params)
 				+ ", httpMethod=" + httpMethod + ", body=" + body + ", protocol=" + protocol + "]";
 	}
 

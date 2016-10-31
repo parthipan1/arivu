@@ -246,6 +246,7 @@ final class Admin {
 			App hotDeploy = allHotDeployedArtifacts.get(name);
 			if (hotDeploy != null) {
 				hotDeploy.undeploy();
+				res.setResponseCode(200);
 			} else {
 				res.setResponseCode(301);
 				return;
@@ -373,6 +374,7 @@ final class App {
 	void undeploy() {
 		Configuration.routes.removeAll(reqPaths);
 		for (Route r : reqPaths) {
+			r.disable();
 			r.close();
 		}
 		try {

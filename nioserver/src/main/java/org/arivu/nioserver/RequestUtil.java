@@ -33,7 +33,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
-import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -45,7 +44,7 @@ import org.arivu.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RequestUtil {
+public final class RequestUtil {
 
 	private static final String CLOSE_CHAIN_BRKT = "}";
 
@@ -79,18 +78,7 @@ public class RequestUtil {
 	final static DateFormat dateFormat = new SimpleDateFormat("EEE MMM d hh:mm:ss.SSS yyyy");
 
 	static final Pattern validUrl = Pattern.compile("^[a-zA-Z0-9-_]*$");
-
-	static <K, V> String getString(Map<K, V> headers) {
-		if (headers == null)
-			return "";
-		Set<Entry<K, V>> entrySet = headers.entrySet();
-		StringBuffer buf = new StringBuffer();
-		for (Entry<K, V> e : entrySet) {
-			buf.append(e.getKey()).append("=").append(e.getValue()).append(",");
-		}
-		return buf.toString();
-	}
-
+	
 	static int searchPattern(byte[] content, byte[] pattern, int start, int disp) {
 		int mi = disp;
 		for (int i = start; i < content.length; i++) {
@@ -123,7 +111,7 @@ public class RequestUtil {
 				int headerIndex = RequestUtil.getHeaderIndex(content, RequestUtil.BYTE_13, RequestUtil.BYTE_10, 2);
 				if (headerIndex == -1) {
 					headers.append(new String(content));
-				} else if (headerIndex != -1) {
+				} else {
 					headers.append(new String(Arrays.copyOfRange(content, 0, headerIndex - 1)));
 					body.add(ByteData.wrap(Arrays.copyOfRange(content, headerIndex + 1, content.length)));
 				}
@@ -576,7 +564,7 @@ public class RequestUtil {
 				allUrls(f, urls);
 			} else {
 				urls.add(f.toURI().toURL());
-				logger.info("Hotdeploy :: Added file " + f.getAbsoluteFile());
+				logger.info("Hotdeploy :: Added file {}", f.getAbsoluteFile());
 			}
 		}
 	}
@@ -597,7 +585,7 @@ public class RequestUtil {
 				String entryName = entry.getName();
 				File file = new File(destinationFolder.getAbsolutePath() + File.separator + entryName);
 
-				logger.info("Hotdeploy :: Unzip file " + entryName + " to " + file.getAbsolutePath());
+				logger.info("Hotdeploy :: Unzip file {} to {}", entryName, file.getAbsolutePath());
 
 				// create the directories of the zip directory
 				if (entry.isDirectory()) {
@@ -712,6 +700,9 @@ public class RequestUtil {
 		boolean notNullDir = !NullCheck.isNullOrEmpty(dir);
 		if (notNullProxy && notNullDir)
 			throw new IllegalArgumentException("Illegal proxy_pass(" + proxyPass + ") and dir(" + dir + ") specified!");
+		else if(!notNullProxy && !notNullDir)
+			throw new IllegalArgumentException("Illegal proxy_pass(" + proxyPass + ") and dir(" + dir + ") specified!");
+		
 		if (notNullProxy) {
 			proxy_pass = Utils.replaceAll(proxy_pass, "$host", Server.DEFAULT_HOST);
 			proxy_pass = Utils.replaceAll(proxy_pass, "$port", String.valueOf(Server.DEFAULT_PORT));
@@ -735,7 +726,7 @@ public class RequestUtil {
 			}
 		}
 		rts.add(prp);
-		logger.info("Added Proxy setting ::" + prp.toString());
+		logger.info("Discovered Proxy setting :: {}", prp.toString());
 	}
 
 	static Map<String, List<Object>> transform(Map<String, Object> in) {
@@ -754,13 +745,11 @@ public class RequestUtil {
 	}
 }
 
-class Ref {
+final class Ref {
 	String uri = null;
 	int rc;
 	int cl = 0;
 	HttpMethod method = null;
-	// byte[] headerBytes;
-	// byte[] bodyBytes;
 	Queue<ByteData> queue = new DoublyLinkedList<>();
 }
 

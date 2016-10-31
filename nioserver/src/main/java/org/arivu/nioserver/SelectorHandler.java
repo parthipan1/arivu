@@ -26,6 +26,7 @@ import org.arivu.pool.ConcurrentPool;
 import org.arivu.pool.Pool;
 import org.arivu.pool.PoolFactory;
 import org.arivu.utils.NullCheck;
+import org.arivu.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -149,13 +150,13 @@ final class SelectorHandler {
 		@Override
 		public String getResponseHeader() {
 			Map<String, List<Object>> defaultresponseheader = Configuration.defaultResponseHeader;
-			return RequestUtil.getString(defaultresponseheader);
+			return Utils.toString(defaultresponseheader);
 		}
 
 		@Override
 		public String getRouteResponseHeader(String route) {
 			Route route2 = getRoute(route);
-			if( route2!= null ) return RequestUtil.getString(route2.headers);
+			if( route2!= null ) return Utils.toString(route2.headers);
 			return null;
 		}
 
@@ -196,7 +197,7 @@ final class SelectorHandler {
 			MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
 			beanNameStr = "org.arivu.niosever:type=" + Server.class.getSimpleName() + "." + Server.DEFAULT_PORT;
 			mbs.registerMBean(mxBean, new ObjectName(beanNameStr));
-			logger.info(" Jmx bean beanName " + beanNameStr + " registered!");
+			logger.info(" Jmx bean beanName {} registered!",beanNameStr);
 		} catch (Exception e) {
 			logger.error("Failed with Error::", e);
 		}
@@ -206,7 +207,7 @@ final class SelectorHandler {
 		if (beanNameStr != null) {
 			try {
 				ManagementFactory.getPlatformMBeanServer().unregisterMBean(new ObjectName(beanNameStr));
-				logger.info("Unregister Jmx bean " + beanNameStr);
+				logger.info("Unregister Jmx bean {}", beanNameStr);
 			} catch (Exception e) {
 				logger.error("Failed with Error::", e);
 			}
@@ -299,7 +300,6 @@ final class SelectorHandler {
 			}
 			clientSelector.wakeup();
 		} catch (IOException e) {
-//			e.printStackTrace();
 			logger.error("Failed with Error::", e);
 		}
 	}

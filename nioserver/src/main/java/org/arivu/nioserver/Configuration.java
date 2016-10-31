@@ -88,9 +88,9 @@ final class Configuration {
 			for (Route r : routes) {
 				if (defaultRoute == null && r.uri.equals("/*") && r.httpMethod == HttpMethod.ALL) {
 					defaultRoute = r;
-					logger.info("Default Route discovered :: " + r);
+					logger.info("Default Route discovered :: {}", r);
 				} else {
-					logger.info("Route discovered :: " + r);
+					logger.info("Route discovered :: {}", r);
 				}
 			}
 		} catch (Exception e) {
