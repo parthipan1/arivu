@@ -56,6 +56,10 @@ final class Admin {
 	// }
 //	{\"uri\":\"" + uri + "\",\"name\":\"" + name + "\",\"loc\":\"" + loc + "\",\"type\":\"" + typeRoute + "\"}
 
+	static final Map<String, App> allHotDeployedArtifacts = new Amap<>();
+
+	static byte[] iconBytes = null;
+
 	@Path(value = "/__admin/routes", httpMethod = HttpMethod.POST)
 	static void addProxyRoute() throws IOException, ScriptException {
 		Response response = StaticRef.getResponse();
@@ -73,9 +77,9 @@ final class Admin {
 				Route route = getRoute(uriObj.toString(), nameObj.toString());
 				if (route == null) {
 					if( typeObj.toString().equals("browser")){
-						RequestUtil.addProxyRouteRuntime(nameObj.toString(), "ALL", uriObj.toString(), null, locObj.toString());
+						RequestUtil.addProxyRouteRuntime(nameObj.toString(), "ALL", uriObj.toString(), null, locObj.toString(), Configuration.routes, null);
 					}else{
-						RequestUtil.addProxyRouteRuntime(nameObj.toString(), "ALL", uriObj.toString(), locObj.toString(), null);
+						RequestUtil.addProxyRouteRuntime(nameObj.toString(), "ALL", uriObj.toString(), locObj.toString(), null, Configuration.routes, null);
 					}
 					StringBuffer buf = getAllActiveRoutes();
 					response.append(buf.toString());
@@ -95,7 +99,6 @@ final class Admin {
 		Request request = StaticRef.getRequest();
 
 		String convert = RequestUtil.convert(request.getBody());
-//		System.out.println(" PUt body :: "+convert);
 		Map<String, Object> fromJson = new Ason().fromJson(convert);
 		if (!NullCheck.isNullOrEmpty(fromJson)) {
 			Object uriObj = fromJson.get("uri");
@@ -125,7 +128,6 @@ final class Admin {
 	@Path(value = "/__admin/routes", httpMethod = HttpMethod.GET)
 	static void allRoutes() throws IOException {
 		Response response = StaticRef.getResponse();
-		// Request request = StaticRef.getRequest();
 		StringBuffer buf = getAllActiveRoutes();
 		response.append(buf.toString());
 		response.putHeader("Content-Length", buf.length());
@@ -216,8 +218,6 @@ final class Admin {
 		}
 	}
 
-	static byte[] iconBytes = null;
-
 	@Path(value = "/favicon.ico", httpMethod = HttpMethod.GET)
 	static void handleIcon() throws Exception {
 		Response res = StaticRef.getResponse();
@@ -230,8 +230,6 @@ final class Admin {
 		res.putHeader("Content-Type", "image/x-icon");
 		res.putHeader("Cache-Control", "max-age=31536000");
 	}
-
-	static final Map<String, App> allHotDeployedArtifacts = new Amap<>();
 
 	@Path(value = "/__admin/undeploy", httpMethod = HttpMethod.GET)
 	static void hotundeploy() throws IOException, ClassNotFoundException {
@@ -261,27 +259,11 @@ final class Admin {
 	@Path(value = "/__admin/deploy", httpMethod = HttpMethod.POST)
 	static void hotdeploy() throws IOException, ClassNotFoundException {
 
-		// Map<String, MultiPart> multiParts =
-		// StaticRef.getRequest().getMultiParts();
-		// for (Entry<String, MultiPart> e : multiParts.entrySet()) {
-		// MultiPart mp = e.getValue();
-		// if (NullCheck.isNullOrEmpty(mp.filename)) {
-		// System.out.println(e.getKey()+" Headers :: \n" +
-		// RequestUtil.getString(mp.headers));
-		// System.out.println("body :: \n" + RequestUtil.convert(mp.body));
-		// } else {
-		//// File file = new File("1_" + mp.filename);
-		// System.out.println(e.getKey()+" Headers :: \n" +
-		// RequestUtil.getString(mp.headers));
-		// System.out.println("uploaded file to :: " + mp.filename);
-		// }
-		// }
-
 		Request request = StaticRef.getRequest();
-		Response res = StaticRef.getResponse();
+		Response response = StaticRef.getResponse();
 		if (!request.isMultipart()) {
-			res.setResponseCode(400);
-			res.append("Invalid Request for hot deploy!");
+			response.setResponseCode(400);
+			response.append("Invalid Request for hot deploy!");
 			return;
 		}
 		final Map<String, MultiPart> multiParts = request.getMultiParts();
@@ -296,7 +278,7 @@ final class Admin {
 			if (!NullCheck.isNullOrEmpty(name) && !NullCheck.isNullOrEmpty(scanpackages)
 					&& !NullCheck.isNullOrEmpty(distPart.getBody()) && RequestUtil.validUrl.matcher(name).matches()) {
 
-				res.setResponseCode(200);
+				response.setResponseCode(200);
 				App hd = new App(name, scanpackages);
 				App dup = allHotDeployedArtifacts.remove(name);
 				if (dup != null) {
@@ -309,17 +291,17 @@ final class Admin {
 					dup = allHotDeployedArtifacts.remove(name);
 					if (dup != null) {
 						dup.undeploy();
-						res.setResponseCode(304);
+						response.setResponseCode(304);
 					}
 				}
 
 			} else {
-				res.setResponseCode(400);
-				res.append("Invalid Request for hot deploy!");
+				response.setResponseCode(400);
+				response.append("Invalid Request for hot deploy!");
 			}
 		} else {
-			res.setResponseCode(400);
-			res.append("Invalid Request for hot deploy!");
+			response.setResponseCode(400);
+			response.append("Invalid Request for hot deploy!");
 		}
 	}
 

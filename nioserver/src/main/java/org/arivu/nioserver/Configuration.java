@@ -18,13 +18,13 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("unchecked")
 final class Configuration {
 	private static final Logger logger = LoggerFactory.getLogger(Configuration.class);
-	
+
 	static final String stopUri = "/__admin/shutdown";
 	static final boolean SINGLE_THREAD_MODE = Boolean.parseBoolean(Env.getEnv("singleThread", "false"));
 	static final boolean ADMIN_MODULE_ENABLED = Boolean.parseBoolean(Env.getEnv("adminMod", "false"));
 	static final String DEPLOY_LOC = Env.getEnv("deployLoc", ".." + File.separator + "apps");
 	static final String ADMIN_LOC = Env.getEnv("adminLoc", ".." + File.separator + "admin");
-	
+
 	static final Map<String, List<Object>> defaultResponseHeader;
 	static final Map<String, Object> defaultResponseCodes;
 	static final Map<String, Map<String, Object>> defaultMimeType;
@@ -51,8 +51,9 @@ final class Configuration {
 
 		final Map<String, Object> json = Ason.loadProperties(CONFIGURATION_FILE);
 
-		defaultResponseHeader = RequestUtil.transform((Map<String, Object>) Ason.getObj(json, "response.header", new Amap<String, Object>())) ;
-		
+		defaultResponseHeader = RequestUtil
+				.transform((Map<String, Object>) Ason.getObj(json, "response.header", new Amap<String, Object>()));
+
 		defaultResCode = Ason.getNumber(json, "response.defaultcode", 200).intValue();
 		defaultChunkSize = Ason.getNumber(json, "response.chunkSize", 1024).intValue();
 		defaultRequestBuffer = Ason.getNumber(json, "request.buffer", 10240).intValue();
@@ -66,43 +67,29 @@ final class Configuration {
 		array.add("org.arivu.nioserver");
 		Collection<String> scanPackages = Utils.unmodifiableCollection(array);
 
-		Collection<Route> tempRequestPaths = new DoublyLinkedList<Route>();
-		Map<String, Object> proxies = (Map<String, Object>) Ason.getObj(json, "request.proxies", null);
+		routes = new DoublyLinkedList<Route>();
+		final Map<String, Object> proxies = (Map<String, Object>) Ason.getObj(json, "request.proxies", null);
 
-		if (proxies != null) {
+		if (!NullCheck.isNullOrEmpty(proxies)) {
 			for (Entry<String, Object> e : proxies.entrySet()) {
-				String name = e.getKey();
 				Map<String, Object> proxy = (Map<String, Object>) e.getValue();
-				HttpMethod httpMethod = HttpMethod.valueOf(Ason.getStr(proxy, "httpMethod", "ALL"));
-				Map<String, Object> header = (Map<String, Object>) Ason.getObj(proxy, "header", null);
-				String proxy_pass = Ason.getStr(proxy, "proxy_pass", null);
-				if (proxy_pass != null) {
-					proxy_pass = Utils.replaceAll(proxy_pass, "$host", Server.DEFAULT_HOST);
-					proxy_pass = Utils.replaceAll(proxy_pass, "$port", String.valueOf(Server.DEFAULT_PORT));
-				}
-				String dir = Ason.getStr(proxy, "dir", null);
-				if (dir != null) {
-					dir = Utils.replaceAll(dir, "$home", new File(".").getAbsolutePath());
-				}
-				ProxyRoute prp = new ProxyRoute(name, proxy_pass, dir, Ason.getStr(proxy, "location", null), httpMethod,
-						null, null, false, RequestUtil.transform(header));
-				logger.debug("Discovered Proxy setting ::" + prp.toString());
-				tempRequestPaths.add(prp);
+				RequestUtil.addProxyRouteRuntime(e.getKey(), Ason.getStr(proxy, "httpMethod", "ALL"),
+						Ason.getStr(proxy, "location", null), Ason.getStr(proxy, "proxy_pass", null),
+						Ason.getStr(proxy, "dir", null), routes,
+						RequestUtil.transform((Map<String, Object>) Ason.getObj(proxy, "header", null)));
 			}
 		}
 		try {
-			tempRequestPaths.addAll(PackageScanner.getPaths("System", scanPackages));
-//			routes = Utils.unmodifiableCollection(tempRequestPaths);
-			routes = tempRequestPaths;
+			routes.addAll(PackageScanner.getPaths("System", scanPackages));
 			RequestUtil.scanApps(new File(DEPLOY_LOC));
-			if(ADMIN_MODULE_ENABLED)
+			if (ADMIN_MODULE_ENABLED)
 				routes.add(new AdminRoute());
-			
-			for (Route r : routes){
-				if ( defaultRoute == null && r.uri.equals("/*") && r.httpMethod == HttpMethod.ALL ){
+
+			for (Route r : routes) {
+				if (defaultRoute == null && r.uri.equals("/*") && r.httpMethod == HttpMethod.ALL) {
 					defaultRoute = r;
 					logger.info("Default Route discovered :: " + r);
-				}else{
+				} else {
 					logger.info("Route discovered :: " + r);
 				}
 			}

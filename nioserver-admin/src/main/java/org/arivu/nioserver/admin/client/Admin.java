@@ -269,12 +269,12 @@ public class Admin implements EntryPoint {
 			final int row = 1+i;
 			allRoutes.add(data);
 			routesFlexTable.setText(row, 0, data.getName());
-			routesFlexTable.setText(row, 1, data.getUri());
-			routesFlexTable.setText(row, 2, data.getMethod());
-			routesFlexTable.setText(row, 3, data.getProxy());
 			
 			String active = data.getActive();
 			if( "true".equals(active) ){
+				routesFlexTable.setHTML(row, 1, "<b><a href=\""+data.getUri()+"\" target=\"_blank\">"+data.getUri()+"</a></b>");
+				routesFlexTable.setText(row, 2, data.getMethod());
+				routesFlexTable.setText(row, 3, data.getProxy());
 				Button removeRouteButton = new Button("x");
 				removeRouteButton.addStyleDependentName("remove");
 				removeRouteButton.addClickHandler(new ClickHandler() {
@@ -284,6 +284,9 @@ public class Admin implements EntryPoint {
 				});
 				routesFlexTable.setWidget(row, 4, removeRouteButton);
 			}else{
+				routesFlexTable.setHTML(row, 1, "<b>"+data.getUri()+"</b>");
+				routesFlexTable.setText(row, 2, data.getMethod());
+				routesFlexTable.setText(row, 3, data.getProxy());
 				Button removeRouteButton = new Button("+");
 				removeRouteButton.addStyleDependentName("remove");
 				removeRouteButton.addClickHandler(new ClickHandler() {

@@ -8,6 +8,9 @@ import org.arivu.datastructure.Threadlocal.Factory;
 
 public final class StaticRef {
 
+	private static final String ROUTE_TOKEN = "rte";
+	private static final String RESPONSE_TOKEN = "res";
+	private static final String REQUEST_TOKEN = "req";
 	private static final Threadlocal<Map<String,Object>> mdc = new Threadlocal<Map<String,Object>>(new Factory<Map<String,Object>>(){
 
 		@Override
@@ -19,9 +22,9 @@ public final class StaticRef {
 	
 	static void set(Request req,Response res, Route route){
 		Map<String, Object> map = mdc.get(null);
-		map.put("req", req);
-		map.put("res", res);
-		map.put("rte", route);
+		map.put(REQUEST_TOKEN, req);
+		map.put(RESPONSE_TOKEN, res);
+		map.put(ROUTE_TOKEN, route);
 	}
 
 	static void clear(){
@@ -30,20 +33,20 @@ public final class StaticRef {
 
 	public static Request getRequest(){
 		Map<String, Object> map = mdc.get();
-		if(map!=null) return (Request) map.get("req");
+		if(map!=null) return (Request) map.get(REQUEST_TOKEN);
 		return null;
 	}
 
 
 	public static Response getResponse(){
 		Map<String, Object> map = mdc.get();
-		if(map!=null) return (Response) map.get("res");
+		if(map!=null) return (Response) map.get(RESPONSE_TOKEN);
 		return null;
 	}
 
 	public static Route getRoute(){
 		Map<String, Object> map = mdc.get();
-		if(map!=null) return (Route) map.get("rte");
+		if(map!=null) return (Route) map.get(ROUTE_TOKEN);
 		return null;
 	}
 }

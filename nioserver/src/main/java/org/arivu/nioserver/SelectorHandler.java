@@ -80,7 +80,7 @@ final class SelectorHandler {
 
 		@Override
 		public void addProxyRoute(String name, String method, String location, String proxyPass, String dir) {
-			RequestUtil.addProxyRouteRuntime(name, method, location, proxyPass, dir);
+			RequestUtil.addProxyRouteRuntime(name, method, location, proxyPass, dir, Configuration.routes, null);
 		}
 
 		@Override

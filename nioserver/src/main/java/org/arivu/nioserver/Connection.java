@@ -80,7 +80,6 @@ final class Connection {
 			} catch (Throwable e) {
 				logger.error("Failed in write req "+req+" :: ", e);
 				finish(key);
-//				throw e;
 			}
 		}
 	}
@@ -256,7 +255,6 @@ final class Connection {
 		} catch (Throwable e) {
 			logger.error("Failed in read :: ", e);
 			finish(key);
-//			throw e;
 		}
 	}
 
@@ -269,7 +267,6 @@ final class Connection {
 		}
 		String string = new String(req.boundary);
 		return endOfLineBuf.toString().startsWith(string + "--");
-//		return endOfLineBuf.toString();
 	}
 
 	public void processRequest(final SelectionKey key) {
@@ -290,7 +287,6 @@ final class Connection {
 				response = null;
 			}
 		} catch (Throwable e) {
-//			e.printStackTrace();
 			String formatDate = RequestUtil.dateFormat.format(new Date());
 			logger.error("Failed in route.handle(" + formatDate + ") :: " + RequestUtil.convert(rh.in));
 			logger.error("Failed in route.handle(" + formatDate + ") :: ", e);

@@ -20,6 +20,7 @@ import java.net.SocketAddress;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -46,12 +47,38 @@ import org.slf4j.LoggerFactory;
 
 public class RequestUtil {
 
+	private static final String CLOSE_CHAIN_BRKT = "}";
+
+	private static final String OPEN_CHAIN_BRKT = "{";
+
+	private static final String URI_PATH_DIVIDER = "/";
+
+	private static final String DEFAULT_PROTOCOL = "http";
+
+	private static final String BOUNDARY = "boundary";
+
+	private static final String CONTENT_DISPOSITION = "Content-Disposition";
+
+	private static final String MULTIPART_FORM_DATA = "multipart/form-data";
+
+	private static final String CONTENT_TYPE = "Content-Type";
+
+	private static final String SCANPACKAGES_TOKEN = "scanpackages";
+
 	private static final Logger logger = LoggerFactory.getLogger(RequestUtil.class);
 
 	static final String ENC_UTF_8 = "UTF-8";
 	static final byte BYTE_13 = (byte) 13;
 	static final byte BYTE_10 = (byte) 10;
 	static final String divider = System.lineSeparator() + System.lineSeparator();
+
+	final static int BYTE_SEARCH_DEFLT = Integer.MIN_VALUE;
+
+	private static final String LINE_SEPARATOR = System.lineSeparator();
+
+	final static DateFormat dateFormat = new SimpleDateFormat("EEE MMM d hh:mm:ss.SSS yyyy");
+
+	static final Pattern validUrl = Pattern.compile("^[a-zA-Z0-9-_]*$");
 
 	static <K, V> String getString(Map<K, V> headers) {
 		if (headers == null)
@@ -63,8 +90,6 @@ public class RequestUtil {
 		}
 		return buf.toString();
 	}
-
-	final static int BYTE_SEARCH_DEFLT = Integer.MIN_VALUE;
 
 	static int searchPattern(byte[] content, byte[] pattern, int start, int disp) {
 		int mi = disp;
@@ -89,21 +114,6 @@ public class RequestUtil {
 			return BYTE_SEARCH_DEFLT;
 	}
 
-	// static void parseAndSetMultiPart(RequestImpl req) {
-	// Collection<List<ByteBuffer>> partsAsBuffer = parsePartsAsBuffer(req);
-	// int cnt = 0;
-	// Map<String, MultiPart> parts = new Amap<>();
-	// for (List<ByteBuffer> list : partsAsBuffer){
-	// MultiPart parseAsMultiPart = parseAsMultiPart(list);
-	// if(NullCheck.isNullOrEmpty(parseAsMultiPart.name)){
-	// parts.put(String.valueOf(cnt++), parseAsMultiPart);
-	// }else{
-	// parts.put(parseAsMultiPart.name, parseAsMultiPart);
-	// }
-	// }
-	// req.multiParts = Utils.unmodifiableMap(parts);
-	// }
-
 	static MultiPart parseAsMultiPart(List<ByteData> list) {
 		List<ByteData> body = new DoublyLinkedList<>();
 		StringBuffer headers = new StringBuffer();
@@ -125,11 +135,9 @@ public class RequestUtil {
 		Map<String, String> unmodifiableMap = Utils.unmodifiableMap(parseMultipartHeader(headers.toString()));
 
 		String name = null, filename = null, contentType = null, contentDisposition = null;
-		// Content-Disposition=form-data; name="upload";
-		// filename="README.md",Content-Type
-		contentType = unmodifiableMap.get("Content-Type");
+		contentType = unmodifiableMap.get(CONTENT_TYPE);
 
-		String cd = unmodifiableMap.get("Content-Disposition");
+		String cd = unmodifiableMap.get(CONTENT_DISPOSITION);
 
 		if (!NullCheck.isNullOrEmpty(cd)) {
 			String[] split = cd.split(";");
@@ -153,57 +161,6 @@ public class RequestUtil {
 				contentDisposition);
 	}
 
-	// static Collection<List<ByteBuffer>> parsePartsAsBuffer(RequestImpl req) {
-	// Collection<List<ByteBuffer>> bufferParts = new DoublyLinkedList<>();
-	// List<ByteBuffer> part = new DoublyLinkedList<>();
-	// int start = req.boundary.length + 1;
-	// int mi = 0;
-	// ByteBuffer rollOver = null;
-	// for (ByteBuffer bb : req.body) {
-	// byte[] content = bb.array();
-	// do {
-	// int searchPattern = RequestUtil.searchPattern(content, req.boundary,
-	// start, mi);
-	// if (searchPattern == RequestUtil.BYTE_SEARCH_DEFLT) {
-	// part.add(ByteBuffer.wrap(Arrays.copyOfRange(content, start,
-	// content.length)));
-	// start = 0;
-	// mi = 0;
-	// break;
-	// } else if (searchPattern < 0) {
-	// mi = searchPattern * -1 - 1;
-	// rollOver = ByteBuffer.wrap(Arrays.copyOfRange(content, start,
-	// content.length - mi));
-	// start = 0;
-	// } else if (searchPattern > 0) {
-	// part.add(ByteBuffer.wrap(Arrays.copyOfRange(content, start, searchPattern
-	// - 2)));
-	// bufferParts.add(part);
-	// part = new DoublyLinkedList<>();
-	// start = searchPattern + req.boundary.length + 1;
-	// mi = 0;
-	// } else if (searchPattern == 0) {
-	// if (mi > 0) {
-	// part.add(rollOver);
-	// bufferParts.add(part);
-	// part = new DoublyLinkedList<>();
-	// rollOver = null;
-	// start = req.boundary.length + 1 - mi;
-	// mi = 0;
-	// } else {
-	// bufferParts.add(part);
-	// part = new DoublyLinkedList<>();
-	// rollOver = null;
-	// start = req.boundary.length + 1;
-	// mi = 0;
-	// }
-	// }
-	// } while (true);
-	// }
-	//
-	// return bufferParts;
-	// }
-
 	static Map<String, String> parseMultipartHeader(String metadata) {
 		// System.out.println(" parseMultipartHeader :: "+metadata);
 		String[] split = metadata.split(System.lineSeparator());
@@ -224,8 +181,7 @@ public class RequestUtil {
 		String metadata = convert(messages);
 		String[] split = metadata.split(System.lineSeparator());
 		String[] split2 = split[0].split(" ");
-		// System.out.println("REQ METHOD :: "+split2[0]);
-		// System.out.println("parseRequest :: " + metadata);
+
 		HttpMethod valueOf = HttpMethod.valueOf(split2[0]);
 		if (valueOf == null)
 			throw new IllegalArgumentException("Unknown RequestImpl " + metadata);
@@ -239,7 +195,7 @@ public class RequestUtil {
 			if (indexOf2 == -1) {
 				String key = h;
 				List<Object> list = tempheaders.get(key);
-				if( list == null ){
+				if (list == null) {
 					list = new DoublyLinkedList<>();
 					tempheaders.put(key, list);
 				}
@@ -247,7 +203,7 @@ public class RequestUtil {
 				String key = h.substring(0, indexOf2);
 				String value = h.substring(indexOf2 + 1).trim();
 				List<Object> list = tempheaders.get(key);
-				if( list == null ){
+				if (list == null) {
 					list = new DoublyLinkedList<>();
 					tempheaders.put(key, list);
 				}
@@ -266,15 +222,15 @@ public class RequestUtil {
 		RequestImpl requestImpl = new RequestImpl(valueOf, uri, uriWithParams, protocol, tempparams,
 				Utils.unmodifiableMap(tempheaders));
 		String contType = null;
-		List<Object> list = requestImpl.getHeaders().get("Content-Type");
+		List<Object> list = requestImpl.getHeaders().get(CONTENT_TYPE);
 		if (!NullCheck.isNullOrEmpty(list)) {
 			contType = list.get(0).toString();
 		}
 		if (!NullCheck.isNullOrEmpty(contType)) {
-			requestImpl.isMultipart = contType.contains("multipart/form-data");
+			requestImpl.isMultipart = contType.contains(MULTIPART_FORM_DATA);
 			if (requestImpl.isMultipart) {
-				contType = Utils.replaceAll(contType, "multipart/form-data;", "").trim();
-				contType = Utils.replaceAll(contType, "boundary=", "").trim();
+				contType = Utils.replaceAll(contType, MULTIPART_FORM_DATA+";", "").trim();
+				contType = Utils.replaceAll(contType, BOUNDARY+"=", "").trim();
 				requestImpl.boundary = ("--" + contType).getBytes();
 			}
 		}
@@ -285,7 +241,6 @@ public class RequestUtil {
 	public static String convert(final List<ByteData> messages) {
 		StringBuffer metadataBuf = new StringBuffer();
 		for (ByteData bb : messages) {
-			// metadataBuf.append(new String(bb.array()));
 			metadataBuf.append(convert(bb));
 		}
 
@@ -294,7 +249,6 @@ public class RequestUtil {
 	}
 
 	static String convert(ByteData bb) {
-		// return new String(Charset.defaultCharset().decode(bb).array());
 		return new String(bb.array());
 	}
 
@@ -302,7 +256,6 @@ public class RequestUtil {
 		int indexOf = -1;
 		if (cnt == 2) {
 			for (int i = 3; i < bytes.length; i++) {
-				// System.out.println(" %"+bytes[i]+"% %"+BYTE_10+"%");
 				if (bytes[i] == bytes[i - 2] && bytes[i] == second && bytes[i - 1] == bytes[i - 3]
 						&& bytes[i - 1] == first) {
 					indexOf = i;
@@ -311,7 +264,6 @@ public class RequestUtil {
 			}
 		} else if (cnt == 1) {
 			for (int i = 1; i < bytes.length; i++) {
-				// System.out.println(" %"+bytes[i]+"% %"+BYTE_10+"%");
 				if (bytes[i] == second && bytes[i - 1] == first) {
 					indexOf = i;
 					break;
@@ -391,29 +343,24 @@ public class RequestUtil {
 				throw new IllegalStateException("Method signature not in line with @Path! for method " + method);
 			}
 		} else {
-			// throw new IllegalStateException("Method signature not in line
-			// with @Path! for method "+method);
 			return MethodInvoker.variable;
 		}
 	}
 
-	static final Pattern validUrl = Pattern.compile("^[a-zA-Z0-9-_]*$");// "[a-zA-Z0-9_-]"
-	// static final Pattern validName = Pattern.compile("[a-zA-Z0-9_]");
-
 	static boolean validateRouteUri(final String uri) {
 		if (NullCheck.isNullOrEmpty(uri))
 			return false;
-		else if (!uri.startsWith("/"))
+		else if (!uri.startsWith(URI_PATH_DIVIDER))
 			return false;
-		String[] split = uri.split("/");
+		String[] split = uri.split(URI_PATH_DIVIDER);
 		for (int i = 1; i < split.length; i++) {
 			String uritkn = split[i];
-			int si = uritkn.indexOf("{");
+			int si = uritkn.indexOf(OPEN_CHAIN_BRKT);
 			if (si == -1) {
 				if (!validUrl.matcher(uritkn).matches())
 					return false;
 			} else {
-				int ei = uritkn.indexOf("}");
+				int ei = uritkn.indexOf(CLOSE_CHAIN_BRKT);
 				String paramName = uritkn.substring(1, uritkn.length() - 1);
 				if (ei < si || si != 0 && ei != uritkn.length() - 1 || NullCheck.isNullOrEmpty(paramName)
 						|| !validUrl.matcher(paramName).matches()) {
@@ -429,9 +376,9 @@ public class RequestUtil {
 
 		final Route in = new Route(uri, httpMethod);
 		for (Route route : paths) {
-			if(!route.active){
+			if (!route.active) {
 				continue;
-			}else if (route.rut == null) {
+			} else if (route.rut == null) {
 				if (in.equals(route))
 					return route;
 				else if (route.httpMethod == HttpMethod.ALL) {
@@ -444,7 +391,7 @@ public class RequestUtil {
 				}
 			} else {
 				if (route.httpMethod == HttpMethod.ALL || route.httpMethod == httpMethod) {
-					String[] split = uri.split("/");
+					String[] split = uri.split(URI_PATH_DIVIDER);
 					if (route.rut.uriTokens.length == split.length) {
 						boolean match = true;
 						for (int i = 0; i < split.length; i++) {
@@ -469,7 +416,7 @@ public class RequestUtil {
 
 	static RequestUriTokens parseRequestUriTokens(String uri, Method method) {
 		RequestUriTokens rut = new RequestUriTokens();
-		rut.uriTokens = uri.split("/");
+		rut.uriTokens = uri.split(URI_PATH_DIVIDER);
 		rut.paramIdx = new int[rut.uriTokens.length];
 
 		Parameter[] parameters = method.getParameters();
@@ -492,8 +439,8 @@ public class RequestUtil {
 
 		for (int i = 0; i < rut.uriTokens.length; i++) {
 			String uritkn = rut.uriTokens[i];
-			int si = uritkn.indexOf("{");
-			int ei = uritkn.indexOf("}");
+			int si = uritkn.indexOf(OPEN_CHAIN_BRKT);
+			int ei = uritkn.indexOf(CLOSE_CHAIN_BRKT);
 			if (si != -1 && ei != -1) {
 				rut.paramIdx[i] = i;
 				rut.uriTokens[i] = uritkn.substring(si + 1, ei);
@@ -511,8 +458,6 @@ public class RequestUtil {
 
 		return rut;
 	}
-
-	private static final String LINE_SEPARATOR = System.lineSeparator();
 
 	static void accessLog(int responseCode, String uri, long start, long end, int size,
 			SocketAddress remoteSocketAddress, HttpMethod method) {
@@ -557,8 +502,8 @@ public class RequestUtil {
 
 		for (Entry<String, List<Object>> e : headers.entrySet()) {
 			List<Object> value = e.getValue();
-			if( !NullCheck.isNullOrEmpty(value) ){
-				for(Object ov:value){
+			if (!NullCheck.isNullOrEmpty(value)) {
+				for (Object ov : value) {
 					responseBody.append(e.getKey()).append(": ").append(ov).append(LINE_SEPARATOR);
 				}
 			}
@@ -576,10 +521,8 @@ public class RequestUtil {
 		return ref;
 	}
 
-	final static DateFormat dateFormat = new SimpleDateFormat("EEE MMM d hh:mm:ss.SSS yyyy");
-
 	static void stopRemote() {
-		String url = "http://" + Server.DEFAULT_HOST + ":" + Server.DEFAULT_PORT + Configuration.stopUri;
+		String url = DEFAULT_PROTOCOL+"://" + Server.DEFAULT_HOST + ":" + Server.DEFAULT_PORT + Configuration.stopUri;
 		BufferedReader in = null;
 		try {
 			final HttpURLConnection con = (HttpURLConnection) new URL(url).openConnection();
@@ -642,10 +585,6 @@ public class RequestUtil {
 
 		if (!destinationFolder.exists())
 			destinationFolder.mkdirs();
-
-		// String exe = "unzip " + zipFile.getAbsolutePath() + " -d " +
-		// destinationFolder.getAbsolutePath();
-		// Runtime.getRuntime().exec(exe).waitFor();
 
 		byte[] buffer = new byte[2048];
 
@@ -715,14 +654,23 @@ public class RequestUtil {
 			return null;
 		else if (!file.exists())
 			return null;
+
+		ByteBuffer bb = readBB(file);
+		byte[] data = new byte[bb.remaining()];
+		bb.get(data, 0, data.length);
+		return data;
+	}
+
+	public static MappedByteBuffer readBB(File file) throws IOException {
+		if (file == null)
+			return null;
+		else if (!file.exists())
+			return null;
 		RandomAccessFile randomAccessFile = null;
 		try {
 			randomAccessFile = new RandomAccessFile(file, "r");
 			final FileChannel fileChannel = randomAccessFile.getChannel();
-			ByteBuffer bb = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size());
-			byte[] data = new byte[bb.remaining()];
-			bb.get(data, 0, data.length);
-			return data;
+			return fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size());
 		} finally {
 			if (randomAccessFile != null) {
 				randomAccessFile.close();
@@ -743,7 +691,7 @@ public class RequestUtil {
 
 		for (File f : list) {
 			try {
-				new App(f.getName(), new String(read(new File(f, "scanpackages")))).deploy();
+				new App(f.getName(), new String(read(new File(f, SCANPACKAGES_TOKEN)))).deploy();
 			} catch (Exception e) {
 				logger.error("Failed in scan Apps :: ", e);
 			}
@@ -751,7 +699,7 @@ public class RequestUtil {
 		logger.info("Discovered Apps :: " + Admin.allHotDeployedArtifacts.keySet());
 	}
 
-	static void addProxyRouteRuntime(String name, String method, String location, String proxyPass, String dir) {
+	static void addProxyRouteRuntime(String name, String method, String location, String proxyPass, String dir, Collection<Route> rts, Map<String, List<Object>> header) {
 		HttpMethod httpMethod = HttpMethod.ALL;
 		if (!NullCheck.isNullOrEmpty(method))
 			httpMethod = HttpMethod.valueOf(method);
@@ -771,8 +719,8 @@ public class RequestUtil {
 		if (notNullDir) {
 			dir = Utils.replaceAll(dir, "$home", new File(".").getAbsolutePath());
 		}
-		ProxyRoute prp = new ProxyRoute(name, proxy_pass, dir, location, httpMethod, null, null, false, null);
-		Collection<Route> rts = Configuration.routes;
+		ProxyRoute prp = new ProxyRoute(name, proxy_pass, dir, location, httpMethod, null, null, false, header);
+//		Collection<Route> rts = Configuration.routes;
 		for (Route rt : rts) {
 			if (rt instanceof ProxyRoute) {
 				ProxyRoute prt = (ProxyRoute) rt;
@@ -786,19 +734,21 @@ public class RequestUtil {
 				}
 			}
 		}
-		Configuration.routes.add(prp);
+		rts.add(prp);
 		logger.info("Added Proxy setting ::" + prp.toString());
 	}
-	
-	static Map<String, List<Object>> transform(Map<String, Object> in){
+
+	static Map<String, List<Object>> transform(Map<String, Object> in) {
 		Map<String, List<Object>> out = new Amap<>();
-		for(Entry<String, Object> e:in.entrySet()){
-			List<Object> list = out.get(e.getKey());
-			if(list==null){
-				list = new DoublyLinkedList<>();
-				out.put(e.getKey(), list);
-			}
-			list.add(e.getValue());
+		if (!NullCheck.isNullOrEmpty(in)) {
+			for (Entry<String, Object> e : in.entrySet()) {
+				List<Object> list = out.get(e.getKey());
+				if (list == null) {
+					list = new DoublyLinkedList<>();
+					out.put(e.getKey(), list);
+				}
+				list.add(e.getValue());
+			} 
 		}
 		return out;
 	}

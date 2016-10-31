@@ -227,10 +227,10 @@ class ProxyRoute extends Route {
 	}
 
 	@Override
-	public void handle(Request req, Response res) {
+	final public void handle(Request req, Response res) {
 		try {
 			if (!NullCheck.isNullOrEmpty(dir)) {
-				handleDirectory(req, res);
+				handleBrowser(req, res);
 			} else {
 				handleProxy(req, res);
 			}
@@ -245,7 +245,7 @@ class ProxyRoute extends Route {
 		}
 	}
 
-	void handleProxy(Request req, Response res) throws IOException {
+	final void handleProxy(Request req, Response res) throws IOException {
 		int indexOf = Math.max(req.getUri().length(), req.getUriWithParams().indexOf("?")) ;
 		String queryStr = URLDecoder.decode(req.getUriWithParams().substring(indexOf),
 				RequestUtil.ENC_UTF_8);
@@ -290,76 +290,83 @@ class ProxyRoute extends Route {
 
 	final Lock readLock = new AtomicWFReentrantLock();
 	
-	void handleDirectory(Request req, Response res) throws IOException {
-		String file = this.dir + URLDecoder.decode(req.getUri().substring(this.uri.length()), RequestUtil.ENC_UTF_8);
-		File file2 = new File(file);
-		File f = file2;
-		if (!f.exists()) {
+	final void handleBrowser(Request req, Response res) throws IOException {
+		String fileLoc = this.dir + URLDecoder.decode(req.getUri().substring(this.uri.length()), RequestUtil.ENC_UTF_8);
+		File file = new File(fileLoc);
+		if (!file.exists()) {
 			res.setResponseCode(404);
-		} else if (f.isDirectory()) {
-			boolean endsWith = req.getUri().endsWith("/");
-			String pathSep = "";
-			if (!endsWith)
-				pathSep = req.getUri() + "/";
-
-			File[] listFiles = f.listFiles();
-			StringBuffer buf = new StringBuffer("<html><body>");
-			buf.append("<a href=\"").append("..").append("\" >").append("..").append("</a>").append("<br>");
-			for (File f1 : listFiles) {
-				if (f1.isDirectory())
-					buf.append("<a href=\"").append(pathSep).append(f1.getName()).append("/").append("\" >")
-							.append(f1.getName()).append("</a>").append("<br>");
-				else
-					buf.append("<a href=\"").append(pathSep).append(f1.getName()).append("\" >").append(f1.getName())
-							.append("</a>").append("&ensp;").append(f1.length()).append("&nbsp;bytes").append("<br>");
-			}
-			buf.append("</body></html>");
-			res.setResponseCode(200);
-			res.append(buf.toString());
-			res.putHeader("Content-Type", "text/html;charset=UTF-8");
-			res.putHeader("Content-Length", buf.length());
+		} else if (file.isDirectory()) {
+			handleDirectory(req, res, file);
 		} else {
-			if (!NullCheck.isNullOrEmpty(Configuration.defaultMimeType)) {
-				String[] split = f.getName().split("\\.(?=[^\\.]+$)");
-				final String ext = "." + split[split.length - 1];
-				Map<String, Object> map = Configuration.defaultMimeType.get(ext.toLowerCase(Locale.getDefault()));
-				if (map != null) {
-					Object typeObj = map.get("type");
-					if (typeObj != null) 
-						res.putHeader("Content-Type", typeObj);
-					
-				}
-			}
-			ByteData bytes = getWr(files.get(file)) ;//getOriginalBytes(file);
-			if (bytes == null) {
-				readLock.lock();
-				bytes = getWr(files.get(file));
-				if( bytes == null ){
-					try {
-						byte[] data = RequestUtil.read(file2);//new byte[bb.remaining()];
-						if (data!=null) {
-							bytes = new ByteData(data);
-							files.put(file, new FileData(new WeakReference<ByteData>(bytes), file2));
-						}
-					} finally {
-						readLock.unlock();
-					}
-				}else{
-					readLock.unlock();
-				}
-			}
-			if (bytes != null) {
-				byte[] array = bytes.array();//bytes.array();//new byte[bytes.remaining()];
-				//			bytes.get(array, 0, array.length);
-				res.append(array);
-				res.putHeader("Content-Length", array.length);
-			}else{
-				res.setResponseCode(404);
-			}
+			handleFile(res, fileLoc, file);
 		}
 	}
 
-	ByteData getWr(FileData ref){
+	final void handleFile(Response res, String fileLoc, File file) throws IOException {
+		if (!NullCheck.isNullOrEmpty(Configuration.defaultMimeType)) {
+			String[] split = file.getName().split("\\.(?=[^\\.]+$)");
+			final String ext = "." + split[split.length - 1];
+			Map<String, Object> map = Configuration.defaultMimeType.get(ext.toLowerCase(Locale.getDefault()));
+			if (map != null) {
+				Object typeObj = map.get("type");
+				if (typeObj != null) 
+					res.putHeader("Content-Type", typeObj);
+				
+			}
+		}
+		ByteData bytes = getWr(files.get(fileLoc)) ;//getOriginalBytes(file);
+		if (bytes == null) {
+			readLock.lock();
+			bytes = getWr(files.get(fileLoc));
+			if( bytes == null ){
+				try {
+					byte[] data = RequestUtil.read(file);//new byte[bb.remaining()];
+					if (data!=null) {
+						bytes = new ByteData(data);
+						files.put(fileLoc, new FileData(new WeakReference<ByteData>(bytes), file));
+					}
+				} finally {
+					readLock.unlock();
+				}
+			}else{
+				readLock.unlock();
+			}
+		}
+		if (bytes != null) {
+			byte[] array = bytes.array();//bytes.array();//new byte[bytes.remaining()];
+			//			bytes.get(array, 0, array.length);
+			res.append(array);
+			res.putHeader("Content-Length", array.length);
+		}else{
+			res.setResponseCode(404);
+		}
+	}
+
+	void handleDirectory(Request req, Response res, File f) throws IOException {
+		boolean endsWith = req.getUri().endsWith("/");
+		String pathSep = "";
+		if (!endsWith)
+			pathSep = req.getUri() + "/";
+
+		File[] listFiles = f.listFiles();
+		StringBuffer buf = new StringBuffer("<html><body>");
+		buf.append("<a href=\"").append("..").append("\" >").append("..").append("</a>").append("<br>");
+		for (File f1 : listFiles) {
+			if (f1.isDirectory())
+				buf.append("<a href=\"").append(pathSep).append(f1.getName()).append("/").append("\" >")
+						.append(f1.getName()).append("</a>").append("<br>");
+			else
+				buf.append("<a href=\"").append(pathSep).append(f1.getName()).append("\" >").append(f1.getName())
+						.append("</a>").append("&ensp;").append(f1.length()).append("&nbsp;bytes").append("<br>");
+		}
+		buf.append("</body></html>");
+		res.setResponseCode(200);
+		res.append(buf.toString());
+		res.putHeader("Content-Type", "text/html;charset=UTF-8");
+		res.putHeader("Content-Length", buf.length());
+	}
+
+	final ByteData getWr(FileData ref){
 		if( ref == null ) return null;
 		else{
 			if(!ref.file.exists()){
@@ -375,7 +382,7 @@ class ProxyRoute extends Route {
 	}
 	
 	@Override
-	Response getResponse(Request req) {
+	final Response getResponse(Request req) {
 		if (!NullCheck.isNullOrEmpty(dir)) {
 			return super.getResponse(req);
 		} else {
@@ -384,21 +391,21 @@ class ProxyRoute extends Route {
 	}
 
 	@Override
-	void disable() {
+	final void disable() {
 		super.disable();
 		if( this.files!=null ) this.files.clear();
 		if( this.proxyTh!=null ) this.proxyTh.clearAll();
 	}
 
 	@Override
-	void close() {
+	final void close() {
 		super.close();
 		if( this.files!=null ) this.files.clear();
 		if( this.proxyTh!=null ) this.proxyTh.clearAll();
 	}
 
 	@Override
-	public String toString() {
+	final public String toString() {
 		return "ProxyRoute [name=" + name + ", uri=" + uri + ", httpMethod=" + httpMethod + "]";
 	}
 
@@ -409,13 +416,10 @@ final class AdminRoute extends ProxyRoute {
 	}
 
 	@Override
-	public void handle(Request req, Response res) {
-		if("/admin".equals(req.getUri())){
-			res.sendRedirect("/admin/Admin.html");
-		}else{
-			super.handle(req, res);
-		}
+	void handleDirectory(Request req, Response res, File f) throws IOException {
+		res.sendRedirect("/admin/Admin.html");
 	}
+	
 }
 final class FileData{
 	final long time;
