@@ -139,6 +139,7 @@ public class RequestUtilTest {
 		RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", "proxyPass", null, routes, null);
 		Route two = routes.get(0);
 		RequestUtil.addProxyRouteRuntime("test", "GET", "/test", "proxyPass", null, routes, null);
+		@SuppressWarnings("unused")
 		Route three = routes.get(1);
 		Route one = new Route("/one", HttpMethod.GET);
 		routes.add(one);
@@ -185,6 +186,7 @@ public class RequestUtilTest {
 		RequestUtil.addProxyRouteRuntime("test", null, "/uri", "proxyPass", null, routes, null);
 		Route two = routes.get(0);
 		RequestUtil.addProxyRouteRuntime("test", null, "/test", "proxyPass", null, routes, null);
+		@SuppressWarnings("unused")
 		Route three = routes.get(1);
 		Route one = new Route("/one", HttpMethod.ALL);
 		routes.add(one);
@@ -231,6 +233,7 @@ public class RequestUtilTest {
 		RequestUtil.addProxyRouteRuntime("test", null, "/uri", "proxyPass", null, routes, null);
 		Route two = routes.get(0);
 		RequestUtil.addProxyRouteRuntime("test", null, "/tst", "proxyPass", null, routes, null);
+		@SuppressWarnings("unused")
 		Route three = routes.get(1);
 		
 		Route one = null;
@@ -290,6 +293,7 @@ public class RequestUtilTest {
 		RequestUtil.addProxyRouteRuntime("test", null, "/uri", "proxyPass", null, routes, null);
 		Route two = routes.get(0);
 		RequestUtil.addProxyRouteRuntime("test", null, "/tst", "proxyPass", null, routes, null);
+		@SuppressWarnings("unused")
 		Route three = routes.get(1);
 		
 		Route one = null;
@@ -710,6 +714,8 @@ public class RequestUtilTest {
 		assertTrue(RequestUtil.validateRouteUri(Configuration.stopUri));
 		assertTrue(RequestUtil.validateRouteUri("/test/{p1}/value"));
 
+		assertFalse(RequestUtil.validateRouteUri(null));
+		assertFalse(RequestUtil.validateRouteUri(""));
 		assertFalse(RequestUtil.validateRouteUri("/st op"));
 		assertFalse(RequestUtil.validateRouteUri("stop"));
 		assertFalse(RequestUtil.validateRouteUri("/stop{}"));
@@ -725,6 +731,8 @@ public class RequestUtilTest {
 		assertFalse(RequestUtil.validateRouteUri("/test/{}}/value"));
 		assertFalse(RequestUtil.validateRouteUri("/test/{{/value"));
 		assertFalse(RequestUtil.validateRouteUri("/test/{{}/value"));
+		assertFalse(RequestUtil.validateRouteUri("/test/{{}/value"));
+		assertFalse(RequestUtil.validateRouteUri("/test/{}p/value"));
 	}
 
 	@Test

@@ -350,7 +350,7 @@ public final class RequestUtil {
 			} else {
 				int ei = uritkn.indexOf(CLOSE_CHAIN_BRKT);
 				String paramName = uritkn.substring(1, uritkn.length() - 1);
-				if (ei < si || si != 0 && ei != uritkn.length() - 1 || NullCheck.isNullOrEmpty(paramName)
+				if ( si != 0 && ei != uritkn.length() - 1 || NullCheck.isNullOrEmpty(paramName)
 						|| !validUrl.matcher(paramName).matches()) {
 					return false;
 				}
