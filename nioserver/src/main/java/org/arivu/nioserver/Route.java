@@ -712,13 +712,21 @@ enum MethodInvoker {
 
 }
 final class AsynContextImpl  implements AsynContext{
-
+	private static final Logger logger = LoggerFactory.getLogger(AsynContextImpl.class);
+	
 	boolean flag = false;
 	final SelectionKey key;
 	
-	AsynContextImpl(SelectionKey key) {
+	final Request request;
+	final Response response;
+	final ConnectionState state;
+
+	AsynContextImpl(SelectionKey key, Request request, Response response, ConnectionState state) {
 		super();
 		this.key = key;
+		this.request = request;
+		this.response = response;
+		this.state = state;
 	}
 
 	@Override
@@ -733,8 +741,14 @@ final class AsynContextImpl  implements AsynContext{
 
 	@Override
 	public void finish() {
-		if(key.isValid())
+		if( flag && key.isValid()){
+			state.resBuff = RequestUtil.getResponseBytes(request, response);
+//			if (state.resBuff != null && state.resBuff.cl > Configuration.defaultChunkSize) {
+//				((SocketChannel) key.channel()).socket().setSoTimeout(0);
+//			}
+			logger.debug(" request :: {} response :: {}", request.toString() ,state.resBuff.cl);			
 			key.interestOps(SelectionKey.OP_WRITE);
+		}
 	}
 	
 }

@@ -100,7 +100,7 @@ final class Connection {
 		channel.close();
 		key.cancel();
 		if (state.resBuff != null)
-			RequestUtil.accessLog(state.resBuff.rc, state.resBuff.uri, startTime, System.currentTimeMillis(), state.resBuff.cl,
+			RequestUtil.accessLog(state.resBuff.rc, state.resBuff.uri, startTime, state.resBuff.endtime, state.resBuff.cl,
 					remoteSocketAddress, state.resBuff.method);
 		state.writeLen = 0;
 		pool.put(this);
@@ -266,17 +266,22 @@ final class Connection {
 
 	public void processRequest(final SelectionKey key) {
 		logger.debug("process connection from {}" , ((SocketChannel) key.channel()).socket().getRemoteSocketAddress());
+		AsynContext ctx = null;
 		try {
 			if (route != null) {
 				Response response = route.getResponse(req);
 //				logger.debug(" before request uri :: {} response header :: {}", req.uri ,Utils.toString(response.getHeaders()) );
 				if (response != null) {
+					ctx = new AsynContextImpl(key, req, response, state);
+					StaticRef.set(req, response, route, ctx);
 					route.handle(req, response);
-					state.resBuff = RequestUtil.getResponseBytes(req, response);
-					if (state.resBuff != null && state.resBuff.cl > Configuration.defaultChunkSize) {
-						((SocketChannel) key.channel()).socket().setSoTimeout(0);
+					if( !ctx.isAsynchronousFinish() ){
+						state.resBuff = RequestUtil.getResponseBytes(req, response);
+//						if (state.resBuff != null && state.resBuff.cl > Configuration.defaultChunkSize) {
+//							((SocketChannel) key.channel()).socket().setSoTimeout(0);
+//						}
+						logger.debug(" request :: {} response :: {}", req.toString() ,state.resBuff.cl);
 					}
-					logger.debug(" request :: {} response :: {}", req.toString() ,state.resBuff.cl);
 //					logger.debug(" after request uri :: {} response header :: {}", req.uri ,Utils.toString(response.getHeaders()) );
 				}
 				req = null;
@@ -288,7 +293,11 @@ final class Connection {
 			logger.error("Failed in route.handle(" + formatDate + ") :: " + RequestUtil.convert(state.in));
 			logger.error("Failed in route.handle(" + formatDate + ") :: ", e);
 		} finally {
-			key.interestOps(SelectionKey.OP_WRITE);
+			StaticRef.clear();
+			if(ctx==null)
+				key.interestOps(SelectionKey.OP_WRITE);
+			else if( !ctx.isAsynchronousFinish() )
+				key.interestOps(SelectionKey.OP_WRITE);
 		}
 	}
 
