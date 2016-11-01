@@ -44,13 +44,14 @@ public class Admin implements EntryPoint {
 	private static final String H1_ARIVU_NIO_SERVER_H1 = "<H1>Arivu NIO Server</H1>";//
 	private VerticalPanel mainPanel = new VerticalPanel();
 	private FlexTable routesFlexTable = new FlexTable();
+	private HorizontalPanel addTitlePanel = new HorizontalPanel();
 	private HorizontalPanel addPanel = new HorizontalPanel();
 	private TextBox routeNameTextBox = new TextBox();
 	private TextBox uriTextBox = new TextBox();
 	private TextBox locationTextBox = new TextBox();
 	private ListBox dropDownList = new ListBox();
 	private Button addRouteButton = new Button("Add");
-	private Label lastUpdatedLabel = new Label();
+//	private Label lastUpdatedLabel = new Label();
 	
 	private ListBox appsDropdownList = new ListBox();
 	
@@ -124,10 +125,17 @@ public class Admin implements EntryPoint {
 		addPanel.add(addRouteButton);
 		addPanel.addStyleName("addPanel");
 
+		addTitlePanel.add(new Label("Enter new route name:"));
+		addTitlePanel.add(new Label("Enter new uri name:"));
+		addTitlePanel.add(new Label("Enter new location name:"));
+		addTitlePanel.add(new Label("Enter type ofproxy:"));
+		addTitlePanel.add(new Label(" "));
+		
 		// Assemble Main panel.
 		mainPanel.add(routesFlexTable);
+		mainPanel.add(addTitlePanel);
 		mainPanel.add(addPanel);
-		mainPanel.add(lastUpdatedLabel);
+		mainPanel.addStyleName("orangeOutline"); 
 		
 		addDeployPanel();
 		addUnDeployPanel();
@@ -138,10 +146,10 @@ public class Admin implements EntryPoint {
 		// Move cursor focus to the input box.
 		routeNameTextBox.setFocus(true);
 
-		routeNameTextBox.setTitle("Enter new route name:");
-		uriTextBox.setTitle("Enter new uri name:");
-		locationTextBox.setTitle("Enter new location name:");
-		addRouteButton.setTitle("Press to add route!");
+//		routeNameTextBox.setTitle("Enter new route name:");
+//		uriTextBox.setTitle("Enter new uri name:");
+//		locationTextBox.setTitle("Enter new location name:");
+//		addRouteButton.setTitle("Press to add route!");
 		
 		dropDownList.addItem("browser");
 		dropDownList.addItem("proxy");
@@ -156,10 +164,11 @@ public class Admin implements EntryPoint {
 		refreshRoutesTable();
 	}
 
+	HorizontalPanel undeployPanel = new HorizontalPanel();
 	
 	void addUnDeployPanel(){
-		VerticalPanel panel = new VerticalPanel();
-		panel.add(appsDropdownList);
+		undeployPanel.add(new Label("Undeploy Artifact :"));
+		undeployPanel.add(appsDropdownList);
 		Button undeployButton = new Button("Undeploy");
 		undeployButton.addClickHandler(new ClickHandler() {
 			
@@ -172,9 +181,10 @@ public class Admin implements EntryPoint {
 		});
 		
 		refreshAppsList();
-		panel.add(undeployButton);
-		
-		mainPanel.add(panel);
+		undeployPanel.add(undeployButton);
+
+		undeployPanel.setStyleName("addPanel");
+		mainPanel.add(undeployPanel);
 	}
 
 	void undeployApp(String name) {
@@ -231,8 +241,8 @@ public class Admin implements EntryPoint {
 		}
 	}
 	
+	HorizontalPanel deployPanel = new HorizontalPanel();
 	void addDeployPanel(){
-	    VerticalPanel panel = new VerticalPanel();
 	      //create a FormPanel 
 	      final FormPanel form = new FormPanel();
 	      //create a file upload widget
@@ -259,17 +269,18 @@ public class Admin implements EntryPoint {
 	  	  appPackageTextBox.setTitle("Packages to scan");
 	  	  appPackageTextBox.setName("scanpackages");
 	  	  
-	  	  panel.add(appNameTextBox);
-	  	  panel.add(appPackageTextBox);
+	  	  deployPanel.setStyleName("addPanel");
+	  	  deployPanel.add(appNameTextBox);
+	  	  deployPanel.add(appPackageTextBox);
 	  	  
 	      //add a label
-	      panel.add(selectLabel);
+	      deployPanel.add(selectLabel);
 	      //add fileUpload widget
-	      panel.add(fileUpload);
+	      deployPanel.add(fileUpload);
 	      
 //	      form.
 	      //add a button to upload the file
-	      panel.add(uploadButton);
+	      deployPanel.add(uploadButton);
 	      uploadButton.addClickHandler(new ClickHandler() {
 	         @Override
 	         public void onClick(ClickEvent event) {
@@ -293,10 +304,10 @@ public class Admin implements EntryPoint {
 	        	 refreshAppsList();
 	         }
 	      });
-	      panel.setSpacing(10);
+	      deployPanel.setSpacing(10);
 		  
 	      // Add form to the root panel.      
-	      form.add(panel);
+	      form.add(deployPanel);
 	      
 	      mainPanel.add(form);
 	}
@@ -362,7 +373,7 @@ public class Admin implements EntryPoint {
 //		mainPanel.remove(routesFlexTable);
 //		mainPanel.add(routesFlexTable);
 		// Display timestamp showing last refresh.
-		lastUpdatedLabel.setText("Last update : " + DateTimeFormat.getMediumDateTimeFormat().format(new Date()));
+//		lastUpdatedLabel.setText("Last update : " + DateTimeFormat.getMediumDateTimeFormat().format(new Date()));
 
 //		mainPanel.removeFromParent();
 //		RootPanel.get("pathList").remove(mainPanel);
