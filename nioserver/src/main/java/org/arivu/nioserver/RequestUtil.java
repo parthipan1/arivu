@@ -374,7 +374,7 @@ public final class RequestUtil {
 						return route;
 					else if (route instanceof ProxyRoute && uri.startsWith(route.uri))
 						return route;
-				} else if (route instanceof ProxyRoute && uri.startsWith(route.uri)) {
+				} else if (route instanceof ProxyRoute && uri.startsWith(route.uri) && route.httpMethod == httpMethod) {
 					return route;
 				}
 			} else {

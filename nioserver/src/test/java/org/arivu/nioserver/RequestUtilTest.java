@@ -41,6 +41,304 @@ public class RequestUtilTest {
 	}
 	
 	@Test
+	public void testGetMatchingRoute_Case1(){
+		System.setProperty("lightninglog.json", "./lightninglog.json");
+		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
+		System.setProperty("access.log", "./access.log");
+		
+		List<Route> routes = new DoublyLinkedList<Route>();
+
+		RequestUtil.addProxyRouteRuntime("test", null, "/uri", "proxyPass", null, routes, null);
+		Route two = routes.get(0);
+		Route one = new Route("/one", HttpMethod.ALL);
+		routes.add(one);
+		
+		one.disable();
+		two.disable();
+		
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/one", HttpMethod.ALL, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/one", HttpMethod.ALL, false)==Configuration.defaultRoute);
+		
+		one.enable();
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/one", HttpMethod.ALL, true)==one);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/one", HttpMethod.ALL, false)==one);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/one", HttpMethod.GET, true)==one);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/one", HttpMethod.GET, false)==one);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri", HttpMethod.ALL, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri", HttpMethod.ALL, false)==Configuration.defaultRoute);
+		
+		two.enable();
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri", HttpMethod.ALL, true)==two);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri", HttpMethod.ALL, false)==two);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri", HttpMethod.GET, true)==two);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri", HttpMethod.GET, false)==two);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri/1", HttpMethod.ALL, true)==two);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri/1", HttpMethod.ALL, false)==two);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri/1", HttpMethod.GET, true)==two);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri/1", HttpMethod.GET, false)==two);
+	}
+	
+	@Test
+	public void testGetMatchingRoute_Case2(){
+		System.setProperty("lightninglog.json", "./lightninglog.json");
+		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
+		System.setProperty("access.log", "./access.log");
+		
+		List<Route> routes = new DoublyLinkedList<Route>();
+
+		RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", "proxyPass", null, routes, null);
+		Route two = routes.get(0);
+		Route one = new Route("/one", HttpMethod.GET);
+		routes.add(one);
+		
+		one.disable();
+		two.disable();
+		
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/one", HttpMethod.ALL, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/one", HttpMethod.ALL, false)==Configuration.defaultRoute);
+		
+		one.enable();
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/one", HttpMethod.ALL, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/one", HttpMethod.ALL, false)==Configuration.defaultRoute);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/one", HttpMethod.GET, true)==one);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/one", HttpMethod.GET, false)==one);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri", HttpMethod.ALL, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri", HttpMethod.ALL, false)==Configuration.defaultRoute);
+		
+		two.enable();
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri", HttpMethod.ALL, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri", HttpMethod.ALL, false)==Configuration.defaultRoute);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri", HttpMethod.GET, true)==two);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri", HttpMethod.GET, false)==two);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri/1", HttpMethod.ALL, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri/1", HttpMethod.ALL, false)==Configuration.defaultRoute);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri/1", HttpMethod.GET, true)==two);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri/1", HttpMethod.GET, false)==two);
+	}
+	
+	@Test
+	public void testGetMatchingRoute_Case3(){
+		System.setProperty("lightninglog.json", "./lightninglog.json");
+		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
+		System.setProperty("access.log", "./access.log");
+		
+		List<Route> routes = new DoublyLinkedList<Route>();
+
+		RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", "proxyPass", null, routes, null);
+		Route two = routes.get(0);
+		RequestUtil.addProxyRouteRuntime("test", "GET", "/test", "proxyPass", null, routes, null);
+		Route three = routes.get(1);
+		Route one = new Route("/one", HttpMethod.GET);
+		routes.add(one);
+		
+		one.disable();
+		two.disable();
+		
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/one", HttpMethod.ALL, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/one", HttpMethod.ALL, false)==Configuration.defaultRoute);
+		
+		one.enable();
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/one", HttpMethod.ALL, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/one", HttpMethod.ALL, false)==Configuration.defaultRoute);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/one", HttpMethod.GET, true)==one);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/one", HttpMethod.GET, false)==one);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri", HttpMethod.ALL, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri", HttpMethod.ALL, false)==Configuration.defaultRoute);
+		
+		two.enable();
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri", HttpMethod.ALL, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri", HttpMethod.ALL, false)==Configuration.defaultRoute);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri", HttpMethod.GET, true)==two);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri", HttpMethod.GET, false)==two);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri/1", HttpMethod.ALL, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri/1", HttpMethod.ALL, false)==Configuration.defaultRoute);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri/1", HttpMethod.GET, true)==two);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri/1", HttpMethod.GET, false)==two);
+	}
+	
+	@Test
+	public void testGetMatchingRoute_Case4(){
+		System.setProperty("lightninglog.json", "./lightninglog.json");
+		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
+		System.setProperty("access.log", "./access.log");
+		
+		List<Route> routes = new DoublyLinkedList<Route>();
+
+		RequestUtil.addProxyRouteRuntime("test", null, "/uri", "proxyPass", null, routes, null);
+		Route two = routes.get(0);
+		RequestUtil.addProxyRouteRuntime("test", null, "/test", "proxyPass", null, routes, null);
+		Route three = routes.get(1);
+		Route one = new Route("/one", HttpMethod.ALL);
+		routes.add(one);
+		
+		one.disable();
+		two.disable();
+		
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/one", HttpMethod.ALL, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/one", HttpMethod.ALL, false)==Configuration.defaultRoute);
+		
+		one.enable();
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/one", HttpMethod.ALL, true)==one);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/one", HttpMethod.ALL, false)==one);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/one", HttpMethod.GET, true)==one);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/one", HttpMethod.GET, false)==one);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri", HttpMethod.ALL, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri", HttpMethod.ALL, false)==Configuration.defaultRoute);
+		
+		two.enable();
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri", HttpMethod.ALL, true)==two);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri", HttpMethod.ALL, false)==two);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri", HttpMethod.GET, true)==two);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri", HttpMethod.GET, false)==two);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri/1", HttpMethod.ALL, true)==two);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri/1", HttpMethod.ALL, false)==two);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri/1", HttpMethod.GET, true)==two);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/uri/1", HttpMethod.GET, false)==two);
+	}
+
+	@Test
+	public void testGetMatchingRoute_Case5(){
+		System.setProperty("lightninglog.json", "./lightninglog.json");
+		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
+		System.setProperty("access.log", "./access.log");
+		
+		List<Route> routes = new DoublyLinkedList<Route>();
+
+		RequestUtil.addProxyRouteRuntime("test", null, "/uri", "proxyPass", null, routes, null);
+		Route two = routes.get(0);
+		RequestUtil.addProxyRouteRuntime("test", null, "/tst", "proxyPass", null, routes, null);
+		Route three = routes.get(1);
+		
+		Route one = null;
+		for(Route r:Configuration.routes){
+			if( r.uri.equals("/test/{p1}/value") ){
+				one = r;
+				break;
+			}
+		}
+		
+		routes.add(one);
+		
+		one.disable();
+		two.disable();
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/ext/1", HttpMethod.GET, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/ext/1", HttpMethod.GET, false)==Configuration.defaultRoute);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/ext/1/value", HttpMethod.GET, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/ext/1/value", HttpMethod.GET, false)==Configuration.defaultRoute);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/test/1/value", HttpMethod.GET, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/test/1/value", HttpMethod.GET, false)==Configuration.defaultRoute);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/test/1/value", HttpMethod.ALL, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/test/1/value", HttpMethod.ALL, false)==Configuration.defaultRoute);
+		
+		one.enable();
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/test/1/value", HttpMethod.ALL, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/test/1/value", HttpMethod.ALL, false)==Configuration.defaultRoute);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/test/1/value", HttpMethod.GET, true)==one);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/test/1/value", HttpMethod.GET, false)==one);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/ext/1", HttpMethod.GET, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/ext/1", HttpMethod.GET, false)==Configuration.defaultRoute);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/ext/1/value", HttpMethod.GET, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/ext/1/value", HttpMethod.GET, false)==Configuration.defaultRoute);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/ext/1", HttpMethod.ALL, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/ext/1", HttpMethod.ALL, false)==Configuration.defaultRoute);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/ext/1/value", HttpMethod.ALL, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/ext/1/value", HttpMethod.ALL, false)==Configuration.defaultRoute);
+	}
+	
+	
+	@Test
+	public void testGetMatchingRoute_Case6(){
+		System.setProperty("lightninglog.json", "./lightninglog.json");
+		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
+		System.setProperty("access.log", "./access.log");
+		
+		List<Route> routes = new DoublyLinkedList<Route>();
+
+		RequestUtil.addProxyRouteRuntime("test", null, "/uri", "proxyPass", null, routes, null);
+		Route two = routes.get(0);
+		RequestUtil.addProxyRouteRuntime("test", null, "/tst", "proxyPass", null, routes, null);
+		Route three = routes.get(1);
+		
+		Route one = null;
+		for(Route r:Configuration.routes){
+			if( r.uri.equals("/do/{p1}/value") ){
+				one = r;
+				break;
+			}
+		}
+		
+		routes.add(one);
+		
+		one.disable();
+		two.disable();
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/ext/1", HttpMethod.GET, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/ext/1", HttpMethod.GET, false)==Configuration.defaultRoute);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/ext/1/value", HttpMethod.GET, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/ext/1/value", HttpMethod.GET, false)==Configuration.defaultRoute);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/do/1/value", HttpMethod.GET, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/test/1/value", HttpMethod.GET, false)==Configuration.defaultRoute);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/do/1/value", HttpMethod.ALL, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/do/1/value", HttpMethod.ALL, false)==Configuration.defaultRoute);
+		
+		one.enable();
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/do/1/value", HttpMethod.ALL, true)==one);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/do/1/value", HttpMethod.ALL, false)==one);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/do/1/value", HttpMethod.GET, true)==one);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/do/1/value", HttpMethod.GET, false)==one);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/ext/1", HttpMethod.GET, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/ext/1", HttpMethod.GET, false)==Configuration.defaultRoute);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/ext/1/value", HttpMethod.GET, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/ext/1/value", HttpMethod.GET, false)==Configuration.defaultRoute);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/ext/1", HttpMethod.ALL, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/ext/1", HttpMethod.ALL, false)==Configuration.defaultRoute);
+		
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/ext/1/value", HttpMethod.ALL, true)==null);
+		assertTrue(RequestUtil.getMatchingRoute(routes, "/ext/1/value", HttpMethod.ALL, false)==Configuration.defaultRoute);
+	}
+	
+	
+	@Test
 	public void testSearchPattern(){
 		assertTrue(RequestUtil.searchPattern("123456".getBytes(), "a".getBytes(), 0, 0)==RequestUtil.BYTE_SEARCH_DEFLT);
 		assertTrue(RequestUtil.searchPattern("123456".getBytes(), "6".getBytes(), 0, 0)==5);
@@ -522,6 +820,12 @@ class TestRoute {
 
 	@Path(value = "/test/{p1}/value", httpMethod = HttpMethod.GET)
 	void handle(Request req, Response res, String p1) throws IOException {
+		res.append(p1);
+	}
+	
+
+	@Path(value = "/do/{p1}/value", httpMethod = HttpMethod.ALL)
+	void doAll(Request req, Response res, String p1) throws IOException {
 		res.append(p1);
 	}
 }
