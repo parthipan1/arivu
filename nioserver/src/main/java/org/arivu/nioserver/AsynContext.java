@@ -4,4 +4,6 @@ public interface AsynContext {
 	void setAsynchronousFinish(boolean flag);
 	boolean isAsynchronousFinish();
 	void finish();
+	Response getResponse();
+	Request getRequest();
 }
