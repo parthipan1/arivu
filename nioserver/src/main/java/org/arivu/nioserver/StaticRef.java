@@ -11,6 +11,7 @@ public final class StaticRef {
 	private static final String ROUTE_TOKEN = "rte";
 	private static final String RESPONSE_TOKEN = "res";
 	private static final String REQUEST_TOKEN = "req";
+	private static final String ASYNC_CTX_TOKEN = "ctx";
 	private static final Threadlocal<Map<String,Object>> mdc = new Threadlocal<Map<String,Object>>(new Factory<Map<String,Object>>(){
 
 		@Override
@@ -20,11 +21,12 @@ public final class StaticRef {
 		
 	});
 	
-	static void set(Request req,Response res, Route route){
+	static void set(Request req,Response res, Route route, AsynContext actx){
 		Map<String, Object> map = mdc.get(null);
 		map.put(REQUEST_TOKEN, req);
 		map.put(RESPONSE_TOKEN, res);
 		map.put(ROUTE_TOKEN, route);
+		map.put(ASYNC_CTX_TOKEN, actx);
 	}
 
 	static void clear(){
@@ -47,6 +49,12 @@ public final class StaticRef {
 	public static Route getRoute(){
 		Map<String, Object> map = mdc.get();
 		if(map!=null) return (Route) map.get(ROUTE_TOKEN);
+		return null;
+	}
+
+	public static AsynContext getAsynContext(){
+		Map<String, Object> map = mdc.get();
+		if(map!=null) return (AsynContext) map.get(ASYNC_CTX_TOKEN);
 		return null;
 	}
 }

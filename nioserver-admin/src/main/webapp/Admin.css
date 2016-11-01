@@ -1,5 +1,32 @@
 /** Add css rules here for your application. */
-
+.orangeOutline {
+  border-style: solid;
+  border-width:1;
+  border-color: #CC6600;
+  width:  55em;
+  height: auto;
+  text-align: center;
+}
+.blueOutline {
+  border-style: solid;
+  border-width:1;
+  border-color: #003399;
+  width: 55em;
+  align: center;
+}
+.redOutline {
+  border-style: solid;
+  border-width:1;
+  border-color: #ff3300;
+  width: 5em;
+}
+.greenOutline {
+  border-style: solid;
+  border-width:1;
+  border-color: #009933;
+  width: 55em;
+  height: auto;
+}
 
 /** Example rules used by the template application (remove for your app) */
 h1 {

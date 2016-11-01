@@ -60,11 +60,24 @@ final class Admin {
 
 	static byte[] iconBytes = null;
 
+	static boolean isOriginateFromAdminPage(Request request){
+		List<Object> list = request.getHeaders().get("Referer");	
+		if(!NullCheck.isNullOrEmpty(list)){
+			return list.get(0).toString().endsWith("/admin/Admin.html");
+		}
+		return false;
+	}
+	
 	@Path(value = "/__admin/routes", httpMethod = HttpMethod.POST)
 	static void addProxyRoute() throws IOException, ScriptException {
 		Response response = StaticRef.getResponse();
 		Request request = StaticRef.getRequest();
 
+		if(!isOriginateFromAdminPage(request)){
+			response.setResponseCode(401);
+			return;
+		}
+		
 		String convert = RequestUtil.convert(request.getBody());
 //		System.out.println(" PUt body :: "+convert);
 		Map<String, Object> fromJson = new Ason().fromJson(convert);
@@ -97,7 +110,12 @@ final class Admin {
 	static void disableRoute() throws IOException, ScriptException {
 		Response response = StaticRef.getResponse();
 		Request request = StaticRef.getRequest();
-
+		
+		if(!isOriginateFromAdminPage(request)){
+			response.setResponseCode(401);
+			return;
+		}
+		
 		String convert = RequestUtil.convert(request.getBody());
 		Map<String, Object> fromJson = new Ason().fromJson(convert);
 		if (!NullCheck.isNullOrEmpty(fromJson)) {
@@ -128,6 +146,11 @@ final class Admin {
 	@Path(value = "/__admin/routes", httpMethod = HttpMethod.GET)
 	static void allRoutes() throws IOException {
 		Response response = StaticRef.getResponse();
+		Request request = StaticRef.getRequest();
+		if(!isOriginateFromAdminPage(request)){
+			response.setResponseCode(401);
+			return;
+		}
 		StringBuffer buf = getAllActiveRoutes();
 		response.append(buf.toString());
 		response.putHeader("Content-Length", buf.length());
@@ -138,7 +161,11 @@ final class Admin {
 	@Path(value = "/__admin/apps", httpMethod = HttpMethod.GET)
 	static void allApps() throws IOException {
 		Response response = StaticRef.getResponse();
-		// Request request = StaticRef.getRequest();
+		Request request = StaticRef.getRequest();
+		if(!isOriginateFromAdminPage(request)){
+			response.setResponseCode(401);
+			return;
+		}
 		StringBuffer buf = new StringBuffer("[");
 		Set<Entry<String, App>> entrySet = allHotDeployedArtifacts.entrySet();
 		for (Entry<String, App> e : entrySet) {
@@ -207,13 +234,11 @@ final class Admin {
 	}
 
 	@Path(value = "/*", httpMethod = HttpMethod.ALL)
-	static void handle404() throws Exception {
-		Request request = StaticRef.getRequest();
-		Response res = StaticRef.getResponse();
+	static void handle404(Request request,Response res) throws Exception {
 		if (Configuration.ADMIN_MODULE_ENABLED && request.getUri().equals("/")) {
 			res.sendRedirect("/admin/Admin.html");
 		} else {
-			logger.debug(StaticRef.getRequest().toString());
+			logger.debug(request.toString());
 			res.setResponseCode(404);
 		}
 	}
@@ -279,14 +304,18 @@ final class Admin {
 			if (!NullCheck.isNullOrEmpty(name) && !NullCheck.isNullOrEmpty(scanpackages)
 					&& !NullCheck.isNullOrEmpty(distPart.getBody()) && RequestUtil.validUrl.matcher(name).matches()) {
 
-				response.setResponseCode(200);
+				
 				App hd = new App(name, scanpackages);
 				App dup = allHotDeployedArtifacts.remove(name);
 				if (dup != null) {
 					dup.undeploy();
 				}
 				try {
-					hd.deploy(scanpackagesPart, distPart);
+					boolean deploy = hd.deploy(scanpackagesPart, distPart);
+					if(deploy)
+						response.setResponseCode(201);
+					else
+						response.setResponseCode(304);
 				} catch (Throwable e) {
 					logger.error("Failed on hotdeploy!", e);
 					dup = allHotDeployedArtifacts.remove(name);
@@ -323,7 +352,7 @@ final class App {
 		this.rootDir = new File(Configuration.DEPLOY_LOC + File.separator + name);
 	}
 
-	void deploy() throws MalformedURLException, ClassNotFoundException {
+	boolean deploy() throws MalformedURLException, ClassNotFoundException {
 		File libsFile = new File(Configuration.DEPLOY_LOC + File.separator + name + File.separator + "libs");
 		List<URL> urls = new DoublyLinkedList<>();
 		RequestUtil.allUrls(libsFile, urls);
@@ -350,16 +379,18 @@ final class App {
 		if (NullCheck.isNullOrEmpty(reqPaths)) {
 			logger.info("Discovered no valid route undeploying " + name);
 			undeploy();
+			return false;
 		} else {
 			Admin.allHotDeployedArtifacts.put(name, this);
+			return true;
 		}
 	}
 
-	void deploy(final MultiPart scanpackagesPart, final MultiPart distPart)
+	boolean deploy(final MultiPart scanpackagesPart, final MultiPart distPart)
 			throws IOException, InterruptedException, MalformedURLException, ClassNotFoundException {
 		if (!rootDir.mkdirs()) {
 			logger.info("Unable to create directory! " + rootDir.getAbsolutePath());
-			return;
+			return false;
 		}
 		File zipFile = new File(
 				Configuration.DEPLOY_LOC + File.separator + name + File.separator + distPart.getFilename());
@@ -368,7 +399,7 @@ final class App {
 				new File(Configuration.DEPLOY_LOC + File.separator + name + File.separator + "scanpackages"), false);
 		File libsFile = new File(Configuration.DEPLOY_LOC + File.separator + name + File.separator + "libs");
 		RequestUtil.unzip(libsFile, zipFile);
-		deploy();
+		return deploy();
 	}
 
 	void undeploy() {
@@ -383,6 +414,7 @@ final class App {
 			logger.error("Error closing classloader("+name+") :: " , e);
 		}
 		RequestUtil.del(rootDir);
+		Admin.allHotDeployedArtifacts.remove(name);
 	}
 
 }

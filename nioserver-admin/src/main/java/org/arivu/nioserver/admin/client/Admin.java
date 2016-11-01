@@ -7,6 +7,7 @@ import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.JsArray;
 import com.google.gwt.core.client.JsonUtils;
+import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.http.client.Request;
@@ -16,20 +17,22 @@ import com.google.gwt.http.client.RequestException;
 import com.google.gwt.http.client.Response;
 import com.google.gwt.http.client.URL;
 import com.google.gwt.i18n.client.DateTimeFormat;
-import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Anchor;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.DialogBox;
+import com.google.gwt.user.client.ui.DockLayoutPanel;
 import com.google.gwt.user.client.ui.FileUpload;
 import com.google.gwt.user.client.ui.FlexTable;
+import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.FormPanel;
 import com.google.gwt.user.client.ui.FormPanel.SubmitCompleteEvent;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.HasAlignment;
 import com.google.gwt.user.client.ui.HorizontalPanel;
+import com.google.gwt.user.client.ui.Image;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.ListBox;
-import com.google.gwt.user.client.ui.RootPanel;
+import com.google.gwt.user.client.ui.RootLayoutPanel;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
 
@@ -38,6 +41,7 @@ import com.google.gwt.user.client.ui.VerticalPanel;
  */
 public class Admin implements EntryPoint {
 
+	private static final String H1_ARIVU_NIO_SERVER_H1 = "<H1>Arivu NIO Server</H1>";//
 	private VerticalPanel mainPanel = new VerticalPanel();
 	private FlexTable routesFlexTable = new FlexTable();
 	private HorizontalPanel addPanel = new HorizontalPanel();
@@ -51,17 +55,56 @@ public class Admin implements EntryPoint {
 	private ListBox appsDropdownList = new ListBox();
 	
 	private ArrayList<Data> allRoutes = new ArrayList<Data>();
-	/**
-	 * The message displayed to the user when the server cannot be reached or
-	 * returns an error.
-	 */
-	private static final String SERVER_ERROR = "An error occurred while "
-			+ "attempting to contact the server. Please check your network " + "connection and try again.";
+//	/**
+//	 * The message displayed to the user when the server cannot be reached or
+//	 * returns an error.
+//	 */
+//	private static final String SERVER_ERROR = "An error occurred while "
+//			+ "attempting to contact the server. Please check your network " + "connection and try again.";
 
+	
+	private DockLayoutPanel p = new DockLayoutPanel(Unit.EM);
+	private HorizontalPanel headerPanel = new HorizontalPanel();
+	private HorizontalPanel footerPanel = new HorizontalPanel();
+	private VerticalPanel naviPanel = new VerticalPanel();
+	private FlowPanel contentPanel = new FlowPanel();
+	private Image iconImage = new Image("images/arivu.jpeg");
+	private Image stopImage = new Image("images/stop.png");
+	private Label titleLabel = new Label();
+	
 	/**
 	 * This is the entry point method.
 	 */
 	public void onModuleLoad() {
+		
+		headerPanel.add(iconImage);
+		headerPanel.add(titleLabel);
+		headerPanel.add(stopImage);
+		headerPanel.setStyleName("orangeOutline");
+		
+		titleLabel.getElement().setInnerHTML(H1_ARIVU_NIO_SERVER_H1);
+		titleLabel.getElement().setAttribute("style", "text-align: center;vertical-align: top;");
+		footerPanel.add(new HTML("High performance NIO Server"));
+		footerPanel.setStyleName("orangeOutline");
+		
+		naviPanel.setStyleName("redOutline");
+		contentPanel.setStyleName("blueOutline");
+		
+		p.setStyleName("greenOutline");
+
+		p.addNorth(headerPanel, 5);
+		p.addSouth(footerPanel, 5);
+//		p.addWest(naviPanel, 6);
+		p.add(contentPanel);
+		
+		RootLayoutPanel rp = RootLayoutPanel.get();
+	    rp.add(p);
+		
+		init();
+	}
+
+
+	void init() {
 		// Add styles to elements in the stock list table.
 		routesFlexTable.addStyleName("watchList");
 
@@ -90,8 +133,8 @@ public class Admin implements EntryPoint {
 		addUnDeployPanel();
 		
 		// Associate the Main panel with the HTML host page.
-		RootPanel.get("pathList").add(mainPanel);
-
+//		RootPanel.get("pathList").add(mainPanel);
+		contentPanel.add(mainPanel);
 		// Move cursor focus to the input box.
 		routeNameTextBox.setFocus(true);
 
@@ -107,53 +150,6 @@ public class Admin implements EntryPoint {
 		addRouteButton.addClickHandler(new ClickHandler() {
 			public void onClick(ClickEvent event) {
 				addRoute();
-//				for (int i = 0; i < allRoutes.size()-1; i++) {
-//					routesFlexTable.removeRow(0);
-//				}
-//				
-//				routesFlexTable.getRowFormatter().addStyleName(0, "watchListHeader");
-//				routesFlexTable.setText(0, 0, "Name");
-//				routesFlexTable.setText(0, 1, "Uri");
-//				routesFlexTable.setText(0, 2, "HttpMethod");
-//				routesFlexTable.setText(0, 3, "Proxy");
-//				routesFlexTable.setText(0, 4, "Remove");
-//				
-//				
-//				int row = 1;
-//				routesFlexTable.setText(row, 0, "name");
-//				
-////				String active = data.getActive();
-////				if( "true".equals(active) ){
-//					routesFlexTable.setHTML(row, 1, "<b><a href=\"uri\" target=\"_blank\">uri</a></b>");
-//					routesFlexTable.setText(row, 2, "test");
-//					routesFlexTable.setText(row, 3, "proxy");
-//					Button removeRouteButton = new Button("x");
-//					removeRouteButton.addStyleDependentName("remove");
-////					removeRouteButton.addClickHandler(new ClickHandler() {
-////						public void onClick(ClickEvent event) {
-////							disable(data);
-////						}
-////					});
-//					routesFlexTable.setWidget(row, 4, removeRouteButton);
-////				}else{
-////					routesFlexTable.setHTML(row, 1, "<b>"+data.getUri()+"</b>");
-////					routesFlexTable.setText(row, 2, data.getMethod());
-////					routesFlexTable.setText(row, 3, data.getProxy());
-////					Button removeRouteButton = new Button("+");
-////					removeRouteButton.addStyleDependentName("remove");
-////					removeRouteButton.addClickHandler(new ClickHandler() {
-////						public void onClick(ClickEvent event) {
-////							enable(data);
-////						}
-////					});
-////					routesFlexTable.setWidget(row, 4, removeRouteButton);
-////				}
-//				routesFlexTable.getCellFormatter().addStyleName(row, 0, "watchListColumn");
-//				routesFlexTable.getCellFormatter().addStyleName(row, 1, "watchListFirstColumn");
-//				routesFlexTable.getCellFormatter().addStyleName(row, 2, "watchListColumn");
-//				routesFlexTable.getCellFormatter().addStyleName(row, 3, "watchListColumn");
-//				routesFlexTable.getCellFormatter().addStyleName(row, 4, "watchListRemoveColumn");
-//				
 			}
 		});
 
@@ -253,6 +249,7 @@ public class Admin implements EntryPoint {
 	      form.setMethod(FormPanel.METHOD_POST);
 	    
 	      fileUpload.setName("dist");
+	      fileUpload.getElement().setAttribute("accept", ".zip");
 	      
 	      TextBox appNameTextBox = new TextBox();
 	  	  TextBox appPackageTextBox = new TextBox();
@@ -278,8 +275,9 @@ public class Admin implements EntryPoint {
 	         public void onClick(ClickEvent event) {
 	            //get the filename to be uploaded
 	            String filename = fileUpload.getFilename();
-	            if (filename.length() == 0) {
-	               Window.alert("No File Specified!");
+	            if (isNullOrEmpty(filename)) {
+	               alertWidget("Upload ",
+	   	                "No files selected for upload!").center();
 	            } else {
 	               //submit the form
 	               form.submit();			          
@@ -290,6 +288,7 @@ public class Admin implements EntryPoint {
 	      form.addSubmitCompleteHandler(new FormPanel.SubmitCompleteHandler() {
 	         @Override
 	         public void onSubmitComplete(SubmitCompleteEvent event) {
+	        	 form.reset();
 	        	 refreshRoutesTable();
 	        	 refreshAppsList();
 	         }
@@ -366,8 +365,8 @@ public class Admin implements EntryPoint {
 		lastUpdatedLabel.setText("Last update : " + DateTimeFormat.getMediumDateTimeFormat().format(new Date()));
 
 //		mainPanel.removeFromParent();
-		RootPanel.get("pathList").remove(mainPanel);
-		RootPanel.get("pathList").add(mainPanel);
+//		RootPanel.get("pathList").remove(mainPanel);
+//		RootPanel.get("pathList").add(mainPanel);
 		// Clear any errors.
 		// errorMsgLabel.setVisible(false);
 
@@ -441,31 +440,31 @@ public class Admin implements EntryPoint {
 	}
 
 	protected void routeRequest(RequestBuilder.Method method,String body) {
-		final DialogBox dialogBox = new DialogBox();
-		dialogBox.setText("Remote Procedure Call");
-		dialogBox.setAnimationEnabled(true);
-		final Button closeButton = new Button("Close");
-		// We can set the id of a widget by accessing its Element
-		closeButton.getElement().setId("closeButton");
-		final Label textToServerLabel = new Label();
-		final HTML serverResponseLabel = new HTML();
-		VerticalPanel dialogVPanel = new VerticalPanel();
-		dialogVPanel.addStyleName("dialogVPanel");
-		dialogVPanel.add(new HTML("<b>Sending name to the server:</b>"));
-		dialogVPanel.add(textToServerLabel);
-		dialogVPanel.add(new HTML("<br><b>Server replies:</b>"));
-		dialogVPanel.add(serverResponseLabel);
-		dialogVPanel.setHorizontalAlignment(VerticalPanel.ALIGN_RIGHT);
-		dialogVPanel.add(closeButton);
-		dialogBox.setWidget(dialogVPanel);
-
-		closeButton.addClickHandler(new ClickHandler() {
-
-			@Override
-			public void onClick(ClickEvent event) {
-				dialogBox.hide();
-			}
-		});
+//		final DialogBox dialogBox = new DialogBox();
+//		dialogBox.setText("Remote Procedure Call");
+//		dialogBox.setAnimationEnabled(true);
+//		final Button closeButton = new Button("Close");
+//		// We can set the id of a widget by accessing its Element
+//		closeButton.getElement().setId("closeButton");
+//		final Label textToServerLabel = new Label();
+//		final HTML serverResponseLabel = new HTML();
+//		VerticalPanel dialogVPanel = new VerticalPanel();
+//		dialogVPanel.addStyleName("dialogVPanel");
+//		dialogVPanel.add(new HTML("<b>Sending name to the server:</b>"));
+//		dialogVPanel.add(textToServerLabel);
+//		dialogVPanel.add(new HTML("<br><b>Server replies:</b>"));
+//		dialogVPanel.add(serverResponseLabel);
+//		dialogVPanel.setHorizontalAlignment(VerticalPanel.ALIGN_RIGHT);
+//		dialogVPanel.add(closeButton);
+//		dialogBox.setWidget(dialogVPanel);
+//
+//		closeButton.addClickHandler(new ClickHandler() {
+//
+//			@Override
+//			public void onClick(ClickEvent event) {
+//				dialogBox.hide();
+//			}
+//		});
 
 		String url = "/__admin/routes";
 		RequestBuilder builder = new RequestBuilder(method, URL.encode(url));
@@ -476,15 +475,17 @@ public class Admin implements EntryPoint {
 				public void onError(Request request, Throwable exception) {
 					// Couldn't connect to server (could be timeout, SOP
 					// violation, etc.)
-					dialogBox.setText("Server Call - Failure " + exception.toString());
-					serverResponseLabel.addStyleName("serverResponseLabelError");
-					serverResponseLabel.setHTML(SERVER_ERROR);
-					dialogBox.center();
-					closeButton.setFocus(true);
+//					dialogBox.setText("Server Call - Failure " + exception.toString());
+//					serverResponseLabel.addStyleName("serverResponseLabelError");
+//					serverResponseLabel.setHTML(SERVER_ERROR);
+//					dialogBox.center();
+//					closeButton.setFocus(true);
+					alertWidget("Server error",
+			                "Error :: "+exception.toString()).center();
 				}
 
 				public void onResponseReceived(Request request, Response response) {
-					if (200 == response.getStatusCode()) {
+					if ( 200 == response.getStatusCode() || 201 == response.getStatusCode() ) {
 						routesFlexTable.clear();
 
 						// Routes Table
@@ -501,16 +502,19 @@ public class Admin implements EntryPoint {
 
 					} else {
 						// Handle the error. Can get the status text from
-						dialogBox.setText("Remote Procedure Call - Failure " + response.getStatusText());
-						serverResponseLabel.addStyleName("serverResponseLabelError");
-						serverResponseLabel.setHTML(SERVER_ERROR);
-						dialogBox.center();
-						closeButton.setFocus(true);
+//						dialogBox.setText("Remote Procedure Call - Failure " + response.getStatusText());
+//						serverResponseLabel.addStyleName("serverResponseLabelError");
+//						serverResponseLabel.setHTML(SERVER_ERROR);
+//						dialogBox.center();
+//						closeButton.setFocus(true);
+						alertWidget("Server error",
+				                "Error :: "+response.getStatusText()).center();
 					}
 				}
 			});
 		} catch (RequestException e) {
-			// Couldn't connect to server
+			alertWidget("Server error url "+url,
+	                "Error :: "+e.toString()).center();
 		}
 	}
 }

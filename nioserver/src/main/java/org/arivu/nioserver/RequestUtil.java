@@ -75,8 +75,10 @@ public final class RequestUtil {
 
 	private static final String LINE_SEPARATOR = System.lineSeparator();
 
-	final static DateFormat dateFormat = new SimpleDateFormat("EEE MMM d hh:mm:ss.SSS yyyy");
-
+//	final static DateFormat dateFormat = new SimpleDateFormat("EEE MMM d hh:mm:ss.SSS yyyy");
+	
+	final static DateFormat dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z");
+	
 	static final Pattern validUrl = Pattern.compile("^[a-zA-Z0-9-_]*$");
 	
 	static int searchPattern(byte[] content, byte[] pattern, int start, int disp) {
@@ -240,15 +242,22 @@ public final class RequestUtil {
 		return new String(bb.array());
 	}
 
-	static int getHeaderIndex(byte[] bytes, byte first, byte second, int cnt) {
+	static int getHeaderIndex(byte[] bytes, byte first, byte second, final int cnt) {
 		int indexOf = -1;
 		if (cnt == 2) {
-			for (int i = 3; i < bytes.length; i++) {
-				if (bytes[i] == bytes[i - 2] && bytes[i] == second && bytes[i - 1] == bytes[i - 3]
-						&& bytes[i - 1] == first) {
-					indexOf = i;
-					break;
+			int inc = 1;
+			for (int i = 3; i < bytes.length; i+=inc) {
+				if (bytes[i] == bytes[i - 2] && bytes[i] == second ) {
+					if(bytes[i - 1] == bytes[i - 3]
+							&& bytes[i - 1] == first){
+						indexOf = i;
+						break;
+					}
+					inc = 2;
+				}else{
+					inc = 1;
 				}
+				
 			}
 		} else if (cnt == 1) {
 			for (int i = 1; i < bytes.length; i++) {
@@ -485,8 +494,9 @@ public final class RequestUtil {
 			responseBody.append(protocol).append(" ").append(responseCode).append(" ").append(rescodetxt)
 					.append(LINE_SEPARATOR);
 
-		Date enddate = new Date();
-		responseBody.append("Date: ").append(enddate.toString()).append(LINE_SEPARATOR);
+//		Date endtime = new Date();
+		long enddate = System.currentTimeMillis();
+		responseBody.append("Date: ").append(dateFormat.format(enddate)).append(LINE_SEPARATOR);
 
 		for (Entry<String, List<Object>> e : headers.entrySet()) {
 			List<Object> value = e.getValue();
@@ -502,7 +512,8 @@ public final class RequestUtil {
 		ref.rc = responseCode;
 		ref.uri = uri;
 		ref.method = method;
-
+		ref.endtime = enddate;
+		
 		ref.queue.add(new ByteData(responseBody.toString().getBytes()));
 		ref.queue.addAll(out);
 		ref.cl = contentLen;
@@ -749,6 +760,7 @@ final class Ref {
 	String uri = null;
 	int rc;
 	int cl = 0;
+	long endtime;
 	HttpMethod method = null;
 	Queue<ByteData> queue = new DoublyLinkedList<>();
 }

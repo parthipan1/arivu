@@ -41,6 +41,115 @@ public class RequestUtilTest {
 	}
 	
 	@Test
+	public void testGetResponseBytes(){
+		System.setProperty("lightninglog.json", "./lightninglog.json");
+		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
+		System.setProperty("access.log", "./access.log");
+		
+		Map<String,Object> th = new Amap<String,Object>();
+		th.put("test", "test");
+		
+		Map<String, List<Object>> headers = RequestUtil.transform(th);
+		Collection<ByteData> out = new DoublyLinkedList<>();
+		out.add(ByteData.wrap("test ".getBytes()));
+		
+		Ref responseBytes = RequestUtil.getResponseBytes(200, headers, out, "HTTP/1.1", "/test", 5, HttpMethod.GET);
+		assertTrue(responseBytes!=null);
+		assertTrue(responseBytes.rc==200);
+		assertTrue(responseBytes.cl==5);
+		assertTrue(responseBytes.method==HttpMethod.GET);
+		assertTrue(responseBytes.uri.equals("/test"));
+		assertTrue(responseBytes.queue.size()==2);
+	}
+
+	@Test
+	public void testGetResponseBytes_Case2(){
+		System.setProperty("lightninglog.json", "./lightninglog.json");
+		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
+		System.setProperty("access.log", "./access.log");
+		
+		Map<String,Object> th = new Amap<String,Object>();
+		th.put("test", "test");
+		
+		Map<String, List<Object>> headers = RequestUtil.transform(th);
+		headers.put("test2", new DoublyLinkedList<>());
+		Collection<ByteData> out = new DoublyLinkedList<>();
+		out.add(ByteData.wrap("test ".getBytes()));
+		
+		Ref responseBytes = RequestUtil.getResponseBytes(104, headers, out, "HTTP/1.1", "/test", 5, HttpMethod.GET);
+		assertTrue(responseBytes!=null);
+		assertTrue(responseBytes.rc==104);
+		assertTrue(responseBytes.cl==5);
+		assertTrue(responseBytes.method==HttpMethod.GET);
+		assertTrue(responseBytes.uri.equals("/test"));
+		assertTrue(responseBytes.queue.size()==2);
+	}
+	
+
+	@Test
+	public void testGetResponseBytes_Case3() throws IOException{
+		System.setProperty("lightninglog.json", "./lightninglog.json");
+		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
+		System.setProperty("access.log", "./access.log");
+		
+		Map<String,Object> th = new Amap<String,Object>();
+		th.put("test", "test");
+		
+		Map<String, List<Object>> headers = RequestUtil.transform(th);
+		headers.put("test2", new DoublyLinkedList<>());
+		
+		RequestImpl request = new RequestImpl(HttpMethod.GET, "/test", "/test", "HTTP/1.1", null, headers);
+		ResponseImpl response = new ResponseImpl(request, headers);
+		response.setResponseCode(104);
+		response.append(ByteData.wrap("test ".getBytes()));
+		
+		assertFalse(NullCheck.isNullOrEmpty(response.getOut()));
+		assertFalse(NullCheck.isNullOrEmpty(response.getHeaders()));
+		
+		Ref responseBytes = RequestUtil.getResponseBytes(request,response);
+		assertTrue(responseBytes!=null);
+		assertTrue(responseBytes.rc==104);
+		assertTrue(responseBytes.cl==5);
+		assertTrue(responseBytes.method==HttpMethod.GET);
+		assertTrue(responseBytes.uri.equals("/test"));
+		assertTrue(responseBytes.queue.size()==2);
+		
+		assertTrue(NullCheck.isNullOrEmpty(response.getOut()));
+		assertTrue(NullCheck.isNullOrEmpty(response.getHeaders()));
+	}
+	
+	@Test
+	public void testGetHeaderIndex() {
+		byte[] bytes = "34".getBytes();
+		int headerIndex = RequestUtil.getHeaderIndex("123456".getBytes(), bytes[0], bytes[1], 1);
+		assertTrue("Got :: "+headerIndex,headerIndex==3);
+		
+		headerIndex = RequestUtil.getHeaderIndex("1231456".getBytes(), bytes[0], bytes[1], 1);
+		assertTrue("Got :: "+headerIndex,headerIndex==-1);
+		
+		headerIndex = RequestUtil.getHeaderIndex("123456".getBytes(), bytes[0], bytes[1], 2);
+		assertTrue("Got :: "+headerIndex,headerIndex==-1);
+		
+		headerIndex = RequestUtil.getHeaderIndex("12343456".getBytes(), bytes[0], bytes[1], 2);
+		assertTrue("Got :: "+headerIndex,headerIndex==5);
+		
+		headerIndex = RequestUtil.getHeaderIndex("12043456".getBytes(), bytes[0], bytes[1], 2);
+		assertTrue("Got :: "+headerIndex,headerIndex==-1);
+		
+		headerIndex = RequestUtil.getHeaderIndex("12040456".getBytes(), bytes[0], bytes[1], 2);
+		assertTrue("Got :: "+headerIndex,headerIndex==-1);
+		
+		headerIndex = RequestUtil.getHeaderIndex("12303456".getBytes(), bytes[0], bytes[1], 2);
+		assertTrue("Got :: "+headerIndex,headerIndex==-1);
+		
+		headerIndex = RequestUtil.getHeaderIndex("abcdefghij".getBytes(), bytes[0], bytes[1], 2);
+		assertTrue("Got :: "+headerIndex,headerIndex==-1);
+		
+		headerIndex = RequestUtil.getHeaderIndex("123456".getBytes(), bytes[0], bytes[1], 0);
+		assertTrue("Got :: "+headerIndex,headerIndex==-1);
+	}
+	
+	@Test
 	public void testGetMatchingRoute_Case1(){
 		System.setProperty("lightninglog.json", "./lightninglog.json");
 		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");

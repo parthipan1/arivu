@@ -10,6 +10,7 @@ import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.nio.channels.SelectionKey;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -106,7 +107,6 @@ class Route {
 
 	public void handle(Request req, Response res) {
 		try {
-			StaticRef.set(req, res, this);
 			this.invoker.handle(req, res, isStatic, method, tl, this.rut);
 		} catch (Throwable e) {
 			logger.error("Failed in route " + this + " :: ", e);
@@ -116,8 +116,6 @@ class Route {
 			} catch (IOException e1) {
 				logger.error("Failed in route " + this + " :: ", e1);
 			}
-		}finally {
-			StaticRef.clear();
 		}
 	}
 
@@ -712,4 +710,31 @@ enum MethodInvoker {
 			method.invoke(tl.get(null), req, res);
 	}
 
+}
+final class AsynContextImpl  implements AsynContext{
+
+	boolean flag = false;
+	final SelectionKey key;
+	
+	AsynContextImpl(SelectionKey key) {
+		super();
+		this.key = key;
+	}
+
+	@Override
+	public void setAsynchronousFinish(boolean flag) {
+		this.flag = flag;
+	}
+
+	@Override
+	public boolean isAsynchronousFinish() {
+		return flag;
+	}
+
+	@Override
+	public void finish() {
+		if(key.isValid())
+			key.interestOps(SelectionKey.OP_WRITE);
+	}
+	
 }
