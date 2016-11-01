@@ -270,19 +270,10 @@ final class Connection {
 		try {
 			if (route != null) {
 				Response response = route.getResponse(req);
-//				logger.debug(" before request uri :: {} response header :: {}", req.uri ,Utils.toString(response.getHeaders()) );
 				if (response != null) {
 					ctx = new AsynContextImpl(key, req, response, state);
 					StaticRef.set(req, response, route, ctx);
 					route.handle(req, response);
-					if( !ctx.isAsynchronousFinish() ){
-						state.resBuff = RequestUtil.getResponseBytes(req, response);
-//						if (state.resBuff != null && state.resBuff.cl > Configuration.defaultChunkSize) {
-//							((SocketChannel) key.channel()).socket().setSoTimeout(0);
-//						}
-						logger.debug(" request :: {} response :: {}", req.toString() ,state.resBuff.cl);
-					}
-//					logger.debug(" after request uri :: {} response header :: {}", req.uri ,Utils.toString(response.getHeaders()) );
 				}
 				req = null;
 				route = null;
@@ -296,8 +287,10 @@ final class Connection {
 			StaticRef.clear();
 			if(ctx==null)
 				key.interestOps(SelectionKey.OP_WRITE);
-			else if( !ctx.isAsynchronousFinish() )
-				key.interestOps(SelectionKey.OP_WRITE);
+			else if( !ctx.isAsynchronousFinish() ){
+				ctx.setAsynchronousFinish(true);
+				ctx.finish();
+			}
 		}
 	}
 
