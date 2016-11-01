@@ -711,6 +711,10 @@ enum MethodInvoker {
 	}
 
 }
+/**
+ * @author parthipangounder
+ *
+ */
 final class AsynContextImpl  implements AsynContext{
 	private static final Logger logger = LoggerFactory.getLogger(AsynContextImpl.class);
 	
@@ -737,6 +741,22 @@ final class AsynContextImpl  implements AsynContext{
 	@Override
 	public boolean isAsynchronousFinish() {
 		return flag;
+	}
+
+	/* (non-Javadoc)
+	 * @see org.arivu.nioserver.AsynContext#getRequest()
+	 */
+	@Override
+	public Request getRequest() {
+		return request;
+	}
+
+	/* (non-Javadoc)
+	 * @see org.arivu.nioserver.AsynContext#getResponse()
+	 */
+	@Override
+	public Response getResponse() {
+		return response;
 	}
 
 	@Override
