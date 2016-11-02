@@ -12,7 +12,7 @@ public interface AsynContext {
 	 */
 	void setAsynchronousFinish(boolean flag);
 	/**
-	 * @return
+	 * @return asyncFlag
 	 */
 	boolean isAsynchronousFinish();
 	/**
@@ -20,16 +20,16 @@ public interface AsynContext {
 	 */
 	void finish();
 	/**
-	 * @return
+	 * @return response
 	 */
 	Response getResponse();
 	/**
-	 * @return
+	 * @return request
 	 */
 	Request getRequest();
 	
 	/**
-	 * @return
+	 * @return selectionKey
 	 */
 	SelectionKey getKey();
 }

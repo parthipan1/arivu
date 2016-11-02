@@ -115,7 +115,7 @@ class PackageScanner {
 		try (JarInputStream jarFile = new JarInputStream(new FileInputStream(new File(jarName)));) {
 			JarEntry jarEntry;
 			while ((jarEntry = jarFile.getNextJarEntry()) != null) {
-				if ((jarEntry.getName().startsWith(packageName)) && (jarEntry.getName().endsWith(".class"))) {
+				if (jarEntry.getName().startsWith(packageName) && jarEntry.getName().endsWith(".class")) {
 					String className = jarEntry.getName().replaceAll("/", "\\.");
 					if ("org.arivu.nioserver.Configuration.class".equals(className)
 							|| "org.arivu.nioserver.PackageScanner.class".equals(className)) {

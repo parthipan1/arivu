@@ -124,10 +124,8 @@ final class Connection {
 //				logger.debug(" searchPattern :: "+searchPattern+" content("+content.length+") :: "+new String(content)+" boundary("+req.boundary.length+") :: "+new String(req.boundary));
 				// System.err.println(" searchPattern :: "+searchPattern+" start
 				// :: "+start+" mi "+mi);
-				if (state.mi > 0) {
-					if (state.rollOver != null){
-						req.body.add(state.rollOver);
-					}
+				if (state.mi > 0 && state.rollOver != null){
+					req.body.add(state.rollOver);
 				}
 				state.setValue(0, searchPattern * -1 - 1, ByteData.wrap(Arrays.copyOfRange(content,state.start, content.length)));
 				break;
@@ -244,7 +242,7 @@ final class Connection {
 					key.interestOps(SelectionKey.OP_READ);
 			} else {
 //				System.out.println(" bytesRead "+bytesRead+" EOL0 "+EOL0+" req "+rh.contentLen);
-				if ((bytesRead == -1 || state.contentLen == 0 || EOL0 == RequestUtil.BYTE_10))
+				if (bytesRead == -1 || state.contentLen == 0 || EOL0 == RequestUtil.BYTE_10)
 					processRequest(key);
 				else
 					key.interestOps(SelectionKey.OP_READ);

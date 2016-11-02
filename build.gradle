@@ -338,11 +338,17 @@ dependencies {
 	createDir(deployDir+FS+"dist"+FS+"conf")
 	createDir(deployDir+FS+"dist"+FS+"logs")
 	createDir(deployDir+FS+"dist"+FS+"apps")
+	createDir(deployDir+FS+"dist"+FS+"admin")
 	
-	new File(deployDir+FS+"dist"+FS+"bin"+FS+"start.sh") << "java -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:ParallelGCThreads=4 -XX:ConcGCThreads=2 -classpath ../libs/*:../conf/*:../hotdeploy/* -Dlightninglog.json=../conf/lightninglog.json -Darivu.nioserver.json=../conf/arivu.nioserver.json -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=12345 -Djava.rmi.server.hostname=localhost -Dcom.sun.management.jmxremote.rmi.port=12345 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false org.arivu.nioserver.Server start"
-	new File(deployDir+FS+"dist"+FS+"bin"+FS+"start.cmd") << "java -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:ParallelGCThreads=4 -XX:ConcGCThreads=2 -classpath ..\\libs\\*:..\\conf\\*:..\\hotdeploy\\* -Dlightninglog.json=..\\conf\\lightninglog.json -Darivu.nioserver.json=../conf/arivu.nioserver.json -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=12345 -Djava.rmi.server.hostname=localhost -Dcom.sun.management.jmxremote.rmi.port=12345 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false org.arivu.nioserver.Server start"
+	new File(deployDir+FS+"dist"+FS+"bin"+FS+"start.sh") << "java -DadminMod=true -DadminLoc=../admin -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:ParallelGCThreads=4 -XX:ConcGCThreads=2 -classpath ../libs/*:../conf/*:../hotdeploy/* -Dlightninglog.json=../conf/lightninglog.json -Darivu.nioserver.json=../conf/arivu.nioserver.json -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=12345 -Djava.rmi.server.hostname=localhost -Dcom.sun.management.jmxremote.rmi.port=12345 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false org.arivu.nioserver.Server start"
+	new File(deployDir+FS+"dist"+FS+"bin"+FS+"start.cmd") << "java -DadminMod=true -DadminLoc=..\\admin -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:ParallelGCThreads=4 -XX:ConcGCThreads=2 -classpath ..\\libs\\*:..\\conf\\*:..\\hotdeploy\\* -Dlightninglog.json=..\\conf\\lightninglog.json -Darivu.nioserver.json=../conf/arivu.nioserver.json -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=12345 -Djava.rmi.server.hostname=localhost -Dcom.sun.management.jmxremote.rmi.port=12345 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false org.arivu.nioserver.Server start"
 	new File(deployDir+FS+"dist"+FS+"bin"+FS+"stop.sh") << "java -classpath ../libs/*:../conf/* -Darivu.nioserver.json=../conf/arivu.nioserver.json org.arivu.nioserver.Server stop"
 	new File(deployDir+FS+"dist"+FS+"bin"+FS+"stop.cmd") << "java -classpath ..\\libs\\*:..\\conf\\* -Darivu.nioserver.json=../conf/arivu.nioserver.json org.arivu.nioserver.Server stop"
+	
+	copy{
+		from("admin")
+		into(deployDir+FS+"dist"+FS+"admin") 
+	} 
 	
 	copy{
 		from("favicon.ico")
@@ -384,6 +390,10 @@ dependencies {
 	def jsonFile2 = new File(deployDir+FS+"dist"+FS+"conf"+FS+"arivu.nioserver.json")
 	def json2 = new groovy.json.JsonSlurper().parseText( jsonFile2.text )
 	json2.request = [:]
+	def res = json2.response
+	json2.response = [:]
+	json2.response["header"] = res.header
+	json2.response["defaultcode"] = res.defaultcode
 	jsonFile2.text = new groovy.json.JsonBuilder(json2).toPrettyString()
 	
 	copy{

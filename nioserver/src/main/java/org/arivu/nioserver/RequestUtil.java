@@ -158,9 +158,9 @@ public final class RequestUtil {
 		for (int i = 0; i < split.length; i++) {
 			String h = split[i];
 			int indexOf2 = h.indexOf(":");
-			if (indexOf2 == -1) {
+			if (indexOf2 != -1) {
 				// tempheaders.put(h, "");
-			} else {
+//			} else {
 				tempheaders.put(h.substring(0, indexOf2), h.substring(indexOf2 + 1).trim());
 			}
 		}
@@ -392,11 +392,9 @@ public final class RequestUtil {
 					if (route.rut.uriTokens.length == split.length) {
 						boolean match = true;
 						for (int i = 0; i < split.length; i++) {
-							if (route.rut.paramIdx[i] == -1) {
-								if (!route.rut.uriTokens[i].equals(split[i])) {
-									match = false;
-									break;
-								}
+							if (route.rut.paramIdx[i] == -1 && !route.rut.uriTokens[i].equals(split[i])) {
+								match = false;
+								break;
 							}
 						}
 						if (match)
