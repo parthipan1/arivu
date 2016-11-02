@@ -22,7 +22,6 @@ import com.google.gwt.user.client.ui.DialogBox;
 import com.google.gwt.user.client.ui.DockLayoutPanel;
 import com.google.gwt.user.client.ui.FileUpload;
 import com.google.gwt.user.client.ui.FlexTable;
-import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.FormPanel;
 import com.google.gwt.user.client.ui.FormPanel.SubmitCompleteEvent;
 import com.google.gwt.user.client.ui.HTML;
@@ -32,6 +31,7 @@ import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.Image;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.ListBox;
+import com.google.gwt.user.client.ui.PushButton;
 import com.google.gwt.user.client.ui.RootLayoutPanel;
 import com.google.gwt.user.client.ui.ScrollPanel;
 import com.google.gwt.user.client.ui.TextBox;
@@ -59,22 +59,17 @@ public class Admin implements EntryPoint {
 	private ListBox appsDropdownList = new ListBox();
 	
 	private ArrayList<Data> allRoutes = new ArrayList<Data>();
-//	/**
-//	 * The message displayed to the user when the server cannot be reached or
-//	 * returns an error.
-//	 */
-//	private static final String SERVER_ERROR = "An error occurred while "
-//			+ "attempting to contact the server. Please check your network " + "connection and try again.";
-
 	
 	private DockLayoutPanel p = new DockLayoutPanel(Unit.EM);
 	private HorizontalPanel headerPanel = new HorizontalPanel();
 	private HorizontalPanel footerPanel = new HorizontalPanel();
 	private VerticalPanel naviPanel = new VerticalPanel();
-	private FlowPanel contentPanel = new FlowPanel();
 	private Image iconImage = new Image("images/arivu.jpeg");
-	private Image stopImage = new Image("images/stop.png");
+	private PushButton stopButton = new PushButton(new Image("images/stop.png"));
 	private Label titleLabel = new Label();
+	private Label footerLabel = new Label("High performance NIO Server");
+	
+	private static String[] proxyTypes = {"browser","proxy"};
 	
 	private long loadTime = 0;
 	/**
@@ -82,25 +77,39 @@ public class Admin implements EntryPoint {
 	 */
 	public void onModuleLoad() {
 		loadTime = new Date().getTime();
+		
+		stopButton.setHeight("60px");
+		stopButton.setWidth("60px");
+		stopButton.addClickHandler(new ClickHandler() {
+			
+			@Override
+			public void onClick(ClickEvent event) {
+				shutdownServer();
+			}
+		});
+		stopButton.setTitle("Stop the server!");
+		
 		headerPanel.add(iconImage);
 		headerPanel.add(titleLabel);
-		headerPanel.add(stopImage);
-		headerPanel.setStyleName("orangeOutline");
+		headerPanel.add(stopButton);
+		headerPanel.setStyleName("headerAndFooter");
 		
 		titleLabel.getElement().setInnerHTML(H1_ARIVU_NIO_SERVER_H1);
 		titleLabel.getElement().setAttribute("style", "text-align: center;vertical-align: top;");
-		footerPanel.add(new HTML("High performance NIO Server"));
-		footerPanel.setStyleName("orangeOutline");
+		footerPanel.add(footerLabel);
+		footerPanel.setStyleName("headerAndFooter");
 		
-		naviPanel.setStyleName("redOutline");
-		contentPanel.setStyleName("blueOutline");
+//		footerLabel.getElement().setInnerHTML();
 		
-		p.setStyleName("greenOutline");
+		naviPanel.setStyleName("naviOutline");
+		mainPanel.setStyleName("mainOutline");
+		
+		p.setStyleName("contentOutline");
 
-		p.addNorth(headerPanel, 5);
-		p.addSouth(footerPanel, 5);
-//		p.addWest(naviPanel, 6);
-		p.add(contentPanel);
+		p.addNorth(headerPanel, 10);
+		p.addSouth(footerPanel, 3);
+		p.addWest(naviPanel, 1);
+		p.add(mainPanel);
 		
 		RootLayoutPanel rp = RootLayoutPanel.get();
 	    rp.add(p);
@@ -108,57 +117,55 @@ public class Admin implements EntryPoint {
 		init();
 	}
 
+	private HorizontalPanel routesTableTitlePanel = new HorizontalPanel();
+	private HTML routesTableTitleLabel = new HTML("<h4>&nbsp;List of all Routes Registered on server:</h4>");
+	private HTML newRouteLabel = new HTML("&nbsp;Route:");
+	private Label newUriLabel = new Label("Uri:");
+	private Label newLocationLabel = new Label("Location:");
+	private Label newProxyLabel = new Label("Proxy:");
+	private HTML addRouteLabel = new HTML("<h4>&nbsp;Add New Route:</h4>");
 
 	void init() {
+		routesTableTitlePanel.add(routesTableTitleLabel);
+		mainPanel.add(routesTableTitlePanel);
 		// Add styles to elements in the stock list table.
 		routesFlexTable.addStyleName("watchList");
 		scrollTablePanel.addStyleName("watchList");
-		// Routes Table
-		routesFlexTable.getRowFormatter().addStyleName(0, "watchListHeader");
-		routesFlexTable.setText(0, 0, "Name");
-		routesFlexTable.setText(0, 1, "Uri");
-		routesFlexTable.setText(0, 2, "HttpMethod");
-		routesFlexTable.setText(0, 3, "Proxy");
-		routesFlexTable.setText(0, 4, "Remove");
+//		// Routes Table
 
+		scrollTablePanel.setHeight("150px");
+		
 		// Assemble Add Route panel.
+
+		addPanel.add(newRouteLabel);
 		addPanel.add(routeNameTextBox);
+		addPanel.add(newUriLabel);
 		addPanel.add(uriTextBox);
+		addPanel.add(newLocationLabel);
 		addPanel.add(locationTextBox);
+		addPanel.add(newProxyLabel);
 		addPanel.add(dropDownList);
 		addPanel.add(addRouteButton);
 		addPanel.addStyleName("addPanel");
 
-		addTitlePanel.add(new Label("Enter new route name:"));
-		addTitlePanel.add(new Label("Enter new uri name:"));
-		addTitlePanel.add(new Label("Enter new location name:"));
-		addTitlePanel.add(new Label("Enter type ofproxy:"));
-		addTitlePanel.add(new Label(" "));
+		
+		addTitlePanel.add(addRouteLabel);
 		
 		// Assemble Main panel.
 		scrollTablePanel.add(routesFlexTable);
 		mainPanel.add(scrollTablePanel);
 		mainPanel.add(addTitlePanel);
 		mainPanel.add(addPanel);
-		mainPanel.addStyleName("orangeOutline"); 
+//		mainPanel.addStyleName("headerAndFooter"); 
 		
 		addDeployPanel();
 		addUnDeployPanel();
 		
-		// Associate the Main panel with the HTML host page.
-//		RootPanel.get("pathList").add(mainPanel);
-		
-		contentPanel.add(mainPanel);
 		// Move cursor focus to the input box.
 		routeNameTextBox.setFocus(true);
 
-//		routeNameTextBox.setTitle("Enter new route name:");
-//		uriTextBox.setTitle("Enter new uri name:");
-//		locationTextBox.setTitle("Enter new location name:");
-//		addRouteButton.setTitle("Press to add route!");
-		
-		dropDownList.addItem("browser");
-		dropDownList.addItem("proxy");
+		for(String s:proxyTypes)
+			dropDownList.addItem(s);
 
 		// Listen for mouse events on the Add button.
 		addRouteButton.addClickHandler(new ClickHandler() {
@@ -170,122 +177,46 @@ public class Admin implements EntryPoint {
 		refreshRoutesTable();
 	}
 
-	HorizontalPanel undeployPanel = new HorizontalPanel();
+	private HorizontalPanel deployTitlePanel = new HorizontalPanel();
+	private HorizontalPanel deployPanel = new HorizontalPanel();
+	FormPanel fileUploadFormPanel = new FormPanel();
+	FileUpload fileUpload = new FileUpload();
+	Button uploadButton = new Button("Upload");
+	TextBox appNameTextBox = new TextBox();
+	TextBox appPackageTextBox = new TextBox();
+	Label appNameLabel = new Label(" App Name:");
+	Label packagesLabel = new Label("Packages:");
+	Hidden hiddenField = new Hidden();
 	
-	void addUnDeployPanel(){
-		undeployPanel.add(new Label("Undeploy Artifact :"));
-		undeployPanel.add(appsDropdownList);
-		Button undeployButton = new Button("Undeploy");
-		undeployButton.addClickHandler(new ClickHandler() {
-			
-			@Override
-			public void onClick(ClickEvent event) {
-				String selectedValue = appsDropdownList.getSelectedValue();
-				if( !isNullOrEmpty(selectedValue) )
-					undeployApp(selectedValue);
-			}
-		});
-		
-		refreshAppsList();
-		undeployPanel.add(undeployButton);
-
-		undeployPanel.setStyleName("addPanel");
-		mainPanel.add(undeployPanel);
-	}
-
-	void undeployApp(String name) {
-		String url = "/__admin/undeploy?name="+name;
-		RequestBuilder builder = new RequestBuilder(RequestBuilder.GET, URL.encode(url));
-		builder.setHeader(HASH_HEADER, String.valueOf(loadTime) );
-		try {
-			builder.sendRequest(null, new RequestCallback() {
-				public void onError(Request request, Throwable exception) {
-					alertWidget("Failed on apps", "Error from server :: "+exception.toString());
-				}
-
-				public void onResponseReceived(Request request, Response response) {
-					if (200 == response.getStatusCode()) {
-						refreshRoutesTable();
-						refreshAppsList();
-					} else {
-						alertWidget("Failed on apps", "Error from server :: "+response.getText());
-					}
-				}
-			});
-		} catch (RequestException e) {
-			// Couldn't connect to server
-		}
-	}
-	
-	void refreshAppsList() {
-		String url = "/__admin/apps";
-		RequestBuilder builder = new RequestBuilder(RequestBuilder.GET, URL.encode(url));
-		builder.setHeader(HASH_HEADER, String.valueOf(loadTime) );
-		try {
-			builder.sendRequest(null, new RequestCallback() {
-				public void onError(Request request, Throwable exception) {
-					alertWidget("Failed on apps", "Error from server :: "+exception.toString());
-				}
-
-				public void onResponseReceived(Request request, Response response) {
-					if (200 == response.getStatusCode()) {
-						appsDropdownList.clear();
-						for(int i=0;i<appsDropdownList.getItemCount();i++){
-							appsDropdownList.removeItem(0);
-						}
-						JsArray<Data> routes = JsonUtils.<JsArray<Data>>safeEval(response.getText());
-						for (int i = 0; i < routes.length(); i++) {
-							appsDropdownList.addItem(routes.get(i).getName());
-						}
-					} else {
-						alertWidget("Failed on apps", "Error from server :: "+response.getText());
-					}
-				}
-			});
-		} catch (RequestException e) {
-			// Couldn't connect to server
-		}
-	}
-	
-	HorizontalPanel deployPanel = new HorizontalPanel();
 	void addDeployPanel(){
-	      //create a FormPanel 
-	      final FormPanel form = new FormPanel();
-	      //create a file upload widget
-	      final FileUpload fileUpload = new FileUpload();
-	      //create labels
-	      Label selectLabel = new Label("Select a file:");
-	      //create upload button
-	      Button uploadButton = new Button("Upload App");
-	      //pass action to the form to point to service handling file 
+		  deployTitlePanel.add(new HTML("<h4>&nbsp;Upload New App:</h4>"));
+		  mainPanel.add(deployTitlePanel);
 	      //receiving operation.
-	      form.setAction("/__admin/deploy");
+	      fileUploadFormPanel.setAction("/__admin/deploy");
 	      // set form to use the POST method, and multipart MIME encoding.
-	      form.setEncoding(FormPanel.ENCODING_MULTIPART);
-	      form.setMethod(FormPanel.METHOD_POST);
+	      fileUploadFormPanel.setEncoding(FormPanel.ENCODING_MULTIPART);
+	      fileUploadFormPanel.setMethod(FormPanel.METHOD_POST);
 	      fileUpload.setName("dist");
 	      fileUpload.getElement().setAttribute("accept", ".zip");
 	      
-	      TextBox appNameTextBox = new TextBox();
-	  	  TextBox appPackageTextBox = new TextBox();
 	      
 	  	  appNameTextBox.setTitle("Name of the App");
 	  	  appNameTextBox.setName("name");
-	  	  appPackageTextBox.setTitle("Packages to scan");
+	  	  appPackageTextBox.setTitle("comma seperated packages to scan for Paths");
 	  	  appPackageTextBox.setName("scanpackages");
 	  	  
 	  	  deployPanel.setStyleName("addPanel");
+	  	  
+	  	  
+		  deployPanel.add(appNameLabel);
 	  	  deployPanel.add(appNameTextBox);
+		  deployPanel.add(packagesLabel);
 	  	  deployPanel.add(appPackageTextBox);
 	  	  
-		  Hidden hiddenField = new Hidden();
 		  hiddenField.setName( HASH_HEADER );
 		  hiddenField.setValue( String.valueOf(loadTime) );
-//		  form.add( field );
 		  deployPanel.add(hiddenField);
 		  
-	      //add a label
-	      deployPanel.add(selectLabel);
 	      //add fileUpload widget
 	      deployPanel.add(fileUpload);
 	      
@@ -302,15 +233,15 @@ public class Admin implements EntryPoint {
 	   	                "No files selected for upload!").center();
 	            } else {
 	               //submit the form
-	               form.submit();			          
+	               fileUploadFormPanel.submit();			          
 	            }				
 	         }
 	      });
 	   
-	      form.addSubmitCompleteHandler(new FormPanel.SubmitCompleteHandler() {
+	      fileUploadFormPanel.addSubmitCompleteHandler(new FormPanel.SubmitCompleteHandler() {
 	         @Override
 	         public void onSubmitComplete(SubmitCompleteEvent event) {
-	        	 form.reset();
+	        	 fileUploadFormPanel.reset();
 	        	 refreshRoutesTable();
 	        	 refreshAppsList();
 	         }
@@ -318,13 +249,38 @@ public class Admin implements EntryPoint {
 	      deployPanel.setSpacing(10);
 		  
 	      // Add form to the root panel.      
-	      form.add(deployPanel);
+	      fileUploadFormPanel.add(deployPanel);
 	      
-	      mainPanel.add(form);
+	      mainPanel.add(fileUploadFormPanel);
 	}
 	
-	void refreshRoutesTable() {
-		routeRequest(RequestBuilder.GET,null);
+	private HorizontalPanel undeployTitlePanel = new HorizontalPanel();
+	private HorizontalPanel undeployPanel = new HorizontalPanel();
+	private HTML removeAppLabel = new HTML("<h4>&nbsp;Remove App:</h4>");
+	private HTML selectAppLabel = new HTML("&nbsp;Select an App :");
+	private Button undeployButton = new Button("Undeploy");
+	
+	void addUnDeployPanel(){
+		
+		undeployTitlePanel.add(removeAppLabel);
+		mainPanel.add(undeployTitlePanel);
+		undeployPanel.add(selectAppLabel);
+		undeployPanel.add(appsDropdownList);
+		undeployButton.addClickHandler(new ClickHandler() {
+			
+			@Override
+			public void onClick(ClickEvent event) {
+				String selectedValue = appsDropdownList.getSelectedValue();
+				if( !isNullOrEmpty(selectedValue) )
+					undeployApp(selectedValue);
+			}
+		});
+		
+		refreshAppsList();
+		undeployPanel.add(undeployButton);
+
+		undeployPanel.setStyleName("addPanel");
+		mainPanel.add(undeployPanel);
 	}
 
 	void updateTable(JsArray<Data> routes) {
@@ -382,14 +338,6 @@ public class Admin implements EntryPoint {
 
 	}
 
-	boolean isNullOrEmpty(final String v) {
-	    return !(v != null && v.length() > 0);
-	  }
-	
-	protected void removeRoute(Data route) {
-		disable(route);
-	}
-	
 	DialogBox alertWidget(final String header, final String content) {
         final DialogBox box = new DialogBox();
         final VerticalPanel panel = new VerticalPanel();
@@ -413,7 +361,19 @@ public class Admin implements EntryPoint {
         return box;
     }
 	
-	protected void addRoute() {
+	void refreshRoutesTable() {
+		routeRequest(RequestBuilder.GET,null);
+	}
+
+	boolean isNullOrEmpty(final String v) {
+	    return !(v != null && v.length() > 0);
+	  }
+	
+	protected void removeRoute(Data route) {
+		disable(route);
+	}
+	
+	void addRoute() {
 		String uri = uriTextBox.getText();
 		String name = routeNameTextBox.getText();
 		String loc = locationTextBox.getText();
@@ -441,15 +401,15 @@ public class Admin implements EntryPoint {
 		routeRequest(RequestBuilder.POST,"{\"uri\":\"" + uri + "\",\"name\":\"" + name + "\",\"loc\":\"" + loc + "\",\"type\":\"" + typeRoute + "\"}");
 	}
 
-	protected void disable(Data route) {
+	void disable(Data route) {
 		routeRequest(RequestBuilder.PUT,"{\"uri\":\"" + route.getUri() + "\",\"method\":\"" + route.getMethod() + "\",\"active\":\"false\"}");
 	}
 
-	protected void enable(Data route) {
+	void enable(Data route) {
 		routeRequest(RequestBuilder.PUT,"{\"uri\":\"" + route.getUri() + "\",\"method\":\"" + route.getMethod() + "\",\"active\":\"true\"}");
 	}
 
-	protected void routeRequest(RequestBuilder.Method method,String body) {
+	void routeRequest(final RequestBuilder.Method method,String body) {
 		String url = "/__admin/routes";
 		RequestBuilder builder = new RequestBuilder(method, URL.encode(url));
 		builder.setHeader(HASH_HEADER, String.valueOf(loadTime) );
@@ -463,20 +423,13 @@ public class Admin implements EntryPoint {
 
 				public void onResponseReceived(Request request, Response response) {
 					if ( 200 == response.getStatusCode() || 201 == response.getStatusCode() ) {
-						routesFlexTable.clear();
-
-						// Routes Table
-						routesFlexTable.getRowFormatter().addStyleName(0, "watchListHeader");
-						routesFlexTable.setText(0, 0, "Name");
-						routesFlexTable.setText(0, 1, "Uri");
-						routesFlexTable.setText(0, 2, "HttpMethod");
-						routesFlexTable.setText(0, 3, "Proxy");
-						routesFlexTable.setText(0, 4, "Remove");
-
-						allRoutes.clear();
-
 						updateTable(JsonUtils.<JsArray<Data>>safeEval(response.getText()));
-
+						if( method == RequestBuilder.POST ){
+							routeNameTextBox.setText("");
+							uriTextBox.setText("");
+							locationTextBox.setText("");
+							dropDownList.setItemSelected(0, true);
+						}
 					} else {
 						// Handle the error. Can get the status text from
 						alertWidget("Server error",
@@ -489,6 +442,84 @@ public class Admin implements EntryPoint {
 	                "Error :: "+e.toString()).center();
 		}
 	}
+
+	void refreshAppsList() {
+		String url = "/__admin/apps";
+		RequestBuilder builder = new RequestBuilder(RequestBuilder.GET, URL.encode(url));
+		builder.setHeader(HASH_HEADER, String.valueOf(loadTime) );
+		try {
+			builder.sendRequest(null, new RequestCallback() {
+				public void onError(Request request, Throwable exception) {
+					alertWidget("Failed on apps", "Error from server :: "+exception.toString());
+				}
+
+				public void onResponseReceived(Request request, Response response) {
+					if (200 == response.getStatusCode()) {
+						appsDropdownList.clear();
+						for(int i=0;i<appsDropdownList.getItemCount();i++){
+							appsDropdownList.removeItem(0);
+						}
+						JsArray<Data> routes = JsonUtils.<JsArray<Data>>safeEval(response.getText());
+						for (int i = 0; i < routes.length(); i++) {
+							appsDropdownList.addItem(routes.get(i).getName());
+						}
+					} else {
+						alertWidget("Failed on apps", "Error from server :: "+response.getText());
+					}
+				}
+			});
+		} catch (RequestException e) {
+			alertWidget("Server request failed!", "Error :: "+e.getMessage());
+		}
+	}
+
+	void undeployApp(String name) {
+		String url = "/__admin/undeploy?name="+name;
+		RequestBuilder builder = new RequestBuilder(RequestBuilder.GET, URL.encode(url));
+		builder.setHeader(HASH_HEADER, String.valueOf(loadTime) );
+		try {
+			builder.sendRequest(null, new RequestCallback() {
+				public void onError(Request request, Throwable exception) {
+					alertWidget("Failed on apps", "Error from server :: "+exception.toString());
+				}
+
+				public void onResponseReceived(Request request, Response response) {
+					if (200 == response.getStatusCode()) {
+						refreshRoutesTable();
+						refreshAppsList();
+					} else {
+						alertWidget("Failed on apps", "Error from server :: "+response.getText());
+					}
+				}
+			});
+		} catch (RequestException e) {
+			alertWidget("Server request failed!", "Error :: "+e.getMessage());
+		}
+	}
+
+	void shutdownServer() {
+		String url = "/__admin/shutdown";
+		RequestBuilder builder = new RequestBuilder(RequestBuilder.GET, URL.encode(url));
+		builder.setHeader(HASH_HEADER, String.valueOf(loadTime) );
+		try {
+			builder.sendRequest(null, new RequestCallback() {
+				public void onError(Request request, Throwable exception) {
+					alertWidget("Failed on apps", "Error from server :: "+exception.toString());
+				}
+
+				public void onResponseReceived(Request request, Response response) {
+					if (200 == response.getStatusCode()) {
+						alertWidget("Server shutdown!", "Server is down!");
+					} else {
+						alertWidget("Failed on apps", "Error from server :: "+response.getText());
+					}
+				}
+			});
+		} catch (RequestException e) {
+			alertWidget("Server request failed!", "Error :: "+e.getMessage());
+		}
+	}
+	
 }
 
 class Data extends JavaScriptObject {

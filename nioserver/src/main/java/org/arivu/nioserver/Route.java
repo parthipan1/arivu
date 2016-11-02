@@ -744,6 +744,8 @@ final class AsynContextImpl  implements AsynContext{
 	final Response response;
 	final ConnectionState state;
 
+	final int threadId = Thread.currentThread().hashCode();
+	
 	AsynContextImpl(SelectionKey key, Request request, Response response, ConnectionState state) {
 		super();
 		this.key = key;
@@ -754,7 +756,11 @@ final class AsynContextImpl  implements AsynContext{
 
 	@Override
 	public void setAsynchronousFinish(boolean flag) {
-		this.flag = flag;
+		if( this.threadId == Thread.currentThread().hashCode() ){
+			this.flag = flag;
+		}else{
+			throw new IllegalStateException("Cannot modify ouside the created Thread!");
+		}
 	}
 
 	@Override
@@ -776,6 +782,14 @@ final class AsynContextImpl  implements AsynContext{
 	@Override
 	public Response getResponse() {
 		return response;
+	}
+
+	/* (non-Javadoc)
+	 * @see org.arivu.nioserver.AsynContext#getKey()
+	 */
+	@Override
+	public SelectionKey getKey() {
+		return key;
 	}
 
 	@Override

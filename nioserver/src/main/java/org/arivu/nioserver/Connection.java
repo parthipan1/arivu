@@ -103,6 +103,8 @@ final class Connection {
 			RequestUtil.accessLog(state.resBuff.rc, state.resBuff.uri, startTime, state.resBuff.endtime, state.resBuff.cl,
 					remoteSocketAddress, state.resBuff.method);
 		state.writeLen = 0;
+		req = null;
+		route = null;
 		pool.put(this);
 	}
 
@@ -275,9 +277,6 @@ final class Connection {
 					StaticRef.set(req, response, route, ctx, key);
 					route.handle(req, response);
 				}
-				req = null;
-				route = null;
-				response = null;
 			}
 		} catch (Throwable e) {
 			String formatDate = RequestUtil.dateFormat.format(new Date());

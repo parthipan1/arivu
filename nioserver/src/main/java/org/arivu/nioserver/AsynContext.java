@@ -1,5 +1,7 @@
 package org.arivu.nioserver;
 
+import java.nio.channels.SelectionKey;
+
 /**
  * @author Mr P
  *
@@ -25,4 +27,9 @@ public interface AsynContext {
 	 * @return
 	 */
 	Request getRequest();
+	
+	/**
+	 * @return
+	 */
+	SelectionKey getKey();
 }
