@@ -4,6 +4,7 @@ buildscript {
     }
     dependencies {
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7'
+        classpath 'de.richsource.gradle.plugins:gwt-gradle-plugin:0.6'
     }
 }
 
@@ -12,10 +13,6 @@ def FS = java.io.File.separator
 allprojects {
 	group = 'org.arivu'
 	version = '1.0.1'
-	
-    tasks.withType(Javadoc) {
-        options.addStringOption('Xdoclint:none', '-quiet')
-    }
 	
   task copyJars()<<{
   	copy{
@@ -26,6 +23,85 @@ allprojects {
 }
 
 subprojects {
+
+	if( project.name.equals("nioserver-admin") ){
+	
+		apply plugin: 'war'
+		apply plugin: 'java'
+		apply plugin: 'gwt'
+		apply plugin: 'eclipse'
+		apply plugin: 'jetty'
+		
+		group = 'org.arivu.nioserver'
+		version = '1.0.1'
+		
+		description = """org.arivu.nioserver.admin"""
+		
+		sourceCompatibility = 1.8
+		targetCompatibility = 1.8
+		
+		
+		repositories {
+		     maven { url "http://repo.maven.apache.org/maven2" }
+		}
+		
+		dependencies {
+			//compile group: 'com.google.gwt', name: 'gwt', version:'2.8.0'
+		    runtime group: 'com.google.gwt', name: 'gwt-servlet', version:'2.8.0'
+		    testCompile group: 'junit', name: 'junit', version:'4.11'
+		    providedCompile group: 'com.google.gwt', name: 'gwt-user', version:'2.8.0'
+		    providedCompile group: 'com.google.gwt', name: 'gwt-dev', version:'2.8.0'
+		}
+		
+		
+		compileJava{
+			//enable incremental compilation
+			//options.incremental = true
+		}
+		
+		gwt {
+			gwtVersion='2.8.0'
+			modules 'org.arivu.nioserver.admin.Admin'
+			
+			sourceSets {
+				main {
+					java {
+						srcDir 'src'
+					}
+				}
+			}
+			
+			logLevel = 'ERROR'
+			
+			minHeapSize = "512M";
+			maxHeapSize = "1024M";
+			
+			superDev {
+				noPrecompile=true
+			}
+			
+			// The following is only needed if you don't use the Google Plugin for Eclipse.
+			eclipse{
+				addGwtContainer=false // Default set to true
+			}
+			
+			//Specify the deployment Port
+			jettyRunWar.httpPort = 8089
+		}
+		
+		task jettyDraftWar(type: JettyRunWar) {
+			dependsOn draftWar
+			dependsOn.remove('war')
+			webApp=draftWar.archivePath
+		}
+  
+  artifacts {
+	 archives jar
+	}
+	 
+	}else{
+	// standard project start
+	
 
 	apply plugin: 'java'
 	apply plugin: 'eclipse'
@@ -44,6 +120,10 @@ subprojects {
   //tasks.withType(Javadoc).all { enabled = false }
   
   
+    tasks.withType(Javadoc) {
+        options.addStringOption('Xdoclint:none', '-quiet')
+    }
+    
     findbugs {
 //      toolVersion = "2.0.1"
       sourceSets = [sourceSets.main]
@@ -269,9 +349,15 @@ subprojects {
         	}
 	    }
 	}
-  
+	//standard project ends
+	
+	}
   
  }
+
+project(':nioserver-admin'){
+}
+
 
 project(':ason'){
 }
@@ -322,6 +408,7 @@ dependencies {
 	compile project(':resourcepool')
 	compile project(':datastructure')
 	compile project(':utils')
+	//compile project(':nioserver-admin')
     runtime project(':lightninglog')
   }
   
@@ -330,7 +417,7 @@ dependencies {
   
   	//println "deployDir -- "+deployDir
   
-  task distZip() << {//dependsOn:build
+  task distZip(dependsOn:":nioserver-admin:build") << {//dependsOn:build
 	//createDir(deployDir)
 	createDir(deployDir+FS+"dist")
 	createDir(deployDir+FS+"dist"+FS+"libs")
@@ -339,6 +426,7 @@ dependencies {
 	createDir(deployDir+FS+"dist"+FS+"logs")
 	createDir(deployDir+FS+"dist"+FS+"apps")
 	createDir(deployDir+FS+"dist"+FS+"admin")
+	createDir(deployDir+FS+"dist"+FS+"admin"+FS+"admin")
 	
 	new File(deployDir+FS+"dist"+FS+"bin"+FS+"start.sh") << "java -DadminMod=true -DadminLoc=../admin -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:ParallelGCThreads=4 -XX:ConcGCThreads=2 -classpath ../libs/*:../conf/*:../hotdeploy/* -Dlightninglog.json=../conf/lightninglog.json -Darivu.nioserver.json=../conf/arivu.nioserver.json -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=12345 -Djava.rmi.server.hostname=localhost -Dcom.sun.management.jmxremote.rmi.port=12345 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false org.arivu.nioserver.Server start"
 	new File(deployDir+FS+"dist"+FS+"bin"+FS+"start.cmd") << "java -DadminMod=true -DadminLoc=..\\admin -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:ParallelGCThreads=4 -XX:ConcGCThreads=2 -classpath ..\\libs\\*:..\\conf\\*:..\\hotdeploy\\* -Dlightninglog.json=..\\conf\\lightninglog.json -Darivu.nioserver.json=../conf/arivu.nioserver.json -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=12345 -Djava.rmi.server.hostname=localhost -Dcom.sun.management.jmxremote.rmi.port=12345 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false org.arivu.nioserver.Server start"
@@ -346,9 +434,17 @@ dependencies {
 	new File(deployDir+FS+"dist"+FS+"bin"+FS+"stop.cmd") << "java -classpath ..\\libs\\*:..\\conf\\* -Darivu.nioserver.json=../conf/arivu.nioserver.json org.arivu.nioserver.Server stop"
 	
 	copy{
-		from("admin")
+		from(".."+FS+"nioserver-admin"+FS+"war")
 		into(deployDir+FS+"dist"+FS+"admin") 
 	} 
+	
+	copy{
+		from(".."+FS+"nioserver-admin"+FS+"build"+FS+"gwt"+FS+"out"+FS+"admin")
+		into(deployDir+FS+"dist"+FS+"admin"+FS+"admin") 
+	} 
+	
+	del(deployDir+FS+"dist"+FS+"admin"+FS+"WEB-INF");
+	
 	
 	copy{
 		from("favicon.ico")
@@ -356,10 +452,13 @@ dependencies {
 	} 
 	
 	configurations.compile.resolve().each{ f ->
-		copy{
+		if( f.getAbsolutePath().contains("nioserver-admin") ){
+		}else{
+			copy{
 				from(f)
 				into(deployDir+FS+"dist"+FS+"libs") 
-			} 
+			}
+		}
 	}
 	
 	copy {

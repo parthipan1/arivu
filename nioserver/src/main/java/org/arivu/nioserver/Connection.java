@@ -236,7 +236,7 @@ final class Connection {
 				int size = req.body.size();
 				if (size == 0) 
 					key.interestOps(SelectionKey.OP_READ);
-				else  if (bytesRead == -1 || (EOL0 == RequestUtil.BYTE_10 && isEndOfLine(bytesRead, readBuf))) 
+				else  if (bytesRead == -1 || EOL0 == RequestUtil.BYTE_10 && isEndOfLine(bytesRead, readBuf)) 
 					processRequest(key);
 				else
 					key.interestOps(SelectionKey.OP_READ);

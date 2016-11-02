@@ -1,11 +1,10 @@
 package org.arivu.nioserver.admin.client;
 
-import com.google.gwt.junit.client.GWTTestCase;
 
 /**
  * GWT JUnit tests must extend GWTTestCase.
  */
-public class AdminTest extends GWTTestCase {
+public class AdminTest{// extends com.google.gwt.junit.client.GWTTestCase {
 
 	/**
 	 * Must refer to a valid module that sources this class.
