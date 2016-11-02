@@ -204,6 +204,7 @@ subprojects {
   
     //enable incremental compilation
 //    options.incremental = true
+    options.compilerArgs << '-XDignore.symbol.file' << '-parameters'
     
     // set debug Levels
     options.debugOptions.debugLevel = "source,lines,vars"
@@ -216,6 +217,7 @@ subprojects {
   
     //enable incremental compilation
 //    options.incremental = true
+    options.compilerArgs << '-XDignore.symbol.file' << '-parameters'
     
     // set debug Levels
     options.debugOptions.debugLevel = "source,lines,vars"
