@@ -5,9 +5,12 @@ package org.arivu.nioserver;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.SocketChannel;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +35,8 @@ import org.slf4j.LoggerFactory;
  *
  */
 final class Admin {
+	private static final String HASH_HEADER = "X-HASH";
+
 	private static final Logger logger = LoggerFactory.getLogger(Admin.class);
 	//
 	// @Path(value = "/multipart", httpMethod = HttpMethod.POST)
@@ -54,32 +59,56 @@ final class Admin {
 	// System.out.println("*********************************************************************************");
 	// }
 	// }
-//	{\"uri\":\"" + uri + "\",\"name\":\"" + name + "\",\"loc\":\"" + loc + "\",\"type\":\"" + typeRoute + "\"}
+	// {\"uri\":\"" + uri + "\",\"name\":\"" + name + "\",\"loc\":\"" + loc +
+	// "\",\"type\":\"" + typeRoute + "\"}
 
 	static final Map<String, App> allHotDeployedArtifacts = new Amap<>();
 
 	static byte[] iconBytes = null;
 
-	static boolean isOriginateFromAdminPage(Request request){
-		List<Object> list = request.getHeaders().get("Referer");	
-		if(!NullCheck.isNullOrEmpty(list)){
-			return list.get(0).toString().endsWith("/admin/Admin.html");
+	static boolean isOriginateFromAdminPage(Request request) {
+		List<Object> list = request.getHeaders().get("Referer");
+		if (!NullCheck.isNullOrEmpty(list)) {
+			boolean endsWith = list.get(0).toString().endsWith("/admin/Admin.html");
+			if(endsWith){
+				List<Object> listHash = request.getHeaders().get(HASH_HEADER);
+				if (!NullCheck.isNullOrEmpty(listHash)) {
+					return isHashMatching(listHash.get(0).toString());
+				}
+			}
+//			return endsWith;
 		}
 		return false;
 	}
-	
+
+	static boolean isHashMatching(String clientHash) {
+		SelectionKey key = StaticRef.getSelectionKey();
+		if (key!=null) {
+			InetAddress remoteHostAddress = ((SocketChannel) key.channel()).socket().getInetAddress();
+			if (remoteHostAddress!=null) {
+				String keyv = remoteHostAddress.toString();
+				String serverHash = AdminRoute.authTokens.get(keyv);
+				if (!NullCheck.isNullOrEmpty(serverHash)) {
+					logger.debug("Hash auth server hash {} client hash{}", serverHash, clientHash);
+					return Long.parseLong(clientHash)>=Long.parseLong(serverHash);
+				} 
+			}
+		}
+		return false;
+	}
+
 	@Path(value = "/__admin/routes", httpMethod = HttpMethod.POST)
 	static void addProxyRoute() throws IOException, ScriptException {
 		Response response = StaticRef.getResponse();
 		Request request = StaticRef.getRequest();
 
-		if(!isOriginateFromAdminPage(request)){
+		if (!isOriginateFromAdminPage(request)) {
 			response.setResponseCode(401);
 			return;
 		}
-		
+
 		String convert = RequestUtil.convert(request.getBody());
-//		System.out.println(" PUt body :: "+convert);
+		logger.debug("addProxyRoute json -> {}", convert);
 		Map<String, Object> fromJson = new Ason().fromJson(convert);
 		if (!NullCheck.isNullOrEmpty(fromJson)) {
 			Object uriObj = fromJson.get("uri");
@@ -89,10 +118,12 @@ final class Admin {
 			if (uriObj != null && nameObj != null && locObj != null && typeObj != null) {
 				Route route = getRoute(uriObj.toString(), nameObj.toString());
 				if (route == null) {
-					if( typeObj.toString().equals("browser")){
-						RequestUtil.addProxyRouteRuntime(nameObj.toString(), "ALL", uriObj.toString(), null, locObj.toString(), Configuration.routes, null);
-					}else{
-						RequestUtil.addProxyRouteRuntime(nameObj.toString(), "ALL", uriObj.toString(), locObj.toString(), null, Configuration.routes, null);
+					if (typeObj.toString().equals("browser")) {
+						RequestUtil.addProxyRouteRuntime(nameObj.toString(), "ALL", uriObj.toString(), null,
+								locObj.toString(), Configuration.routes, null);
+					} else {
+						RequestUtil.addProxyRouteRuntime(nameObj.toString(), "ALL", uriObj.toString(),
+								locObj.toString(), null, Configuration.routes, null);
 					}
 					StringBuffer buf = getAllActiveRoutes();
 					response.append(buf.toString());
@@ -105,18 +136,19 @@ final class Admin {
 		}
 		response.setResponseCode(304);
 	}
-	
+
 	@Path(value = "/__admin/routes", httpMethod = HttpMethod.PUT)
 	static void disableRoute() throws IOException, ScriptException {
 		Response response = StaticRef.getResponse();
 		Request request = StaticRef.getRequest();
-		
-		if(!isOriginateFromAdminPage(request)){
+
+		if (!isOriginateFromAdminPage(request)) {
 			response.setResponseCode(401);
 			return;
 		}
-		
+
 		String convert = RequestUtil.convert(request.getBody());
+		logger.debug("disable/enable route json -> {}", convert);
 		Map<String, Object> fromJson = new Ason().fromJson(convert);
 		if (!NullCheck.isNullOrEmpty(fromJson)) {
 			Object uriObj = fromJson.get("uri");
@@ -147,7 +179,7 @@ final class Admin {
 	static void allRoutes() throws IOException {
 		Response response = StaticRef.getResponse();
 		Request request = StaticRef.getRequest();
-		if(!isOriginateFromAdminPage(request)){
+		if (!isOriginateFromAdminPage(request)) {
 			response.setResponseCode(401);
 			return;
 		}
@@ -162,7 +194,7 @@ final class Admin {
 	static void allApps() throws IOException {
 		Response response = StaticRef.getResponse();
 		Request request = StaticRef.getRequest();
-		if(!isOriginateFromAdminPage(request)){
+		if (!isOriginateFromAdminPage(request)) {
 			response.setResponseCode(401);
 			return;
 		}
@@ -180,7 +212,7 @@ final class Admin {
 		response.putHeader("Content-Type", "application/json");
 		response.setResponseCode(200);
 	}
-	
+
 	static Route getRoute(String uri, String method) {
 		for (Route route : Configuration.routes) {
 			if (route.uri.equals(uri) && route.httpMethod.toString().equals(method))
@@ -234,7 +266,7 @@ final class Admin {
 	}
 
 	@Path(value = "/*", httpMethod = HttpMethod.ALL)
-	static void handle404(Request request,Response res) throws Exception {
+	static void handle404(Request request, Response res) throws Exception {
 		if (Configuration.ADMIN_MODULE_ENABLED && request.getUri().equals("/")) {
 			res.sendRedirect("/admin/Admin.html");
 		} else {
@@ -260,6 +292,10 @@ final class Admin {
 	static void hotundeploy() throws IOException, ClassNotFoundException {
 		Request request = StaticRef.getRequest();
 		Response res = StaticRef.getResponse();
+		if (!isOriginateFromAdminPage(request)) {
+			res.setResponseCode(401);
+			return;
+		}
 		Collection<String> collection = request.getParams().get("name");
 		if (NullCheck.isNullOrEmpty(collection)) {
 			res.setResponseCode(400);
@@ -287,6 +323,7 @@ final class Admin {
 
 		Request request = StaticRef.getRequest();
 		Response response = StaticRef.getResponse();
+		
 		if (!request.isMultipart()) {
 			response.setResponseCode(400);
 			response.append("Invalid Request for hot deploy!");
@@ -297,14 +334,21 @@ final class Admin {
 		final MultiPart namePart = multiParts.get("name");
 		final MultiPart scanpackagesPart = multiParts.get("scanpackages");
 		final MultiPart distPart = multiParts.get("dist");
-
+		final MultiPart hashPart = multiParts.get(HASH_HEADER);
+		
+		String clientHash = RequestUtil.convert(hashPart.getBody());
+		if(!isHashMatching(clientHash)){
+			response.setResponseCode(401);
+			return;
+		}
+		
 		if (namePart != null && scanpackagesPart != null && distPart != null) {
 			final String name = RequestUtil.convert(namePart.getBody());
 			final String scanpackages = RequestUtil.convert(scanpackagesPart.getBody());
+			logger.debug("X-HASH code sent by req :: {}",clientHash);
 			if (!NullCheck.isNullOrEmpty(name) && !NullCheck.isNullOrEmpty(scanpackages)
 					&& !NullCheck.isNullOrEmpty(distPart.getBody()) && RequestUtil.validUrl.matcher(name).matches()) {
 
-				
 				App hd = new App(name, scanpackages);
 				App dup = allHotDeployedArtifacts.remove(name);
 				if (dup != null) {
@@ -312,7 +356,7 @@ final class Admin {
 				}
 				try {
 					boolean deploy = hd.deploy(scanpackagesPart, distPart);
-					if(deploy)
+					if (deploy)
 						response.setResponseCode(201);
 					else
 						response.setResponseCode(304);
@@ -411,7 +455,7 @@ final class App {
 		try {
 			dynamicClassLoader.close();
 		} catch (IOException e) {
-			logger.error("Error closing classloader("+name+") :: " , e);
+			logger.error("Error closing classloader(" + name + ") :: ", e);
 		}
 		RequestUtil.del(rootDir);
 		Admin.allHotDeployedArtifacts.remove(name);

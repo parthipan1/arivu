@@ -8,9 +8,11 @@ import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.channels.SelectionKey;
+import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -298,7 +300,7 @@ class ProxyRoute extends Route {
 		}
 	}
 
-	final void handleFile(Response res, String fileLoc, File file) throws IOException {
+	void handleFile(Response res, String fileLoc, File file) throws IOException {
 		if (!NullCheck.isNullOrEmpty(Configuration.defaultMimeType)) {
 			String[] split = file.getName().split("\\.(?=[^\\.]+$)");
 			final String ext = "." + split[split.length - 1];
@@ -407,6 +409,7 @@ class ProxyRoute extends Route {
 
 }
 final class AdminRoute extends ProxyRoute {
+	static final Map<String,String> authTokens = new Amap<>();
 	AdminRoute() {
 		super("adminSite", null, Configuration.ADMIN_LOC, "/admin", HttpMethod.ALL, null, null, false, Configuration.defaultResponseHeader);
 	}
@@ -414,6 +417,22 @@ final class AdminRoute extends ProxyRoute {
 	@Override
 	void handleDirectory(Request req, Response res, File f) throws IOException {
 		res.sendRedirect("/admin/Admin.html");
+	}
+
+	@Override
+	void handleFile(Response res, String fileLoc, File file) throws IOException {
+		super.handleFile(res, fileLoc, file);
+		if(fileLoc.endsWith("Admin.html")){
+			SelectionKey key = StaticRef.getSelectionKey();
+			if (key!=null) {
+				InetAddress remoteHostAddress = ((SocketChannel) key.channel()).socket().getInetAddress();
+				if (remoteHostAddress!=null) {
+					String keyv = remoteHostAddress.toString();
+					authTokens.put(keyv, String.valueOf(System.currentTimeMillis()));
+				}
+			}
+		}
+		
 	}
 	
 }

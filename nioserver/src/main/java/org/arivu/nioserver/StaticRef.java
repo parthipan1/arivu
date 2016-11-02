@@ -1,5 +1,6 @@
 package org.arivu.nioserver;
 
+import java.nio.channels.SelectionKey;
 import java.util.Map;
 
 import org.arivu.datastructure.Amap;
@@ -12,6 +13,7 @@ public final class StaticRef {
 	private static final String RESPONSE_TOKEN = "res";
 	private static final String REQUEST_TOKEN = "req";
 	private static final String ASYNC_CTX_TOKEN = "ctx";
+	private static final String SELECT_KEY_TOKEN = "selk";
 	private static final Threadlocal<Map<String,Object>> mdc = new Threadlocal<Map<String,Object>>(new Factory<Map<String,Object>>(){
 
 		@Override
@@ -21,12 +23,13 @@ public final class StaticRef {
 		
 	});
 	
-	static void set(Request req,Response res, Route route, AsynContext actx){
+	static void set(Request req,Response res, Route route, AsynContext actx, SelectionKey key){
 		Map<String, Object> map = mdc.get(null);
 		map.put(REQUEST_TOKEN, req);
 		map.put(RESPONSE_TOKEN, res);
 		map.put(ROUTE_TOKEN, route);
 		map.put(ASYNC_CTX_TOKEN, actx);
+		map.put(SELECT_KEY_TOKEN, key);
 	}
 
 	static void clear(){
@@ -38,7 +41,6 @@ public final class StaticRef {
 		if(map!=null) return (Request) map.get(REQUEST_TOKEN);
 		return null;
 	}
-
 
 	public static Response getResponse(){
 		Map<String, Object> map = mdc.get();
@@ -55,6 +57,12 @@ public final class StaticRef {
 	public static AsynContext getAsynContext(){
 		Map<String, Object> map = mdc.get();
 		if(map!=null) return (AsynContext) map.get(ASYNC_CTX_TOKEN);
+		return null;
+	}
+
+	public static SelectionKey getSelectionKey(){
+		Map<String, Object> map = mdc.get();
+		if(map!=null) return (SelectionKey) map.get(SELECT_KEY_TOKEN);
 		return null;
 	}
 }

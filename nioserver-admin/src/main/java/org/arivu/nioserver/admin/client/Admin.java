@@ -16,7 +16,6 @@ import com.google.gwt.http.client.RequestCallback;
 import com.google.gwt.http.client.RequestException;
 import com.google.gwt.http.client.Response;
 import com.google.gwt.http.client.URL;
-import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.user.client.ui.Anchor;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.DialogBox;
@@ -28,11 +27,13 @@ import com.google.gwt.user.client.ui.FormPanel;
 import com.google.gwt.user.client.ui.FormPanel.SubmitCompleteEvent;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.HasAlignment;
+import com.google.gwt.user.client.ui.Hidden;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.Image;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.ListBox;
 import com.google.gwt.user.client.ui.RootLayoutPanel;
+import com.google.gwt.user.client.ui.ScrollPanel;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
 
@@ -41,8 +42,10 @@ import com.google.gwt.user.client.ui.VerticalPanel;
  */
 public class Admin implements EntryPoint {
 
+	private static final String HASH_HEADER = "X-HASH";
 	private static final String H1_ARIVU_NIO_SERVER_H1 = "<H1>Arivu NIO Server</H1>";//
 	private VerticalPanel mainPanel = new VerticalPanel();
+	private ScrollPanel scrollTablePanel = new ScrollPanel();
 	private FlexTable routesFlexTable = new FlexTable();
 	private HorizontalPanel addTitlePanel = new HorizontalPanel();
 	private HorizontalPanel addPanel = new HorizontalPanel();
@@ -73,11 +76,12 @@ public class Admin implements EntryPoint {
 	private Image stopImage = new Image("images/stop.png");
 	private Label titleLabel = new Label();
 	
+	private long loadTime = 0;
 	/**
 	 * This is the entry point method.
 	 */
 	public void onModuleLoad() {
-		
+		loadTime = new Date().getTime();
 		headerPanel.add(iconImage);
 		headerPanel.add(titleLabel);
 		headerPanel.add(stopImage);
@@ -108,7 +112,7 @@ public class Admin implements EntryPoint {
 	void init() {
 		// Add styles to elements in the stock list table.
 		routesFlexTable.addStyleName("watchList");
-
+		scrollTablePanel.addStyleName("watchList");
 		// Routes Table
 		routesFlexTable.getRowFormatter().addStyleName(0, "watchListHeader");
 		routesFlexTable.setText(0, 0, "Name");
@@ -132,7 +136,8 @@ public class Admin implements EntryPoint {
 		addTitlePanel.add(new Label(" "));
 		
 		// Assemble Main panel.
-		mainPanel.add(routesFlexTable);
+		scrollTablePanel.add(routesFlexTable);
+		mainPanel.add(scrollTablePanel);
 		mainPanel.add(addTitlePanel);
 		mainPanel.add(addPanel);
 		mainPanel.addStyleName("orangeOutline"); 
@@ -142,6 +147,7 @@ public class Admin implements EntryPoint {
 		
 		// Associate the Main panel with the HTML host page.
 //		RootPanel.get("pathList").add(mainPanel);
+		
 		contentPanel.add(mainPanel);
 		// Move cursor focus to the input box.
 		routeNameTextBox.setFocus(true);
@@ -190,7 +196,7 @@ public class Admin implements EntryPoint {
 	void undeployApp(String name) {
 		String url = "/__admin/undeploy?name="+name;
 		RequestBuilder builder = new RequestBuilder(RequestBuilder.GET, URL.encode(url));
-
+		builder.setHeader(HASH_HEADER, String.valueOf(loadTime) );
 		try {
 			builder.sendRequest(null, new RequestCallback() {
 				public void onError(Request request, Throwable exception) {
@@ -214,7 +220,7 @@ public class Admin implements EntryPoint {
 	void refreshAppsList() {
 		String url = "/__admin/apps";
 		RequestBuilder builder = new RequestBuilder(RequestBuilder.GET, URL.encode(url));
-
+		builder.setHeader(HASH_HEADER, String.valueOf(loadTime) );
 		try {
 			builder.sendRequest(null, new RequestCallback() {
 				public void onError(Request request, Throwable exception) {
@@ -257,7 +263,6 @@ public class Admin implements EntryPoint {
 	      // set form to use the POST method, and multipart MIME encoding.
 	      form.setEncoding(FormPanel.ENCODING_MULTIPART);
 	      form.setMethod(FormPanel.METHOD_POST);
-	    
 	      fileUpload.setName("dist");
 	      fileUpload.getElement().setAttribute("accept", ".zip");
 	      
@@ -273,6 +278,12 @@ public class Admin implements EntryPoint {
 	  	  deployPanel.add(appNameTextBox);
 	  	  deployPanel.add(appPackageTextBox);
 	  	  
+		  Hidden hiddenField = new Hidden();
+		  hiddenField.setName( HASH_HEADER );
+		  hiddenField.setValue( String.valueOf(loadTime) );
+//		  form.add( field );
+		  deployPanel.add(hiddenField);
+		  
 	      //add a label
 	      deployPanel.add(selectLabel);
 	      //add fileUpload widget
@@ -316,7 +327,6 @@ public class Admin implements EntryPoint {
 		routeRequest(RequestBuilder.GET,null);
 	}
 
-	@SuppressWarnings("deprecation")
 	void updateTable(JsArray<Data> routes) {
 		
 		for (int i = allRoutes.size()-1; i > 1; i--) {
@@ -369,17 +379,6 @@ public class Admin implements EntryPoint {
 			routesFlexTable.getCellFormatter().addStyleName(row, 3, "watchListColumn");
 			routesFlexTable.getCellFormatter().addStyleName(row, 4, "watchListRemoveColumn");
 		}
-
-//		mainPanel.remove(routesFlexTable);
-//		mainPanel.add(routesFlexTable);
-		// Display timestamp showing last refresh.
-//		lastUpdatedLabel.setText("Last update : " + DateTimeFormat.getMediumDateTimeFormat().format(new Date()));
-
-//		mainPanel.removeFromParent();
-//		RootPanel.get("pathList").remove(mainPanel);
-//		RootPanel.get("pathList").add(mainPanel);
-		// Clear any errors.
-		// errorMsgLabel.setVisible(false);
 
 	}
 
@@ -451,46 +450,13 @@ public class Admin implements EntryPoint {
 	}
 
 	protected void routeRequest(RequestBuilder.Method method,String body) {
-//		final DialogBox dialogBox = new DialogBox();
-//		dialogBox.setText("Remote Procedure Call");
-//		dialogBox.setAnimationEnabled(true);
-//		final Button closeButton = new Button("Close");
-//		// We can set the id of a widget by accessing its Element
-//		closeButton.getElement().setId("closeButton");
-//		final Label textToServerLabel = new Label();
-//		final HTML serverResponseLabel = new HTML();
-//		VerticalPanel dialogVPanel = new VerticalPanel();
-//		dialogVPanel.addStyleName("dialogVPanel");
-//		dialogVPanel.add(new HTML("<b>Sending name to the server:</b>"));
-//		dialogVPanel.add(textToServerLabel);
-//		dialogVPanel.add(new HTML("<br><b>Server replies:</b>"));
-//		dialogVPanel.add(serverResponseLabel);
-//		dialogVPanel.setHorizontalAlignment(VerticalPanel.ALIGN_RIGHT);
-//		dialogVPanel.add(closeButton);
-//		dialogBox.setWidget(dialogVPanel);
-//
-//		closeButton.addClickHandler(new ClickHandler() {
-//
-//			@Override
-//			public void onClick(ClickEvent event) {
-//				dialogBox.hide();
-//			}
-//		});
-
 		String url = "/__admin/routes";
 		RequestBuilder builder = new RequestBuilder(method, URL.encode(url));
-
+		builder.setHeader(HASH_HEADER, String.valueOf(loadTime) );
 		try {
 			// Request request =
 			builder.sendRequest(body, new RequestCallback() {
 				public void onError(Request request, Throwable exception) {
-					// Couldn't connect to server (could be timeout, SOP
-					// violation, etc.)
-//					dialogBox.setText("Server Call - Failure " + exception.toString());
-//					serverResponseLabel.addStyleName("serverResponseLabelError");
-//					serverResponseLabel.setHTML(SERVER_ERROR);
-//					dialogBox.center();
-//					closeButton.setFocus(true);
 					alertWidget("Server error",
 			                "Error :: "+exception.toString()).center();
 				}
@@ -513,11 +479,6 @@ public class Admin implements EntryPoint {
 
 					} else {
 						// Handle the error. Can get the status text from
-//						dialogBox.setText("Remote Procedure Call - Failure " + response.getStatusText());
-//						serverResponseLabel.addStyleName("serverResponseLabelError");
-//						serverResponseLabel.setHTML(SERVER_ERROR);
-//						dialogBox.center();
-//						closeButton.setFocus(true);
 						alertWidget("Server error",
 				                "Error :: "+response.getStatusText()).center();
 					}

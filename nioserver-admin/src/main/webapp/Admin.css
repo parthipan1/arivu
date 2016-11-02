@@ -73,6 +73,7 @@ h1 {
   border: 1px solid silver;
   padding: 2px;
   margin-bottom:6px;
+  width: 100%;
 }
 
 /* list fields */
@@ -102,6 +103,7 @@ img {
 /* Add panel */
 .addPanel {
   margin: 10px 0px 15px 0px;
+  width: 100%;
 }
 
 /*  list, the Remove button */
