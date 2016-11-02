@@ -23,6 +23,7 @@ import javax.management.ObjectName;
 
 import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
+import org.arivu.datastructure.DoublyLinkedSet;
 import org.arivu.log.appender.AppenderProperties;
 import org.arivu.log.appender.Appenders;
 import org.arivu.log.converter.StringConverter;
@@ -1274,21 +1275,22 @@ public final class LightningLogger implements Logger {
 	@SuppressWarnings("unchecked")
 	private static Collection<Appender> getAppenders(Map<String, Object> json, String defaultAppenders)
 			throws IOException {
-		Collection<String> split = null;
+		final DoublyLinkedSet<String> appenderSet = new DoublyLinkedSet<>();
 
 		if (json != null) {
 			Object object = get(json, "appenders", null);
 			if (object instanceof Collection) {
-				split = (Collection<String>) object;
+				appenderSet.addAll((Collection<String>) object);
 			} else {
-				split = (Collection<String>) convert((Map<String, String>) get(json, "appenders", null));
+				appenderSet.addAll((Collection<String>) convert((Map<String, String>) get(json, "appenders", null)));
 			}
 		}
-		if (NullCheck.isNullOrEmpty(split))
-			split = Arrays.asList(defaultAppenders.split(","));
+		if (NullCheck.isNullOrEmpty(appenderSet)){
+			appenderSet.addAll(Arrays.asList(defaultAppenders.split(",")));
+		}
 
-		Collection<Appender> lws = new DoublyLinkedList<Appender>();
-		for (String s : split) {
+		final Collection<Appender> lws = new DoublyLinkedList<Appender>();
+		for (String s : appenderSet) {
 			Appenders valueOf = Appenders.valueOf(s);
 			if (valueOf != null) {
 				lws.add(valueOf.get(LOG_FILE));
@@ -1296,6 +1298,7 @@ public final class LightningLogger implements Logger {
 				addCustomAppender(lws, s);
 			}
 		}
+		appenderSet.clear();
 
 		return lws;
 	}
