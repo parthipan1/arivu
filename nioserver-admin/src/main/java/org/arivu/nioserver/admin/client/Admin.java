@@ -187,9 +187,10 @@ public class Admin implements EntryPoint {
 	Label appNameLabel = new Label(" App Name:");
 	Label packagesLabel = new Label("Packages:");
 	Hidden hiddenField = new Hidden();
+	HTML deployTitleLabel = new HTML("<h4>&nbsp;Upload New App:</h4>");
 	
 	void addDeployPanel(){
-		  deployTitlePanel.add(new HTML("<h4>&nbsp;Upload New App:</h4>"));
+		  deployTitlePanel.add(deployTitleLabel);
 		  mainPanel.add(deployTitlePanel);
 	      //receiving operation.
 	      fileUploadFormPanel.setAction("/__admin/deploy");

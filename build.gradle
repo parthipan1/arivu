@@ -20,6 +20,15 @@ allprojects {
   		into "../libs"
   	}
   }
+  /*
+  build.dependsOn{
+  	new File("logs").mkdirs()
+  }
+  
+  clean {
+  	del("logs")
+  }
+  */
 }
 
 subprojects {
