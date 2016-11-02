@@ -124,7 +124,7 @@ abstract class AbstractPool<T> implements Pool<T> {
 			MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
 			beanNameStr = "org.arivu.pool:type=" + klass.getSimpleName() + "." + (beanInstanceCnt++);
 			mbs.registerMBean(getResourcePoolMXBean(), new ObjectName(beanNameStr));
-			logger.debug(" Jmx bean beanName " + beanNameStr + " registered!");
+			logger.debug(" Jmx bean beanName {} registered!",beanNameStr);
 		} catch (InstanceAlreadyExistsException e) {
 			registerMXBean();
 		} catch (Exception e) {
@@ -142,22 +142,19 @@ abstract class AbstractPool<T> implements Pool<T> {
 
 			@Override
 			public void setMaxReuseCount(int cnt) {
-				logger.debug(" Jmx bean beanName " + beanNameStr + " setMaxReuseCount new value " + cnt + " old value "
-						+ maxReuseCount);
+				logger.debug(" Jmx bean beanName {} setMaxReuseCount new value {} old value {}", beanNameStr, cnt, maxReuseCount);
 				that.setMaxReuseCount(cnt);
 			}
 
 			@Override
 			public void setMaxPoolSize(int size) {
-				logger.debug(" Jmx bean beanName " + beanNameStr + " setMaxPoolSize new value " + size + " old value "
-						+ maxPoolSize);
+				logger.debug(" Jmx bean beanName {} setMaxPoolSize new value {} old value {}", beanNameStr, size, maxPoolSize);
 				that.setMaxPoolSize(size);
 			}
 
 			@Override
 			public void setLifeSpan(int time) {
-				logger.debug(" Jmx bean beanName " + beanNameStr + " setLifeSpan new value " + time + " old value "
-						+ lifeSpan);
+				logger.debug(" Jmx bean beanName {} setLifeSpan new value {} old value {}", beanNameStr, time, lifeSpan);
 				that.setLifeSpan(time);
 			}
 
@@ -178,7 +175,7 @@ abstract class AbstractPool<T> implements Pool<T> {
 
 			@Override
 			public void clear() throws Exception {
-				logger.debug(" Jmx bean beanName " + beanNameStr + " clear! ");
+				logger.debug(" Jmx bean beanName {} clear! ", beanNameStr);
 				that.clear();
 			}
 
@@ -189,8 +186,7 @@ abstract class AbstractPool<T> implements Pool<T> {
 
 			@Override
 			public void setIdleTimeout(int timeout) {
-				logger.debug(" Jmx bean beanName " + beanNameStr + " setIdleTimeout new value " + timeout
-						+ " old value " + idleTimeout);
+				logger.debug(" Jmx bean beanName {} setIdleTimeout new value {} old value {}", beanNameStr, timeout, idleTimeout);
 				that.setIdleTimeout(timeout);
 			}
 
@@ -201,8 +197,7 @@ abstract class AbstractPool<T> implements Pool<T> {
 
 			@Override
 			public void setOrphanedTimeout(long oTimeout) {
-				logger.debug(" Jmx bean beanName " + beanNameStr + " setOrphanedTimeout new value " + oTimeout
-						+ " old value " + that.orphanedTimeout);
+				logger.debug(" Jmx bean beanName {} setOrphanedTimeout new value {} old value {}", beanNameStr, oTimeout, that.orphanedTimeout);
 				that.orphanedTimeout = oTimeout;
 			}
 		};
@@ -302,8 +297,7 @@ abstract class AbstractPool<T> implements Pool<T> {
 		final State<T> state = new State<T>(create);
 //		state.dll =	list.addList(state);
 		list.add(state);
-		logger.debug("Created new Resource " + state.t.hashCode() + " total(" + list.size() + "," + maxPoolSize
-				+ ")maxPoolSize");//
+		logger.debug("Created new Resource {} total({},{})maxPoolSize", state.t.hashCode(), list.size(), maxPoolSize);//
 		return state;
 	}
 
@@ -350,7 +344,7 @@ abstract class AbstractPool<T> implements Pool<T> {
 		if (beanNameStr != null) {
 			try {
 				ManagementFactory.getPlatformMBeanServer().unregisterMBean(new ObjectName(beanNameStr));
-				logger.debug("Unregister Jmx bean " + beanNameStr);
+				logger.debug("Unregister Jmx bean {}" , beanNameStr);
 			} catch (Exception e) {
 				logger.error("Failed with Error::", e);
 			}
@@ -387,7 +381,7 @@ abstract class AbstractPool<T> implements Pool<T> {
 							public Object invoke(final Object proxy, final Method method, final Object[] args)
 									throws Throwable {
 								final String methodName = method.getName();
-								logger.debug("Proxy methodName :: " + methodName + " " + state.t.hashCode());
+								logger.debug("Proxy methodName :: {} {}" , methodName, state.t.hashCode());
 								if ("close".equals(methodName)) {
 									state.released.set(true);
 									releaseLink(state);
@@ -410,7 +404,7 @@ abstract class AbstractPool<T> implements Pool<T> {
 			}
 			return state.proxy;
 		} else {
-			logger.debug("reuse resource! " + state.t.hashCode());
+			logger.debug("reuse resource! {}" , state.t.hashCode());
 			state.inc(IncType.GET);
 			return state.t;
 		}
@@ -423,13 +417,13 @@ abstract class AbstractPool<T> implements Pool<T> {
 	 */
 	void releaseLink(final State<T> state) {
 		final boolean checkExp = state.checkExp(list.size(), this);// checkExp(lr.t);
-		logger.debug("releaseLink resource! " + state.t.hashCode() + " checkExp " + checkExp);
+		logger.debug("releaseLink resource! {} checkExp {}", state.t.hashCode(), checkExp);
 		if (checkExp) {
 			closeExpConn(state);
 		} else {
 			factory.clear(state.t);
 			state.inc(IncType.RELEASE);
-			logger.debug("Released resource! " + state.t.hashCode());
+			logger.debug("Released resource! {}", state.t.hashCode());
 			state.available.set(true);
 		}
 		signalOnRelease();
@@ -440,7 +434,7 @@ abstract class AbstractPool<T> implements Pool<T> {
 	 */
 	final void closeExpConn(final State<T> state) {
 		if (state != null) {
-			logger.debug("Closed resource! " + state.t.hashCode());
+			logger.debug("Closed resource! {}", state.t.hashCode());
 			
 			if(state.dll==null)
 				list.remove(state);

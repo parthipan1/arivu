@@ -6,7 +6,7 @@ import java.util.Map;
 
 public interface Request {
 
-	Map<String, String> getHeaders();
+	Map<String, List<Object>> getHeaders();
 
 	String getUri();
 

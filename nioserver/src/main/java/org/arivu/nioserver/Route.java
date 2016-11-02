@@ -8,8 +8,11 @@ import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -18,6 +21,7 @@ import java.util.Set;
 import java.util.concurrent.locks.Lock;
 
 import org.arivu.datastructure.Amap;
+import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.datastructure.Threadlocal;
 import org.arivu.utils.NullCheck;
 import org.arivu.utils.lock.AtomicWFReentrantLock;
@@ -27,6 +31,7 @@ import org.slf4j.LoggerFactory;
 class Route {
 	private static final Logger logger = LoggerFactory.getLogger(Route.class);
 
+	String name;
 	final String uri;
 	final org.arivu.nioserver.HttpMethod httpMethod;
 	Class<?> klass;
@@ -35,27 +40,31 @@ class Route {
 	final MethodInvoker invoker;
 	final RequestUriTokens rut;
 	Threadlocal<Object> tl;
-	Map<String, Object> headers = null;
+	Map<String, List<Object>> headers = null;
+	
+	volatile boolean active = true;
 	
 	Route(String uri, org.arivu.nioserver.HttpMethod httpMethod) {
-		this(uri, httpMethod, null, null, false);
+		this(null, uri, httpMethod, null, null, false);
 	}
 
 	/**
+	 * @param name TODO
 	 * @param uri
 	 * @param httpMethod
 	 * @param httpMethod
 	 * @param klass
 	 */
-	Route(String uri, org.arivu.nioserver.HttpMethod httpMethod, Class<?> klass, Method method, boolean isStatic) {
+	Route(String name, String uri, org.arivu.nioserver.HttpMethod httpMethod, Class<?> klass, Method method, boolean isStatic) {
 		super();
-		this.headers = new Amap<String, Object>(Configuration.defaultResponseHeader);
+		this.name = name;
 		this.uri = uri;
 		this.httpMethod = httpMethod;
 		this.klass = klass;
 		this.method = method;
 		this.isStatic = isStatic;
 		if (klass != null) {
+			this.headers = new Amap<String, List<Object>>(Configuration.defaultResponseHeader);
 			int is = uri.indexOf('{');
 			if (is == -1) {
 				this.invoker = RequestUtil.getMethodInvoker(method);
@@ -100,7 +109,6 @@ class Route {
 
 	public void handle(Request req, Response res) {
 		try {
-			StaticRef.set(req, res, this);
 			this.invoker.handle(req, res, isStatic, method, tl, this.rut);
 		} catch (Throwable e) {
 			logger.error("Failed in route " + this + " :: ", e);
@@ -110,11 +118,20 @@ class Route {
 			} catch (IOException e1) {
 				logger.error("Failed in route " + this + " :: ", e1);
 			}
-		}finally {
-			StaticRef.clear();
 		}
 	}
 
+	void disable(){
+		active = false;
+		if(tl!=null){
+			tl.clearAll();
+		}
+	}
+	
+	void enable(){
+		active = true;
+	}
+	
 	void close(){
 		if(tl!=null){
 			tl.close();
@@ -160,13 +177,12 @@ class Route {
 
 }
 
-final class ProxyRoute extends Route {
+class ProxyRoute extends Route {
 	private static final Logger logger = LoggerFactory.getLogger(ProxyRoute.class);
 
-	String name;
 	String proxy_pass;
 	String dir;
-	Map<String,WeakReference<ByteData>> files;
+	Map<String,FileData> files;
 	Threadlocal<HttpMethodCall> proxyTh;
 
 	/**
@@ -177,19 +193,18 @@ final class ProxyRoute extends Route {
 	 * @param isStatic
 	 */
 	ProxyRoute(String name, String proxy_pass, String dir, String uri, org.arivu.nioserver.HttpMethod httpMethod,
-			Class<?> klass, Method method, boolean isStatic, Map<String, Object> defaultResponseHeader) {
-		super(uri, httpMethod, klass, method, isStatic);
+			Class<?> klass, Method method, boolean isStatic, Map<String, List<Object>> defaultResponseHeader) {
+		super(null, uri, httpMethod, klass, method, isStatic);
 		this.name = name;
 		this.proxy_pass = proxy_pass;
 		this.dir = dir;
-		this.headers = new Amap<String, Object>(defaultResponseHeader);
+		this.headers = new Amap<String, List<Object>>(defaultResponseHeader);
 		if (NullCheck.isNullOrEmpty(proxy_pass) && NullCheck.isNullOrEmpty(dir)) {
 			throw new IllegalArgumentException("Invalid config " + name + " !");
 		} else if (!NullCheck.isNullOrEmpty(proxy_pass) && !NullCheck.isNullOrEmpty(dir)) {
 			throw new IllegalArgumentException("Invalid config " + name + " !");
 		} else if (!NullCheck.isNullOrEmpty(dir)) {
-//			files = new MemoryMappedFiles();
-			files = new Amap<String,WeakReference<ByteData>>();
+			files = new Amap<String,FileData>();
 		} else if (!NullCheck.isNullOrEmpty(proxy_pass)) {
 			this.proxyTh = new Threadlocal<HttpMethodCall>(new Threadlocal.Factory<HttpMethodCall>() {
 
@@ -211,10 +226,10 @@ final class ProxyRoute extends Route {
 	}
 
 	@Override
-	public void handle(Request req, Response res) {
+	final public void handle(Request req, Response res) {
 		try {
 			if (!NullCheck.isNullOrEmpty(dir)) {
-				handleDirectory(req, res);
+				handleBrowser(req, res);
 			} else {
 				handleProxy(req, res);
 			}
@@ -229,11 +244,11 @@ final class ProxyRoute extends Route {
 		}
 	}
 
-	void handleProxy(Request req, Response res) throws IOException {
-		String queryStr = URLDecoder.decode(req.getUriWithParams().substring(req.getUriWithParams().indexOf("?")),
+	final void handleProxy(Request req, Response res) throws IOException {
+		int indexOf = Math.max(req.getUri().length(), req.getUriWithParams().indexOf("?")) ;
+		String queryStr = URLDecoder.decode(req.getUriWithParams().substring(indexOf),
 				RequestUtil.ENC_UTF_8);
 		String loc = this.proxy_pass + req.getUri().substring(this.uri.length()) + queryStr;
-		// System.out.println("loc :: " + loc);
 		HttpMethodCall httpMethodCall = proxyTh.get(null);
 		ProxyRes pres = null;
 		switch (req.getMethod()) {
@@ -273,75 +288,99 @@ final class ProxyRoute extends Route {
 
 	final Lock readLock = new AtomicWFReentrantLock();
 	
-	void handleDirectory(Request req, Response res) throws IOException {
-		String file = this.dir + URLDecoder.decode(req.getUri().substring(this.uri.length()), RequestUtil.ENC_UTF_8);
-		File f = new File(file);
-		if (!f.exists()) {
+	final void handleBrowser(Request req, Response res) throws IOException {
+		String fileLoc = this.dir + URLDecoder.decode(req.getUri().substring(this.uri.length()), RequestUtil.ENC_UTF_8);
+		File file = new File(fileLoc);
+		if (!file.exists()) {
 			res.setResponseCode(404);
-		} else if (f.isDirectory()) {
-			boolean endsWith = req.getUri().endsWith("/");
-			String pathSep = "";
-			if (!endsWith)
-				pathSep = req.getUri() + "/";
-
-			File[] listFiles = f.listFiles();
-			StringBuffer buf = new StringBuffer("<html><body>");
-			buf.append("<a href=\"").append("..").append("\" >").append("..").append("</a>").append("<br>");
-			for (File f1 : listFiles) {
-				if (f1.isDirectory())
-					buf.append("<a href=\"").append(pathSep).append(f1.getName()).append("/").append("\" >")
-							.append(f1.getName()).append("</a>").append("<br>");
-				else
-					buf.append("<a href=\"").append(pathSep).append(f1.getName()).append("\" >").append(f1.getName())
-							.append("</a>").append("&ensp;").append(f1.length()).append("&nbsp;bytes").append("<br>");
-			}
-			buf.append("</body></html>");
-			res.setResponseCode(200);
-			res.append(buf.toString());
-			res.putHeader("Content-Type", "text/html;charset=UTF-8");
-			res.putHeader("Content-Length", buf.length());
+		} else if (file.isDirectory()) {
+			handleDirectory(req, res, file);
 		} else {
-			if (!NullCheck.isNullOrEmpty(Configuration.defaultMimeType)) {
-				String[] split = f.getName().split("\\.(?=[^\\.]+$)");
-				final String ext = "." + split[split.length - 1];
-				Map<String, Object> map = Configuration.defaultMimeType.get(ext.toLowerCase(Locale.getDefault()));
-				if (map != null) {
-					Object typeObj = map.get("type");
-					if (typeObj != null) 
-						res.putHeader("Content-Type", typeObj);
-					
-				}
-			}
-			ByteData bytes = getWr(files.get(file)) ;//getOriginalBytes(file);
-			if (bytes == null) {
-				readLock.lock();
-				bytes = getWr(files.get(file));
-				if( bytes == null ){
-					try {
-						byte[] data = RequestUtil.read(new File(file));//new byte[bb.remaining()];
-						bytes = new ByteData(data);
-						files.put(file, new WeakReference<ByteData>(bytes) );
-					} finally {
-						readLock.unlock();
-					}
-				}else{
-					readLock.unlock();
-				}
-			}
-			byte[] array = bytes.array();//bytes.array();//new byte[bytes.remaining()];
-//			bytes.get(array, 0, array.length);
-			res.append(array);
-			res.putHeader("Content-Length", array.length);
+			handleFile(res, fileLoc, file);
 		}
 	}
 
-	ByteData getWr(WeakReference<ByteData> ref){
+	void handleFile(Response res, String fileLoc, File file) throws IOException {
+		if (!NullCheck.isNullOrEmpty(Configuration.defaultMimeType)) {
+			String[] split = file.getName().split("\\.(?=[^\\.]+$)");
+			final String ext = "." + split[split.length - 1];
+			Map<String, Object> map = Configuration.defaultMimeType.get(ext.toLowerCase(Locale.getDefault()));
+			if (map != null) {
+				Object typeObj = map.get("type");
+				if (typeObj != null) 
+					res.putHeader("Content-Type", typeObj);
+				
+			}
+		}
+		ByteData bytes = getWr(files.get(fileLoc)) ;//getOriginalBytes(file);
+		if (bytes == null) {
+			readLock.lock();
+			bytes = getWr(files.get(fileLoc));
+			if( bytes == null ){
+				try {
+					byte[] data = RequestUtil.read(file);//new byte[bb.remaining()];
+					if (data!=null) {
+						bytes = new ByteData(data);
+						files.put(fileLoc, new FileData(new WeakReference<ByteData>(bytes), file));
+					}
+				} finally {
+					readLock.unlock();
+				}
+			}else{
+				readLock.unlock();
+			}
+		}
+		if (bytes != null) {
+			byte[] array = bytes.array();//bytes.array();//new byte[bytes.remaining()];
+			//			bytes.get(array, 0, array.length);
+			res.append(array);
+			res.putHeader("Content-Length", array.length);
+		}else{
+			res.setResponseCode(404);
+		}
+	}
+
+	void handleDirectory(Request req, Response res, File f) throws IOException {
+		boolean endsWith = req.getUri().endsWith("/");
+		String pathSep = "";
+		if (!endsWith)
+			pathSep = req.getUri() + "/";
+
+		File[] listFiles = f.listFiles();
+		StringBuffer buf = new StringBuffer("<html><body>");
+		buf.append("<a href=\"").append("..").append("\" >").append("..").append("</a>").append("<br>");
+		for (File f1 : listFiles) {
+			if (f1.isDirectory())
+				buf.append("<a href=\"").append(pathSep).append(f1.getName()).append("/").append("\" >")
+						.append(f1.getName()).append("</a>").append("<br>");
+			else
+				buf.append("<a href=\"").append(pathSep).append(f1.getName()).append("\" >").append(f1.getName())
+						.append("</a>").append("&ensp;").append(f1.length()).append("&nbsp;bytes").append("<br>");
+		}
+		buf.append("</body></html>");
+		res.setResponseCode(200);
+		res.append(buf.toString());
+		res.putHeader("Content-Type", "text/html;charset=UTF-8");
+		res.putHeader("Content-Length", buf.length());
+	}
+
+	final ByteData getWr(FileData ref){
 		if( ref == null ) return null;
-		else return ref.get();
+		else{
+			if(!ref.file.exists()){
+				files.remove(ref.file.getAbsolutePath());
+				return null;
+			}else if ( ref.time < ref.file.lastModified() ){
+				files.remove(ref.file.getAbsolutePath());
+				return null;
+			}else{
+				return ref.data.get();
+			}
+		} 
 	}
 	
 	@Override
-	Response getResponse(Request req) {
+	final Response getResponse(Request req) {
 		if (!NullCheck.isNullOrEmpty(dir)) {
 			return super.getResponse(req);
 		} else {
@@ -350,16 +389,69 @@ final class ProxyRoute extends Route {
 	}
 
 	@Override
-	public String toString() {
+	final void disable() {
+		super.disable();
+		if( this.files!=null ) this.files.clear();
+		if( this.proxyTh!=null ) this.proxyTh.clearAll();
+	}
+
+	@Override
+	final void close() {
+		super.close();
+		if( this.files!=null ) this.files.clear();
+		if( this.proxyTh!=null ) this.proxyTh.clearAll();
+	}
+
+	@Override
+	final public String toString() {
 		return "ProxyRoute [name=" + name + ", uri=" + uri + ", httpMethod=" + httpMethod + "]";
 	}
 
 }
+final class AdminRoute extends ProxyRoute {
+	static final Map<String,String> authTokens = new Amap<String,String>();
+	AdminRoute() {
+		super("adminSite", null, Configuration.ADMIN_LOC, "/admin", HttpMethod.ALL, null, null, false, Configuration.defaultResponseHeader);
+	}
 
+	@Override
+	void handleDirectory(Request req, Response res, File f) throws IOException {
+		res.sendRedirect("/admin/Admin.html");
+	}
+
+	@Override
+	void handleFile(Response res, String fileLoc, File file) throws IOException {
+		super.handleFile(res, fileLoc, file);
+		if(fileLoc.endsWith("Admin.html")){
+			SelectionKey key = StaticRef.getSelectionKey();
+			if (key!=null) {
+				InetAddress remoteHostAddress = ((SocketChannel) key.channel()).socket().getInetAddress();
+				if (remoteHostAddress!=null) {
+					String keyv = remoteHostAddress.toString();
+					authTokens.put(keyv, String.valueOf(System.currentTimeMillis()));
+				}
+			}
+		}
+		
+	}
+	
+}
+final class FileData{
+	final long time;
+	final WeakReference<ByteData> data;
+	final File file;
+	FileData(WeakReference<ByteData> data,File file) {
+		super();
+		this.data = data;
+		this.file = file;
+		this.time = file.lastModified();
+	}
+	
+}
 final class ProxyRes {
 	final String response;
 	final int responseCode;
-	Map<String, String> headers = new Amap<String, String>();
+	Map<String, List<Object>> headers = new Amap<String, List<Object>>();
 
 	ProxyRes(int responseCode, String response) {
 		super();
@@ -370,27 +462,27 @@ final class ProxyRes {
 }
 
 interface HttpMethodCall {
-	ProxyRes trace(String uri, Map<String, String> headers) throws IOException;
+	ProxyRes trace(String uri, Map<String, List<Object>> headers) throws IOException;
 
-	ProxyRes head(String uri, Map<String, String> headers) throws IOException;
+	ProxyRes head(String uri, Map<String, List<Object>> headers) throws IOException;
 
-	ProxyRes connect(String uri, Map<String, String> headers) throws IOException;
+	ProxyRes connect(String uri, Map<String, List<Object>> headers) throws IOException;
 
-	ProxyRes options(String uri, String body, Map<String, String> headers) throws IOException;
+	ProxyRes options(String uri, String body, Map<String, List<Object>> headers) throws IOException;
 
-	ProxyRes get(String uri, Map<String, String> headers) throws IOException;
+	ProxyRes get(String uri, Map<String, List<Object>> headers) throws IOException;
 
-	ProxyRes post(String uri, String body, Map<String, String> headers) throws IOException;
+	ProxyRes post(String uri, String body, Map<String, List<Object>> headers) throws IOException;
 
-	ProxyRes put(String uri, String body, Map<String, String> headers) throws IOException;
+	ProxyRes put(String uri, String body, Map<String, List<Object>> headers) throws IOException;
 
-	ProxyRes delete(String uri, Map<String, String> headers) throws IOException;
+	ProxyRes delete(String uri, Map<String, List<Object>> headers) throws IOException;
 }
 
 class JavaHttpMethodCall implements HttpMethodCall {
 
 	@Override
-	public ProxyRes delete(String uri, Map<String, String> headers) throws IOException {
+	public ProxyRes delete(String uri, Map<String, List<Object>> headers) throws IOException {
 		// System.out.println("DELETE "+uri);
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
@@ -402,19 +494,24 @@ class JavaHttpMethodCall implements HttpMethodCall {
 		return extractResponse(con);
 	}
 
-	private void addReqHeaders(final HttpURLConnection con, Map<String, String> headers) {
+	private void addReqHeaders(final HttpURLConnection con, Map<String, List<Object>> headers) {
 		con.setRequestProperty("User-Agent", "Java8");
 		con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
 		if (!NullCheck.isNullOrEmpty(headers)) {
-			Set<Entry<String, String>> entrySet = headers.entrySet();
-			for (Entry<String, String> e : entrySet) {
-				con.setRequestProperty(e.getKey(), e.getValue());
+			Set<Entry<String, List<Object>>> entrySet = headers.entrySet();
+			for (Entry<String, List<Object>> e : entrySet) {
+				List<Object> value = e.getValue();
+				if( !NullCheck.isNullOrEmpty(value) ){
+					for(Object o:value){
+						con.setRequestProperty(e.getKey(), o.toString());
+					}
+				}
 			}
 		}
 	}
 
 	@Override
-	public ProxyRes get(final String uri, Map<String, String> headers) throws IOException {
+	public ProxyRes get(final String uri, Map<String, List<Object>> headers) throws IOException {
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
@@ -426,7 +523,7 @@ class JavaHttpMethodCall implements HttpMethodCall {
 	}
 
 	@Override
-	public ProxyRes post(final String uri, final String body, Map<String, String> headers) throws IOException {
+	public ProxyRes post(final String uri, final String body, Map<String, List<Object>> headers) throws IOException {
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
@@ -446,7 +543,7 @@ class JavaHttpMethodCall implements HttpMethodCall {
 	}
 
 	@Override
-	public ProxyRes put(final String uri, final String body, Map<String, String> headers) throws IOException {
+	public ProxyRes put(final String uri, final String body, Map<String, List<Object>> headers) throws IOException {
 
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
@@ -484,14 +581,19 @@ class JavaHttpMethodCall implements HttpMethodCall {
 		ProxyRes proxyRes = new ProxyRes(responseCode, response.toString());
 		for (Map.Entry<String, List<String>> entry : map.entrySet()) {
 			final String key = entry.getKey();
-			if (!NullCheck.isNullOrEmpty(key) && !NullCheck.isNullOrEmpty(entry.getValue()))
-				proxyRes.headers.put(key, entry.getValue().get(0));
+			List<String> value = entry.getValue();
+			if (!NullCheck.isNullOrEmpty(key) && !NullCheck.isNullOrEmpty(value)){
+				List<Object> ovs = new DoublyLinkedList<Object>();
+				ovs.addAll(value);
+				proxyRes.headers.put(key, ovs);
+			}
+				
 		}
 		return proxyRes;
 	}
 
 	@Override
-	public ProxyRes trace(String uri, Map<String, String> headers) throws IOException {
+	public ProxyRes trace(String uri, Map<String, List<Object>> headers) throws IOException {
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
@@ -503,7 +605,7 @@ class JavaHttpMethodCall implements HttpMethodCall {
 	}
 
 	@Override
-	public ProxyRes head(String uri, Map<String, String> headers) throws IOException {
+	public ProxyRes head(String uri, Map<String, List<Object>> headers) throws IOException {
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
@@ -515,13 +617,13 @@ class JavaHttpMethodCall implements HttpMethodCall {
 	}
 
 	@Override
-	public ProxyRes connect(String uri, Map<String, String> headers) throws IOException {
+	public ProxyRes connect(String uri, Map<String, List<Object>> headers) throws IOException {
 		// TODO Auto-generated httpMethod stub
 		return null;
 	}
 
 	@Override
-	public ProxyRes options(String uri, String body, Map<String, String> headers) throws IOException {
+	public ProxyRes options(String uri, String body, Map<String, List<Object>> headers) throws IOException {
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
@@ -570,31 +672,6 @@ enum MethodInvoker {
 				}
 			}
 			
-//			System.out.println(" rut uriParts   size "+rut.uriParts.size());
-//			for (int i = 0; i < rut.uriParts.size(); i++) {
-//				System.out.println("  uri  "+i+" "+rut.uriParts.get(i));
-//			}
-//			System.out.println(" rut tokenParts size "+rut.tokenParts.size());
-//			for (int i = 0; i < rut.tokenParts.size(); i++) {
-//				System.out.println("  token "+i+" "+rut.tokenParts.get(i));
-//			}
-			
-//			final String inUrl = req.getUri();
-//			int idx = rut.uriParts.get(0).length();
-//			for (int i = 0; i < rut.tokenParts.size(); i++) {
-//				int endIndex = inUrl.indexOf(rut.uriParts.get(i + 1), idx);
-//				if (i == rut.tokenParts.size() - 1) {
-//					if (rut.tokenParts.size() == rut.uriParts.size() + 1) {
-//						args[rut.tokenParts.get(i).indx] = inUrl.substring(idx, endIndex);
-//					} else {
-//						args[rut.tokenParts.get(i).indx] = inUrl.substring(idx, endIndex);
-//					}
-//				} else {
-//					args[rut.tokenParts.get(i).indx] = inUrl.substring(idx, endIndex);
-//				}
-//				idx = endIndex;
-//			}
-
 			if (rut.resIdx != -1)
 				args[rut.resIdx] = res;
 			if (rut.reqIdx != -1)
@@ -652,4 +729,79 @@ enum MethodInvoker {
 			method.invoke(tl.get(null), req, res);
 	}
 
+}
+/**
+ * @author P
+ *
+ */
+final class AsynContextImpl  implements AsynContext{
+	private static final Logger logger = LoggerFactory.getLogger(AsynContextImpl.class);
+	
+	boolean flag = false;
+	final SelectionKey key;
+	
+	final Request request;
+	final Response response;
+	final ConnectionState state;
+
+	final int threadId = Thread.currentThread().hashCode();
+	
+	AsynContextImpl(SelectionKey key, Request request, Response response, ConnectionState state) {
+		super();
+		this.key = key;
+		this.request = request;
+		this.response = response;
+		this.state = state;
+	}
+
+	@Override
+	public void setAsynchronousFinish(boolean flag) {
+		if( this.threadId == Thread.currentThread().hashCode() ){
+			this.flag = flag;
+		}else{
+			throw new IllegalStateException("Cannot modify ouside the created Thread!");
+		}
+	}
+
+	@Override
+	public boolean isAsynchronousFinish() {
+		return flag;
+	}
+
+	/* (non-Javadoc)
+	 * @see org.arivu.nioserver.AsynContext#getRequest()
+	 */
+	@Override
+	public Request getRequest() {
+		return request;
+	}
+
+	/* (non-Javadoc)
+	 * @see org.arivu.nioserver.AsynContext#getResponse()
+	 */
+	@Override
+	public Response getResponse() {
+		return response;
+	}
+
+	/* (non-Javadoc)
+	 * @see org.arivu.nioserver.AsynContext#getKey()
+	 */
+	@Override
+	public SelectionKey getKey() {
+		return key;
+	}
+
+	@Override
+	public void finish() {
+		if( flag && key.isValid()){
+			state.resBuff = RequestUtil.getResponseBytes(request, response);
+//			if (state.resBuff != null && state.resBuff.cl > Configuration.defaultChunkSize) {
+//				((SocketChannel) key.channel()).socket().setSoTimeout(0);
+//			}
+			logger.debug(" request :: {} response :: {}", request.toString() ,state.resBuff.cl);			
+			key.interestOps(SelectionKey.OP_WRITE);
+		}
+	}
+	
 }

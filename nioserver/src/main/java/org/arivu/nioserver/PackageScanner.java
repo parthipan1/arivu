@@ -24,19 +24,19 @@ import org.slf4j.LoggerFactory;
 class PackageScanner {
 	static final Logger logger = LoggerFactory.getLogger(PackageScanner.class);
 
-	static Collection<Route> getPaths(Collection<String> packageNames) throws ClassNotFoundException, IOException {
+	static Collection<Route> getPaths(String name, Collection<String> packageNames) throws ClassNotFoundException, IOException {
 		Collection<Route> reqPaths = new DoublyLinkedSet<Route>();
 
 		for (String pkgName : packageNames) {
-			getPaths(reqPaths, pkgName);
+			getPaths(reqPaths, pkgName, name);
 		}
 
 		return reqPaths;
 	}
 
-	static void getPaths(Collection<Route> reqPaths, String pkgName) throws ClassNotFoundException {
+	static void getPaths(Collection<Route> reqPaths, String pkgName, String name) throws ClassNotFoundException {
 		for (Class<?> kcs : getClassesForPackage(Thread.currentThread().getContextClassLoader(), pkgName, false)) {
-			addMethod(reqPaths, kcs);
+			addMethod(name, reqPaths, kcs);
 		}
 	}
 
@@ -117,7 +117,7 @@ class PackageScanner {
 			jarFile = new JarInputStream(new FileInputStream(new File(jarName)));
 			JarEntry jarEntry;
 			while ((jarEntry = jarFile.getNextJarEntry()) != null) {
-				if ((jarEntry.getName().startsWith(packageName)) && (jarEntry.getName().endsWith(".class"))) {
+				if (jarEntry.getName().startsWith(packageName) && jarEntry.getName().endsWith(".class")) {
 					String className = jarEntry.getName().replaceAll("/", "\\.");
 					if ("org.arivu.nioserver.Configuration.class".equals(className)
 							|| "org.arivu.nioserver.PackageScanner.class".equals(className)) {
@@ -148,45 +148,48 @@ class PackageScanner {
 		return classes;
 	}
 
-	static void addMethod(Collection<Route> reqPaths, Class<?> clazz) {
-		logger.debug("Scanning class " + clazz.getName());
+	static void addMethod(String name, Collection<Route> reqPaths, Class<?> clazz) {
+		logger.debug("Scanning class {}" , clazz.getName());
 		Method[] methods = clazz.getDeclaredMethods();// Methods();
 		for (Method method : methods) {
 			if (method.isAnnotationPresent(Path.class)) {
 				Path path = method.getAnnotation(Path.class);
 				if (path != null) {
-					logger.debug("Scanning class " + clazz.getName() + " annotation present " + method);
+					logger.debug("Scanning class {} annotation present {}",clazz.getName() , method);
 					try {
 						String uri = path.value();
 						org.arivu.nioserver.HttpMethod httpMethod = path.httpMethod();
 						if (!NullCheck.isNullOrEmpty(uri) && httpMethod != null) {
 							boolean validateRouteUri = RequestUtil.validateRouteUri(uri);
-							if (uri.equals("/*") || uri.equals("/favicon.ico") || validateRouteUri) {
-								boolean isStatic = Modifier.isStatic(method.getModifiers());
-								Route e = new Route(uri, httpMethod, clazz, method, isStatic);
-								Route matchingRoute = RequestUtil.getMatchingRoute(reqPaths, uri, httpMethod, true);
-								if (matchingRoute == null) {
-									reqPaths.add(e);
-									logger.debug("Discovered request handler :: " + clazz.getName() + " httpMethod "
-											+ method.getName());
-								} else {
-									logger.info("Duplicate request handler discovered ignoring :: " + clazz.getName()
-											+ " httpMethod " + method.getName());
-								}
+							if( uri.equals("/__admin") ){
+								if(Configuration.ADMIN_MODULE_ENABLED )
+									createRoute(name, reqPaths, clazz, method, uri, httpMethod);
+							}else if (uri.equals("/*") || uri.equals("/favicon.ico") || validateRouteUri) {
+								createRoute(name, reqPaths, clazz, method, uri, httpMethod);
 							} else {
-								logger.info("Invalid request Uri (" + uri + ") handler discovered ignoring :: "
-										+ clazz.getName() + " httpMethod " + method.getName());
+								logger.info("Invalid request Uri ({}) handler discovered ignoring :: {} httpMethod {}", uri, clazz.getName(), method.getName());
 							}
 						} else {
-							logger.info("Invalid request Uri (" + uri + ") handler discovered ignoring :: "
-									+ clazz.getName() + " httpMethod " + method.getName());
-
+							logger.info("Invalid request Uri ({}) handler discovered ignoring :: {} httpMethod {}", uri, clazz.getName(), method.getName());
 						}
 					} catch (IllegalArgumentException e) {
 						logger.error("Error on Scanning annotation addMethod :: ", e);
 					}
 				}
 			}
+		}
+	}
+
+	static void createRoute(String name, Collection<Route> reqPaths, Class<?> clazz, Method method, String uri,
+			org.arivu.nioserver.HttpMethod httpMethod) {
+		boolean isStatic = Modifier.isStatic(method.getModifiers());
+		Route e = new Route(name, uri, httpMethod, clazz, method, isStatic);
+		Route matchingRoute = RequestUtil.getMatchingRoute(reqPaths, uri, httpMethod, true);
+		if (matchingRoute == null) {
+			reqPaths.add(e);
+			logger.debug("Discovered request handler :: {} httpMethod {}",clazz.getName(), method.getName());
+		} else {
+			logger.info("Duplicate request handler discovered ignoring :: {} httpMethod {}",clazz.getName(), method.getName());
 		}
 	}
 

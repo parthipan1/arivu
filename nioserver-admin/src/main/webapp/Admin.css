@@ -1,0 +1,117 @@
+/** Add css rules here for your application. */
+.headerAndFooter {
+  /*border-style: solid;
+  border-width:1;
+  border-color: #CC6600;*/
+  width:  60em;
+  height: auto;
+  text-align: center;
+}
+.mainOutline {
+  /*border-style: solid;
+  border-width:1;
+  border-color: #003399;*/
+  width: auto;
+  align: center;
+  position: relative;
+  left: 5px;
+}
+.naviOutline {
+  /*border-style: solid;
+  border-width:1;
+  border-color: #ff3300;*/
+  width: 5em;
+}
+.contentOutline {
+  /*border-style: solid;
+  border-width:1;
+  border-color: #009933;*/
+  width: 60em;
+  height: auto;
+}
+.headerTitle{
+	position:relative;
+}
+
+/** Example rules used by the template application (remove for your app) */
+h1 {
+  font-size: 2em;
+  font-weight: bold;
+  color: #777777;
+  margin: 40px 0px 70px;
+  text-align: top;
+}
+
+.sendButton {
+  display: block;
+  font-size: 16pt;
+}
+
+/** Most GWT widgets already have a style name defined */
+.gwt-DialogBox {
+  width: 400px;
+}
+
+.dialogVPanel {
+  margin: 5px;
+}
+
+.serverResponseLabelError {
+  color: red;
+}
+
+/** Set ids using widget.getElement().setId("idOfElement") */
+#closeButton {
+  margin: 15px 6px 6px;
+}
+
+/*  list header row */
+.watchListHeader {
+  background-color: #2062B8;
+  color: white;
+  text-align: center;
+  font-style: italic;
+}
+
+/*  list flex table */
+.watchList {
+  border: 1px solid silver;
+  padding: 2px;
+  margin-bottom:6px;
+  width: 100%;
+}
+
+/* list fields */
+.watchListFirstColumn {
+  text-align: left;
+  width:16em;
+  font: bold;
+}
+
+/* list fields */
+.watchListColumn {
+  text-align: center;
+  width:8em;
+}
+
+/* list Remove column */
+.watchListRemoveColumn {
+  text-align: center;
+}
+
+img {
+    margin: auto;
+    width: 60px;
+    height: 60px;
+}
+
+/* Add panel */
+.addPanel {
+  margin: 10px 0px 15px 0px;
+  width: 100%;
+}
+
+/*  list, the Remove button */
+.gwt-Button-remove {
+  width: 50px;
+}

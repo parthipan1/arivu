@@ -3,7 +3,6 @@
  */
 package org.arivu.nioserver;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
@@ -13,6 +12,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -21,6 +21,7 @@ import java.util.concurrent.Executors;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
+import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.pool.ConcurrentPool;
 import org.arivu.pool.Pool;
 import org.arivu.pool.PoolFactory;
@@ -53,7 +54,8 @@ final class SelectorHandler {
 			String[] ret = new String[rts.size()];
 			int i = 0;
 			for (Route rt : rts) {
-				ret[i++] = rt.uri + " " + rt.httpMethod;
+				if(rt.active)
+					ret[i++] = rt.uri + " " + rt.httpMethod;
 			}
 
 			return ret;
@@ -63,9 +65,7 @@ final class SelectorHandler {
 		public void removeRoute(String route) {
 			Route route2 = getRoute(route);
 			if(route2!=null){
-				if(Configuration.routes.remove(route2)){
-					route2.close();
-				}
+				route2.disable();
 			}
 		}
 		
@@ -81,45 +81,7 @@ final class SelectorHandler {
 
 		@Override
 		public void addProxyRoute(String name, String method, String location, String proxyPass, String dir) {
-			HttpMethod httpMethod = HttpMethod.ALL;
-			if (!NullCheck.isNullOrEmpty(method))
-				httpMethod = HttpMethod.valueOf(method);
-
-			if(!RequestUtil.validateRouteUri(location))
-				throw new IllegalArgumentException(
-						"Illegal location(" + location + ") specified!");
-			
-			String proxy_pass = proxyPass;
-			boolean notNullProxy = !NullCheck.isNullOrEmpty(proxy_pass);
-			boolean notNullDir = !NullCheck.isNullOrEmpty(dir);
-			if (notNullProxy && notNullDir)
-				throw new IllegalArgumentException(
-						"Illegal proxy_pass(" + proxyPass + ") and dir(" + dir + ") specified!");
-			if (notNullProxy) {
-				proxy_pass = Utils.replaceAll(proxy_pass, "$host", Server.DEFAULT_HOST);
-				proxy_pass = Utils.replaceAll(proxy_pass, "$port", String.valueOf(Server.DEFAULT_PORT));
-			}
-			if (notNullDir) {
-				dir = Utils.replaceAll(dir, "$home", new File(".").getAbsolutePath());
-			}
-			ProxyRoute prp = new ProxyRoute(name, proxy_pass, dir, location, httpMethod, null, null, false, null);
-			Collection<Route> rts = Configuration.routes;
-			for (Route rt : rts) {
-				if (rt instanceof ProxyRoute) {
-					ProxyRoute prt = (ProxyRoute) rt;
-					if (prt.uri.equals(location)
-							&& (httpMethod == prt.httpMethod || prt.httpMethod == HttpMethod.ALL)) {
-						if (NullCheck.isNullOrEmpty(prt.dir) && !notNullDir && proxy_pass.equals(prt.proxy_pass))
-							throw new IllegalArgumentException(
-									"Duplicate proxy proxy_pass(" + proxyPass + ") and dir(" + dir + ") specified!");
-						else if (NullCheck.isNullOrEmpty(prt.proxy_pass) && !notNullProxy && dir.equals(prt.dir))
-							throw new IllegalArgumentException(
-									"Duplicate proxy proxy_pass(" + proxyPass + ") and dir(" + dir + ") specified!");
-					}
-				}
-			}
-			Configuration.routes.add(prp);
-			logger.info("Added Proxy setting ::" + prp.toString());
+			RequestUtil.addProxyRouteRuntime(name, method, location, proxyPass, dir, Configuration.routes, null);
 		}
 
 		@Override
@@ -134,7 +96,12 @@ final class SelectorHandler {
 		public void addRouteHeader(String route, String header, String value) {
 			Route route2 = getRoute(route);
 			if (route2 != null && !NullCheck.isNullOrEmpty(route2.headers)) {
-				route2.headers.put(header, value);
+				List<Object> list = route2.headers.get(header);
+				if(list==null){
+					list = new DoublyLinkedList<Object>();
+					route2.headers.put(header, list);
+				}
+				list.add(value);
 			}
 		}
 
@@ -161,7 +128,7 @@ final class SelectorHandler {
 		@Override
 		public void scanPackage(String packageName) throws Exception {
 			if (!NullCheck.isNullOrEmpty(packageName)) {
-				PackageScanner.getPaths(Configuration.routes, packageName);
+				PackageScanner.getPaths(Configuration.routes, packageName, "System");
 			}
 		}
 
@@ -172,25 +139,24 @@ final class SelectorHandler {
 
 		@Override
 		public void addResponseHeader(String header, String value) {
-			Configuration.defaultResponseHeader.put(header, value);
+			List<Object> list = Configuration.defaultResponseHeader.get(header);
+			if(list==null){
+				list = new DoublyLinkedList<Object>();
+				Configuration.defaultResponseHeader.put(header, list);
+			}
+			list.add(value);
 		}
 
 		@Override
 		public String getResponseHeader() {
-			Map<String, Object> defaultresponseheader = Configuration.defaultResponseHeader;
-			return RequestUtil.getString(defaultresponseheader);
-		}
-
-		@Override
-		public void addJar(String jars) {
-			// TODO Auto-generated method stub
-			
+			Map<String, List<Object>> defaultresponseheader = Configuration.defaultResponseHeader;
+			return Utils.toString(defaultresponseheader);
 		}
 
 		@Override
 		public String getRouteResponseHeader(String route) {
 			Route route2 = getRoute(route);
-			if( route2!= null ) return RequestUtil.getString(route2.headers);
+			if( route2!= null ) return Utils.toString(route2.headers);
 			return null;
 		}
 
@@ -231,7 +197,7 @@ final class SelectorHandler {
 			MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
 			beanNameStr = "org.arivu.niosever:type=" + Server.class.getSimpleName() + "." + Server.DEFAULT_PORT;
 			mbs.registerMBean(mxBean, new ObjectName(beanNameStr));
-			logger.info(" Jmx bean beanName " + beanNameStr + " registered!");
+			logger.info(" Jmx bean beanName {} registered!",beanNameStr);
 		} catch (Exception e) {
 			logger.error("Failed with Error::", e);
 		}
@@ -241,7 +207,7 @@ final class SelectorHandler {
 		if (beanNameStr != null) {
 			try {
 				ManagementFactory.getPlatformMBeanServer().unregisterMBean(new ObjectName(beanNameStr));
-				logger.info("Unregister Jmx bean " + beanNameStr);
+				logger.info("Unregister Jmx bean {}", beanNameStr);
 			} catch (Exception e) {
 				logger.error("Failed with Error::", e);
 			}
@@ -334,7 +300,6 @@ final class SelectorHandler {
 			}
 			clientSelector.wakeup();
 		} catch (IOException e) {
-//			e.printStackTrace();
 			logger.error("Failed with Error::", e);
 		}
 	}

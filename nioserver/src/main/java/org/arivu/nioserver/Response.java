@@ -10,15 +10,15 @@ public interface Response {
 
 	void setResponseCode(int responseCode);
 
-	Object getHeader(Object key);
+	List<Object> getHeader(Object key);
 
 	Object putHeader(String key, Object value);
 
-	Object removeHeader(Object key);
+	List<Object> removeHeader(Object key);
 
-	void putAllHeader(Map<? extends String, ? extends String> m);
+	void putAllHeader(Map<? extends String, ? extends List<Object>> m);
 
-	Object replaceHeader(String key, Object value);
+//	Object replaceHeader(String key, Object value);
 
 	void append(CharSequence s) throws IOException;
 
@@ -26,7 +26,7 @@ public interface Response {
 
 	List<ByteData> getOut();
 
-	Map<String, Object> getHeaders();
+	Map<String, List<Object>> getHeaders();
 
 	void sendRedirect(String url);
 

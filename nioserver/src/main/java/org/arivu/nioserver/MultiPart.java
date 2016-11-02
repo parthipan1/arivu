@@ -69,9 +69,10 @@ public final class MultiPart {
 				channel.write(ByteBuffer.wrap(bb.array()));
 			}
 		}finally {
-			if(channel!=null)
+			if( channel!=null )
 				channel.close();
-			if(fileOutputStream!=null)
+			
+			if( fileOutputStream!=null )
 				fileOutputStream.close();
 		}
 	}

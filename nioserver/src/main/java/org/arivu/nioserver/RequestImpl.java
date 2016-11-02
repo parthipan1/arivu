@@ -7,13 +7,14 @@ import java.util.Map;
 
 import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
+import org.arivu.utils.Utils;
 
 final class RequestImpl implements Request {
 
 	/**
 	 * 
 	 */
-	final Map<String, String> headers;
+	final Map<String, List<Object>> headers;
 
 	/**
 	 * 
@@ -62,7 +63,7 @@ final class RequestImpl implements Request {
 	 * @param body
 	 */
 	RequestImpl(HttpMethod httpMethod, String uri, String uriWithParams, String protocol,
-			Map<String, Collection<String>> params, Map<String, String> headers) {
+			Map<String, Collection<String>> params, Map<String, List<Object>> headers) {
 		super();
 		this.httpMethod = httpMethod;
 		this.uri = uri;
@@ -96,7 +97,7 @@ final class RequestImpl implements Request {
 	 * @see org.arivu.nioserver.Request#getHeaders()
 	 */
 	@Override
-	public Map<String, String> getHeaders() {
+	public Map<String, List<Object>> getHeaders() {
 		return headers;
 	}
 
@@ -192,7 +193,7 @@ final class RequestImpl implements Request {
 
 	@Override
 	public String toString() {
-		return "RequestImpl [headers=" + RequestUtil.getString(headers) + ", uri=" + uri + ", params=" + params
+		return "RequestImpl [headers=" + Utils.toString(headers) + ", uri=" + uri + ", params=" + Utils.toString(params)
 				+ ", httpMethod=" + httpMethod + ", body=" + body + ", protocol=" + protocol + "]";
 	}
 
