@@ -146,7 +146,7 @@ final class ResponseImpl implements Response {
 	public void append(ByteData buf) throws IOException {
 		if(buf!=null){
 			out.add(buf);
-			contentLength += buf.array().length;//remaining();
+			contentLength += buf.length();//array().length;//remaining();
 		}
 	}
 	

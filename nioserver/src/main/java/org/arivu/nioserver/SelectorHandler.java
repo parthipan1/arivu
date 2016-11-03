@@ -273,7 +273,8 @@ final class SelectorHandler {
 				connectionPool.close();
 			} catch (Exception e) {
 				logger.error("Failed to close connectionPool::", e);
-			} 
+			}
+			ByteData.clean(true, null);
 		} finally {
 			logger.info("Server stopped!");
 			System.exit(0);
