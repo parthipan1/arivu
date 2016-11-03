@@ -688,12 +688,18 @@ public final class RequestUtil {
 
 		for (File f : list) {
 			try {
-				new App(f.getName(), new String(read(new File(f, SCANPACKAGES_TOKEN)))).deploy();
+				File scanpackagesFile = new File(f, SCANPACKAGES_TOKEN);
+				if( scanpackagesFile.exists() )
+					new App(f.getName(), new String(read(scanpackagesFile))).deploy();
+				else{
+					del(f);
+					logger.info("Invalid folder " + f.getAbsolutePath()+" removed!");
+				}
 			} catch (Exception e) {
 				logger.error("Failed in scan Apps :: ", e);
 			}
 		}
-		logger.info("Discovered Apps :: " + Admin.allHotDeployedArtifacts.keySet());
+		logger.info("Discovered Apps :: " + Utils.toString(Admin.allHotDeployedArtifacts.keySet()) );
 	}
 
 	static void addProxyRouteRuntime(String name, String method, String location, String proxyPass, String dir, Collection<Route> rts, Map<String, List<Object>> header) {

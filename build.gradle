@@ -24,15 +24,13 @@ allprojects {
   build.dependsOn{
   	new File("logs").mkdirs()
   }
-  
-  clean {
-  	del("logs")
-  }
   */
+  
+  
 }
 
 subprojects {
-
+	  
 	if( project.name.equals("nioserver-admin") ){
 	
 		apply plugin: 'war'
@@ -127,7 +125,10 @@ subprojects {
 	targetCompatibility = 1.8
   
   //tasks.withType(Javadoc).all { enabled = false }
-  
+ 	 clean {
+	  	del("${project.buildDir}"+FS+".."+FS+"logs")
+	  	new File("${project.buildDir}"+FS+".."+FS+"logs").mkdirs()
+	  }
   
     tasks.withType(Javadoc) {
         options.addStringOption('Xdoclint:none', '-quiet')
