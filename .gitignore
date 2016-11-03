@@ -7,6 +7,17 @@
 .project
 .settings/
 
+/nioserver-admin/bin/
+/nioserver-admin/build/
+/nioserver-admin/logs/
+/nioserver-admin/libs/
+/nioserver-admin/target/
+/nioserver-admin/war/
+/nioserver-admin/.classpath
+/nioserver-admin/.gradle/
+/nioserver-admin/.project
+/nioserver-admin/.settings/
+
 /ason/bin/
 /ason/build/
 /ason/logs/
