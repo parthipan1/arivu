@@ -136,10 +136,10 @@ public final class ByteData {
 		}
 	}
 
-	public void close() throws IOException {
-		// if( file!=null )
-		// file.close();
-	}
+//	public void close() throws IOException {
+//		// if( file!=null )
+//		// file.close();
+//	}
 
 	public byte[] copyOfRange(long from, long to) throws IOException {
 		if (file == null) {
