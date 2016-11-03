@@ -692,8 +692,10 @@ public final class RequestUtil {
 				File scanpackagesFile = new File(f, SCANPACKAGES_TOKEN);
 				if( scanpackagesFile.exists() )
 					new App(f.getName(), new String(read(scanpackagesFile))).deploy();
-				else
+				else{
 					del(f);
+					logger.info("Invalid folder " + f.getAbsolutePath()+" removed!");					
+				}
 			} catch (Exception e) {
 				logger.error("Failed in scan Apps :: ", e);
 			}
