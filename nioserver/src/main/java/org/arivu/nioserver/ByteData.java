@@ -17,11 +17,13 @@ public final class ByteData {
 	private final RandomAccessFile file;
 	private final long fileLen;
 
+	private final long offset;
 	public ByteData(byte[] array) {
 		super();
 		this.data = array;
 		this.file = null;
 		this.fileLen = 0l;
+		this.offset=0l;
 	}
 
 	public ByteData(File f) throws IOException {
@@ -29,6 +31,15 @@ public final class ByteData {
 		this.data = null;
 		this.file = new RandomAccessFile(f, "r");
 		this.fileLen = this.file.length();
+		this.offset=0l;
+	}
+	
+	public ByteData(File f,long offset,long len) throws IOException {
+		super();
+		this.data = null;
+		this.file = new RandomAccessFile(f, "r");
+		this.fileLen = len;
+		this.offset = offset;
 	}
 	
 	public byte[] array() {
@@ -43,13 +54,14 @@ public final class ByteData {
 		}
 	}
 
-	public byte[] copyOfRange(int from, int to) throws IOException {
+	public byte[] copyOfRange(long from, long to) throws IOException {
 		if (file == null) {
 			return Arrays.copyOfRange(data, (int)from, (int)to);
 		}else{
-			final int len = to-from;
+			if( to > offset+fileLen ) throw new ArrayIndexOutOfBoundsException(" to "+to+" higher than the max len "+(offset+fileLen));
+			final int len = (int) (to-from);
 			byte[] arr = new byte[len];
-			file.seek(from);
+			file.seek(offset+from);
 			file.readFully(arr);
 			return arr;
 		}
