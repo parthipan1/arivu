@@ -42,8 +42,86 @@ import com.google.gwt.user.client.ui.VerticalPanel;
  */
 public class Admin implements EntryPoint {
 
-	private static final String HASH_HEADER = "X-HASH";
+	private static final String TABLE_COLUMN5_NAME = "Remove";
+
+	private static final String TABLE_COLUMN4_NAME = "Proxy";
+
+	private static final String TABLE_COLUMN3_NAME = "HttpMethod";
+
+	private static final String TABLE_COLUMN2_NAME = "Uri";
+
+	private static final String TABLE_COLUMN1_NAME = "Name";
+
+	private static final String REMOVE_APP_LABEL = "<h4>&nbsp;Remove App:</h4>";
+
+	private static final String SELECT_AN_APP_LABEL = "&nbsp;Select an App :";
+
+	private static final String UNDEPLOY_BUTTON_LABEL = "Undeploy";
+
+	private static final String SERVER_IS_DOWN_MSG = "Server is down!";
+
+	private static final String SERVER_SHUTDOWN_TITLE = "Server shutdown!";
+
+	private static final String ERROR_FROM_SERVER_MSG = "Error from server :: ";
+
+	private static final String FAILED_ON_APPS_TITLE = "Failed on apps";
+
+	private static final String AJAX_EXP_SERVER_ERROR_URL_TITLE = "Server error url ";
+
+	private static final String SERVER_ERROR_MSG = "Error :: ";
+
+	private static final String SERVER_ERROR_TITLE = "Server error";
+
+	private static final String INVALID_ROUTE_TYPE_ERROR_MSG = "Invalid route type :: ";
+
+	private static final String INVALID_LOC_ERROR_MSG = "Invalid loc :: ";
+
+	private static final String INVALID_NAME_ERROR_MSG = "Invalid name :: ";
+
+	private static final String INVALID_URI_ERROR_MSG = "Invalid uri :: ";
+
+	private static final String ADDING_ROUTE_FAILED_DIALOG_TITLE = "Adding route failed";
+
+	private static final String CLOSE_DIALOG_LABEL = "Close";
+
+	private static final String UPLOAD_DIALOG_TITLE = "Upload ";
+
+	private static final String NO_FILES_SELECTED_FOR_UPLOAD_ERR_MSG = "No files selected for upload!";
+
+	private static final String COMMA_SEPERATED_PACKAGES_TO_SCAN_FOR_PATHS_TITLE = "comma seperated packages to scan for Paths";
+
+	private static final String NAME_OF_THE_APP_TITLE = "Name of the App";
+
+	private static final String UPLOAD_NEW_APP_TITLE = "<h4>&nbsp;Upload New App:</h4>";
+
+	private static final String PACKAGES_LABEL = "Packages:";
+
+	private static final String APP_NAME_LABEL = "App Name:";
+
+	private static final String UPLOAD_BUTTON_LABEL = "Upload";
+
+	private static final String ADD_NEW_ROUTE_TITLE = "<h4>&nbsp;Add New Route:</h4>";
+
+	private static final String NEW_PROXY_LABEL = "Proxy:";
+
+	private static final String NEW_LOCATION_LABEL = "Location:";
+
+	private static final String NEW_URI = "Uri:";
+
+	private static final String NEW_ROUTE_LABEL = "&nbsp;Route:";
+
+	private static final String ROUTES_LIST_HEADER = "<h4>&nbsp;List of all Routes Registered on server:</h4>";
+
+	private static final String STOP_THE_SERVER_TXT = "Stop the server!";
+
+	private static final String ADD_LABEL = "Add";
+	private static final String FOOTER_LABEL = "High performance NIO Server";
 	private static final String H1_ARIVU_NIO_SERVER_H1 = "<H1>Arivu NIO Server</H1>";//
+
+	private static final String HASH_HEADER = "X-HASH";
+
+	private static String[] proxyTypes = {"browser","proxy"};
+	
 	private VerticalPanel mainPanel = new VerticalPanel();
 	private ScrollPanel scrollTablePanel = new ScrollPanel();
 	private FlexTable routesFlexTable = new FlexTable();
@@ -53,8 +131,7 @@ public class Admin implements EntryPoint {
 	private TextBox uriTextBox = new TextBox();
 	private TextBox locationTextBox = new TextBox();
 	private ListBox dropDownList = new ListBox();
-	private Button addRouteButton = new Button("Add");
-//	private Label lastUpdatedLabel = new Label();
+	private Button addRouteButton = new Button(ADD_LABEL);
 	
 	private ListBox appsDropdownList = new ListBox();
 	
@@ -67,9 +144,8 @@ public class Admin implements EntryPoint {
 	private Image iconImage = new Image("images/arivu.jpeg");
 	private PushButton stopButton = new PushButton(new Image("images/stop.png"));
 	private Label titleLabel = new Label();
-	private Label footerLabel = new Label("High performance NIO Server");
+	private Label footerLabel = new Label(FOOTER_LABEL);
 	
-	private static String[] proxyTypes = {"browser","proxy"};
 	
 	private long loadTime = 0;
 	/**
@@ -87,7 +163,7 @@ public class Admin implements EntryPoint {
 				shutdownServer();
 			}
 		});
-		stopButton.setTitle("Stop the server!");
+		stopButton.setTitle(STOP_THE_SERVER_TXT);
 		
 		headerPanel.add(iconImage);
 		headerPanel.add(titleLabel);
@@ -118,12 +194,12 @@ public class Admin implements EntryPoint {
 	}
 
 	private HorizontalPanel routesTableTitlePanel = new HorizontalPanel();
-	private HTML routesTableTitleLabel = new HTML("<h4>&nbsp;List of all Routes Registered on server:</h4>");
-	private HTML newRouteLabel = new HTML("&nbsp;Route:");
-	private Label newUriLabel = new Label("Uri:");
-	private Label newLocationLabel = new Label("Location:");
-	private Label newProxyLabel = new Label("Proxy:");
-	private HTML addRouteLabel = new HTML("<h4>&nbsp;Add New Route:</h4>");
+	private HTML routesTableTitleLabel = new HTML(ROUTES_LIST_HEADER);
+	private HTML newRouteLabel = new HTML(NEW_ROUTE_LABEL);
+	private Label newUriLabel = new Label(NEW_URI);
+	private Label newLocationLabel = new Label(NEW_LOCATION_LABEL);
+	private Label newProxyLabel = new Label(NEW_PROXY_LABEL);
+	private HTML addRouteLabel = new HTML(ADD_NEW_ROUTE_TITLE);
 
 	void init() {
 		routesTableTitlePanel.add(routesTableTitleLabel);
@@ -181,13 +257,13 @@ public class Admin implements EntryPoint {
 	private HorizontalPanel deployPanel = new HorizontalPanel();
 	FormPanel fileUploadFormPanel = new FormPanel();
 	FileUpload fileUpload = new FileUpload();
-	Button uploadButton = new Button("Upload");
+	Button uploadButton = new Button(UPLOAD_BUTTON_LABEL);
 	TextBox appNameTextBox = new TextBox();
 	TextBox appPackageTextBox = new TextBox();
-	Label appNameLabel = new Label(" App Name:");
-	Label packagesLabel = new Label("Packages:");
+	Label appNameLabel = new Label(APP_NAME_LABEL);
+	Label packagesLabel = new Label(PACKAGES_LABEL);
 	Hidden hiddenField = new Hidden();
-	HTML deployTitleLabel = new HTML("<h4>&nbsp;Upload New App:</h4>");
+	HTML deployTitleLabel = new HTML(UPLOAD_NEW_APP_TITLE);
 	
 	void addDeployPanel(){
 		  deployTitlePanel.add(deployTitleLabel);
@@ -201,9 +277,9 @@ public class Admin implements EntryPoint {
 	      fileUpload.getElement().setAttribute("accept", ".zip");
 	      
 	      
-	  	  appNameTextBox.setTitle("Name of the App");
+	  	  appNameTextBox.setTitle(NAME_OF_THE_APP_TITLE);
 	  	  appNameTextBox.setName("name");
-	  	  appPackageTextBox.setTitle("comma seperated packages to scan for Paths");
+	  	  appPackageTextBox.setTitle(COMMA_SEPERATED_PACKAGES_TO_SCAN_FOR_PATHS_TITLE);
 	  	  appPackageTextBox.setName("scanpackages");
 	  	  
 	  	  deployPanel.setStyleName("addPanel");
@@ -230,8 +306,8 @@ public class Admin implements EntryPoint {
 	            //get the filename to be uploaded
 	            String filename = fileUpload.getFilename();
 	            if (isNullOrEmpty(filename)) {
-	               alertWidget("Upload ",
-	   	                "No files selected for upload!").center();
+	               alertWidget(UPLOAD_DIALOG_TITLE,
+	   	                NO_FILES_SELECTED_FOR_UPLOAD_ERR_MSG).center();
 	            } else {
 	               //submit the form
 	               fileUploadFormPanel.submit();			          
@@ -257,9 +333,9 @@ public class Admin implements EntryPoint {
 	
 	private HorizontalPanel undeployTitlePanel = new HorizontalPanel();
 	private HorizontalPanel undeployPanel = new HorizontalPanel();
-	private HTML removeAppLabel = new HTML("<h4>&nbsp;Remove App:</h4>");
-	private HTML selectAppLabel = new HTML("&nbsp;Select an App :");
-	private Button undeployButton = new Button("Undeploy");
+	private HTML removeAppLabel = new HTML(REMOVE_APP_LABEL);
+	private HTML selectAppLabel = new HTML(SELECT_AN_APP_LABEL);
+	private Button undeployButton = new Button(UNDEPLOY_BUTTON_LABEL);
 	
 	void addUnDeployPanel(){
 		
@@ -292,11 +368,11 @@ public class Admin implements EntryPoint {
 		allRoutes.clear();
 		
 		routesFlexTable.getRowFormatter().addStyleName(0, "watchListHeader");
-		routesFlexTable.setText(0, 0, "Name");
-		routesFlexTable.setText(0, 1, "Uri");
-		routesFlexTable.setText(0, 2, "HttpMethod");
-		routesFlexTable.setText(0, 3, "Proxy");
-		routesFlexTable.setText(0, 4, "Remove");
+		routesFlexTable.setText(0, 0, TABLE_COLUMN1_NAME);
+		routesFlexTable.setText(0, 1, TABLE_COLUMN2_NAME);
+		routesFlexTable.setText(0, 2, TABLE_COLUMN3_NAME);
+		routesFlexTable.setText(0, 3, TABLE_COLUMN4_NAME);
+		routesFlexTable.setText(0, 4, TABLE_COLUMN5_NAME);
 		
 		for (int i = 0; i < routes.length(); i++) {
 			final Data data = routes.get(i);
@@ -344,7 +420,7 @@ public class Admin implements EntryPoint {
         final VerticalPanel panel = new VerticalPanel();
         box.setText(header);
         panel.add(new Label(content));
-        final Button buttonClose = new Button("Close",new ClickHandler() {
+        final Button buttonClose = new Button(CLOSE_DIALOG_LABEL,new ClickHandler() {
             @Override
             public void onClick(final ClickEvent event) {
                 box.hide();
@@ -380,23 +456,23 @@ public class Admin implements EntryPoint {
 		String loc = locationTextBox.getText();
 		String typeRoute = dropDownList.getSelectedValue();
 		if( isNullOrEmpty(uri) ){
-			alertWidget("Adding route failed",
-	                "Invalid uri :: "+uri).center();
+			alertWidget(ADDING_ROUTE_FAILED_DIALOG_TITLE,
+	                INVALID_URI_ERROR_MSG+uri).center();
 			return;
 		}
 		if( isNullOrEmpty(name) ){
-			alertWidget("Adding route failed",
-	                "Invalid name :: "+name).center();
+			alertWidget(ADDING_ROUTE_FAILED_DIALOG_TITLE,
+	                INVALID_NAME_ERROR_MSG+name).center();
 			return;
 		}
 		if( isNullOrEmpty(loc) ){
-			alertWidget("Adding route failed",
-	                "Invalid loc :: "+loc).center();
+			alertWidget(ADDING_ROUTE_FAILED_DIALOG_TITLE,
+	                INVALID_LOC_ERROR_MSG+loc).center();
 			return;
 		}
 		if( isNullOrEmpty(typeRoute) ){
-			alertWidget("Adding route failed",
-	                "Invalid route type :: "+typeRoute).center();
+			alertWidget(ADDING_ROUTE_FAILED_DIALOG_TITLE,
+	                INVALID_ROUTE_TYPE_ERROR_MSG+typeRoute).center();
 			return;
 		}
 		routeRequest(RequestBuilder.POST,"{\"uri\":\"" + uri + "\",\"name\":\"" + name + "\",\"loc\":\"" + loc + "\",\"type\":\"" + typeRoute + "\"}");
@@ -418,8 +494,8 @@ public class Admin implements EntryPoint {
 			// Request request =
 			builder.sendRequest(body, new RequestCallback() {
 				public void onError(Request request, Throwable exception) {
-					alertWidget("Server error",
-			                "Error :: "+exception.toString()).center();
+					alertWidget(SERVER_ERROR_TITLE,
+			                SERVER_ERROR_MSG+exception.toString()).center();
 				}
 
 				public void onResponseReceived(Request request, Response response) {
@@ -433,14 +509,14 @@ public class Admin implements EntryPoint {
 						}
 					} else {
 						// Handle the error. Can get the status text from
-						alertWidget("Server error",
-				                "Error :: "+response.getStatusText()).center();
+						alertWidget(SERVER_ERROR_TITLE,
+				                SERVER_ERROR_MSG+response.getStatusText()).center();
 					}
 				}
 			});
 		} catch (RequestException e) {
-			alertWidget("Server error url "+url,
-	                "Error :: "+e.toString()).center();
+			alertWidget(AJAX_EXP_SERVER_ERROR_URL_TITLE+url,
+	                SERVER_ERROR_MSG+e.toString()).center();
 		}
 	}
 
@@ -451,7 +527,7 @@ public class Admin implements EntryPoint {
 		try {
 			builder.sendRequest(null, new RequestCallback() {
 				public void onError(Request request, Throwable exception) {
-					alertWidget("Failed on apps", "Error from server :: "+exception.toString());
+					alertWidget(FAILED_ON_APPS_TITLE, ERROR_FROM_SERVER_MSG+exception.toString());
 				}
 
 				public void onResponseReceived(Request request, Response response) {
@@ -465,12 +541,12 @@ public class Admin implements EntryPoint {
 							appsDropdownList.addItem(routes.get(i).getName());
 						}
 					} else {
-						alertWidget("Failed on apps", "Error from server :: "+response.getText());
+						alertWidget(FAILED_ON_APPS_TITLE, ERROR_FROM_SERVER_MSG+response.getText());
 					}
 				}
 			});
 		} catch (RequestException e) {
-			alertWidget("Server request failed!", "Error :: "+e.getMessage());
+			alertWidget(AJAX_EXP_SERVER_ERROR_URL_TITLE+url, SERVER_ERROR_MSG+e.getMessage());
 		}
 	}
 
@@ -481,7 +557,7 @@ public class Admin implements EntryPoint {
 		try {
 			builder.sendRequest(null, new RequestCallback() {
 				public void onError(Request request, Throwable exception) {
-					alertWidget("Failed on apps", "Error from server :: "+exception.toString());
+					alertWidget(FAILED_ON_APPS_TITLE, ERROR_FROM_SERVER_MSG+exception.toString());
 				}
 
 				public void onResponseReceived(Request request, Response response) {
@@ -489,12 +565,12 @@ public class Admin implements EntryPoint {
 						refreshRoutesTable();
 						refreshAppsList();
 					} else {
-						alertWidget("Failed on apps", "Error from server :: "+response.getText());
+						alertWidget(FAILED_ON_APPS_TITLE, ERROR_FROM_SERVER_MSG+response.getText());
 					}
 				}
 			});
 		} catch (RequestException e) {
-			alertWidget("Server request failed!", "Error :: "+e.getMessage());
+			alertWidget(AJAX_EXP_SERVER_ERROR_URL_TITLE+url, SERVER_ERROR_MSG+e.getMessage());
 		}
 	}
 
@@ -505,19 +581,19 @@ public class Admin implements EntryPoint {
 		try {
 			builder.sendRequest(null, new RequestCallback() {
 				public void onError(Request request, Throwable exception) {
-					alertWidget("Failed on apps", "Error from server :: "+exception.toString());
+					alertWidget(FAILED_ON_APPS_TITLE, ERROR_FROM_SERVER_MSG+exception.toString());
 				}
 
 				public void onResponseReceived(Request request, Response response) {
 					if (200 == response.getStatusCode()) {
-						alertWidget("Server shutdown!", "Server is down!");
+						alertWidget(SERVER_SHUTDOWN_TITLE, SERVER_IS_DOWN_MSG);
 					} else {
-						alertWidget("Failed on apps", "Error from server :: "+response.getText());
+						alertWidget(FAILED_ON_APPS_TITLE, ERROR_FROM_SERVER_MSG+response.getText());
 					}
 				}
 			});
 		} catch (RequestException e) {
-			alertWidget("Server request failed!", "Error :: "+e.getMessage());
+			alertWidget(AJAX_EXP_SERVER_ERROR_URL_TITLE+url, SERVER_ERROR_MSG+e.getMessage());
 		}
 	}
 	

@@ -454,7 +454,7 @@ public final class RequestUtil {
 		return rut;
 	}
 
-	static void accessLog(int responseCode, String uri, long start, long end, int size,
+	static void accessLog(int responseCode, String uri, long start, long end, long size,
 			SocketAddress remoteSocketAddress, HttpMethod method) {
 		if (!uri.equals(Configuration.stopUri)) {
 			StringBuffer access = new StringBuffer();
@@ -478,7 +478,7 @@ public final class RequestUtil {
 	}
 
 	static Ref getResponseBytes(int responseCode, Map<String, List<Object>> headers, Collection<ByteData> out,
-			String protocol, String uri, int contentLen, HttpMethod method) {
+			String protocol, String uri, long contentLen, HttpMethod method) {
 		final StringBuffer responseBody = new StringBuffer();
 
 		Object rescodetxt = null;
@@ -757,7 +757,7 @@ public final class RequestUtil {
 final class Ref {
 	String uri = null;
 	int rc;
-	int cl = 0;
+	long cl = 0;
 	long endtime;
 	HttpMethod method = null;
 	Queue<ByteData> queue = new DoublyLinkedList<>();

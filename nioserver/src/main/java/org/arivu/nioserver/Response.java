@@ -32,7 +32,7 @@ public interface Response {
 
 	String getSendRedirectUrl();
 
-	int getContentLength();
+	long getContentLength();
 
 	void append(ByteData buf) throws IOException;
 

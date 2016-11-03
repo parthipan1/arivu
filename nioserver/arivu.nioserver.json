@@ -1,6 +1,6 @@
 {  
    "request":{  
-	  "buffer":10240,   	
+	  "buffer":131072,   	
       "scanpackages":[  
            "org.test.nio"
       ],
@@ -23,7 +23,7 @@
                "Cache-Control":"private, max-age=0",
                "Server":"clownserver",
                "X-XSS-Protection":"1; mode=block",
-               "Connection":"keepalive"
+               "Connection":"close"
             },
             "location":"/static",
             "dir":"/Users/parthipangounder/Downloads"
@@ -32,7 +32,7 @@
    },
    "response":{  
       "defaultcode":200,
-      "chunkSize":1024,
+      "chunkSize":131072,
       "header":{  
          "Expires":-1,
          "Cache-Control":"private, max-age=0",

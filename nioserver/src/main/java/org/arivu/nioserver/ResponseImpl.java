@@ -24,7 +24,7 @@ final class ResponseImpl implements Response {
 
 	String redirectUrl = null;
 	
-	int contentLength = 0;
+	long contentLength = 0;
 	
 	ResponseImpl(Request request, Map<String, List<Object>> headers) {
 		this.request = request;
@@ -146,7 +146,7 @@ final class ResponseImpl implements Response {
 	public void append(ByteData buf) throws IOException {
 		if(buf!=null){
 			out.add(buf);
-			contentLength += buf.array().length;//remaining();
+			contentLength += buf.length();//remaining();
 		}
 	}
 	
@@ -162,7 +162,7 @@ final class ResponseImpl implements Response {
 	 * @see org.arivu.nioserver.Response#getContentLength()
 	 */
 	@Override
-	public int getContentLength() {
+	public long getContentLength() {
 		return contentLength;
 	}
 
