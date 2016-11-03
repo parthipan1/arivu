@@ -4,7 +4,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -13,6 +12,7 @@ import java.util.Map;
 import javax.sql.DataSource;
 
 import org.arivu.datastructure.Amap;
+import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.utils.TimeTracker;
 
 /**
@@ -37,7 +37,7 @@ public class DMLQuery extends CallableQuery {
 	@Override
 	Collection<Map<String, Object>> call(final String query, final List<Parameter> params, final TimeTracker tt)
 			throws IllegalAccessException, InvocationTargetException, SQLException {
-		final Collection<Map<String, Object>> retList = new ArrayList<Map<String, Object>>();
+		final Collection<Map<String, Object>> retList = new DoublyLinkedList<Map<String, Object>>();
 		final Map<String, Object> data = new Amap<String, Object>();
 		tt.nextTrack("buildparams");
 		final Connection dbConnection = getConnection();

@@ -14,7 +14,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
-import org.arivu.log.AsyncLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,9 +77,10 @@ public class TestHelper {
 	}
 
 	public void tearDown() throws Exception {
-		System.out.println(
-				"No of Resources Created :: " + noOfCreate + " time millisecs " + (System.currentTimeMillis() - s));
-		AsyncLogger.flush();
+		String msg = "No of Resources Created :: " + noOfCreate + " time millisecs " + (System.currentTimeMillis() - s);
+		System.out.println(msg);
+		logger.info(msg);
+//		LightningLogger.flush();
 	}
 
 	void testPool(final Pool<Resource> pool, final int verifyCnt, boolean absoluteWait) throws InterruptedException, Exception {
@@ -98,11 +98,16 @@ public class TestHelper {
 		}
 		start.countDown();
 		end.await();
-		
+//		System.out.println("End signalled!");
 		if( absoluteWait ){
 			Future<Integer> poll = null;
 			while((poll=listFuture.poll())!=null){
-				logger.debug(" Completed :: "+poll.get());
+				try {
+					logger.debug(" Completed :: "+poll.get());
+					poll.cancel(true);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 			}
 		}
 		
@@ -114,43 +119,64 @@ public class TestHelper {
 
 	private Callable<Integer> getTask(final Pool<Resource> pool, final CountDownLatch start, final AtomicInteger f,
 			final CountDownLatch end) {
-		return new Callable<Integer>() {
-
-			@Override
-			public Integer call() throws Exception {
-				final int id = f.decrementAndGet();
-				try {
-					start.await();
-					Resource connection = null;
-					Map<String, Object> params = new Amap<String, Object>();
-					params.put("rc", id);
-					while ((connection = pool.get(params)) == null) {
-						try {
-							if (connection == null)
-								Thread.sleep(100);
-						} catch (Exception e) {
-						}
-					}
-
-					try {
-						connection.perform();
-					} finally {
-						connection.close();
-					}
-				} catch (Throwable e) {
-					System.out.println("Failed with err :: " + e);
-					e.printStackTrace();
-				} finally {
-					if (id == 0) {
-						end.countDown();
-					}
-				}
-
-				return id;
-			}
-		};
+		return new TestResult(pool, start, f, end);
 	}
 
+}
+class TestResult implements Callable<Integer>{
+	private static final Logger logger = LoggerFactory.getLogger(TestResult.class);
+	final Pool<Resource> pool;
+	final CountDownLatch start;
+	final AtomicInteger f;
+	final CountDownLatch end;
+	/**
+	 * @param pool
+	 * @param start
+	 * @param f
+	 * @param end
+	 */
+	TestResult(Pool<Resource> pool, CountDownLatch start, AtomicInteger f, CountDownLatch end) {
+		super();
+		this.pool = pool;
+		this.start = start;
+		this.f = f;
+		this.end = end;
+	}
+	@Override
+	public Integer call() throws Exception {
+		final int id = f.decrementAndGet();
+		try {
+			start.await();
+			Resource connection = null;
+			Map<String, Object> params = new Amap<String, Object>();
+			params.put("rc", id);
+			while ((connection = pool.get(params)) == null) {
+				try {
+					if (connection == null)
+						Thread.sleep(100);
+				} catch (Exception e) {
+					logger.error("Error getConn :: ", e);
+				}
+			}
+
+			try {
+				connection.perform();
+			} finally {
+				connection.close();
+			}
+		} catch (Throwable e) {
+			logger.error("Error perform :: ", e);
+			System.out.println("Failed with err :: " + e);
+			e.printStackTrace();
+		} finally {
+			if (id == 0) {
+				end.countDown();
+			}
+		}
+
+		return id;
+	}
+	
 }
 
 interface Resource extends AutoCloseable {
@@ -160,6 +186,7 @@ interface Resource extends AutoCloseable {
 }
 
 class ResourceImp implements Resource {
+	private static final Logger logger = LoggerFactory.getLogger(ResourceImp.class);
 	volatile boolean c = false;
 	final String name = Thread.currentThread().getName();
 	@Override
@@ -184,6 +211,7 @@ class ResourceImp implements Resource {
 	@Override
 	public int perform() {
 		if (c){
+			logger.info("ResourceImp" + hashCode() + " already closed! name "+name+" Thread "+Thread.currentThread().getName());
 			throw new IllegalStateException("ResourceImp" + hashCode() + " already closed!");
 //			System.err.println("ResourceImp" + hashCode() + " already closed! name "+name+" Thread "+Thread.currentThread().getName());
 		}

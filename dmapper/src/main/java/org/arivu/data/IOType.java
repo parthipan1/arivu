@@ -93,7 +93,7 @@ public enum IOType {
 	
 	/**
 	 * @param type
-	 * @return
+	 * @return ioType
 	 */
 	public static IOType get(final String type) {
 		if( NullCheck.isNullOrEmpty(type) ) return null;

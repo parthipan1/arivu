@@ -11,7 +11,7 @@ import org.arivu.pool.ThreadLocalPool;
  * ThreadLocal datasource creates a connection per thread and keeps 
  * it until the thread is active or the connection expired by config.
  * 
- * @author 
+ * @author Mr P
  *
  */
 public final class ThreadlocalDataSource extends AbstractDataSource  {

@@ -4,8 +4,9 @@
 package org.arivu.datastructure.primitive;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
 
-import org.arivu.utils.lock.AtomicWFLock;
+import org.arivu.utils.lock.AtomicWFReentrantLock;
 
 
 /**
@@ -14,7 +15,7 @@ import org.arivu.utils.lock.AtomicWFLock;
  */
 public final class DoublyLinkedSetLong {
 //	static final AtomicLock cas = new AtomicLock();
-	static final AtomicWFLock cas = new AtomicWFLock();
+//	static final AtomicWFLock cas = new AtomicWFLock();
 	/**
 	 * 
 	 */
@@ -28,23 +29,28 @@ public final class DoublyLinkedSetLong {
 	
 //	volatile int size = 0;
 	AtomicInteger size;
-	
+	Lock cas;
 	/**
-	 * @param cas TODO
 	 * 
 	 */
 	public DoublyLinkedSetLong() {
-		this(Long.MIN_VALUE,new AtomicInteger(0));
+		this(new AtomicWFReentrantLock());
+	}
+	
+	DoublyLinkedSetLong(Lock cas) {
+		this(Long.MIN_VALUE,new AtomicInteger(0), cas);
 	}
 	
 	/**
 	 * @param size TODO
+	 * @param cas TODO
 	 * @param obj
 	 */
-	private DoublyLinkedSetLong(long t, AtomicInteger size) {
+	private DoublyLinkedSetLong(long t, AtomicInteger size, Lock cas) {
 		super();
 		this.obj = t;
 		this.size = size;
+		this.cas = cas;
 	}
 
 	/**
@@ -69,9 +75,8 @@ public final class DoublyLinkedSetLong {
 	}
 	
 	/**
-	 * @return
+	 * @return vLong
 	 */
-	
 	public long poll(){
 		DoublyLinkedSetLong removeRight = removeRight();
 		if(removeRight!=null)
@@ -174,7 +179,7 @@ public final class DoublyLinkedSetLong {
 		return Long.MIN_VALUE;
 	}
 
-	private final long removeRef(){
+	private long removeRef(){
 		DoublyLinkedSetLong tleft = left, tright = right;
 		
 		if (tleft != null)
@@ -261,7 +266,7 @@ public final class DoublyLinkedSetLong {
 //		if(e!=null){
 			DoublyLinkedSetLong search = search(e);
 			if( search == null ){
-				addLeft(new DoublyLinkedSetLong(e, size));
+				addLeft(new DoublyLinkedSetLong(e, size, cas));
 				return true;
 			}else{
 				return false;
@@ -377,7 +382,7 @@ public final class DoublyLinkedSetLong {
 //			return null;
 //	}
 
-//	private final DoublyLinkedSetInt getLinked(long index) {
+//	private DoublyLinkedSetInt getLinked(long index) {
 //		long idx = 0;
 //		DoublyLinkedSetInt ref = this;
 //		while (ref != null) {
@@ -392,7 +397,7 @@ public final class DoublyLinkedSetLong {
 //		return null;
 //	}
 
-//	private final void validateIndex(long index) {
+//	private void validateIndex(long index) {
 //		if( index >= size || index < 0 ) throw new ArrayIndexOutOfBoundsException(index);
 //	}
 

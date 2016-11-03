@@ -3,9 +3,10 @@
  */
 package org.arivu.log.queue;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.Lock;
+
+import org.arivu.datastructure.DoublyLinkedList;
 
 /**
  * Circular buffer to store all the logs and consumers.
@@ -27,29 +28,29 @@ final class LinkedReference<T> {
 	volatile LinkedReference<T> write = null;
 	volatile LinkedReference<T> read = null;
 	
-	ReentrantLock lock = null;
+	Lock lock = null;
 	
 	String id;
 	
-	public LinkedReference(int size, boolean addLock) {
-		super();
-		this.obj = null;
-		this.write = this;
-		this.read = this;
-		this.id = "0";
-		
-		if(addLock)
-			this.lock = new ReentrantLock(true);
-		
-		for(int i=1;i<size;i++){
-			LinkedReference<T> l = new LinkedReference<T>();
-			l.id = String.valueOf(i);
-			if(addLock)
-				l.lock = new ReentrantLock(true);
-			add(l,Direction.left);
-		}
-		
-	}
+//	public LinkedRef(int size, boolean addLock) {
+//		super();
+//		this.obj = null;
+//		this.write = this;
+//		this.read = this;
+//		this.id = "0";
+//		
+//		if(addLock)
+//			this.lock = new AtomicWFReentrantLock();//new ReentrantLock(true);
+//		
+//		for(int i=1;i<size;i++){
+//			LinkedRef<T> l = new LinkedRef<T>();
+//			l.id = String.valueOf(i);
+//			if(addLock)
+//				l.lock = new AtomicWFReentrantLock();
+//			add(l,Direction.left);
+//		}
+//		
+//	}
 
 	boolean isEmptyRing(){
 		LinkedReference<T> ref = this;
@@ -184,7 +185,7 @@ final class LinkedReference<T> {
 	 * @return
 	 */
 	Object[] toArray(final Direction direction) {
-		List<T> subl = new ArrayList<T>();
+		List<T> subl = new DoublyLinkedList<T>();
 		LinkedReference<T> ref = direction.get(this);//this.right;
 		while (ref != null) {
 			if (ref == this) {

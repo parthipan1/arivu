@@ -9,6 +9,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
+import sun.misc.Unsafe;
+
 /**
  * @author P
  *
@@ -17,11 +19,34 @@ public final class AtomicWFLock implements Lock {
 
 	final LinkedReference<CountDownLatch> waits = new LinkedReference<CountDownLatch>();
 
-	final AtomicBoolean cas = new AtomicBoolean(false);
+//	final AtomicBoolean cas = new AtomicBoolean(false);
+	private volatile long cas = 0l;
+	private long offset;
+	Unsafe unsafe;
 	
+	/**
+	 * 
+	 */
+	public AtomicWFLock() {
+		super();
+		try {
+			unsafe = AtomicWFReentrantLock.getUnsafe();
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new IllegalStateException(e);
+		}
+		try {
+			offset = unsafe.objectFieldOffset(AtomicWFLock.class.getDeclaredField("cas"));
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new IllegalStateException(e);
+		}
+	}
+
 	@Override
 	public void lock() {
-		while (!cas.compareAndSet(false, true)) {
+//		while (!cas.compareAndSet(false, true)) {
+		while (!unsafe.compareAndSwapLong(this, offset, 0l, 1l)) {
 			waitForSignal();
 		}
 	}
@@ -39,7 +64,8 @@ public final class AtomicWFLock implements Lock {
 
 	@Override
 	public void unlock() {
-		cas.set(false);
+//		cas.set(false);
+		cas = 0l;
 		releaseAWait();
 	}
 
@@ -50,6 +76,13 @@ public final class AtomicWFLock implements Lock {
 		}
 	}
 
+	void releaseAllWait() {
+		CountDownLatch poll = null;
+		while ((poll = waits.poll(Direction.right)) != null) {
+			poll.countDown();
+		}
+	}
+	
 	@Override
 	public void lockInterruptibly() throws InterruptedException {
 
@@ -57,7 +90,8 @@ public final class AtomicWFLock implements Lock {
 
 	@Override
 	public boolean tryLock() {
-		return !cas.get();
+//		return !cas.get();
+		return cas == 0l;
 	}
 
 	private static final int delta = 100;
@@ -78,7 +112,7 @@ public final class AtomicWFLock implements Lock {
 
 	@Override
 	public Condition newCondition() {
-		throw new RuntimeException("Unsupported function!");
+		return new ACondition();
 	}
 }
 
@@ -88,7 +122,7 @@ public final class AtomicWFLock implements Lock {
  * @param <T>
  */
 final class LinkedReference<T> {
-	static final AtomicLock lock = new AtomicLock();
+	Lock lock;
 
 	/**
 	 * 
@@ -104,15 +138,17 @@ final class LinkedReference<T> {
 	 * 
 	 */
 	public LinkedReference() {
-		this(null);
+		this(null, new AtomicLock());
 	}
 
 	/**
+	 * @param lock TODO
 	 * @param obj
 	 */
-	public LinkedReference(T t) {
+	private LinkedReference(T t, Lock lock) {
 		super();
 		this.obj = t;
+		this.lock = lock;
 	}
 
 	/**
@@ -137,9 +173,10 @@ final class LinkedReference<T> {
 	 */
 	T poll(final Direction dir) {
 		LinkedReference<T> removeRef = null;
-		lock.lock();
+		Lock l = lock;
+		l.lock();
 		removeRef = remove(dir);
-		lock.unlock();
+		l.unlock();
 		if (removeRef != null) {
 			T obj2 = removeRef.obj;
 			removeRef.obj = null;
@@ -190,9 +227,10 @@ final class LinkedReference<T> {
 	 */
 	T add(final T t, Direction direction) {
 		if (t != null) {
-			lock.lock();
-			add(new LinkedReference<T>(t), direction);
-			lock.unlock();
+			Lock l = lock;
+			l.lock();
+			add(new LinkedReference<T>(t, l), direction);
+			l.unlock();
 		}
 		return t;
 	}
@@ -241,6 +279,7 @@ final class LinkedReference<T> {
 		Direction.left.set(right, left);
 		Direction.right.set(this, null);
 		Direction.left.set(this, null);
+		lock = null;
 	}
 
 	/**

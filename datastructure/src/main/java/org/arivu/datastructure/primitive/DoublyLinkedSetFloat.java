@@ -4,8 +4,9 @@
 package org.arivu.datastructure.primitive;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
 
-import org.arivu.utils.lock.AtomicWFLock;
+import org.arivu.utils.lock.AtomicWFReentrantLock;
 
 
 /**
@@ -14,7 +15,7 @@ import org.arivu.utils.lock.AtomicWFLock;
  */
 public final class DoublyLinkedSetFloat {
 //	static final AtomicLock cas = new AtomicLock();
-	static final AtomicWFLock cas = new AtomicWFLock();
+//	static final AtomicWFLock cas = new AtomicWFLock();
 	/**
 	 * 
 	 */
@@ -28,23 +29,27 @@ public final class DoublyLinkedSetFloat {
 	
 //	volatile int size = 0;
 	AtomicInteger size;
-	
+	Lock cas;
 	/**
-	 * @param cas TODO
 	 * 
 	 */
 	public DoublyLinkedSetFloat() {
-		this(Float.MIN_VALUE,new AtomicInteger(0));
+		this(new AtomicWFReentrantLock());
 	}
 	
+	DoublyLinkedSetFloat(Lock cas) {
+		this(Float.MIN_VALUE,new AtomicInteger(0), cas);
+	}
 	/**
 	 * @param size TODO
+	 * @param cas TODO
 	 * @param obj
 	 */
-	private DoublyLinkedSetFloat(float t, AtomicInteger size) {
+	private DoublyLinkedSetFloat(float t, AtomicInteger size, Lock cas) {
 		super();
 		this.obj = t;
 		this.size = size;
+		this.cas = cas;
 	}
 
 	/**
@@ -69,9 +74,8 @@ public final class DoublyLinkedSetFloat {
 	}
 	
 	/**
-	 * @return
+	 * @return vFloat
 	 */
-	
 	public float poll(){
 		DoublyLinkedSetFloat removeRight = removeRight();
 		if(removeRight!=null)
@@ -174,7 +178,7 @@ public final class DoublyLinkedSetFloat {
 		return Float.MIN_VALUE;
 	}
 
-	private final float removeRef(){
+	private float removeRef(){
 		DoublyLinkedSetFloat tleft = left, tright = right;
 		
 		if (tleft != null)
@@ -261,7 +265,7 @@ public final class DoublyLinkedSetFloat {
 //		if(e!=null){
 			DoublyLinkedSetFloat search = search(e);
 			if( search == null ){
-				addLeft(new DoublyLinkedSetFloat(e, size));
+				addLeft(new DoublyLinkedSetFloat(e, size, cas));
 				return true;
 			}else{
 				return false;
@@ -377,7 +381,7 @@ public final class DoublyLinkedSetFloat {
 //			return null;
 //	}
 
-//	private final DoublyLinkedSetInt getLinked(float index) {
+//	  DoublyLinkedSetInt getLinked(float index) {
 //		float idx = 0;
 //		DoublyLinkedSetInt ref = this;
 //		while (ref != null) {
@@ -392,7 +396,7 @@ public final class DoublyLinkedSetFloat {
 //		return null;
 //	}
 
-//	private final void validateIndex(float index) {
+//	private void validateIndex(float index) {
 //		if( index >= size || index < 0 ) throw new ArrayIndexOutOfBoundsException(index);
 //	}
 

@@ -4,8 +4,9 @@
 package org.arivu.datastructure.primitive;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
 
-import org.arivu.utils.lock.AtomicWFLock;
+import org.arivu.utils.lock.AtomicWFReentrantLock;
 
 
 /**
@@ -14,7 +15,7 @@ import org.arivu.utils.lock.AtomicWFLock;
  */
 public final  class DoublyLinkedStackInt {
 //	static final AtomicLock cas = new AtomicLock();
-	static final AtomicWFLock cas = new AtomicWFLock();
+//	static final AtomicWFLock cas = new AtomicWFLock();
 	/**
 	 * 
 	 */
@@ -28,23 +29,27 @@ public final  class DoublyLinkedStackInt {
 	DoublyLinkedStackInt top = this;
 	
 	AtomicInteger size;
-	
+	Lock cas;
 	/**
-	 * @param cas TODO
 	 * 
 	 */
 	public DoublyLinkedStackInt() {
-		this(Integer.MIN_VALUE,new AtomicInteger(0));
+		this(new AtomicWFReentrantLock());
 	}
 	
+	DoublyLinkedStackInt(Lock cas) {
+		this(Integer.MIN_VALUE,new AtomicInteger(0), cas);
+	}
 	/**
 	 * @param size TODO
+	 * @param cas TODO
 	 * @param obj
 	 */
-	private DoublyLinkedStackInt(int t, AtomicInteger size) {
+	private DoublyLinkedStackInt(int t, AtomicInteger size, Lock cas) {
 		super();
 		this.obj = t;
 		this.size = size;
+		this.cas = cas;
 	}
 
 	/**
@@ -94,7 +99,7 @@ public final  class DoublyLinkedStackInt {
 	}
 	
 	/**
-	 * @return
+	 * @return vInt
 	 */
 	//@Override
 	public int poll(){
@@ -111,7 +116,7 @@ public final  class DoublyLinkedStackInt {
 	//@Override
 	public int push(int e) {
 		DoublyLinkedStackInt ref = top;
-		DoublyLinkedStackInt ref1 = new DoublyLinkedStackInt(e, size);
+		DoublyLinkedStackInt ref1 = new DoublyLinkedStackInt(e, size, cas);
 		top.addRight(ref1);
 		top = ref1;
 		return ref.obj;
@@ -409,7 +414,7 @@ public final  class DoublyLinkedStackInt {
 			return Integer.MIN_VALUE;
 	}
 
-	private final DoublyLinkedStackInt getLinked(int index) {
+	private DoublyLinkedStackInt getLinked(int index) {
 		int idx = 0;
 		DoublyLinkedStackInt ref = this.right;
 		while (ref != null) {
@@ -425,7 +430,7 @@ public final  class DoublyLinkedStackInt {
 		return null;
 	}
 
-	private final void validateIndex(int index) {
+	private void validateIndex(int index) {
 		if( index >= size.get() || index < 0 ) throw new ArrayIndexOutOfBoundsException(index);
 	}
 

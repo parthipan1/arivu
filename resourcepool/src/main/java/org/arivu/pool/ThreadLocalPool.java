@@ -1,7 +1,6 @@
 package org.arivu.pool;
 
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.arivu.datastructure.Threadlocal;
 import org.arivu.datastructure.Threadlocal.Factory;
@@ -33,31 +32,26 @@ public final class ThreadLocalPool<T> extends AbstractPool<T> {
 		super(factory, klass, maxPoolSize, maxReuseCount, lifeSpan);
 	}
 
-	private final AtomicInteger ps = new AtomicInteger(0);
-	
 	/**
 	 * 
 	 */
-	private final Threadlocal<LinkedReference<T>> threadlocals = new Threadlocal<LinkedReference<T>>( new Factory<LinkedReference<T>>() {
+	private final Threadlocal<State<T>> threadlocals = new Threadlocal<State<T>>( new Factory<State<T>>() {
 
 		@Override
-		public LinkedReference<T> create(Map<String, Object> params) {
-			final LinkedReference<T> c = new LinkedReference<T>(factory.create(params), ps);
-			logger.debug("Factory create "+c.t.hashCode()+" Thread "+Thread.currentThread().hashCode());
-//			System.out.println("Factory create "+c.t.hashCode()+" Thread "+Thread.currentThread().hashCode());
-			return c;
+		public State<T> create(Map<String, Object> params) {
+			final State<T> state = new State<T>(factory.create(params));
+			logger.debug("Factory create {} Thread {}", state.t.hashCode(),Thread.currentThread().hashCode());
+			return state;
 		}
 	}  , -1);
 	
-//	private final ThreadLocal<LinkedReference<T>> threadlocals = new ThreadLocal<LinkedReference<T>>();
-	
-
 	/* (non-Javadoc)
 	 * @see org.arivu.pool.AbstractPool#close()
 	 */
 	@Override
 	public void close() throws Exception {
-		clear();
+		super.close();
+		threadlocals.close();
 	}
 
 	/* (non-Javadoc)
@@ -65,12 +59,11 @@ public final class ThreadLocalPool<T> extends AbstractPool<T> {
 	 */
 	@Override
 	public T get(Map<String, Object> params) {
-		LinkedReference<T> lr = threadlocals.get(params);
+		State<T> lr = threadlocals.get(params);
 		if(lr==null){
-			lr = createNew(params, true);
+			lr = createNew(params);
 			threadlocals.set(lr);
 		}
-//		LinkedReference<T> lr = threadlocals.get(params);
 		return getProxyLinked(lr);
 	}
 
@@ -86,41 +79,11 @@ public final class ThreadLocalPool<T> extends AbstractPool<T> {
 	 * @see org.arivu.pool.AbstractPool#releaseLink(org.arivu.pool.AbstractPool.LinkedReference)
 	 */
 	@Override
-	void releaseLink(LinkedReference<T> ref) {
-//		logger.debug("release "+ref.t.hashCode());
-		if( ref!=null && ref.state.checkExp(1, maxPoolSize, maxReuseCount, lifeSpan, idleTimeout) ){
-//			logger.debug("releaseLink close "+ref.t.hashCode()+" Thread "+Thread.currentThread().hashCode());
+	void releaseLink(State<T> state) {
+		if( state!=null && state.checkExp(1, this) ){
 			threadlocals.remove();
-//			logger.debug("releaseLink close After remove Thread "+Thread.currentThread().hashCode());
-			factory.close(ref.t);
-			
-			LinkedReference<T> search = head.search(ref.t);
-			if(search!=null){
-				search.remove();
-			}
-			
-//			LinkedReference<T> linkedReference = threadlocals.get();
-//			if( linkedReference != null )
-//				logger.debug("releaseLink close After close Thread "+Thread.currentThread().hashCode()+" get "+linkedReference.t.hashCode());
-//			else
-//				logger.debug("releaseLink close After close Thread "+Thread.currentThread().hashCode()+" get null");
-			
+			closeExpConn(state);
 		}
-	}
-
-	/* (non-Javadoc)
-	 * @see org.arivu.pool.AbstractPool#clear()
-	 */
-	@Override
-	public void clear() {
-		clearHead();
-//		super.clear();
-//		Collection<LinkedReference<T>> all = threadlocals.getAll();
-//		threadlocals.clearAll();
-//		for( LinkedReference<T> lr:all ){
-//			logger.debug("close "+lr.t.hashCode());
-//			factory.close(lr.t);
-//		}
 	}
 
 	/* (non-Javadoc)
@@ -128,7 +91,7 @@ public final class ThreadLocalPool<T> extends AbstractPool<T> {
 	 */
 	@Override
 	public void setMaxPoolSize(int size) {
-		logger.warn(getClass().getName() + " " + this + " setMaxPoolSize(" + size + ") ignored!");
+		logger.warn("{} {} setMaxPoolSize({}) ignored!",getClass().getName() , this, size );
 		super.setMaxPoolSize(-1);
 	}
 

@@ -4,8 +4,9 @@
 package org.arivu.datastructure.primitive;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
 
-import org.arivu.utils.lock.AtomicWFLock;
+import org.arivu.utils.lock.AtomicWFReentrantLock;
 
 
 /**
@@ -14,7 +15,7 @@ import org.arivu.utils.lock.AtomicWFLock;
  */
 public final  class DoublyLinkedStackLong {
 //	static final AtomicLock cas = new AtomicLock();
-	static final AtomicWFLock cas = new AtomicWFLock();
+//	static final AtomicWFLock cas = new AtomicWFLock();
 	/**
 	 * 
 	 */
@@ -28,23 +29,27 @@ public final  class DoublyLinkedStackLong {
 	DoublyLinkedStackLong top = this;
 	
 	AtomicInteger size;
-	
+	Lock cas;
 	/**
-	 * @param writeLock TODO
 	 * 
 	 */
 	public DoublyLinkedStackLong() {
-		this(Long.MIN_VALUE,new AtomicInteger(0));
+		this(new AtomicWFReentrantLock());
 	}
 	
+	DoublyLinkedStackLong(Lock cas) {
+		this(Long.MIN_VALUE,new AtomicInteger(0), cas);
+	}
 	/**
 	 * @param size TODO
+	 * @param cas TODO
 	 * @param obj
 	 */
-	private DoublyLinkedStackLong(long t, AtomicInteger size) {
+	private DoublyLinkedStackLong(long t, AtomicInteger size, Lock cas) {
 		super();
 		this.obj = t;
 		this.size = size;
+		this.cas = cas;
 	}
 
 	/**
@@ -94,7 +99,7 @@ public final  class DoublyLinkedStackLong {
 	}
 	
 	/**
-	 * @return
+	 * @return vLong
 	 */
 	//@Override
 	public long poll(){
@@ -111,7 +116,7 @@ public final  class DoublyLinkedStackLong {
 	//@Override
 	public long push(long e) {
 		DoublyLinkedStackLong ref = top;
-		DoublyLinkedStackLong ref1 = new DoublyLinkedStackLong(e, size);
+		DoublyLinkedStackLong ref1 = new DoublyLinkedStackLong(e, size, cas);
 		top.addRight(ref1);
 		top = ref1;
 		return ref.obj;
@@ -409,7 +414,7 @@ public final  class DoublyLinkedStackLong {
 			return Long.MIN_VALUE;
 	}
 
-	private final DoublyLinkedStackLong getLinked(int index) {
+	private DoublyLinkedStackLong getLinked(int index) {
 		int idx = 0;
 		DoublyLinkedStackLong ref = this.right;
 		while (ref != null) {
@@ -425,7 +430,7 @@ public final  class DoublyLinkedStackLong {
 		return null;
 	}
 
-	private final void validateIndex(int index) {
+	private void validateIndex(int index) {
 		if( index >= size.get() || index < 0 ) throw new ArrayIndexOutOfBoundsException(index);
 	}
 

@@ -5,7 +5,6 @@ package org.arivu.log.queue;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -14,10 +13,11 @@ import javax.management.InstanceAlreadyExistsException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
+import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.datastructure.Threadlocal;
 import org.arivu.datastructure.Threadlocal.Factory;
 import org.arivu.log.Appender;
-import org.arivu.log.AsyncLogger;
+import org.arivu.log.LightningLogger;
 import org.arivu.log.Converter;
 import org.arivu.log.LogMXBean;
 import org.arivu.log.appender.Appenders;
@@ -31,7 +31,7 @@ import org.arivu.log.appender.Appenders;
  * @param <T>
  */
 public final class Producer<T> implements AutoCloseable {
-	private static final long IDEAL_TIME_THREAD = 1000*60*60*5;
+	private static final long IDEAL_TIME_THREAD = 1000*30;//*60*5;
 	
 	/**
 	 * 
@@ -80,7 +80,7 @@ public final class Producer<T> implements AutoCloseable {
 	/**
 	 * 
 	 */
-	private final void registerMXBean(final int cnt) {
+	private void registerMXBean(final int cnt) {
 		try {
 			MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
 			beanNameStr = "org.arivu.log:type=" + getClass().getSimpleName() + "." + String.valueOf(cnt);
@@ -96,7 +96,7 @@ public final class Producer<T> implements AutoCloseable {
 	/**
 	 * @return
 	 */
-	private final LogMXBean getLogMXBean() {
+	private LogMXBean getLogMXBean() {
 		final Producer<T> that = this;
 		return new LogMXBean() {
 
@@ -122,12 +122,12 @@ public final class Producer<T> implements AutoCloseable {
 
 			@Override
 			public int getBatchSize() {
-				throw new RuntimeException("Cannot perform this funcion on Producer!");
+				return Consumer.BATCH_SIZE;
 			}
 
 			@Override
 			public void setBatchSize(int size) {
-				throw new RuntimeException("Cannot perform this funcion on Producer!");
+				Consumer.BATCH_SIZE = size;
 			}
 
 			@Override
@@ -140,7 +140,7 @@ public final class Producer<T> implements AutoCloseable {
 						throw new RuntimeException(e);
 					}
 				} else
-					AsyncLogger.addCustomAppender(appenders, customAppender);
+					LightningLogger.addCustomAppender(appenders, customAppender);
 			}
 
 			@Override
@@ -150,7 +150,7 @@ public final class Producer<T> implements AutoCloseable {
 
 			@Override
 			public String[] getAppenders() {
-				Collection<String> apnames = new ArrayList<String>();
+				Collection<String> apnames = new DoublyLinkedList<String>();
 				if (appenders != null) {
 					for (Appender a : appenders)
 						apnames.add(a.getClass().getSimpleName());
@@ -178,6 +178,11 @@ public final class Producer<T> implements AutoCloseable {
 			public void evictConsumer() throws Exception {
 				that.threadlocal.evict();
 			}
+
+			@Override
+			public int getConsumerCount() {
+				return that.threadlocal.size();
+			}
 		};
 	}
 
@@ -191,8 +196,8 @@ public final class Producer<T> implements AutoCloseable {
 		threadlocal.get(null).consume(t,time);
 	}
 
-	final String getThreadId() {
-		return String.valueOf(Thread.currentThread().hashCode());
+	Object getThreadId() {
+		return Thread.currentThread().hashCode();
 	}
 	
 	final Threadlocal<Consumer<T>> threadlocal = new Threadlocal<Consumer<T>>(new Factory<Consumer<T>>() {
@@ -235,9 +240,6 @@ public final class Producer<T> implements AutoCloseable {
 
 	/**
 	 * Completely flushed the log queue on all threads ( consumers)
-	 * 
-	 * @param parallel
-	 *            TODO
 	 * 
 	 * @throws Exception
 	 */

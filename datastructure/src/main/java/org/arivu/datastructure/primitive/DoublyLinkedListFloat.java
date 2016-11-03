@@ -4,8 +4,9 @@
 package org.arivu.datastructure.primitive;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
 
-import org.arivu.utils.lock.AtomicWFLock;
+import org.arivu.utils.lock.AtomicWFReentrantLock;
 
 
 /**
@@ -25,26 +26,31 @@ public final class DoublyLinkedListFloat  {
 	
 	
 	AtomicInteger size;
-	
+	Lock cas;
 //	static final AtomicLock cas = new AtomicLock();
-	static final AtomicWFLock cas = new AtomicWFLock();
+//	static final AtomicWFLock cas = new AtomicWFLock();
 	
 	/**
-	 * @param writeLock TODO
 	 * 
 	 */
 	public DoublyLinkedListFloat() {
-		this(Float.MIN_VALUE,new AtomicInteger(0));
+		this(new AtomicWFReentrantLock());
+	}
+	
+	DoublyLinkedListFloat(Lock cas) {
+		this(Float.MIN_VALUE,new AtomicInteger(0), cas);
 	}
 	
 	/**
 	 * @param size TODO
+	 * @param cas TODO
 	 * @param obj
 	 */
-	private DoublyLinkedListFloat(float t, AtomicInteger size) {
+	private DoublyLinkedListFloat(float t, AtomicInteger size, Lock cas) {
 		super();
 		this.obj = t;
 		this.size = size;
+		this.cas = cas;
 	}
 
 	/**
@@ -69,9 +75,8 @@ public final class DoublyLinkedListFloat  {
 	}
 	
 	/**
-	 * @return
+	 * @return vFloat
 	 */
-	
 	public float poll(){
 		DoublyLinkedListFloat removeRight = removeRight();
 		if(removeRight!=null)
@@ -184,7 +189,7 @@ public final class DoublyLinkedListFloat  {
 
 	public boolean add(float e) {
 		if(e!=Float.MIN_VALUE){
-			addLeft(new DoublyLinkedListFloat(e, size));
+			addLeft(new DoublyLinkedListFloat(e, size, cas));
 			return true;
 		}else{
 			return false;
@@ -294,7 +299,7 @@ public final class DoublyLinkedListFloat  {
 			return Float.MIN_VALUE;
 	}
 
-	private final DoublyLinkedListFloat getLinked(int index) {
+	private DoublyLinkedListFloat getLinked(int index) {
 		int idx = 0;
 		DoublyLinkedListFloat ref = this.right;
 		while (ref != null) {
@@ -310,7 +315,7 @@ public final class DoublyLinkedListFloat  {
 		return null;
 	}
 
-	private final void validateIndex(int index) {
+	private void validateIndex(int index) {
 		if( index >= size.get() || index < 0 ) throw new ArrayIndexOutOfBoundsException(index);
 	}
 

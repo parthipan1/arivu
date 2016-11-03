@@ -5,16 +5,21 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.Callable;
+//import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.arivu.datastructure.Amap.AnEntry;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -44,8 +49,12 @@ public class AmapTest {
 		Amap<String, String> map = new Amap<String, String>();
 		map.put("test", "test");
 		assertTrue("Failed on size ", map.size() == 1);
-		// map.put(null, "test");
-		// assertTrue("Failed on size ", map.size()==2);
+		map.put(null, "tes1");
+		assertTrue("Failed on size ", map.size()==2);
+		assertTrue("Failed on size ", "tes1".equals(map.remove(null)));
+		assertTrue("Failed on size ", map.size() == 1);
+		assertTrue("Failed on size ", "test".equals(map.remove("test")));
+		assertTrue("Failed on size ", map.size() == 0);
 	}
 
 	@Test
@@ -64,6 +73,11 @@ public class AmapTest {
 		assertTrue("Failed on containsKey ", map.containsKey("test"));
 		map.remove("test");
 		assertFalse("Failed on containsKey ", map.containsKey("test"));
+		assertFalse("Failed on containsKey ", map.containsKey(null));
+		map.put(null, "test");
+		assertTrue("Failed on containsKey ", map.containsKey(null));
+		map.put(null, null);
+		assertFalse("Failed on containsKey ", map.containsKey(null));
 	}
 
 	@Test
@@ -74,16 +88,48 @@ public class AmapTest {
 		assertTrue("Failed on containsValue ", map.containsValue("test"));
 		map.remove("test");
 		assertFalse("Failed on containsValue ", map.containsValue("test"));
+		assertFalse("Failed on containsValue ", map.containsValue(null));
 	}
 
 	@Test
 	public void testGet() {
 		Amap<String, String> map = new Amap<String, String>();
-		assertTrue("Failed on get ", map.get("test") == null);
+		String get = map.get("test");
+		assertTrue("Failed on get ", get == null);
 		map.put("test", "test");
-		assertTrue("Failed on get exp:: test got::" + map.get("test"), "test".equals(map.get("test")));
+		get = map.get("test");
+		assertTrue("Failed on get exp:: test got::" + get, "test".equals(get));
 		map.remove("test");
-		assertTrue("Failed on get ", map.get("test") == null);
+		get = map.get("test");
+		assertTrue("Failed on get ", get == null);
+		
+		map.put("test", "test");
+		get = map.get("test");
+		assertTrue("Failed on get exp:: test got::" + get, "test".equals(get));
+		map.put("test", null);
+		get = map.get("test");
+		assertTrue("Failed on get ", get == null);
+		
+		get = map.get(null);
+		assertTrue("Failed on get ", get == null);
+		
+		map.put(null, "1");
+		get = map.get(null);
+		assertTrue("Failed on get ", "1".equals(get));
+		map.put(null, null);
+		get = map.get(null);
+		assertTrue("Failed on get ", get == null);
+		
+		
+		map.put("test", "test");
+		get = map.get("test");
+		assertTrue("Failed on get exp:: test got::" + get, "test".equals(get));
+		map.put("test", "test1");
+		get = map.get("test");
+		assertTrue("Failed on get exp:: test got::" + get, "test1".equals(get));
+		
+		assertTrue("Failed on get exp:: test keySet :: size", map.keySet().size() == map.size());
+		
 	}
 	//
 	// @Test
@@ -96,17 +142,37 @@ public class AmapTest {
 	// fail("Not yet implemented");
 	// }
 	//
-	// @Test
-	// public void testPutAll() {
-	// fail("Not yet implemented");
-	// }
-	//
-	// @Test
-	// public void testClear() {
-	// fail("Not yet implemented");
-	// }
-	//
-	// @Test
+	 @Test
+	 public void testPutAll() {
+		Amap<String, String> map = new Amap<String, String>();
+		String get = map.get("test");
+		assertTrue("Failed on get ", get == null);
+		map.put("test", "test");
+		assertTrue(map.size()==1);
+		
+		Amap<String, String> map2 = new Amap<String, String>(map);
+		assertTrue(map2.size()==1);
+		map.putAll(null);
+		map.putAll(new HashMap<String, String>());
+	 }
+	 
+	
+	 @Test
+	 public void testClear() {
+		Amap<String, String> map = new Amap<String, String>();
+		String get = map.get("test");
+		assertTrue("Failed on get ", get == null);
+		map.put(null, "test");
+		assertTrue(map.size()==1);
+		map.clear();
+		assertTrue(map.size()==0);
+		map.put(null, null);
+		assertTrue(map.size()==0);
+		map.remove(null);
+		assertTrue(map.size()==0);
+	 }
+
+	 // @Test
 	// public void testKeySet() {
 	// fail("Not yet implemented");
 	// }
@@ -115,21 +181,36 @@ public class AmapTest {
 	// public void testValues() {
 	// fail("Not yet implemented");
 	// }
-	//
-	// @Test
-	// public void testEntrySet() {
-	// fail("Not yet implemented");
-	// }
+	
+	 @Test
+	 public void testEntryHcAndEquals() {
+		 Amap<String,String> test = new Amap<String, String>();
+		 
+		 String key = (String)null;
+		 AnEntry keyWrap2 = test.getKeyWrap(key);
+		 assertTrue(keyWrap2.hashCode()==0);
+		 AnEntry keyWrap1 = test.getKeyWrap("1");
+		 assertTrue(keyWrap1.hashCode()=="1".hashCode());
+		 AnEntry keyWrap3 = test.getKeyWrap("2");
+		 AnEntry keyWrap4 = test.getKeyWrap("1");
+		 
+		 assertTrue(keyWrap1.equals(keyWrap1));
+		 assertFalse(keyWrap1.equals(null));
+		 assertFalse(keyWrap1.equals("1"));
+		 assertFalse(keyWrap2.equals(keyWrap1));
+		 assertFalse(keyWrap3.equals(keyWrap1));
+		 assertTrue(keyWrap4.equals(keyWrap1));
+	 }
 
 	/**
+	 * @throws InterruptedException 
 	 */
 	@Test
-	public void testRunParallel() throws IOException {
-		final Map<String, String> map = new Amap<String, String>();// new
-																	// CopyOnWriteArraySet<String>();//
-
-		final int reqPerThread = 5;
-		final int noOfThreads = 5;
+	public void testRunParallel() throws IOException, InterruptedException {
+		final Amap<String, String> map = new Amap<String, String>();//new java.util.concurrent.ConcurrentHashMap<String, String>();//
+		
+		final int reqPerThread = ThreadCounts.noOfRequests/ThreadCounts.maxThreads;
+		final int noOfThreads = ThreadCounts.maxThreads;
 		final Queue<Future<Integer>> listFuture = new DoublyLinkedList<Future<Integer>>();
 		final ExecutorService exe = Executors.newFixedThreadPool(noOfThreads);
 		final AtomicInteger c = new AtomicInteger(noOfThreads);
@@ -154,7 +235,8 @@ public class AmapTest {
 		Future<Integer> poll = null;
 		while ((poll = listFuture.poll()) != null) {
 			try {
-				System.out.println(" Completed :: "+poll.get());
+				poll.get();
+//				System.out.println(" Completed :: "+poll.get());
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			} catch (ExecutionException e) {
@@ -162,7 +244,16 @@ public class AmapTest {
 				fail("failed in parallel run!");
 			}
 		}
-
+		exe.shutdownNow();
+		if (!exe.awaitTermination(100, TimeUnit.MICROSECONDS)) {
+//			String msg = "Still waiting after 100ms: calling System.exit(0)...";
+//			System.err.println(msg);
+		}
+		Collection<Object> values = map.binaryTree.getAll();
+		
+		for(Object o:values)
+			System.out.println("values :: "+o);
+		
 		assertTrue("Failed in || run test exp::0 got::" + map.size(), map.size() == 0);
 	}
 
@@ -177,31 +268,37 @@ public class AmapTest {
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-				final String key = String.valueOf(Thread.currentThread().hashCode());
-				final int decrementAndGet = c.decrementAndGet();
-				for (int i = 0; i < reqPerThread; i++) {
-					String value = String.valueOf(i);
-					map.remove(key);
-					if (map.get(key) != null) {
-						if (decrementAndGet <= 0) {
-							end.countDown();
+				int decrementAndGet = c.decrementAndGet();
+				try {
+					final String key = String.valueOf(Thread.currentThread().hashCode());
+					
+					for (int i = 0; i < reqPerThread; i++) {
+						String value = String.valueOf(i);
+						map.remove(key);
+						if (map.get(key) != null) {
+							if (decrementAndGet <= 0) {
+								end.countDown();
+							}
+							System.err.println("Failed in check1 thread " + key + " value " + value);
+							throw new RuntimeException("Failed in check1 thread " + key + " value " + value);
 						}
-						System.err.println("Failed in check1 thread " + key + " value " + value);
-						throw new RuntimeException("Failed in check1 thread " + key + " value " + value);
-					}
 
-					map.put(key, value);
-
-					if (map.get(key) != value) {
-						if (decrementAndGet <= 0) {
-							end.countDown();
+						map.put(key, value);
+//					System.out.println("Key "+key+" value "+value);
+						if (map.get(key) != value) {
+							if (decrementAndGet <= 0) {
+								end.countDown();
+							}
+							System.err.println("Failed in check2 thread " + key + " value " + value);
+							throw new RuntimeException("Failed in check2 thread " + key + " value " + value);
 						}
-						System.err.println("Failed in check2 thread " + key + " value " + value);
-						throw new RuntimeException("Failed in check2 thread " + key + " value " + value);
-					}
 
-					map.remove(key);
-					System.out.println("Completed Thread "+decrementAndGet+" req "+value);
+						map.remove(key);
+//					System.out.println("Completed Thread "+decrementAndGet+" req "+value);
+					}
+				} catch (Throwable e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
 				
 //				System.out.println("completed "+decrementAndGet);

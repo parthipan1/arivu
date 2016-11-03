@@ -44,7 +44,7 @@ public class TestPoolsLessCnt {
 	@Test
 	public void test4ConcurrentPool() throws Exception {
 		final Pool<Resource> pool = new ConcurrentPool<Resource>(helper.factory , Resource.class);
-		helper.testPool(pool, helper.poolSize, false);
+		helper.testPool(pool, helper.poolSize, true);
 	}
 	
 //	@Test
@@ -58,13 +58,13 @@ public class TestPoolsLessCnt {
 //	@Ignore
 	public void test2NonBlockingPool() throws Exception {
 		final Pool<Resource> pool = new NonBlockingPool<Resource>(helper.factory, Resource.class);//
-		helper.testPool(pool, helper.poolSize, false);
+		helper.testPool(pool, helper.poolSize, true);
 	}
 	
 	@Test
 	public void test6NoPool() throws Exception {
 		final Pool<Resource> pool = new NoPool<Resource>(helper.factory, Resource.class);//
-		helper.testPool(pool, helper.nThreads, false);
+		helper.testPool(pool, helper.nThreads, true);
 	}
 	
 	@Test

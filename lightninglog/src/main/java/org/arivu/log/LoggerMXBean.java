@@ -10,19 +10,19 @@ package org.arivu.log;
 public interface LoggerMXBean {
 	
 	boolean getShowThreadName();
-	void setShowThreadName(boolean flag);
+//	void setShowThreadName(boolean flag);
 	
 	boolean getShowLogName();
-	void setShowLogName(boolean flag);
+//	void setShowLogName(boolean flag);
 	
 	boolean getShowLogShortName();
-	void setShowLogShortName(boolean flag);
+//	void setShowLogShortName(boolean flag);
 
 	boolean getShowDate();
-	void setShowDate(boolean flag);
+//	void setShowDate(boolean flag);
 
 	String getDateFormat();
-	void setDateFormat(String format);
+//	void setDateFormat(String format);
 
 	String getLogFile();
 	void setLogFile(String file);

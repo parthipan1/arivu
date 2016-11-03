@@ -11,7 +11,7 @@ import org.arivu.pool.PoolFactory;
  * Not Actually a connection pool , Creates and closes connection when required.
  * No Connection is maintained in a connection pool(NoPool).
  * 
- * @author 
+ * @author Mr P
  *
  */
 public final class RequestDataSource extends AbstractDataSource {

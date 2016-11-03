@@ -1,6 +1,9 @@
 package org.arivu.pool;
 
+import java.util.Collection;
 import java.util.Map;
+
+import org.arivu.datastructure.Btree;
 
 /**
  * @author P
@@ -8,7 +11,9 @@ import java.util.Map;
  * @param <T>
  */
 public final class NoPool<T> extends AbstractPool<T> {
-
+	
+	final Btree nolist = new Btree();
+	
 	/**
 	 * @param factory
 	 * @param klass
@@ -20,7 +25,6 @@ public final class NoPool<T> extends AbstractPool<T> {
 	/**
 	 * @param factory
 	 * @param klass
-	 * @param maxPoolSize
 	 * @param maxReuseCount
 	 * @param lifeSpan
 	 */
@@ -28,37 +32,49 @@ public final class NoPool<T> extends AbstractPool<T> {
 		super(factory, klass, -1, maxReuseCount, lifeSpan);
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.arivu.pool.AbstractPool#get()
 	 */
 	@Override
 	public T get(final Map<String, Object> params) {
-		return getProxyLinked(createNew(params, true));
+		T create = factory.create(params);
+		nolist.add(create);
+		return (create);
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.arivu.pool.AbstractPool#release(java.lang.AutoCloseable)
 	 */
 	@Override
 	public void put(T t) {
-		logger.debug("close " + t.hashCode());
-		factory.close(t);
-		final LinkedReference<T> ref = head.search(t);
-		if (ref!=null) {
-			nonBlockingRemove(ref);
-		}
-	}
-
-	/* (non-Javadoc)
-	 * @see org.arivu.pool.AbstractPool#releaseLink(org.arivu.pool.LinkedReference)
-	 */
-	@Override
-	void releaseLink(final LinkedReference<T> ref) {
-		if (ref!=null) {
-			logger.debug("close " + ref.t.hashCode());
-			factory.close(ref.t);
-			nonBlockingRemove(ref);
+		if (t != null) {
+			logger.debug("close {}", t.hashCode());
+			factory.close(t);
+			nolist.remove(t);
 		}
 	}
 	
+	@Override
+	public int getMaxPoolSize() {
+		return nolist.size();
+	}
+	
+	/**
+	 * 
+	 */
+	@SuppressWarnings("unchecked")
+	@Override
+	public void clear() {
+		Collection<Object> all = nolist.getAll();
+		nolist.clear();
+		
+		for(Object o:all){
+			logger.debug("close {}", o.hashCode());
+			factory.close((T)o);
+		}
+	}
 }

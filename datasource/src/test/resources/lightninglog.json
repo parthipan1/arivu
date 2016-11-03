@@ -1,12 +1,12 @@
 {
-	"appenders":["zip"],
+	"appenders":["file"],
 	"loggers":{
-		"root":"debug",
-		"org.arivu":"debug"
+		"root":"info",
+		"org.arivu":"info"
 	},
 	"buffer":{
-		"batch":100,
-		"ring":300
+		"batch":50,
+		"ring":50
 	},
 	"log":{
 		"showDateTime":true,

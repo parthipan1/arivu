@@ -9,8 +9,8 @@ import java.util.Map;
  */
 public interface PoolFactory<T> {
 	/**
-	 * @param params TODO
-	 * @return
+	 * @param params
+	 * @return tObject
 	 */
 	T create(Map<String, Object> params);
 	

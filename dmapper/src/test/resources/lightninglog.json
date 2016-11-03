@@ -3,7 +3,7 @@
 	"customAppenders":[],
 	"loggers":{
 		"root":"debug",
-		"org.arivu":"debug"
+		"org.arivu":"info"
 	},
 	"buffer":{
 		"batch":100,

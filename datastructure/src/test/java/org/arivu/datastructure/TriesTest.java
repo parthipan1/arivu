@@ -31,9 +31,13 @@ public class TriesTest {
 	@Test
 	public void testAdd() {
 		Tries tries = new Tries();
+		assertTrue(tries.getWords("s")==null);
 		tries.add("salary speaking");
 		Set<String> words = tries.getWords("s");
 		assertTrue("Failed on size!"+words.size(), words.size()==2);
+		assertTrue(tries.getWords("saz")==null);
+		assertTrue(tries.searchIndexes("saz")!=null);
+		assertTrue(tries.searchIndexes("saz").length==0);
 	}
 
 	@Test
@@ -50,8 +54,8 @@ public class TriesTest {
 		assertTrue("Failed on size!", words.size()==2);
 		
 		words = tries.getWords("t");
-		for(String t:words)
-			System.out.println(t);
+//		for(String t:words)
+//			System.out.println(t);
 	}
 
 	@Test

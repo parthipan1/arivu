@@ -4,8 +4,9 @@
 package org.arivu.datastructure.primitive;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
 
-import org.arivu.utils.lock.AtomicWFLock;
+import org.arivu.utils.lock.AtomicWFReentrantLock;
 
 
 /**
@@ -14,7 +15,7 @@ import org.arivu.utils.lock.AtomicWFLock;
  */
 public final  class DoublyLinkedStackDouble {
 //	static final AtomicLock cas = new AtomicLock();
-	static final AtomicWFLock cas = new AtomicWFLock();
+//	static final AtomicWFLock cas = new AtomicWFLock();
 	/**
 	 * 
 	 */
@@ -28,23 +29,27 @@ public final  class DoublyLinkedStackDouble {
 	DoublyLinkedStackDouble top = this;
 	
 	AtomicInteger size;
-	
+	Lock cas;
 	/**
-	 * @param cas TODO
 	 * 
 	 */
 	public DoublyLinkedStackDouble() {
-		this(Double.MIN_VALUE,new AtomicInteger(0));
+		this(new AtomicWFReentrantLock());
 	}
 	
+	DoublyLinkedStackDouble(Lock cas) {
+		this(Double.MIN_VALUE,new AtomicInteger(0), cas);
+	}
 	/**
 	 * @param size TODO
+	 * @param cas TODO
 	 * @param obj
 	 */
-	private DoublyLinkedStackDouble(double t, AtomicInteger size) {
+	private DoublyLinkedStackDouble(double t, AtomicInteger size, Lock cas) {
 		super();
 		this.obj = t;
 		this.size = size;
+		this.cas = cas;
 	}
 
 	/**
@@ -94,7 +99,7 @@ public final  class DoublyLinkedStackDouble {
 	}
 	
 	/**
-	 * @return
+	 * @return vDouble
 	 */
 	//@Override
 	public double poll(){
@@ -111,7 +116,7 @@ public final  class DoublyLinkedStackDouble {
 	//@Override
 	public double push(double e) {
 		DoublyLinkedStackDouble ref = top;
-		DoublyLinkedStackDouble ref1 = new DoublyLinkedStackDouble(e, size);
+		DoublyLinkedStackDouble ref1 = new DoublyLinkedStackDouble(e, size, cas);
 		top.addRight(ref1);
 		top = ref1;
 		return ref.obj;
@@ -409,7 +414,7 @@ public final  class DoublyLinkedStackDouble {
 			return Double.MIN_VALUE;
 	}
 
-	private final DoublyLinkedStackDouble getLinked(int index) {
+	private DoublyLinkedStackDouble getLinked(int index) {
 		int idx = 0;
 		DoublyLinkedStackDouble ref = this.right;
 		while (ref != null) {
@@ -425,7 +430,7 @@ public final  class DoublyLinkedStackDouble {
 		return null;
 	}
 
-	private final void validateIndex(int index) {
+	private void validateIndex(int index) {
 		if( index >= size.get() || index < 0 ) throw new ArrayIndexOutOfBoundsException(index);
 	}
 

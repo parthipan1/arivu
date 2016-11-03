@@ -170,7 +170,11 @@ abstract class AbstractDataSource implements DataSource {
 			this.cf = cf;
 		}
 		this.pool = usePool.create(factory);
-		Runtime.getRuntime().addShutdownHook(hook);
+		try {
+			Runtime.getRuntime().addShutdownHook(hook);
+		} catch (Throwable e) {
+			logger.error("Error on addshutdownhook::",e);
+		}
 	}
 
 	/**
@@ -201,11 +205,11 @@ abstract class AbstractDataSource implements DataSource {
 			if( name == null ){
 				String name2 = "org.arivu.dbds:type="+getClass().getSimpleName()+"."+(beanInstanceCnt++);
 				mxbeanName = new ObjectName(name2);
-				logger.debug( "Registered MXBean Bean "+name2);
+				logger.debug( "Registered MXBean Bean {}",name2);
 			}else{
 				String name2 = "org.arivu.dbds:type="+getClass().getSimpleName()+"."+name+(beanInstanceCnt++);
 				mxbeanName = new ObjectName(name2);
-				logger.debug( "Registered MXBean Bean "+name2);
+				logger.debug( "Registered MXBean Bean {}",name2);
 			}
 			mbs.registerMBean(getConnectionPoolMXBean() , mxbeanName);
 		} catch (InstanceAlreadyExistsException e) {
@@ -224,7 +228,7 @@ abstract class AbstractDataSource implements DataSource {
 			try {
 				ManagementFactory.getPlatformMBeanServer().unregisterMBean(mxbeanName);
 			} catch (Exception e) {
-				//			logger.error("Failed",e);
+				logger.error("Failed",e);
 			} 
 		}
 	}
@@ -247,7 +251,7 @@ abstract class AbstractDataSource implements DataSource {
 			public void setTimoutCheckInterval(int intreval) {
 				if( intreval == 0) throw new IllegalArgumentException("Zero not allowed for timoutCheckInterval!");
 				logger.error("Failed","JMX reset intreval value "+intreval+" old value "+that.getInterval());
-				that.setInterval(intreval);;
+				that.setInterval(intreval);
 			}
 			@Override
 			public void recycle() {
@@ -269,13 +273,13 @@ abstract class AbstractDataSource implements DataSource {
 			@Override
 			public void setMaxPoolSize(int size) {
 				if( size == 0) throw new IllegalArgumentException("Zero not allowed for maxPoolSize!");
-				logger.info("JMX reset maxPoolSize value "+size+" old value "+pool.getMaxPoolSize());
+				logger.info("JMX reset maxPoolSize value {} old value {}",size,pool.getMaxPoolSize());
 				that.setMaxPoolSize(size);
 			}
 			@Override
 			public void setMaxUsedCnt(int cnt) {
 				if( cnt == 0) throw new IllegalArgumentException("Zero not allowed for maxConnectionReuseCount!");
-				logger.info("JMX reset maxConnectionReuseCount value "+cnt+" old value "+pool.getMaxReuseCount());
+				logger.info("JMX reset maxConnectionReuseCount value {} old value {}", cnt, pool.getMaxReuseCount());
 				pool.setMaxReuseCount(cnt);
 			}
 			@Override
@@ -285,7 +289,7 @@ abstract class AbstractDataSource implements DataSource {
 			@Override
 			public void setMaxConnectionReuseTime(int time) {
 				if( time == 0) throw new IllegalArgumentException("Zero not allowed for maxConnectionReuseTime!");
-				logger.info("JMX reset maxConnectionReuseTime value "+time+" old value "+pool.getLifeSpan());
+				logger.info("JMX reset maxConnectionReuseTime value {} old value {}",time,pool.getLifeSpan());
 				pool.setLifeSpan(time);
 			}
 			@Override
@@ -480,13 +484,21 @@ abstract class AbstractDataSource implements DataSource {
 	public void destroy() {
 		networkExe.shutdownNow();
 		this.closed = true;
-		unregisterMXBean();
+		try {
+			unregisterMXBean();
+		} catch (Exception e1) {
+			System.err.println(e1.toString());
+		}
 		try {
 			pool.close();
 		} catch (Exception e) {
 			logger.error("Failed",e);
 		}
-		Runtime.getRuntime().removeShutdownHook(hook);
+		try {
+			Runtime.getRuntime().removeShutdownHook(hook);
+		} catch (Throwable e) {
+//			System.err.println(e.toString());
+		}
 	}
 
 	public void close() {
@@ -538,7 +550,7 @@ abstract class AbstractDataSource implements DataSource {
 	} 
 
 	/**
-	 * @return
+	 * @return pool.getMaxPoolSize()
 	 */
 	public int getMaxPoolSize() {
 		return pool.getMaxPoolSize();
@@ -552,7 +564,7 @@ abstract class AbstractDataSource implements DataSource {
 	}
 
 	/**
-	 * @return
+	 * @return pool.getMaxReuseCount()
 	 */
 	public int getMaxReuseCount() {
 		return pool.getMaxReuseCount();
@@ -566,7 +578,7 @@ abstract class AbstractDataSource implements DataSource {
 	}
 
 	/**
-	 * @return
+	 * @return pool.getLifeSpan()
 	 */
 	public int getMaxReuseTime() {
 		return pool.getLifeSpan();
@@ -580,7 +592,7 @@ abstract class AbstractDataSource implements DataSource {
 	}
 	
 	/**
-	 * @return
+	 * @return pool.getIdleTimeout()
 	 */
 	public int getIdleTimeout() {
 		return pool.getIdleTimeout();
@@ -594,7 +606,7 @@ abstract class AbstractDataSource implements DataSource {
 	}
 
 	/**
-	 * @return
+	 * @return connectionTimeout
 	 */
 	public int getConnectionTimeout() {
 		return connectionTimeout;
@@ -608,7 +620,7 @@ abstract class AbstractDataSource implements DataSource {
 	}
 
 	/**
-	 * @return
+	 * @return autoCommit
 	 */
 	public boolean isAutoCommit() {
 		return autoCommit;

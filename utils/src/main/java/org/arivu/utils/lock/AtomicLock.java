@@ -8,31 +8,47 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
+import sun.misc.Unsafe;
+
 /**
  * @author P
  *
  */
 public final class AtomicLock implements Lock{
 	
-//	static final Threadlocal<AtomicBoolean> threadLocal = new Threadlocal<AtomicBoolean>(new Factory<AtomicBoolean>() {
-//
-//		@Override
-//		public AtomicBoolean create() {
-//			return new AtomicBoolean(false);
-//		}
-//	});
+//	final AtomicBoolean cas = new AtomicBoolean(false);
+	private volatile long cas = 0l;
+	private long offset;
+	Unsafe unsafe;
 	
-	final AtomicBoolean cas = new AtomicBoolean(false);
-	
-	
+	/**
+	 * 
+	 */
+	AtomicLock() {
+		super();
+		try {
+			unsafe = AtomicWFReentrantLock.getUnsafe();
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new IllegalStateException(e);
+		}
+		try {
+			offset = unsafe.objectFieldOffset(AtomicLock.class.getDeclaredField("cas"));
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new IllegalStateException(e);
+		}
+	}
+
 	@Override
 	public void lock(){
-		while(!cas.compareAndSet(false, true)){}
+		while (!unsafe.compareAndSwapLong(this, offset, 0l, 1l)) {}
 	}
 	
 	@Override
 	public void unlock(){
-		cas.set(false);
+//		cas.set(false);
+		cas = 0l;
 	}
 
 	@Override
@@ -42,7 +58,8 @@ public final class AtomicLock implements Lock{
 
 	@Override
 	public boolean tryLock() {
-		return !cas.get();
+//		return !cas.get();
+		return cas == 0l;
 	}
 	
 	private static final int delta = 100;
@@ -63,6 +80,6 @@ public final class AtomicLock implements Lock{
 
 	@Override
 	public Condition newCondition() {
-		throw new RuntimeException("Unsupported function!");
+		return new ACondition();
 	}
 }

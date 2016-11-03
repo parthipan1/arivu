@@ -4,8 +4,9 @@
 package org.arivu.datastructure.primitive;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
 
-import org.arivu.utils.lock.AtomicWFLock;
+import org.arivu.utils.lock.AtomicWFReentrantLock;
 
 
 /**
@@ -25,25 +26,29 @@ public final class DoublyLinkedListDouble  {
 	
 	
 	AtomicInteger size;
-	
+	Lock cas;
 //	static final AtomicLock cas = new AtomicLock();
-	static final AtomicWFLock cas = new AtomicWFLock();
+//	static final AtomicWFLock cas = new AtomicWFLock();
 	/**
-	 * @param writeLock TODO
 	 * 
 	 */
-	public DoublyLinkedListDouble() {
-		this(Double.MIN_VALUE,new AtomicInteger(0));
+	DoublyLinkedListDouble(Lock cas) {
+		this(Double.MIN_VALUE,new AtomicInteger(0), cas);
 	}
 	
+	public DoublyLinkedListDouble() {
+		this(new AtomicWFReentrantLock());
+	}
 	/**
 	 * @param size TODO
+	 * @param cas TODO
 	 * @param obj
 	 */
-	private DoublyLinkedListDouble(double t, AtomicInteger size) {
+	private DoublyLinkedListDouble(double t, AtomicInteger size, Lock cas) {
 		super();
 		this.obj = t;
 		this.size = size;
+		this.cas = cas;
 	}
 
 	/**
@@ -68,9 +73,8 @@ public final class DoublyLinkedListDouble  {
 	}
 	
 	/**
-	 * @return
+	 * @return vDouble
 	 */
-	
 	public double poll(){
 		DoublyLinkedListDouble removeRight = removeRight();
 		if(removeRight!=null)
@@ -183,7 +187,7 @@ public final class DoublyLinkedListDouble  {
 
 	public boolean add(double e) {
 		if(e!=Double.MIN_VALUE){
-			addLeft(new DoublyLinkedListDouble(e, size));
+			addLeft(new DoublyLinkedListDouble(e, size, cas));
 			return true;
 		}else{
 			return false;
@@ -293,7 +297,7 @@ public final class DoublyLinkedListDouble  {
 			return Double.MIN_VALUE;
 	}
 
-	private final DoublyLinkedListDouble getLinked(int index) {
+	private DoublyLinkedListDouble getLinked(int index) {
 		int idx = 0;
 		DoublyLinkedListDouble ref = this.right;
 		while (ref != null) {
@@ -309,7 +313,7 @@ public final class DoublyLinkedListDouble  {
 		return null;
 	}
 
-	private final void validateIndex(int index) {
+	private void validateIndex(int index) {
 		if( index >= size.get() || index < 0 ) throw new ArrayIndexOutOfBoundsException(index);
 	}
 

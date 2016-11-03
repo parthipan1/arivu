@@ -12,7 +12,7 @@ import org.arivu.pool.PoolFactory;
  * required otherwise uses available connections from the pool.
  * Connections are recycled once on 30 secs ( default Configured value). 
  * 
- * @author 
+ * @author Mr P
  *
  */
 public final class DefaultDataSource extends AbstractDataSource {

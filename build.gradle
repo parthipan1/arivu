@@ -1,17 +1,206 @@
-allprojects {
-	group = 'org.arivu'
-	version = '1.0.0'
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7'
+        classpath 'de.richsource.gradle.plugins:gwt-gradle-plugin:0.6'
+    }
 }
 
+def FS = java.io.File.separator
+
+allprojects {
+	group = 'org.arivu'
+	version = '1.0.1'
+	
+  task copyJars()<<{
+  	copy{
+  		from "${project.buildDir}/libs"
+  		into "../libs"
+  	}
+  }
+  /*
+  build.dependsOn{
+  	new File("logs").mkdirs()
+  }
+  */
+  
+  
+}
 
 subprojects {
+	  
+	if( project.name.equals("nioserver-admin") ){
+	
+		apply plugin: 'war'
+		apply plugin: 'java'
+		apply plugin: 'gwt'
+		apply plugin: 'eclipse'
+		apply plugin: 'jetty'
+		
+		group = 'org.arivu.nioserver'
+		version = '1.0.1'
+		
+		description = """org.arivu.nioserver.admin"""
+		
+		sourceCompatibility = 1.8
+		targetCompatibility = 1.8
+		
+		
+		repositories {
+		     maven { url "http://repo.maven.apache.org/maven2" }
+		}
+		
+		dependencies {
+			//compile group: 'com.google.gwt', name: 'gwt', version:'2.8.0'
+		    runtime group: 'com.google.gwt', name: 'gwt-servlet', version:'2.8.0'
+		    testCompile group: 'junit', name: 'junit', version:'4.11'
+		    providedCompile group: 'com.google.gwt', name: 'gwt-user', version:'2.8.0'
+		    providedCompile group: 'com.google.gwt', name: 'gwt-dev', version:'2.8.0'
+		}
+		
+		
+		compileJava{
+			//enable incremental compilation
+			//options.incremental = true
+		}
+		
+		gwt {
+			gwtVersion='2.8.0'
+			modules 'org.arivu.nioserver.admin.Admin'
+			
+			sourceSets {
+				main {
+					java {
+						srcDir 'src'
+					}
+				}
+			}
+			
+			logLevel = 'ERROR'
+			
+			minHeapSize = "512M";
+			maxHeapSize = "1024M";
+			
+			superDev {
+				noPrecompile=true
+			}
+			
+			// The following is only needed if you don't use the Google Plugin for Eclipse.
+			eclipse{
+				addGwtContainer=false // Default set to true
+			}
+			
+			//Specify the deployment Port
+			jettyRunWar.httpPort = 8089
+		}
+		
+		task jettyDraftWar(type: JettyRunWar) {
+			dependsOn draftWar
+			dependsOn.remove('war')
+			webApp=draftWar.archivePath
+		}
+  
+  artifacts {
+	 archives jar
+	}
+	 
+	}else{
+	// standard project start
+	
 
 	apply plugin: 'java'
 	apply plugin: 'eclipse'
 	apply plugin: 'project-report'
+	apply plugin: 'maven'
+	apply plugin: 'maven-publish'
+	apply plugin: 'com.jfrog.bintray'
 
-	sourceCompatibility = 1.6
-	targetCompatibility = 1.6
+    apply plugin: 'findbugs'
+    apply plugin: 'pmd'
+    apply plugin: 'jacoco'
+
+	sourceCompatibility = 1.8
+	targetCompatibility = 1.8
+  
+  //tasks.withType(Javadoc).all { enabled = false }
+ 	 clean {
+	  	del("${project.buildDir}"+FS+".."+FS+"logs")
+	  	new File("${project.buildDir}"+FS+".."+FS+"logs").mkdirs()
+	  }
+  
+    tasks.withType(Javadoc) {
+        options.addStringOption('Xdoclint:none', '-quiet')
+    }
+    
+    findbugs {
+//      toolVersion = "2.0.1"
+      sourceSets = [sourceSets.main]
+      ignoreFailures = true
+      reportsDir = file("$project.buildDir"+FS+"findbugsReports")
+      effort = "max"
+      reportLevel = "low"//"high"
+      visitors = ["FindSqlInjection", "SwitchFallthrough"]
+      omitVisitors = ["FindNonShortCircuit"]
+//      includeFilter = file("$rootProject.projectDir"+FS+"config"+FS+"findbugs"+FS+"includeFilter.xml")
+//      excludeFilter = file("$rootProject.projectDir"+FS+"config"+FS+"findbugs"+FS+"excludeFilter.xml")
+    }
+    
+    tasks.withType(FindBugs) {
+	    reports {
+	        xml.enabled = false
+	        html.enabled = true
+	    }
+	}
+    
+
+    pmd{
+      ignoreFailures = true
+      targetJdk = 1.7
+      reportsDir = file("$project.buildDir"+FS+"pmdReports")
+      sourceSets = [sourceSets.main]
+      /*
+      ruleSets = [
+        "basic",
+        "braces",
+        "strings"
+        ]
+      */
+    }
+    
+    jacoco {
+      toolVersion = "0.7.4.201502262128"
+      reportsDir = file("$project.buildDir"+FS+"jacocoReports")
+    }
+    
+    jacocoTestReport {
+      reports {
+        xml.enabled false
+        csv.enabled false
+        html.destination "${buildDir}"+FS+"jacocoHtml"
+      }
+    }
+  
+  test { finalizedBy jacocoTestReport }
+  
+  task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+	}
+
+	task javadocJar(type: Jar, dependsOn: javadoc) {
+	    classifier = 'javadoc'
+	    from javadoc.destinationDir
+	}
+  
+  
+  artifacts {
+	 archives jar
+	 archives sourcesJar
+	 archives javadocJar
+	 
+	}
   
   eclipse{
   	classpath{
@@ -27,6 +216,7 @@ subprojects {
   
     //enable incremental compilation
 //    options.incremental = true
+    options.compilerArgs << '-XDignore.symbol.file' << '-parameters'
     
     // set debug Levels
     options.debugOptions.debugLevel = "source,lines,vars"
@@ -39,6 +229,7 @@ subprojects {
   
     //enable incremental compilation
 //    options.incremental = true
+    options.compilerArgs << '-XDignore.symbol.file' << '-parameters'
     
     // set debug Levels
     options.debugOptions.debugLevel = "source,lines,vars"
@@ -46,160 +237,172 @@ subprojects {
 
   repositories {
   	mavenCentral()
+  	// https://dl.bintray.com/parthipan/arivu/
   }
-  
-  jar {
-     archiveName project.group+'-'+project.name+'-'+project.version+'.jar'
-	}
-
-dependencies {
+	
+  dependencies {
     compile 'org.slf4j:slf4j-api:1.7.21'
 	compile fileTree(dir: 'libs', include: '*.jar')
 
     testCompile 'junit:junit:4.12'
     testCompile 'org.mockito:mockito-all:1.10.19'
-}
+  }
 
-task createPom() << {
-	apply plugin: 'maven'
-    //description "Generates pom.xml"
-    
-    pom {
-        project {
-            groupId project.group.toString()
-            artifactId project.name
-            version project.version.toString()
-            packaging 'jar'
-        }
-    }.withXml {
-        def dependenciesNode = asNode().appendNode('dependencies')
-
-        configurations.compile.allDependencies.each { dependency ->
-            def dependencyNode = dependenciesNode.appendNode('dependency')
-            dependencyNode.appendNode('groupId', dependency.group)
-            dependencyNode.appendNode('artifactId', dependency.name)
-            dependencyNode.appendNode('version', dependency.version)
-        }
-    }.writeTo("$buildDir/libs/"+project.group+"-"+project.name+"-"+project.version+".xml")
-}
-
-
-build.finalizedBy 'createPom'
-
-uploadArchives {
-    repositories {
-       flatDir {
-           dirs 'repos'
-       }
+  bintray {
+    user = 'parthipan'
+    key = '940dda68c833b2c49f0f8a2467d25f07922c08c6'
+    // configurations = ['deployables'] //When uploading configuration files
+    // - OR -
+    publications = ['MyArivus'] //When uploading Maven-based publication files
+    // - AND/OR -
+    /*
+    filesSpec { //When uploading any arbitrary files ('filesSpec' is a standard Gradle CopySpec)
+        from 'arbitrary-files'
+        into 'standalone_files/level1'
+        rename '(.+)\\.(.+)', '$1-suffix.$2'
     }
-}
+    */
+    dryRun = false //[Default: false] Whether to run this as dry-run, without deploying
+    publish = true //[Default: false] Whether version should be auto published after an upload    
+    override = false //[Default: false] Whether to override version artifacts already published    
+    //Package configuration. The plugin will use the repo and name properties to check if the package already exists. In that case, there's no need to configure the other package properties (like userOrg, desc, etc).
+    pkg {
+        repo = 'arivu'
+        name = 'org.arivu'
+        //userOrg = 'arivu' //An optional organization name when the repo belongs to one of the user's orgs
+        desc = 'Maven repo for arivu'
+        websiteUrl = 'https://github.com/parthipan1/arivu'
+        issueTrackerUrl = 'https://github.com/parthipan1/arivu/issues'
+        vcsUrl = 'https://github.com/parthipan1/arivu.git'
+        licenses = ['Apache-2.0']
+        labels = ['arivu']
+        publicDownloadNumbers = true
+        //attributes= ['a': ['ay1', 'ay2'], 'b': ['bee'], c: 'cee'] //Optional package-level attributes
+
+        githubRepo = 'parthipan1/arivu' //Optional Github repository
+        githubReleaseNotesFile = 'README.md' //Optional Github readme file
+		
+		
+        //Optional version descriptor
+        version {
+            name = project.version //Bintray logical version name
+            //desc = //Optional - Version-specific description'
+            released  = new Date() //Optional - Date of the version release. 2 possible values: date in the format of 'yyyy-MM-dd'T'HH:mm:ss.SSSZZ' OR a java.util.Date instance
+            vcsTag = 'baseVersion_1_6'
+            //attributes = ['gradle-plugin': 'com.use.less:com.use.less.gradle:gradle-useless-plugin'] //Optional version-level attributes
+            //Optional configuration for GPG signing
+            /*
+            gpg {
+                sign = true //Determines whether to GPG sign the files. The default is false
+                passphrase = 'passphrase' //Optional. The passphrase for GPG signing'
+            }
+            */
+            //Optional configuration for Maven Central sync of the version
+            
+            mavenCentralSync {
+                sync = false //[Default: true] Determines whether to sync the version to Maven Central.
+                user = 'Ys9ZqY2L' //OSS user token: mandatory
+                password = 'DwSej8ZhEqCumdnyATKgxAIWnpfgLKxKVt9lOSquNgi2' //OSS user password: mandatory
+                close = '1' //Optional property. By default the staging repository is closed and artifacts are released to Maven Central. You can optionally turn this behaviour off (by puting 0 as value) and release the version manually.
+            } 
+                       
+        }
+        
+    	}
+	}
+  
+  
+  publishing {
+	    publications {
+	        MyArivus(MavenPublication) {
+	            from components.java
+	                        
+	            pom.withXml {
+	                asNode().children().last() + {
+	                    resolveStrategy = Closure.DELEGATE_FIRST
+	                    name project.name
+	                    description 'Arivu java high performance libraries'
+	                    url 'https://github.com/parthipan1/arivu'
+	                    scm {
+	                        url 'https://github.com/parthipan1/arivu.git'
+	                        connection 'https://github.com/parthipan1/arivu.git'
+	                        developerConnection 'https://github.com/parthipan1/arivu.git'
+	                    }
+	                    licenses {
+	                        license {
+	                            name 'The Apache Software License, Version 2.0'
+	                            url 'http://www.apache.org/license/LICENSE-2.0.txt'
+	                            distribution 'repo'
+	                        }
+	                    }
+	                    developers {
+	                        developer {
+	                            id 'parthipan'
+	                            name 'parthipan'
+	                            email 'parthi05@gmail.com'
+	                        }
+	                    }
+	                }
+	            }
+	                        
+	            groupId project.group
+	            artifactId project.name
+	            version project.version
+	            
+	        }
+	        
+	        MyArivus(MavenPublication) {
+            	artifact source: file("${project.buildDir}/libs/${project.name}-${project.version}-javadoc.jar"),classifier:"javadoc",extension:"jar"
+        	}
+	        MyArivus(MavenPublication) {
+            	artifact source: file("${project.buildDir}/libs/${project.name}-${project.version}-sources.jar"),classifier:"sources",extension:"jar"
+        	}
+	    }
+	}
+	//standard project ends
+	
+	}
   
  }
 
-project(':ason'){
-task copyJars() << {
+project(':nioserver-admin'){
 }
+
+
+project(':ason'){
 }
 
 project(':utils'){
-task copyJars() << {
-}
 }
 
 project(':datastructure'){
 dependencies {
     compile project(':utils')
   }
-  /*
-task copyJars() << {
-	copy{
-		from "../../utils/utils/build/libs"
-		into "libs"
-		include '*.jar'
-	}
-}*/
 }
 
 project(':lightninglog'){
 dependencies {
     compile project(':datastructure')
   }
-  /*
-task copyJars() << {
-	copy{
-		from "../../utils/utils/build/libs"
-		into "libs"
-		include '*.jar'
-	}
-	copy{
-		from "../../datastructure/datastructure/build/libs"
-		into "libs"
-		include '*.jar'
-	}
-}
-*/
 }
 
 project(':datasource'){
 dependencies {
     compile project(':resourcepool')
-    compile "org.apache.tomcat:tomcat-catalina:7.0.14"
+    testCompile project(':lightninglog')
     runtime project(':lightninglog')
   }
-  /*
-task copyJars() << {
-	copy{
-		from "../../utils/utils/build/libs"
-		into "libs"
-		include '*.jar'
-	}
-	copy{
-		from "../../datastructure/datastructure/build/libs"
-		into "libs"
-		include '*.jar'
-	}
-	copy{
-		from "../../lightninglog/lightninglog/build/libs"
-		into "libs"
-		include '*.jar'
-	}
-	copy{
-		from "../../resourcepool/resourcepool/build/libs"
-		into "libs"
-		include '*.jar'
-	}
-}
-*/
 }
 
 
 project(':resourcepool'){
 dependencies {
     compile project(':datastructure')
+    testCompile project(':lightninglog')
     runtime project(':lightninglog')
   }
-  /*
-task copyJars() << {
-	copy{
-		from "../../utils/utils/build/libs"
-		into "libs"
-		include '*.jar'
-	}
-	copy{
-		from "../../datastructure/datastructure/build/libs"
-		into "libs"
-		include '*.jar'
-	}
-	copy{
-		from "../../lightninglog/lightninglog/build/libs"
-		into "libs"
-		include '*.jar'
-	}
 }
-*/
-}
-
-
 
 project(':dmapper'){
 dependencies {
@@ -207,48 +410,156 @@ dependencies {
     runtime project(':datasource')
     runtime project(':lightninglog')
   }
-  /*
-task copyJars() << {
-	copy{
-		from "../../utils/utils/build/libs"
-		into "libs"
-		include '*.jar'
-	}
-	copy{
-		from "../../datastructure/datastructure/build/libs"
-		into "libs"
-		include '*.jar'
-	}
-	copy{
-		from "../../lightninglog/lightninglog/build/libs"
-		into "libs"
-		include '*.jar'
-	}
-}
-*/
 }
 
 project(':nioserver'){
 dependencies {
+	compile 'org.slf4j:slf4j-api:1.7.21'
+	compile project(':resourcepool')
+	compile project(':datastructure')
+	compile project(':utils')
+	//compile project(':nioserver-admin')
     runtime project(':lightninglog')
   }
-  /*
-task copyJars() << {
+  
+	// deployment directory
+	def deployDir = project.getProject().getProjectDir().getAbsolutePath() 
+  
+  	//println "deployDir -- "+deployDir
+  
+  task distZip(dependsOn:":nioserver-admin:build") << {//dependsOn:build
+	//createDir(deployDir)
+	createDir(deployDir+FS+"dist")
+	createDir(deployDir+FS+"dist"+FS+"libs")
+	createDir(deployDir+FS+"dist"+FS+"bin")
+	createDir(deployDir+FS+"dist"+FS+"conf")
+	createDir(deployDir+FS+"dist"+FS+"logs")
+	createDir(deployDir+FS+"dist"+FS+"apps")
+	createDir(deployDir+FS+"dist"+FS+"admin")
+	createDir(deployDir+FS+"dist"+FS+"admin"+FS+"admin")
+	
+	new File(deployDir+FS+"dist"+FS+"bin"+FS+"start.sh") << "java -DadminMod=true -DadminLoc=../admin -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:ParallelGCThreads=4 -XX:ConcGCThreads=2 -classpath ../libs/*:../conf/*:../hotdeploy/* -Dlightninglog.json=../conf/lightninglog.json -Darivu.nioserver.json=../conf/arivu.nioserver.json -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=12345 -Djava.rmi.server.hostname=localhost -Dcom.sun.management.jmxremote.rmi.port=12345 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false org.arivu.nioserver.Server start"
+	new File(deployDir+FS+"dist"+FS+"bin"+FS+"start.cmd") << "java -DadminMod=true -DadminLoc=..\\admin -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:ParallelGCThreads=4 -XX:ConcGCThreads=2 -classpath ..\\libs\\*:..\\conf\\*:..\\hotdeploy\\* -Dlightninglog.json=..\\conf\\lightninglog.json -Darivu.nioserver.json=../conf/arivu.nioserver.json -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=12345 -Djava.rmi.server.hostname=localhost -Dcom.sun.management.jmxremote.rmi.port=12345 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false org.arivu.nioserver.Server start"
+	new File(deployDir+FS+"dist"+FS+"bin"+FS+"stop.sh") << "java -classpath ../libs/*:../conf/* -Darivu.nioserver.json=../conf/arivu.nioserver.json org.arivu.nioserver.Server stop"
+	new File(deployDir+FS+"dist"+FS+"bin"+FS+"stop.cmd") << "java -classpath ..\\libs\\*:..\\conf\\* -Darivu.nioserver.json=../conf/arivu.nioserver.json org.arivu.nioserver.Server stop"
+	
 	copy{
-		from "../../utils/utils/build/libs"
-		into "libs"
-		include '*.jar'
-	}
+		from(".."+FS+"nioserver-admin"+FS+"war")
+		into(deployDir+FS+"dist"+FS+"admin") 
+	} 
+	
 	copy{
-		from "../../datastructure/datastructure/build/libs"
-		into "libs"
-		include '*.jar'
-	}
+		from(".."+FS+"nioserver-admin"+FS+"build"+FS+"gwt"+FS+"out"+FS+"admin")
+		into(deployDir+FS+"dist"+FS+"admin"+FS+"admin") 
+	} 
+	
+	del(deployDir+FS+"dist"+FS+"admin"+FS+"WEB-INF");
+	
+	
 	copy{
-		from "../../lightninglog/lightninglog/build/libs"
-		into "libs"
-		include '*.jar'
+		from("favicon.ico")
+		into(deployDir+FS+"dist"+FS+"bin") 
+	} 
+	
+	configurations.compile.resolve().each{ f ->
+		if( f.getAbsolutePath().contains("nioserver-admin") ){
+		}else{
+			copy{
+				from(f)
+				into(deployDir+FS+"dist"+FS+"libs") 
+			}
+		}
 	}
+	
+	copy {
+        from project.buildDir.toString()+FS+'libs'
+        into(deployDir+FS+"dist"+FS+"libs")
+      }
+      
+	copy{
+		from("lightninglog.json")
+		into(deployDir+FS+"dist"+FS+"conf") 
+	} 
+	
+	def jsonFile = new File(deployDir+FS+"dist"+FS+"conf"+FS+"lightninglog.json")
+	def json = new groovy.json.JsonSlurper().parseText( jsonFile.text )
+	json.log.file = "..//logs//nioserver.log"
+	json.buffer.batch = 50
+	json.buffer.ring = 50
+	json.loggers = [:]
+	json.loggers["root"] = "info"
+	json.appenders = ["file"]
+	jsonFile.text = new groovy.json.JsonBuilder(json).toPrettyString()
+	
+	copy{
+		from("arivu.nioserver.json")
+		into(deployDir+FS+"dist"+FS+"conf") 
+	} 
+	
+	def jsonFile2 = new File(deployDir+FS+"dist"+FS+"conf"+FS+"arivu.nioserver.json")
+	def json2 = new groovy.json.JsonSlurper().parseText( jsonFile2.text )
+	json2.request = [:]
+	def res = json2.response
+	json2.response = [:]
+	json2.response["header"] = res.header
+	json2.response["defaultcode"] = res.defaultcode
+	jsonFile2.text = new groovy.json.JsonBuilder(json2).toPrettyString()
+	
+	copy{
+		from("src"+FS+"main"+FS+"resources")
+		into(deployDir+FS+"dist"+FS+"conf") 
+	}
+	
+	del(deployDir+FS+"arivu.nioserver-"+project.version+".zip");
+	ant.zip(destfile: deployDir+FS+"arivu.nioserver-"+project.version+".zip",
+			basedir: deployDir+FS+"dist",
+		){
+			fileset(dir: deployDir+FS+"dist"){
+				include(name: '**')
+			}
+		}
+	
+	del(deployDir+FS+"dist");
 }
-*/
+
+  build {
+  	finalizedBy distZip
+  }
+  
 }
+
+
+def createDir(p){
+	def f = new File(p)
+	if(f.exists()){
+		del(p);
+	}
+	f.mkdirs()
+}
+
+
+def del(p){
+	try{
+		def f = new File(p)
+    	if(f.isDirectory()){
+    		if(f.list().length==0){
+    		   f.delete()
+//    		   println " Del Dir1 :: "+f.getAbsolutePath()
+    		}else{
+    		   f.list().each{ temp ->
+	        	  del(new File(f, temp).getAbsolutePath());
+    		   }
+        	   if(f.list().length==0){
+           	     f.delete()
+  //         	     println " Del Dir2 :: "+f.getAbsolutePath()
+        	   }
+    		}
+    	}else{
+    		f.delete()
+//    		println " Del File :: "+f.getAbsolutePath()
+    	}
+    }catch(Throwable e){
+    	e.printStackTrace();
+    }
+}
+

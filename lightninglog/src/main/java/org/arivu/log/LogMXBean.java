@@ -9,8 +9,8 @@ package org.arivu.log;
  */
 public interface LogMXBean {
 	int getBufferSize();
-//	int getRingSize();
 	void flush() throws Exception;
+	int getConsumerCount();
 	void addConsumer();
 	void removeConsumer() throws Exception;
 	void evictConsumer() throws Exception;

@@ -3,7 +3,7 @@
  */
 package org.slf4j.impl;
 
-import org.arivu.log.AsyncMDCAdapter;
+import org.arivu.log.LightningMDCAdapter;
 import org.slf4j.spi.MDCAdapter;
 
 /**
@@ -26,10 +26,10 @@ public class StaticMDCBinder {
 	   * {@link StaticMDCBinder}.
 	   */
 	  public MDCAdapter getMDCA() {
-	     return new AsyncMDCAdapter();
+	     return new LightningMDCAdapter();
 	  }
 	  
 	  public String  getMDCAdapterClassStr() {
-	    return AsyncMDCAdapter.class.getName();
+	    return LightningMDCAdapter.class.getName();
 	  }
 	}

@@ -21,10 +21,12 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 //@Ignore
 public class TestPoolsSb {
-
+	static final Logger logger = LoggerFactory.getLogger(TestPoolsSb.class);
 	static final int nThreads = 100;
 	static final int poolSize = 2;
 	static final int reuseCount = -1;
@@ -113,7 +115,7 @@ public class TestPoolsSb {
 	@Test
 	public void test4ConcurrentPool() throws Exception {
 		final Pool<StringBuffer> pool = new ConcurrentPool<StringBuffer>(factory , StringBuffer.class);
-		testPool(nThreads, poolSize, reuseCount, lifeSpan, pool,  new Random(), poolSize, true, false);
+		testPool(nThreads, poolSize, reuseCount, lifeSpan, pool,  new Random(), poolSize, false, false);
 	}
 	
 	@Test
@@ -159,6 +161,15 @@ public class TestPoolsSb {
 			start.countDown();
 			end.await();
 			
+			Future<Integer> poll = null;
+			while((poll=listFuture.poll())!=null){
+				try {
+					logger.debug(" Completed :: "+poll.get());
+					poll.cancel(true);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
 			listFuture.clear();
 			assertTrue(pool.getMaxPoolSize()<=verifyCnt);
 			assertTrue(pool.getMaxPoolSize()<=noOfCreate.get());
@@ -172,45 +183,71 @@ public class TestPoolsSb {
 
 	private Callable<Integer> getTask(final Pool<StringBuffer> pool, final Random random, final CountDownLatch start,
 			final CountDownLatch end, final AtomicInteger f, final boolean nullCheck) {
-		return new Callable<Integer>() {
-
-			@Override
-			public Integer call() throws Exception {
-				final int id  = f.decrementAndGet();
-				try {
-					start.await();
-					StringBuffer sb = null;
-					if (nullCheck) {
-						while ((sb = pool.get(null)) == null) {
-							try {
-								if (sb == null)
-									if (random == null)
-										Thread.sleep(100);
-									else
-										Thread.sleep(random.nextInt(100));
-							} catch (Exception e) {
-								//									e.printStackTrace();
-							}
-						} 
-					}else{
-						sb = pool.get(null);
-					}
-					int a=(int)(Math.random()*1000);//random.nextInt(poolSize);
-					for(int i=0;i<10;i++){
-						sb.append((a+i));
-					}
-					values.add(String.valueOf(sb.hashCode()) );
-					pool.put(sb);
-				} catch (Throwable e) {
-					e.printStackTrace();
-				} finally {
-					if(id==0){
-						end.countDown();
-					}
-				}
-				return id;
-			}
-		};
+		return new CustomTestResult(pool, random, start, end, f, nullCheck, values);
 	}
 
+}
+class CustomTestResult implements Callable<Integer>{
+	final Pool<StringBuffer> pool;
+	final Random random;
+	final CountDownLatch start;
+	final CountDownLatch end;
+	final AtomicInteger f;
+	final boolean nullCheck;
+	final Collection<String> values;
+	/**
+	 * @param pool
+	 * @param random
+	 * @param start
+	 * @param end
+	 * @param f
+	 * @param nullCheck
+	 */
+	CustomTestResult(Pool<StringBuffer> pool, Random random, CountDownLatch start, CountDownLatch end,
+			AtomicInteger f, boolean nullCheck, Collection<String> values) {
+		super();
+		this.pool = pool;
+		this.random = random;
+		this.start = start;
+		this.end = end;
+		this.f = f;
+		this.nullCheck = nullCheck;
+		this.values = values;
+	}
+	@Override
+	public Integer call() throws Exception {
+		final int id  = f.decrementAndGet();
+		try {
+			start.await();
+			StringBuffer sb = null;
+			if (nullCheck) {
+				while ((sb = pool.get(null)) == null) {
+					try {
+						if (sb == null)
+							if (random == null)
+								Thread.sleep(100);
+							else
+								Thread.sleep(random.nextInt(100));
+					} catch (Exception e) {
+						//									e.printStackTrace();
+					}
+				} 
+			}else{
+				sb = pool.get(null);
+			}
+			int a=(int)(Math.random()*1000);//random.nextInt(poolSize);
+			for(int i=0;i<10;i++){
+				sb.append((a+i));
+			}
+			values.add(String.valueOf(sb.hashCode()) );
+			pool.put(sb);
+		} catch (Throwable e) {
+			e.printStackTrace();
+		} finally {
+			if(id==0){
+				end.countDown();
+			}
+		}
+		return id;
+	}
 }

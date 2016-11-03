@@ -1,0 +1,43 @@
+{  
+   "request":{  
+	  "buffer":131072,   	
+      "scanpackages":[  
+           "org.test.nio"
+      ],
+      "proxies":{
+         "googleSite":{  
+            "header":{  
+               "Expires":-1,
+               "Cache-Control":"private, max-age=0",
+               "Server":"clownserver",
+               "X-XSS-Protection":"1; mode=block",
+               "Connection":"close"
+            },
+            "location":"/search",
+            "method":"GET",
+            "proxy_pass":"https://www.google.co.in/search"
+         },
+         "staticContent":{  
+            "header":{  
+               "Expires":-1,
+               "Cache-Control":"private, max-age=0",
+               "Server":"clownserver",
+               "X-XSS-Protection":"1; mode=block",
+               "Connection":"close"
+            },
+            "location":"/static",
+            "dir":"/Users/parthipangounder/Downloads"
+         }
+      }
+   },
+   "response":{  
+      "defaultcode":200,
+      "chunkSize":131072,
+      "header":{  
+         "Expires":-1,
+         "Cache-Control":"private, max-age=0",
+         "Server":"clownserver",
+         "X-XSS-Protection":"1; mode=block"
+      }
+   }
+}

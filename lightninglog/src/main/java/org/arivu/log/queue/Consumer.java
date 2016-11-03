@@ -2,15 +2,15 @@ package org.arivu.log.queue;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import java.util.ArrayList;
 import java.util.Collection;
 
 import javax.management.InstanceAlreadyExistsException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
+import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.log.Appender;
-import org.arivu.log.AsyncLogger;
+import org.arivu.log.LightningLogger;
 import org.arivu.log.Converter;
 import org.arivu.log.LogMXBean;
 import org.arivu.log.appender.AppenderProperties;
@@ -57,11 +57,13 @@ public final class Consumer<T> implements AutoCloseable {
 	/**
 	 * 
 	 */
-	private final String threadId;
+	private final Object threadId;
 	/**
 	 * 
 	 */
 	volatile long lasttime = System.currentTimeMillis();
+	
+	volatile int batchSize = BATCH_SIZE;
 
 	/**
 	 * @param converter
@@ -86,7 +88,7 @@ public final class Consumer<T> implements AutoCloseable {
 	/**
 	 * 
 	 */
-	private final void registerMXBean(final int cnt) {
+	private void registerMXBean(final int cnt) {
 		try {
 			MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
 			beanNameStr = "org.arivu.log:type=" + getClass().getSimpleName() + this.threadId + "." + cnt;
@@ -102,7 +104,7 @@ public final class Consumer<T> implements AutoCloseable {
 	/**
 	 * @return
 	 */
-	private final LogMXBean getLogMXBean() {
+	private LogMXBean getLogMXBean() {
 		@SuppressWarnings("resource")
 		final Consumer<T> that = this;
 		return new LogMXBean() {
@@ -133,12 +135,12 @@ public final class Consumer<T> implements AutoCloseable {
 
 			@Override
 			public int getBatchSize() {
-				return Consumer.BATCH_SIZE;
+				return that.batchSize;
 			}
 
 			@Override
 			public void setBatchSize(int size) {
-				Consumer.BATCH_SIZE = size;
+				that.batchSize = size;
 			}
 
 			@Override
@@ -151,12 +153,12 @@ public final class Consumer<T> implements AutoCloseable {
 						throw new RuntimeException(e);
 					}
 				} else
-					AsyncLogger.addCustomAppender(appenders, customAppender);
+					LightningLogger.addCustomAppender(appenders, customAppender);
 			}
 
 			@Override
 			public String[] getAppenders() {
-				Collection<String> apnames = new ArrayList<String>();
+				Collection<String> apnames = new DoublyLinkedList<String>();
 				if (appenders != null) {
 					for (Appender a : appenders)
 						apnames.add(a.getClass().getSimpleName());
@@ -184,6 +186,11 @@ public final class Consumer<T> implements AutoCloseable {
 			public void evictConsumer() throws Exception {
 				throw new IllegalStateException("Cannot invoke removeConsumer() on consumer !");
 			}
+
+			@Override
+			public int getConsumerCount() {
+				return producer.threadlocal.size();
+			}
 		};
 	}
 
@@ -199,26 +206,34 @@ public final class Consumer<T> implements AutoCloseable {
 	}
 
 	public void flush() {
-		int limit = 0;
-		StringBuffer sb = new StringBuffer();
-		for (int i = 0; i < buffer.length; i++) {
-			Object obj = buffer[i];
-			buffer[i] = null;
-			if (obj != null) {
-				sb.append(obj).append(AppenderProperties.separator);
-				++limit;
-				if (limit == BATCH_SIZE) {
-					write(sb.toString());
-					limit = 0;
-					sb = new StringBuffer();
+		final int length = buffer.length;
+		if(length==1){
+			write((String)buffer[0]);
+			buffer[0] = null;
+		}else{
+			int limit = 0;
+			StringBuffer sb = new StringBuffer();
+			for (int i = 0; i < length; i++) {
+				Object obj = buffer[i];
+				buffer[i] = null;
+				if (obj != null) {
+					sb.append(obj).append(AppenderProperties.separator);
+					++limit;
+					if (limit == batchSize) {
+						write(sb.toString());
+						limit = 0;
+						sb = new StringBuffer();
+					}
 				}
 			}
+			if (sb.length()>0) {
+				write(sb.toString());
+			}
 		}
-		write(sb.toString());
 	}
 
 	/**
-	 * @return
+	 * @return isEmpty
 	 */
 	public boolean isEmpty() {
 		for (int i = 0; i < buffer.length; i++) {
@@ -251,7 +266,7 @@ public final class Consumer<T> implements AutoCloseable {
 			try {
 				ManagementFactory.getPlatformMBeanServer().unregisterMBean(new ObjectName(beanNameStr));
 			} catch (Exception e) {
-				// System.err.println(e.getMessage());
+//				System.err.println(e.toString());
 			}
 		}
 	}

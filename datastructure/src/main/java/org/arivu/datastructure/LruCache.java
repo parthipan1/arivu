@@ -71,48 +71,53 @@ public final class LruCache<K,V> {
 			case COUNT_MOST:
 				return COUNT_LEAST;
 			case COUNT_LEAST:
-				return COUNT_MOST;
 			default:
-				break;
+				return COUNT_MOST;
 			}
-			
-			return CacheStrategy.COUNT_MOST;
 		}
 	}
 
 	/**
 	 * 
 	 */
-	private final CacheStrategy cacheStrategy;
+	final CacheStrategy cacheStrategy;
 
 	/**
 	 * 
 	 */
 	private final Amap<K,Tracker<V>> cache = new Amap<K,Tracker<V>>();
 
-	private final int size; 
+	private final int maxSize; 
+	
 	/**
+	 * Constructor for default Object creation.
+	 * 
 	 * @param cacheStrategy
+	 * @param maxSize
 	 */
-	public LruCache(CacheStrategy cacheStrategy,int size) {
+	public LruCache(CacheStrategy cacheStrategy,int maxSize) {
 		super();
 		if (cacheStrategy == null)
 			this.cacheStrategy = CacheStrategy.TIME_MOST_RECENT;
 		else
 			this.cacheStrategy = cacheStrategy;
 		
-		if( size<1 )
-			throw new IllegalArgumentException("Invalid size "+size);
+		if( maxSize<1 )
+			throw new IllegalArgumentException("Invalid maxSize "+maxSize);
 		
-		this.size = size; 
+		this.maxSize = maxSize; 
 	}
 
+	
 	/**
+	 * put to cache with key.
+	 * 
+	 * @param key
 	 * @param t
 	 */
 	public void put(K key,V t) {
 		if (t != null) {
-			if( size == cache.size() ){
+			if( maxSize == cache.size() ){
 				remove();
 			}
 			cache.put(key,cacheStrategy.create(t));
@@ -120,7 +125,10 @@ public final class LruCache<K,V> {
 	}
 
 	/**
-	 * @return
+	 * Get from cache.
+	 * 
+	 * @param key
+	 * @return V
 	 */
 	public V get(K key) {
 		Tracker<V> tracker = cache.get(key);
@@ -163,15 +171,15 @@ public final class LruCache<K,V> {
 	}
 	
 	/**
-	 * 
+	 * clears cache.
 	 */
 	public void clear() {
 		cache.clear();
 	}
 
 	/**
-	 * @param t
-	 * @return
+	 * @param key
+	 * @return boolean
 	 */
 	public boolean remove(K key) {
 		if (key != null) {
@@ -188,35 +196,35 @@ public final class LruCache<K,V> {
 	 *
 	 * @param <T>
 	 */
-	private static class Tracker<T> {
+	static final class Tracker<T> {
 		T t;
 		long tracker = 0;
 
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + ((t == null) ? 0 : t.hashCode());
-			return result;
-		}
-
-		@SuppressWarnings("rawtypes")
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			Tracker other = (Tracker) obj;
-			if (t == null) {
-				if (other.t != null)
-					return false;
-			} else if (!t.equals(other.t))
-				return false;
-			return true;
-		}
+//		@Override
+//		public int hashCode() {
+//			final int prime = 31;
+//			int result = 1;
+//			result = prime * result + ((t == null) ? 0 : t.hashCode());
+//			return result;
+//		}
+//
+//		@SuppressWarnings("rawtypes")
+//		@Override
+//		public boolean equals(Object obj) {
+//			if (this == obj)
+//				return true;
+//			if (obj == null)
+//				return false;
+//			if (getClass() != obj.getClass())
+//				return false;
+//			Tracker other = (Tracker) obj;
+//			if (t == null) {
+//				if (other.t != null)
+//					return false;
+//			} else if (!t.equals(other.t))
+//				return false;
+//			return true;
+//		}
 
 	}
 

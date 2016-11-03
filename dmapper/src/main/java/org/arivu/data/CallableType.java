@@ -57,7 +57,7 @@ public enum CallableType {
 	/**
 	 * @param query
 	 * @param ds
-	 * @return
+	 * @return callableQuery
 	 */
 	public static CallableQuery getByQuery(String query, final javax.sql.DataSource ds){
 		CallableType type = CallableType.SELECT;
