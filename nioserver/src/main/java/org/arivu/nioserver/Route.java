@@ -62,7 +62,7 @@ class Route {
 		this.method = method;
 		this.isStatic = isStatic;
 		if (klass != null) {
-			this.headers = new Amap<>(Configuration.defaultResponseHeader);
+			this.headers = new Amap<String, List<Object>>(Configuration.defaultResponseHeader);
 			int is = uri.indexOf('{');
 			if (is == -1) {
 				this.invoker = RequestUtil.getMethodInvoker(method);
@@ -180,7 +180,6 @@ class ProxyRoute extends Route {
 
 	String proxy_pass;
 	String dir;
-//	Map<String,FileData> files;
 	Threadlocal<HttpMethodCall> proxyTh;
 
 	/**
@@ -196,13 +195,12 @@ class ProxyRoute extends Route {
 		this.name = name;
 		this.proxy_pass = proxy_pass;
 		this.dir = dir;
-		this.headers = new Amap<>(defaultResponseHeader);
+		this.headers = new Amap<String, List<Object>>(defaultResponseHeader);
 		if (NullCheck.isNullOrEmpty(proxy_pass) && NullCheck.isNullOrEmpty(dir)) {
 			throw new IllegalArgumentException("Invalid config " + name + " !");
 		} else if (!NullCheck.isNullOrEmpty(proxy_pass) && !NullCheck.isNullOrEmpty(dir)) {
 			throw new IllegalArgumentException("Invalid config " + name + " !");
 		} else if (!NullCheck.isNullOrEmpty(dir)) {
-//			files = new Amap<>();
 		} else if (!NullCheck.isNullOrEmpty(proxy_pass)) {
 			this.proxyTh = new Threadlocal<HttpMethodCall>(new Threadlocal.Factory<HttpMethodCall>() {
 
@@ -310,28 +308,6 @@ class ProxyRoute extends Route {
 				
 			}
 		}
-//		ByteData bytes = getWr(files.get(fileLoc)) ;//getOriginalBytes(file);
-//		if (bytes == null) {
-//			readLock.lock();
-//			bytes = getWr(files.get(fileLoc));
-//			if( bytes == null ){
-//				try {
-//					byte[] data = RequestUtil.read(file);//new byte[bb.remaining()];
-//					if (data!=null) {
-//						bytes = new ByteData(data);
-//						files.put(fileLoc, new FileData(new WeakReference<ByteData>(bytes), file));
-//					}
-//				} finally {
-//					readLock.unlock();
-//				}
-//			}else{
-//				readLock.unlock();
-//			}
-//		}
-//		if (bytes != null) {
-//			byte[] array = bytes.array();//bytes.array();//new byte[bytes.remaining()];
-			//			bytes.get(array, 0, array.length);
-//			res.append(array);
 		if( file.exists() ){
 			ByteData bytes = new ByteData(file);
 			res.append(bytes);
@@ -365,21 +341,6 @@ class ProxyRoute extends Route {
 		res.putHeader("Content-Length", buf.length());
 	}
 
-//	final ByteData getWr(FileData ref){
-//		if( ref == null ) return null;
-//		else{
-//			if(!ref.file.exists()){
-//				files.remove(ref.file.getAbsolutePath());
-//				return null;
-//			}else if ( ref.time < ref.file.lastModified() ){
-//				files.remove(ref.file.getAbsolutePath());
-//				return null;
-//			}else{
-//				return ref.data.get();
-//			}
-//		} 
-//	}
-	
 	@Override
 	final Response getResponse(Request req) {
 		if (!NullCheck.isNullOrEmpty(dir)) {
@@ -392,14 +353,12 @@ class ProxyRoute extends Route {
 	@Override
 	final void disable() {
 		super.disable();
-//		if( this.files!=null ) this.files.clear();
 		if( this.proxyTh!=null ) this.proxyTh.clearAll();
 	}
 
 	@Override
 	final void close() {
 		super.close();
-//		if( this.files!=null ) this.files.clear();
 		if( this.proxyTh!=null ) this.proxyTh.clearAll();
 	}
 
@@ -410,7 +369,7 @@ class ProxyRoute extends Route {
 
 }
 final class AdminRoute extends ProxyRoute {
-	static final Map<String,String> authTokens = new Amap<>();
+	static final Map<String,String> authTokens = new Amap<String,String>();
 	AdminRoute() {
 		super("adminSite", null, Configuration.ADMIN_LOC, "/admin", HttpMethod.ALL, null, null, false, Configuration.defaultResponseHeader);
 	}
@@ -584,7 +543,7 @@ class JavaHttpMethodCall implements HttpMethodCall {
 			final String key = entry.getKey();
 			List<String> value = entry.getValue();
 			if (!NullCheck.isNullOrEmpty(key) && !NullCheck.isNullOrEmpty(value)){
-				List<Object> ovs = new DoublyLinkedList<>();
+				List<Object> ovs = new DoublyLinkedList<Object>();
 				ovs.addAll(value);
 				proxyRes.headers.put(key, ovs);
 			}
