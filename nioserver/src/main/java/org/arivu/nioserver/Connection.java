@@ -58,7 +58,7 @@ final class Connection {
 				if (state.poll == null) {
 					state.poll = state.resBuff.queue.poll();
 					if (state.poll != null) {
-						state.rem = state.poll.array().length;
+						state.rem = (int) state.poll.length();
 						logger.debug("{} 1 write next ByteBuff size :: {} queueSize :: {}",state.resBuff,state.rem,state.resBuff.queue.size());
 					} else {
 						logger.debug("{} 2 write next ByteBuff is null! finish!", state.resBuff);
@@ -67,12 +67,20 @@ final class Connection {
 					}
 				}
 
-				int length = Math.min(Configuration.defaultChunkSize, state.rem - state.pos);
+				final int length = Math.min(Configuration.defaultChunkSize, state.rem - state.pos);
+				final SocketChannel socketChannel = (SocketChannel) key.channel();
+				final ByteBuffer wrap = ByteBuffer.wrap(state.poll.copyOfRange(state.pos, state.pos+length));
+//				int rb = wrap.remaining();
+//				int writeLen = 0;
+				while( wrap.remaining()>0 ){
+//					writeLen += 
+							socketChannel.write(wrap);
+				}
+//				int rf = wrap.remaining();
+//				logger.debug("{}  3 write bytes from  :: {}  length :: {}/{}({},{}) to :: {} size :: {}",state.resBuff,state.pos,length,writeLen,rb,rf,(state.pos + length),state.rem);
 				logger.debug("{}  3 write bytes from  :: {}  length :: {} to :: {} size :: {}",state.resBuff,state.pos,length,(state.pos + length),state.rem);
-				SocketChannel socketChannel = (SocketChannel) key.channel();
-				socketChannel.write(ByteBuffer.wrap(Arrays.copyOfRange(state.poll.array(), state.pos, state.pos+length)));
 				state.pos += length;
-				finishByteBuff(key, socketChannel);
+				finishByteBuff(key);
 			} catch (Throwable e) {
 				logger.error("Failed in write req "+req+" :: ", e);
 				finish(key);
@@ -80,7 +88,7 @@ final class Connection {
 		}
 	}
 
-	void finishByteBuff(SelectionKey key, SocketChannel socketChannel) throws IOException {
+	void finishByteBuff(SelectionKey key) throws IOException {
 		boolean empty = state.resBuff.queue.isEmpty();
 		logger.debug("{} 4 finishByteBuff! empty :: {} queueSize :: {} read :: {} size :: {}", state.resBuff, empty, state.resBuff.queue.size(), state.pos, state.rem );
 		if (state.rem == state.pos) {
@@ -96,7 +104,7 @@ final class Connection {
 	void finish(SelectionKey key) throws IOException {
 		SocketChannel channel = (SocketChannel) key.channel();
 		SocketAddress remoteSocketAddress = channel.socket().getRemoteSocketAddress();
-		channel.finishConnect();
+//		channel.finishConnect();
 		channel.close();
 		key.cancel();
 		if (state.resBuff != null)

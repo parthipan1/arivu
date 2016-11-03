@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -29,7 +28,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
@@ -555,16 +553,7 @@ public final class RequestUtil {
 	}
 
 	static void allUrls(File root, List<URL> urls) throws MalformedURLException {
-		File[] list = root.listFiles(new FilenameFilter() {
-
-			@Override
-			public boolean accept(File dir, String name) {
-				if (NullCheck.isNullOrEmpty(name))
-					return false;
-				final String ln = name.toLowerCase(Locale.getDefault());
-				return ln.endsWith(".jar") || ln.endsWith(".properties") || ln.endsWith(".xml") || ln.endsWith(".json");
-			}
-		});
+		File[] list = root.listFiles();
 		if (NullCheck.isNullOrEmpty(list))
 			return;
 
@@ -572,8 +561,11 @@ public final class RequestUtil {
 			if (f.isDirectory()) {
 				allUrls(f, urls);
 			} else {
-				urls.add(f.toURI().toURL());
-				logger.info("Hotdeploy :: Added file {}", f.getAbsoluteFile());
+				String ln = f.getName();
+				if(ln.endsWith(".jar") || ln.endsWith(".properties") || ln.endsWith(".xml") || ln.endsWith(".json")){
+					urls.add(f.toURI().toURL());
+					logger.info("Hotdeploy :: Added file {}", f.getAbsoluteFile());
+				}
 			}
 		}
 	}
@@ -697,12 +689,16 @@ public final class RequestUtil {
 
 		for (File f : list) {
 			try {
-				new App(f.getName(), new String(read(new File(f, SCANPACKAGES_TOKEN)))).deploy();
+				File scanpackagesFile = new File(f, SCANPACKAGES_TOKEN);
+				if( scanpackagesFile.exists() )
+					new App(f.getName(), new String(read(scanpackagesFile))).deploy();
+				else
+					del(f);
 			} catch (Exception e) {
 				logger.error("Failed in scan Apps :: ", e);
 			}
 		}
-		logger.info("Discovered Apps :: " + Admin.allHotDeployedArtifacts.keySet());
+		logger.info("Discovered Apps :: " + Utils.toString(Admin.allHotDeployedArtifacts.keySet()) );
 	}
 
 	static void addProxyRouteRuntime(String name, String method, String location, String proxyPass, String dir, Collection<Route> rts, Map<String, List<Object>> header) {

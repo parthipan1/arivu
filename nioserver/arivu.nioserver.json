@@ -1,6 +1,6 @@
 {  
    "request":{  
-	  "buffer":10240,   	
+	  "buffer":131072,   	
       "scanpackages":[  
       ],
       "proxies":{  
@@ -30,7 +30,7 @@
    },
    "response":{  
       "defaultcode":200,
-      "chunkSize":1024,
+      "chunkSize":131072,
       "header":{  
          "Expires":-1,
          "Cache-Control":"private, max-age=0",

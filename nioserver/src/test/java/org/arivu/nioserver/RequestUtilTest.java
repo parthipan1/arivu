@@ -20,7 +20,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class RequestUtilTest {
@@ -521,11 +520,10 @@ public class RequestUtilTest {
 	}
 	
 	@Test
-	@Ignore
 	public void testUnZipAndDel() throws IOException, InterruptedException {
 		File dd = new File("testUnzip");
 		assertFalse(dd.exists());
-		RequestUtil.unzip(dd, new File("download.zip"));
+		RequestUtil.unzip(dd, new File("arivu.nioserver-1.0.0.zip"));
 		assertTrue(dd.exists());
 		List<URL> urls = new DoublyLinkedList<URL>();
 		RequestUtil.allUrls(dd, urls);
@@ -847,7 +845,7 @@ public class RequestUtilTest {
 	}
 
 	@Test
-	@Ignore
+//	@Ignore
 	public void testParseUriTokens() throws Exception {
 
 		System.setProperty("lightninglog.json", "./lightninglog.json");

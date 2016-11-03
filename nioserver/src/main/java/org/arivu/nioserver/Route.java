@@ -18,13 +18,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.locks.Lock;
 
 import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.datastructure.Threadlocal;
 import org.arivu.utils.NullCheck;
-import org.arivu.utils.lock.AtomicWFReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -182,7 +180,7 @@ class ProxyRoute extends Route {
 
 	String proxy_pass;
 	String dir;
-	Map<String,FileData> files;
+//	Map<String,FileData> files;
 	Threadlocal<HttpMethodCall> proxyTh;
 
 	/**
@@ -204,7 +202,7 @@ class ProxyRoute extends Route {
 		} else if (!NullCheck.isNullOrEmpty(proxy_pass) && !NullCheck.isNullOrEmpty(dir)) {
 			throw new IllegalArgumentException("Invalid config " + name + " !");
 		} else if (!NullCheck.isNullOrEmpty(dir)) {
-			files = new Amap<String,FileData>();
+//			files = new Amap<>();
 		} else if (!NullCheck.isNullOrEmpty(proxy_pass)) {
 			this.proxyTh = new Threadlocal<HttpMethodCall>(new Threadlocal.Factory<HttpMethodCall>() {
 
@@ -286,7 +284,7 @@ class ProxyRoute extends Route {
 		}
 	}
 
-	final Lock readLock = new AtomicWFReentrantLock();
+//	final Lock readLock = new AtomicWFReentrantLock();
 	
 	final void handleBrowser(Request req, Response res) throws IOException {
 		String fileLoc = this.dir + URLDecoder.decode(req.getUri().substring(this.uri.length()), RequestUtil.ENC_UTF_8);
@@ -312,29 +310,32 @@ class ProxyRoute extends Route {
 				
 			}
 		}
-		ByteData bytes = getWr(files.get(fileLoc)) ;//getOriginalBytes(file);
-		if (bytes == null) {
-			readLock.lock();
-			bytes = getWr(files.get(fileLoc));
-			if( bytes == null ){
-				try {
-					byte[] data = RequestUtil.read(file);//new byte[bb.remaining()];
-					if (data!=null) {
-						bytes = new ByteData(data);
-						files.put(fileLoc, new FileData(new WeakReference<ByteData>(bytes), file));
-					}
-				} finally {
-					readLock.unlock();
-				}
-			}else{
-				readLock.unlock();
-			}
-		}
-		if (bytes != null) {
-			byte[] array = bytes.array();//bytes.array();//new byte[bytes.remaining()];
+//		ByteData bytes = getWr(files.get(fileLoc)) ;//getOriginalBytes(file);
+//		if (bytes == null) {
+//			readLock.lock();
+//			bytes = getWr(files.get(fileLoc));
+//			if( bytes == null ){
+//				try {
+//					byte[] data = RequestUtil.read(file);//new byte[bb.remaining()];
+//					if (data!=null) {
+//						bytes = new ByteData(data);
+//						files.put(fileLoc, new FileData(new WeakReference<ByteData>(bytes), file));
+//					}
+//				} finally {
+//					readLock.unlock();
+//				}
+//			}else{
+//				readLock.unlock();
+//			}
+//		}
+//		if (bytes != null) {
+//			byte[] array = bytes.array();//bytes.array();//new byte[bytes.remaining()];
 			//			bytes.get(array, 0, array.length);
-			res.append(array);
-			res.putHeader("Content-Length", array.length);
+//			res.append(array);
+		if( file.exists() ){
+			ByteData bytes = new ByteData(file);
+			res.append(bytes);
+			res.putHeader("Content-Length", bytes.length());
 		}else{
 			res.setResponseCode(404);
 		}
@@ -364,20 +365,20 @@ class ProxyRoute extends Route {
 		res.putHeader("Content-Length", buf.length());
 	}
 
-	final ByteData getWr(FileData ref){
-		if( ref == null ) return null;
-		else{
-			if(!ref.file.exists()){
-				files.remove(ref.file.getAbsolutePath());
-				return null;
-			}else if ( ref.time < ref.file.lastModified() ){
-				files.remove(ref.file.getAbsolutePath());
-				return null;
-			}else{
-				return ref.data.get();
-			}
-		} 
-	}
+//	final ByteData getWr(FileData ref){
+//		if( ref == null ) return null;
+//		else{
+//			if(!ref.file.exists()){
+//				files.remove(ref.file.getAbsolutePath());
+//				return null;
+//			}else if ( ref.time < ref.file.lastModified() ){
+//				files.remove(ref.file.getAbsolutePath());
+//				return null;
+//			}else{
+//				return ref.data.get();
+//			}
+//		} 
+//	}
 	
 	@Override
 	final Response getResponse(Request req) {
@@ -391,14 +392,14 @@ class ProxyRoute extends Route {
 	@Override
 	final void disable() {
 		super.disable();
-		if( this.files!=null ) this.files.clear();
+//		if( this.files!=null ) this.files.clear();
 		if( this.proxyTh!=null ) this.proxyTh.clearAll();
 	}
 
 	@Override
 	final void close() {
 		super.close();
-		if( this.files!=null ) this.files.clear();
+//		if( this.files!=null ) this.files.clear();
 		if( this.proxyTh!=null ) this.proxyTh.clearAll();
 	}
 
