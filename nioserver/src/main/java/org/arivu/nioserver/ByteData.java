@@ -67,6 +67,13 @@ public final class ByteData {
 		}
 	}
 
+	
+	public void close() throws IOException{
+		if( file!=null )
+			file.close();
+	}
+	
+	
 	public static ByteData wrap(byte[] array) {
 		return new ByteData(array);
 	}
