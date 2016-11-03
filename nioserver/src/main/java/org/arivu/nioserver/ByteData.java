@@ -54,6 +54,14 @@ public final class ByteData {
 		}
 	}
 
+
+	
+	public void close() throws IOException{
+		if( file!=null )
+			file.close();
+	}
+	
+	
 	public byte[] copyOfRange(long from, long to) throws IOException {
 		if (file == null) {
 			return Arrays.copyOfRange(data, (int)from, (int)to);

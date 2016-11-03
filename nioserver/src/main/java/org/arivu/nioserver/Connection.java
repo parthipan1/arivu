@@ -321,6 +321,7 @@ final class Connection {
 
 }
 final class ConnectionState{
+	private static final Logger logger = LoggerFactory.getLogger(ConnectionState.class);
 	// Write state
 	int writeLen = 0;
 	ByteData poll = null;
@@ -352,6 +353,13 @@ final class ConnectionState{
 	}
 
 	void clearBytes() {
+		if(poll!=null){
+			try {
+				poll.close();
+			} catch (IOException e) {
+				logger.error("Error closing RandomAccessFile :: ", e);
+			}
+		}
 		poll = null;
 		pos = 0;
 		rem = 0;	
