@@ -76,7 +76,6 @@ final class Connection {
 //					writeLen += 
 							socketChannel.write(wrap);
 				}
-				state.poll.close();
 //				int rf = wrap.remaining();
 //				logger.debug("{}  3 write bytes from  :: {}  length :: {}/{}({},{}) to :: {} size :: {}",state.resBuff,state.pos,length,writeLen,rb,rf,(state.pos + length),state.rem);
 				logger.debug("{}  3 write bytes from  :: {}  length :: {} to :: {} size :: {}",state.resBuff,state.pos,length,(state.pos + length),state.rem);
@@ -322,6 +321,7 @@ final class Connection {
 
 }
 final class ConnectionState{
+	private static final Logger logger = LoggerFactory.getLogger(ConnectionState.class);
 	// Write state
 	int writeLen = 0;
 	ByteData poll = null;
@@ -353,6 +353,13 @@ final class ConnectionState{
 	}
 
 	void clearBytes() {
+		if(poll!=null){
+			try {
+				poll.close();
+			} catch (IOException e) {
+				logger.error("Error closing RandomAccessFile :: ", e);
+			}
+		}
 		poll = null;
 		pos = 0;
 		rem = 0;	
