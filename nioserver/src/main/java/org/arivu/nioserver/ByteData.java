@@ -4,6 +4,7 @@
 package org.arivu.nioserver;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
@@ -57,15 +58,15 @@ public final class ByteData {
 			for (Entry<String, RandomAccessFileHelper> e : threadValues.entrySet()) {
 				RandomAccessFileHelper value = e.getValue();
 				if (force || (name != null && value.isExpired() && !e.getKey().equals(name))) {
-					final RandomAccessFile randomAccessFile = value.get();
-					if (randomAccessFile != null) {
-						e.setValue(null);
-						try {
+					try {
+						final RandomAccessFile randomAccessFile = value.get();
+						if (randomAccessFile != null) {
+							e.setValue(null);
 							randomAccessFile.close();
 							logger.debug("Closing file {}", e.getKey());
-						} catch (IOException e1) {
-							logger.error("Error closing file " + e.getKey(), e1);
 						}
+					} catch (IOException e1) {
+						logger.error("Error closing file " + e.getKey(), e1);
 					}
 				}
 			}
@@ -88,7 +89,7 @@ public final class ByteData {
 		Map<String, RandomAccessFileHelper> map = mdc.get(null);
 		RandomAccessFileHelper randomAccessFileHelper = map.get(name);
 		if (randomAccessFileHelper == null) {
-			randomAccessFileHelper = new RandomAccessFileHelper(name, new RandomAccessFile(f, "r"));
+			randomAccessFileHelper = new RandomAccessFileHelper(f);
 			map.put(name, randomAccessFileHelper);
 		}
 		return randomAccessFileHelper.get();
@@ -163,23 +164,35 @@ public final class ByteData {
 
 	private static final class RandomAccessFileHelper {
 		private static final int THRESHOLD_TIME_MILLISECS = 300000;
-		private final RandomAccessFile raf;
-		private final String name;
+		private RandomAccessFile raf;
+		private final File file;
 		volatile long time = 0l;
-
-		RandomAccessFileHelper(String name, RandomAccessFile raf) {
+		long lmt = 0l;
+		RandomAccessFileHelper(File file) throws FileNotFoundException {
 			super();
-			this.name = name;
-			this.raf = raf;
+			this.file = file;
+			this.raf = new RandomAccessFile(file, "r");;
 			this.time = System.currentTimeMillis();
+			this.lmt = file.lastModified();
 		}
 
-		RandomAccessFile get() {
-			long currentTimeMillis = System.currentTimeMillis();
-			if (currentTimeMillis - this.time > THRESHOLD_TIME_MILLISECS)
-				clean(false, name);
-			this.time = currentTimeMillis;
-			return raf;
+		RandomAccessFile get() throws IOException {
+			if( !file.exists() ){
+				raf.close();
+				throw new FileNotFoundException(this.file.getAbsolutePath());
+			}else if( file.lastModified() > lmt ){
+				this.raf.close();
+				this.raf = new RandomAccessFile(file, "r");;
+				this.time = System.currentTimeMillis();
+				this.lmt = file.lastModified();
+				return this.raf;
+			}else{
+				long currentTimeMillis = System.currentTimeMillis();
+				if (currentTimeMillis - this.time > THRESHOLD_TIME_MILLISECS)
+					clean(false, file.getAbsolutePath());
+				this.time = currentTimeMillis;
+				return raf;
+			}
 		}
 
 		boolean isExpired() {
