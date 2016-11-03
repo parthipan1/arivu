@@ -98,7 +98,7 @@ final class SelectorHandler {
 			if (route2 != null && !NullCheck.isNullOrEmpty(route2.headers)) {
 				List<Object> list = route2.headers.get(header);
 				if(list==null){
-					list = new DoublyLinkedList<>();
+					list = new DoublyLinkedList<Object>();
 					route2.headers.put(header, list);
 				}
 				list.add(value);
@@ -141,7 +141,7 @@ final class SelectorHandler {
 		public void addResponseHeader(String header, String value) {
 			List<Object> list = Configuration.defaultResponseHeader.get(header);
 			if(list==null){
-				list = new DoublyLinkedList<>();
+				list = new DoublyLinkedList<Object>();
 				Configuration.defaultResponseHeader.put(header, list);
 			}
 			list.add(value);
@@ -273,7 +273,8 @@ final class SelectorHandler {
 				connectionPool.close();
 			} catch (Exception e) {
 				logger.error("Failed to close connectionPool::", e);
-			} 
+			}
+			ByteData.clean(true, null);
 		} finally {
 			logger.info("Server stopped!");
 			System.exit(0);

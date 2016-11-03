@@ -35,6 +35,8 @@ import org.slf4j.LoggerFactory;
  *
  */
 final class Admin {
+	private static final File ICON_FILE = new File("favicon.ico");
+
 	private static final String HASH_HEADER = "X-HASH";
 
 	private static final Logger logger = LoggerFactory.getLogger(Admin.class);
@@ -62,9 +64,9 @@ final class Admin {
 	// {\"uri\":\"" + uri + "\",\"name\":\"" + name + "\",\"loc\":\"" + loc +
 	// "\",\"type\":\"" + typeRoute + "\"}
 
-	static final Map<String, App> allHotDeployedArtifacts = new Amap<>();
+	static final Map<String, App> allHotDeployedArtifacts = new Amap<String, App>();
 
-	static byte[] iconBytes = null;
+//	static byte[] iconBytes = null;
 
 	static boolean isOriginateFromAdminPage(Request request) {
 		List<Object> list = request.getHeaders().get("Referer");
@@ -279,11 +281,9 @@ final class Admin {
 	static void handleIcon() throws Exception {
 		Response res = StaticRef.getResponse();
 		res.setResponseCode(200);
-		if (iconBytes == null) {
-			iconBytes = RequestUtil.read(new File("favicon.ico"));
-		}
-		res.append(iconBytes);
-		res.putHeader("Content-Length", iconBytes.length);
+		ByteData bytes = new ByteData(ICON_FILE);
+		res.append(bytes);
+		res.putHeader("Content-Length", bytes.length());
 		res.putHeader("Content-Type", "image/x-icon");
 		res.putHeader("Cache-Control", "max-age=31536000");
 	}
@@ -398,7 +398,7 @@ final class App {
 
 	boolean deploy() throws MalformedURLException, ClassNotFoundException {
 		File libsFile = new File(Configuration.DEPLOY_LOC + File.separator + name + File.separator + "libs");
-		List<URL> urls = new DoublyLinkedList<>();
+		List<URL> urls = new DoublyLinkedList<URL>();
 		RequestUtil.allUrls(libsFile, urls);
 		dynamicClassLoader = new URLClassLoader(RequestUtil.toArray(urls), Admin.class.getClassLoader());
 

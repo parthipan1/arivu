@@ -16,7 +16,7 @@ final class ResponseImpl implements Response {
 	
 	final Map<String, List<Object>> headers = new Amap<String, List<Object>>();
 
-	final List<ByteData> out = new DoublyLinkedList<>();
+	final List<ByteData> out = new DoublyLinkedList<ByteData>();
 
 	int responseCode = Configuration.defaultResCode;
 
@@ -78,7 +78,7 @@ final class ResponseImpl implements Response {
 	public Object putHeader(String key, Object value) {
 		List<Object> list = this.headers.get(key);
 		if( list==null ){
-			list = new DoublyLinkedList<>();
+			list = new DoublyLinkedList<Object>();
 			this.headers.put(key, list);
 		}
 		list.add(value);
@@ -146,7 +146,7 @@ final class ResponseImpl implements Response {
 	public void append(ByteData buf) throws IOException {
 		if(buf!=null){
 			out.add(buf);
-			contentLength += buf.length();//remaining();
+			contentLength += buf.length();//array().length;//remaining();
 		}
 	}
 	
