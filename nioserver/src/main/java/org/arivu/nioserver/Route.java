@@ -18,13 +18,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.locks.Lock;
 
 import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.datastructure.Threadlocal;
 import org.arivu.utils.NullCheck;
-import org.arivu.utils.lock.AtomicWFReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -286,7 +284,7 @@ class ProxyRoute extends Route {
 		}
 	}
 
-	final Lock readLock = new AtomicWFReentrantLock();
+//	final Lock readLock = new AtomicWFReentrantLock();
 	
 	final void handleBrowser(Request req, Response res) throws IOException {
 		String fileLoc = this.dir + URLDecoder.decode(req.getUri().substring(this.uri.length()), RequestUtil.ENC_UTF_8);
