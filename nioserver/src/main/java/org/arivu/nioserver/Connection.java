@@ -277,7 +277,7 @@ final class Connection {
 		AsynContext ctx = null;
 		try {
 			if (route != null) {
-				Response response = route.getResponse(req);
+				final Response response = route.getResponse(req);
 				if (response != null) {
 					ctx = new AsynContextImpl(key, req, response, state);
 					StaticRef.set(req, response, route, ctx, key);

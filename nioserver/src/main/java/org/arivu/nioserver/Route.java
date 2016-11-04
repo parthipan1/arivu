@@ -752,6 +752,9 @@ final class AsynContextImpl  implements AsynContext{
 		return key;
 	}
 
+	/**
+	 * 
+	 */
 	@Override
 	public void finish() {
 		if( flag && key.isValid()){
@@ -759,6 +762,9 @@ final class AsynContextImpl  implements AsynContext{
 //			if (state.resBuff != null && state.resBuff.cl > Configuration.defaultChunkSize) {
 //				((SocketChannel) key.channel()).socket().setSoTimeout(0);
 //			}
+			if( response instanceof ResponseImpl )
+				((ResponseImpl)response).done = true;
+			
 			logger.debug(" request :: {} response :: {}", request.toString() ,state.resBuff.cl);			
 			key.interestOps(SelectionKey.OP_WRITE);
 		}
