@@ -108,7 +108,7 @@ final class Connection {
 		channel.close();
 		key.cancel();
 		if (state.resBuff != null)
-			RequestUtil.accessLog(state.resBuff.rc, state.resBuff.uri, startTime, state.resBuff.endtime, state.resBuff.cl,
+			RequestUtil.accessLog(state.resBuff.rc, state.resBuff.uri, startTime, System.currentTimeMillis(), state.resBuff.cl,
 					remoteSocketAddress, state.resBuff.method);
 		state.writeLen = 0;
 		req = null;
