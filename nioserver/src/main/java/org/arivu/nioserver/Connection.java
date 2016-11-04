@@ -197,11 +197,12 @@ final class Connection {
 							processRequest(key);
 							return;
 						}
+						state.contentLen = -1l;
 						List<Object> list = req.getHeaders().get("Content-Length");
 						if (!NullCheck.isNullOrEmpty(list)) {
 							String conLenStrHdr = list.get(0).toString();
 							if (!NullCheck.isNullOrEmpty(conLenStrHdr)) {
-								state.contentLen = Integer.parseInt(conLenStrHdr);
+								state.contentLen = Long.parseLong(conLenStrHdr);
 							} 
 						}
 						// System.out.println(" Got Request :: "+req+"\n total
@@ -250,7 +251,7 @@ final class Connection {
 					key.interestOps(SelectionKey.OP_READ);
 			} else {
 //				System.out.println(" bytesRead "+bytesRead+" EOL0 "+EOL0+" req "+rh.contentLen);
-				if (bytesRead == -1 || state.contentLen == 0 || EOL0 == RequestUtil.BYTE_10)
+				if (bytesRead == -1 || state.contentLen == 0l || EOL0 == RequestUtil.BYTE_10)
 					processRequest(key);
 				else
 					key.interestOps(SelectionKey.OP_READ);
@@ -277,7 +278,7 @@ final class Connection {
 		AsynContext ctx = null;
 		try {
 			if (route != null) {
-				Response response = route.getResponse(req);
+				final Response response = route.getResponse(req);
 				if (response != null) {
 					ctx = new AsynContextImpl(key, req, response, state);
 					StaticRef.set(req, response, route, ctx, key);
@@ -332,7 +333,7 @@ final class ConnectionState{
 	// Read state
 	final List<ByteData> in = new DoublyLinkedList<ByteData>();
 	boolean onceFlag = false;
-	int contentLen = 0;
+	long contentLen = 0l;
 	int start = 0;
 	int mi = 0;
 	ByteData rollOver = null;
