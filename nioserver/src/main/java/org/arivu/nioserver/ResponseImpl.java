@@ -61,7 +61,7 @@ final class ResponseImpl implements Response {
 	@Override
 	public Map<String, List<Object>> getHeaders() {
 		if(done)
-			return Utils.unmodifiableMap(headers);
+			return RequestUtil.unModifiable(headers);
 		else
 			return headers;
 	}

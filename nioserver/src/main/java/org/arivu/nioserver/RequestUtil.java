@@ -78,7 +78,28 @@ public final class RequestUtil {
 	final static DateFormat dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z");
 	
 	static final Pattern validUrl = Pattern.compile("^[a-zA-Z0-9-_]*$");
-	
+
+	public static Object getFirstHeaderValue(final Map<String, List<Object>> headers, final String headerToken) {
+		if (!NullCheck.isNullOrEmpty(headers) && !NullCheck.isNullOrEmpty(headerToken)) {
+			List<Object> list = headers.get(headerToken);
+			if (!NullCheck.isNullOrEmpty(list)) {
+				return list.get(0);
+			}
+		}
+		return null;
+	}
+
+	static Map<String, List<Object>> unModifiable(final Map<String, List<Object>> headers) {
+		if (!NullCheck.isNullOrEmpty(headers) ) {
+			Map<String, List<Object>> theaders  = new Amap<String, List<Object>>();
+			for(Entry<String, List<Object>> e:headers.entrySet()){
+				theaders.put(e.getKey(), Utils.unmodifiableList(e.getValue()) );
+			}
+			return Utils.unmodifiableMap(theaders);
+		}
+		return null;
+	}
+
 	static int searchPattern(byte[] content, byte[] pattern, int start, int disp) {
 		int mi = disp;
 		for (int i = start; i < content.length; i++) {
