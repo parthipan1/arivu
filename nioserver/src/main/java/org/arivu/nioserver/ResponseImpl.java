@@ -8,6 +8,7 @@ import java.util.Map;
 import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.utils.NullCheck;
+import org.arivu.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +26,8 @@ final class ResponseImpl implements Response {
 	String redirectUrl = null;
 	
 	long contentLength = 0;
+	
+	boolean done = false;
 	
 	ResponseImpl(Request request, Map<String, List<Object>> headers) {
 		this.request = request;
@@ -50,12 +53,17 @@ final class ResponseImpl implements Response {
 	 */
 	@Override
 	public void setResponseCode(int responseCode) {
+		if(done)
+			throw new IllegalStateException("Cannot modify a response which is already processed!");
 		this.responseCode = responseCode;
 	}
 
 	@Override
 	public Map<String, List<Object>> getHeaders() {
-		return headers;
+		if(done)
+			return Utils.unmodifiableMap(headers);
+		else
+			return headers;
 	}
 
 	/*
@@ -65,7 +73,10 @@ final class ResponseImpl implements Response {
 	 */
 	@Override
 	public List<Object> getHeader(Object key) {
-		return headers.get(key);
+		if(done)
+			return Utils.unmodifiableList(headers.get(key));
+		else
+			return headers.get(key);
 	}
 
 	/*
@@ -76,6 +87,8 @@ final class ResponseImpl implements Response {
 	 */
 	@Override
 	public Object putHeader(String key, Object value) {
+		if(done)
+			throw new IllegalStateException("Cannot modify a response which is already processed!");
 		List<Object> list = this.headers.get(key);
 		if( list==null ){
 			list = new DoublyLinkedList<Object>();
@@ -92,6 +105,8 @@ final class ResponseImpl implements Response {
 	 */
 	@Override
 	public List<Object> removeHeader(Object key) {
+		if(done)
+			throw new IllegalStateException("Cannot modify a response which is already processed!");
 		return headers.remove(key);
 	}
 
@@ -102,6 +117,8 @@ final class ResponseImpl implements Response {
 	 */
 	@Override
 	public void putAllHeader(Map<? extends String, ? extends List<Object>> m) {
+		if(done)
+			throw new IllegalStateException("Cannot modify a response which is already processed!");
 		headers.putAll(m);
 	}
 
@@ -145,6 +162,8 @@ final class ResponseImpl implements Response {
 	@Override
 	public void append(ByteData buf) throws IOException {
 		if(buf!=null){
+			if(done)
+				throw new IllegalStateException("Cannot modify a response which is already processed!");
 			out.add(buf);
 			contentLength += buf.length();//array().length;//remaining();
 		}
@@ -171,6 +190,8 @@ final class ResponseImpl implements Response {
 	 */
 	@Override
 	public void sendRedirect(String url){
+		if(done)
+			throw new IllegalStateException("Cannot modify a response which is already processed!");
 		this.responseCode = 301;
 		this.headers.clear();
 		putHeader("X-Redirect-Src", request.getUriWithParams());
