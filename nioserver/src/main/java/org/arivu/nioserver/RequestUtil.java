@@ -33,6 +33,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -75,11 +76,34 @@ public final class RequestUtil {
 
 	private static final String LINE_SEPARATOR = System.lineSeparator();
 
-//	final static DateFormat dateFormat = new SimpleDateFormat("EEE MMM d hh:mm:ss.SSS yyyy");
-	
+	// final static DateFormat dateFormat = new SimpleDateFormat("EEE MMM d
+	// hh:mm:ss.SSS yyyy");
+
 	final static DateFormat dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z");
-	
+
 	static final Pattern validUrl = Pattern.compile("^[a-zA-Z0-9-_]*$");
+
+	public static Object getFirstHeaderValue(final Map<String, List<Object>> headers, final String headerToken) {
+		if (!NullCheck.isNullOrEmpty(headers) && !NullCheck.isNullOrEmpty(headerToken)) {
+			List<Object> list = headers.get(headerToken);
+			if (!NullCheck.isNullOrEmpty(list)) {
+				return list.get(0);
+			}
+		}
+		return null;
+	}
+
+	static Map<String, List<Object>> unModifiable(final Map<String, List<Object>> headers) {
+		if (!NullCheck.isNullOrEmpty(headers) ) {
+			Map<String, List<Object>> theaders  = new Amap<>();
+			Set<Entry<String, List<Object>>> entrySet = headers.entrySet();
+			for(Entry<String, List<Object>> e:entrySet){
+				theaders.put(e.getKey(), Utils.unmodifiableList(e.getValue()) );
+			}
+			return Utils.unmodifiableMap(theaders);
+		}
+		return null;
+	}
 	
 	static int searchPattern(byte[] content, byte[] pattern, int start, int disp) {
 		int mi = disp;
@@ -160,7 +184,7 @@ public final class RequestUtil {
 			int indexOf2 = h.indexOf(":");
 			if (indexOf2 != -1) {
 				// tempheaders.put(h, "");
-//			} else {
+				// } else {
 				tempheaders.put(h.substring(0, indexOf2), h.substring(indexOf2 + 1).trim());
 			}
 		}
@@ -219,8 +243,8 @@ public final class RequestUtil {
 		if (!NullCheck.isNullOrEmpty(contType)) {
 			requestImpl.isMultipart = contType.contains(MULTIPART_FORM_DATA);
 			if (requestImpl.isMultipart) {
-				contType = Utils.replaceAll(contType, MULTIPART_FORM_DATA+";", "").trim();
-				contType = Utils.replaceAll(contType, BOUNDARY+"=", "").trim();
+				contType = Utils.replaceAll(contType, MULTIPART_FORM_DATA + ";", "").trim();
+				contType = Utils.replaceAll(contType, BOUNDARY + "=", "").trim();
 				requestImpl.boundary = ("--" + contType).getBytes();
 			}
 		}
@@ -246,18 +270,17 @@ public final class RequestUtil {
 		int indexOf = -1;
 		if (cnt == 2) {
 			int inc = 1;
-			for (int i = 3; i < bytes.length; i+=inc) {
-				if (bytes[i] == bytes[i - 2] && bytes[i] == second ) {
-					if(bytes[i - 1] == bytes[i - 3]
-							&& bytes[i - 1] == first){
+			for (int i = 3; i < bytes.length; i += inc) {
+				if (bytes[i] == bytes[i - 2] && bytes[i] == second) {
+					if (bytes[i - 1] == bytes[i - 3] && bytes[i - 1] == first) {
 						indexOf = i;
 						break;
 					}
 					inc = 2;
-				}else{
+				} else {
 					inc = 1;
 				}
-				
+
 			}
 		} else if (cnt == 1) {
 			for (int i = 1; i < bytes.length; i++) {
@@ -359,7 +382,7 @@ public final class RequestUtil {
 			} else {
 				int ei = uritkn.indexOf(CLOSE_CHAIN_BRKT);
 				String paramName = uritkn.substring(1, uritkn.length() - 1);
-				if ( si != 0 && ei != uritkn.length() - 1 || NullCheck.isNullOrEmpty(paramName)
+				if (si != 0 && ei != uritkn.length() - 1 || NullCheck.isNullOrEmpty(paramName)
 						|| !validUrl.matcher(paramName).matches()) {
 					return false;
 				}
@@ -492,7 +515,7 @@ public final class RequestUtil {
 			responseBody.append(protocol).append(" ").append(responseCode).append(" ").append(rescodetxt)
 					.append(LINE_SEPARATOR);
 
-//		Date endtime = new Date();
+		// Date endtime = new Date();
 		long enddate = System.currentTimeMillis();
 		responseBody.append("Date: ").append(dateFormat.format(enddate)).append(LINE_SEPARATOR);
 
@@ -511,7 +534,7 @@ public final class RequestUtil {
 		ref.uri = uri;
 		ref.method = method;
 		ref.endtime = enddate;
-		
+
 		ref.queue.add(new ByteData(responseBody.toString().getBytes()));
 		ref.queue.addAll(out);
 		ref.cl = contentLen;
@@ -519,7 +542,7 @@ public final class RequestUtil {
 	}
 
 	static void stopRemote() {
-		String url = DEFAULT_PROTOCOL+"://" + Server.DEFAULT_HOST + ":" + Server.DEFAULT_PORT + Configuration.stopUri;
+		String url = DEFAULT_PROTOCOL + "://" + Server.DEFAULT_HOST + ":" + Server.DEFAULT_PORT + Configuration.stopUri;
 		BufferedReader in = null;
 		try {
 			final HttpURLConnection con = (HttpURLConnection) new URL(url).openConnection();
@@ -689,20 +712,21 @@ public final class RequestUtil {
 		for (File f : list) {
 			try {
 				File scanpackagesFile = new File(f, SCANPACKAGES_TOKEN);
-				if( scanpackagesFile.exists() )
+				if (scanpackagesFile.exists())
 					new App(f.getName(), new String(read(scanpackagesFile))).deploy();
-				else{
+				else {
 					del(f);
-					logger.info("Invalid folder " + f.getAbsolutePath()+" removed!");
+					logger.info("Invalid folder " + f.getAbsolutePath() + " removed!");
 				}
 			} catch (Exception e) {
 				logger.error("Failed in scan Apps :: ", e);
 			}
 		}
-		logger.info("Discovered Apps :: " + Utils.toString(Admin.allHotDeployedArtifacts.keySet()) );
+		logger.info("Discovered Apps :: " + Utils.toString(Admin.allHotDeployedArtifacts.keySet()));
 	}
 
-	static void addProxyRouteRuntime(String name, String method, String location, String proxyPass, String dir, Collection<Route> rts, Map<String, List<Object>> header) {
+	static void addProxyRouteRuntime(String name, String method, String location, String proxyPass, String dir,
+			Collection<Route> rts, Map<String, List<Object>> header) {
 		HttpMethod httpMethod = HttpMethod.ALL;
 		if (!NullCheck.isNullOrEmpty(method))
 			httpMethod = HttpMethod.valueOf(method);
@@ -715,9 +739,9 @@ public final class RequestUtil {
 		boolean notNullDir = !NullCheck.isNullOrEmpty(dir);
 		if (notNullProxy && notNullDir)
 			throw new IllegalArgumentException("Illegal proxy_pass(" + proxyPass + ") and dir(" + dir + ") specified!");
-		else if(!notNullProxy && !notNullDir)
+		else if (!notNullProxy && !notNullDir)
 			throw new IllegalArgumentException("Illegal proxy_pass(" + proxyPass + ") and dir(" + dir + ") specified!");
-		
+
 		if (notNullProxy) {
 			proxy_pass = Utils.replaceAll(proxy_pass, "$host", Server.DEFAULT_HOST);
 			proxy_pass = Utils.replaceAll(proxy_pass, "$port", String.valueOf(Server.DEFAULT_PORT));
@@ -726,7 +750,7 @@ public final class RequestUtil {
 			dir = Utils.replaceAll(dir, "$home", new File(".").getAbsolutePath());
 		}
 		ProxyRoute prp = new ProxyRoute(name, proxy_pass, dir, location, httpMethod, null, null, false, header);
-//		Collection<Route> rts = Configuration.routes;
+		// Collection<Route> rts = Configuration.routes;
 		for (Route rt : rts) {
 			if (rt instanceof ProxyRoute) {
 				ProxyRoute prt = (ProxyRoute) rt;
@@ -754,7 +778,7 @@ public final class RequestUtil {
 					out.put(e.getKey(), list);
 				}
 				list.add(e.getValue());
-			} 
+			}
 		}
 		return out;
 	}

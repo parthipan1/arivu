@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
@@ -307,6 +306,7 @@ class ProxyRoute extends Route {
 					res.putHeader("Content-Type", typeObj);
 				
 			}
+			res.putHeader("Content-Disposition", "inline; filename=\""+file.getName()+"\"");
 		}
 		if( file.exists() ){
 			ByteData bytes = new ByteData(file);
@@ -396,18 +396,18 @@ final class AdminRoute extends ProxyRoute {
 	}
 	
 }
-final class FileData{
-	final long time;
-	final WeakReference<ByteData> data;
-	final File file;
-	FileData(WeakReference<ByteData> data,File file) {
-		super();
-		this.data = data;
-		this.file = file;
-		this.time = file.lastModified();
-	}
-	
-}
+//final class FileData{
+//	final long time;
+//	final WeakReference<ByteData> data;
+//	final File file;
+//	FileData(WeakReference<ByteData> data,File file) {
+//		super();
+//		this.data = data;
+//		this.file = file;
+//		this.time = file.lastModified();
+//	}
+//	
+//}
 final class ProxyRes {
 	final String response;
 	final int responseCode;
