@@ -744,14 +744,6 @@ final class AsynContextImpl  implements AsynContext{
 		return response;
 	}
 
-	/* (non-Javadoc)
-	 * @see org.arivu.nioserver.AsynContext#getKey()
-	 */
-	@Override
-	public SelectionKey getKey() {
-		return key;
-	}
-
 	/**
 	 * 
 	 */
