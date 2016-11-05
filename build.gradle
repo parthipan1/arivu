@@ -413,13 +413,19 @@ dependencies {
 }
 
 project(':nioserver'){
-dependencies {
+   dependencies {
+	
 	compile 'org.slf4j:slf4j-api:1.7.21'
 	compile project(':resourcepool')
 	compile project(':datastructure')
 	compile project(':utils')
-	//compile project(':nioserver-admin')
+	
+	testCompile group: 'io.rest-assured', name: 'rest-assured', version: '3.0.1'
+	    
     runtime project(':lightninglog')
+  }
+  test {
+    forkEvery = 1
   }
   
 	// deployment directory

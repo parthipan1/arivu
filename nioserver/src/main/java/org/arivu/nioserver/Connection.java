@@ -9,7 +9,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 
 import org.arivu.datastructure.DoublyLinkedList;
@@ -70,14 +69,9 @@ final class Connection {
 				final int length = Math.min(Configuration.defaultChunkSize, state.rem - state.pos);
 				final SocketChannel socketChannel = (SocketChannel) key.channel();
 				final ByteBuffer wrap = ByteBuffer.wrap(state.poll.copyOfRange(state.pos, state.pos+length));
-//				int rb = wrap.remaining();
-//				int writeLen = 0;
 				while( wrap.remaining()>0 ){
-//					writeLen += 
-							socketChannel.write(wrap);
+					socketChannel.write(wrap);
 				}
-//				int rf = wrap.remaining();
-//				logger.debug("{}  3 write bytes from  :: {}  length :: {}/{}({},{}) to :: {} size :: {}",state.resBuff,state.pos,length,writeLen,rb,rf,(state.pos + length),state.rem);
 				logger.debug("{}  3 write bytes from  :: {}  length :: {} to :: {} size :: {}",state.resBuff,state.pos,length,(state.pos + length),state.rem);
 				state.pos += length;
 				finishByteBuff(key);
@@ -173,12 +167,13 @@ final class Connection {
 		int bytesRead = 0;
 		byte EOL0 = 1;
 		try {
-			byte[] readBuf = new byte[Configuration.defaultRequestBuffer];
-			ByteBuffer wrap = ByteBuffer.wrap(readBuf);
+			final byte[] readBuf = new byte[Configuration.defaultRequestBuffer];
+			final ByteBuffer wrap = ByteBuffer.wrap(readBuf);
 			if ((bytesRead = ((SocketChannel) key.channel()).read(wrap)) > 0) {
 				EOL0 = wrap.get(wrap.position() - 1);
+//				System.out.println("\n ******%"+new String(readBuf)+"%******\n");
 				if (req == null) {
-					int headerIndex = RequestUtil.getHeaderIndex(readBuf, RequestUtil.BYTE_13, RequestUtil.BYTE_10, 2);
+					final int headerIndex = RequestUtil.getHeaderIndex(readBuf, RequestUtil.BYTE_13, RequestUtil.BYTE_10, 2);
 					if (headerIndex == -1) {
 						if (bytesRead == readBuf.length) {
 							state.in.add(ByteData.wrap(readBuf));
@@ -192,22 +187,23 @@ final class Connection {
 								false);
 						state.in.clear();
 						logger.debug(" Got Request :: {}" , req);
+						setContentLen();
 //						 System.out.println(" Got Request :: "+req+" route "+route);
 						if (route == Configuration.defaultRoute) {
+							if( req.getHttpMethod() == HttpMethod.GET){
+								processRequest(key);
+								return;
+							}else if( state.contentLen>0) {
+								state.is404Res = true;
+							}else{
+								processRequest(key);
+								return;
+							}
+						}
+						if( state.contentLen == 0l){
 							processRequest(key);
 							return;
-						}
-						state.contentLen = -1l;
-						List<Object> list = req.getHeaders().get("Content-Length");
-						if (!NullCheck.isNullOrEmpty(list)) {
-							String conLenStrHdr = list.get(0).toString();
-							if (!NullCheck.isNullOrEmpty(conLenStrHdr)) {
-								state.contentLen = Long.parseLong(conLenStrHdr);
-							} 
-						}
-						// System.out.println(" Got Request :: "+req+"\n total
-						// "+(total+headerIndex)+"");
-						if (headerIndex + 1 < bytesRead) {
+						}else if (headerIndex + 1 < bytesRead) {
 							if (req.isMultipart) {
 								state.start = req.boundary.length + 1;
 								state.onceFlag = true;
@@ -217,48 +213,77 @@ final class Connection {
 							}
 							state.contentLen -= (bytesRead-headerIndex - 1);
 						}
+						
+						// System.out.println(" Got Request :: "+req+"\n total
+						// "+(total+headerIndex)+"");
 					}
+					nextRead(key, bytesRead, EOL0);
 				} else {
-					if (req.isMultipart) {
-						if (!state.onceFlag) {
-							state.onceFlag = true;
-							state.start = req.boundary.length + 1;
-						}
-						if (bytesRead == readBuf.length) {
-							processMultipartInBytes(readBuf);
+					state.contentLen -= bytesRead;
+					if(!state.is404Res){
+						if (req.isMultipart) {
+							if (!state.onceFlag) {
+								state.onceFlag = true;
+								state.start = req.boundary.length + 1;
+							}
+							if (bytesRead == readBuf.length) {
+								processMultipartInBytes(readBuf);
+							} else {
+								processMultipartInBytes(Arrays.copyOfRange(readBuf, 0, bytesRead));
+							}
+							nextMultiPartNext(key, bytesRead, EOL0, readBuf);
 						} else {
-							byte[] arr = Arrays.copyOfRange(readBuf, 0, bytesRead);
-							processMultipartInBytes(arr);
+							if (bytesRead == readBuf.length) {
+								req.body.add(ByteData.wrap(readBuf));
+							} else {
+								req.body.add(ByteData.wrap(Arrays.copyOfRange(readBuf, 0, bytesRead)));
+							}
+							nextRead(key, bytesRead, EOL0);
 						}
-						state.contentLen -= bytesRead;
-					} else {
-						if (bytesRead == readBuf.length) {
-							req.body.add(ByteData.wrap(readBuf));
-						} else {
-							req.body.add(ByteData.wrap(Arrays.copyOfRange(readBuf, 0, bytesRead)));
-						}
-						state.contentLen -= bytesRead;
+					}else{
+						nextRead(key, bytesRead, EOL0);
 					}
 				}
 			}
-			if (req != null && req.isMultipart) {
-				int size = req.body.size();
-				if (size == 0) 
-					key.interestOps(SelectionKey.OP_READ);
-				else  if (bytesRead == -1 || EOL0 == RequestUtil.BYTE_10 && isEndOfLine(bytesRead, readBuf)) 
-					processRequest(key);
-				else
-					key.interestOps(SelectionKey.OP_READ);
-			} else {
-//				System.out.println(" bytesRead "+bytesRead+" EOL0 "+EOL0+" req "+rh.contentLen);
-				if (bytesRead == -1 || state.contentLen == 0l || EOL0 == RequestUtil.BYTE_10)
-					processRequest(key);
-				else
-					key.interestOps(SelectionKey.OP_READ);
-			}
+//			if(state.is404Res){
+//				nextRead(key, bytesRead, EOL0);
+//			}else if (req != null && req.isMultipart) {
+//				nextMultiPartNext(key, bytesRead, EOL0, readBuf);
+//			} else {
+////				System.out.println(" bytesRead "+bytesRead+" EOL0 "+EOL0+" req "+rh.contentLen);
+//				nextRead(key, bytesRead, EOL0);
+//			}
 		} catch (Throwable e) {
 			logger.error("Failed in read :: ", e);
 			finish(key);
+		}
+	}
+
+	void nextMultiPartNext(final SelectionKey key, int bytesRead, byte EOL0, byte[] readBuf) {
+		int size = req.body.size();
+		if (size == 0) 
+			key.interestOps(SelectionKey.OP_READ);
+		else  if (bytesRead == -1 || EOL0 == RequestUtil.BYTE_10 && isEndOfLine(bytesRead, readBuf)) 
+			processRequest(key);
+		else
+			key.interestOps(SelectionKey.OP_READ);
+	}
+
+	void nextRead(final SelectionKey key, int bytesRead, byte EOL0) {
+		if (bytesRead == -1 || state.contentLen == 0l || (state.contentLen == -1l && EOL0 == RequestUtil.BYTE_10))
+			processRequest(key);
+		else
+			key.interestOps(SelectionKey.OP_READ);
+	}
+
+	void setContentLen() {
+		state.contentLen = -1l;
+		List<Object> list = req.getHeaders().get("Content-Length");
+		if (!NullCheck.isNullOrEmpty(list)) {
+			String conLenStrHdr = list.get(0).toString();
+			if (!NullCheck.isNullOrEmpty(conLenStrHdr)) {
+				state.contentLen = Long.parseLong(conLenStrHdr);
+			} 
 		}
 	}
 
@@ -285,10 +310,6 @@ final class Connection {
 					route.handle(req, response);
 				}
 			}
-		} catch (Throwable e) {
-			String formatDate = RequestUtil.dateFormat.format(new Date());
-			logger.error("Failed in route.handle(" + formatDate + ") :: " + RequestUtil.convert(state.in));
-			logger.error("Failed in route.handle(" + formatDate + ") :: ", e);
 		} finally {
 			StaticRef.clear();
 			if(ctx==null)
@@ -298,26 +319,6 @@ final class Connection {
 				ctx.finish();
 			}
 		}
-	}
-
-	void handleErrorReq(Throwable e, SelectionKey key) {
-		String formatDate = RequestUtil.dateFormat.format(new Date());
-		errorAccessLog(formatDate);
-		logger.error("Failed in request parse(" + formatDate + ") :: " + RequestUtil.convert(state.in));
-		logger.error("Failed in request parse(" + formatDate + ") :: ", e);
-		try {
-			((SocketChannel) key.channel()).close();
-		} catch (IOException e1) {
-			logger.error("Failed in closing channel :: ", e1);
-		}
-		if (key != null)
-			key.cancel();
-	}
-
-	private void errorAccessLog(String formatDate) {
-		StringBuffer access = new StringBuffer();
-		access.append("[").append(formatDate).append("] ").append(RequestUtil.convert(state.in)).append(" ").append("500");
-		Server.accessLog.append(access.toString());
 	}
 
 }
@@ -333,10 +334,11 @@ final class ConnectionState{
 	// Read state
 	final List<ByteData> in = new DoublyLinkedList<>();
 	boolean onceFlag = false;
-	long contentLen = 0l;
+	long contentLen = -1l;
 	int start = 0;
 	int mi = 0;
 	ByteData rollOver = null;
+	boolean is404Res = false;
 	
 	void reset() {
 		writeLen = 0;
@@ -350,7 +352,8 @@ final class ConnectionState{
 		start = 0;
 		mi = 0;
 		rollOver = null;
-		contentLen = 0;
+		contentLen = -1l;
+		is404Res = false;
 	}
 
 	void clearBytes() {

@@ -211,6 +211,13 @@ final class ResponseImpl implements Response {
 	public String getSendRedirectUrl(){
 		return this.redirectUrl;
 	}
+
+	@Override
+	public String toString() {
+		return "ResponseImpl [headers=" + Utils.toString(headers) + ", out=" + out + ", responseCode=" + responseCode + ", request="
+				+ request + ", redirectUrl=" + redirectUrl + ", contentLength=" + contentLength + ", done=" + done
+				+ "]";
+	}
 	
 }
 // class ProxyResponse extends ResponseImpl{

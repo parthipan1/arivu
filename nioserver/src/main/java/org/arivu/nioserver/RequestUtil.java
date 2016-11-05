@@ -40,6 +40,7 @@ import java.util.zip.ZipInputStream;
 
 import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
+import org.arivu.utils.Env;
 import org.arivu.utils.NullCheck;
 import org.arivu.utils.Utils;
 import org.slf4j.Logger;
@@ -94,17 +95,17 @@ public final class RequestUtil {
 	}
 
 	static Map<String, List<Object>> unModifiable(final Map<String, List<Object>> headers) {
-		if (!NullCheck.isNullOrEmpty(headers) ) {
-			Map<String, List<Object>> theaders  = new Amap<>();
+		if (!NullCheck.isNullOrEmpty(headers)) {
+			Map<String, List<Object>> theaders = new Amap<>();
 			Set<Entry<String, List<Object>>> entrySet = headers.entrySet();
-			for(Entry<String, List<Object>> e:entrySet){
-				theaders.put(e.getKey(), Utils.unmodifiableList(e.getValue()) );
+			for (Entry<String, List<Object>> e : entrySet) {
+				theaders.put(e.getKey(), Utils.unmodifiableList(e.getValue()));
 			}
 			return Utils.unmodifiableMap(theaders);
 		}
 		return null;
 	}
-	
+
 	static int searchPattern(byte[] content, byte[] pattern, int start, int disp) {
 		int mi = disp;
 		for (int i = start; i < content.length; i++) {
@@ -401,7 +402,10 @@ public final class RequestUtil {
 			} else if (route.rut == null) {
 				if (in.equals(route))
 					return route;
-				else if (route.httpMethod == HttpMethod.ALL) {
+				else if ( route.httpMethod == HttpMethod.GET
+						&& (httpMethod == HttpMethod.GET || httpMethod == HttpMethod.HEAD) && route.uri.equals(uri)) {
+					return route;// !(route instanceof ProxyRoute) && 
+				} else if (route.httpMethod == HttpMethod.ALL) {
 					if (route.uri.equals(uri))
 						return route;
 					else if (route instanceof ProxyRoute && uri.startsWith(route.uri))
@@ -410,7 +414,9 @@ public final class RequestUtil {
 					return route;
 				}
 			} else {
-				if (route.httpMethod == HttpMethod.ALL || route.httpMethod == httpMethod) {
+				if (route.httpMethod == HttpMethod.ALL || route.httpMethod == httpMethod
+						|| (route.httpMethod == HttpMethod.GET
+								&& (httpMethod == HttpMethod.GET || httpMethod == HttpMethod.HEAD))) {
 					String[] split = uri.split(URI_PATH_DIVIDER);
 					if (route.rut.uriTokens.length == split.length) {
 						boolean match = true;
@@ -519,14 +525,23 @@ public final class RequestUtil {
 		long enddate = System.currentTimeMillis();
 		responseBody.append("Date: ").append(dateFormat.format(enddate)).append(LINE_SEPARATOR);
 
+		boolean conLenSet = false;
 		for (Entry<String, List<Object>> e : headers.entrySet()) {
 			List<Object> value = e.getValue();
 			if (!NullCheck.isNullOrEmpty(value)) {
 				for (Object ov : value) {
 					responseBody.append(e.getKey()).append(": ").append(ov).append(LINE_SEPARATOR);
 				}
+				if (e.getKey().equalsIgnoreCase("Content-Length")) {
+					conLenSet = true;
+				}
 			}
 		}
+
+		if (!conLenSet) {
+			responseBody.append("Content-Length").append(": ").append(contentLen).append(LINE_SEPARATOR);
+		}
+
 		responseBody.append(LINE_SEPARATOR);
 
 		Ref ref = new Ref();
@@ -536,13 +551,19 @@ public final class RequestUtil {
 		ref.endtime = enddate;
 
 		ref.queue.add(new ByteData(responseBody.toString().getBytes()));
-		ref.queue.addAll(out);
+
+		if (method == HttpMethod.HEAD || method == HttpMethod.TRACE) {
+		} else {
+			ref.queue.addAll(out);
+		}
+
 		ref.cl = contentLen;
 		return ref;
 	}
 
 	static void stopRemote() {
-		String url = DEFAULT_PROTOCOL + "://" + Server.DEFAULT_HOST + ":" + Server.DEFAULT_PORT + Configuration.stopUri;
+		String url = DEFAULT_PROTOCOL + "://" + Env.getEnv("host", "localhost") + ":"
+				+ Integer.parseInt(Env.getEnv("port", "8080")) + Configuration.stopUri;
 		BufferedReader in = null;
 		try {
 			final HttpURLConnection con = (HttpURLConnection) new URL(url).openConnection();
@@ -743,8 +764,9 @@ public final class RequestUtil {
 			throw new IllegalArgumentException("Illegal proxy_pass(" + proxyPass + ") and dir(" + dir + ") specified!");
 
 		if (notNullProxy) {
-			proxy_pass = Utils.replaceAll(proxy_pass, "$host", Server.DEFAULT_HOST);
-			proxy_pass = Utils.replaceAll(proxy_pass, "$port", String.valueOf(Server.DEFAULT_PORT));
+			proxy_pass = Utils.replaceAll(proxy_pass, "$host", Env.getEnv("host", "localhost"));
+			proxy_pass = Utils.replaceAll(proxy_pass, "$port",
+					String.valueOf(Integer.parseInt(Env.getEnv("port", "8080"))));
 		}
 		if (notNullDir) {
 			dir = Utils.replaceAll(dir, "$home", new File(".").getAbsolutePath());

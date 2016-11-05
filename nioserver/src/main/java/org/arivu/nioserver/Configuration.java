@@ -37,6 +37,8 @@ final class Configuration {
 
 	private static final String RESPONSE_CODES = "arivu.nioserver.response.json";
 
+	static ExceptionHandler exceptionHandler = new DefaultExceptionHandler();
+	
 	static {
 		final Map<String, Object> responseJson = Ason.loadProperties(RESPONSE_CODES);
 		defaultResponseCodes = Utils
@@ -51,6 +53,22 @@ final class Configuration {
 
 		final Map<String, Object> json = Ason.loadProperties(CONFIGURATION_FILE);
 
+		String exceptionHandlerStr = Ason.getStr(json, "exceptionHandler", "default");
+		if(!"default".equalsIgnoreCase(exceptionHandlerStr)){
+			try {
+				Class<?> loadClass = Configuration.class.getClassLoader().loadClass(exceptionHandlerStr);
+				if( loadClass.isAssignableFrom(ExceptionHandler.class) ){
+					exceptionHandler = (ExceptionHandler) loadClass.newInstance();
+					logger.info("New {} registered as {} ",exceptionHandlerStr,ExceptionHandler.class.getCanonicalName());
+				}else{
+					logger.info("{} config value is not an implementation of {} ",exceptionHandlerStr,ExceptionHandler.class.getCanonicalName());
+				}
+			} catch (ClassNotFoundException | InstantiationException | IllegalAccessException e1) {
+				logger.error("Failed in ExceptionHandler registering :: ", e1);
+				throw new IllegalStateException(e1);
+			}
+		}
+		
 		defaultResponseHeader = RequestUtil
 				.transform((Map<String, Object>) Ason.getObj(json, "response.header", new Amap<String, Object>()));
 

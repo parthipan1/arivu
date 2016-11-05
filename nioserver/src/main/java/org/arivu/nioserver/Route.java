@@ -22,6 +22,7 @@ import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.datastructure.Threadlocal;
 import org.arivu.utils.NullCheck;
+import org.arivu.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +61,11 @@ class Route {
 		this.klass = klass;
 		this.method = method;
 		this.isStatic = isStatic;
+		
 		if (klass != null) {
+			if( httpMethod!=null && httpMethod == HttpMethod.HEAD )
+				throw new IllegalStateException("Invalid httpMethod @Path declaration on "+name+" method "+method);
+			
 			this.headers = new Amap<String, List<Object>>(Configuration.defaultResponseHeader);
 			int is = uri.indexOf('{');
 			if (is == -1) {
@@ -93,12 +98,12 @@ class Route {
 		}
 	}
 
-	boolean match(String requri) {
-		if (uri.equals(requri))
-			return true;
-
-		return false;
-	}
+//	boolean match(String requri) {
+//		if (uri.equals(requri))
+//			return true;
+//
+//		return false;
+//	}
 
 	Response getResponse(Request req) {
 		return new ResponseImpl(req, headers);
@@ -109,12 +114,7 @@ class Route {
 			this.invoker.handle(req, res, isStatic, method, tl, this.rut);
 		} catch (Throwable e) {
 			logger.error("Failed in route " + this + " :: ", e);
-			res.setResponseCode(400);
-			try {
-				res.append(RequestUtil.getStackTrace(e));
-			} catch (IOException e1) {
-				logger.error("Failed in route " + this + " :: ", e1);
-			}
+			Configuration.exceptionHandler.handle(e);
 		}
 	}
 
@@ -228,14 +228,10 @@ class ProxyRoute extends Route {
 			} else {
 				handleProxy(req, res);
 			}
+			logger.debug("**** handle proxy res {}",res);
 		} catch (Throwable e) {
 			logger.error("Failed in route " + this + " :: ", e);
-			res.setResponseCode(400);
-			try {
-				res.append(RequestUtil.getStackTrace(e));
-			} catch (IOException e1) {
-				logger.error("Failed in route " + this + " :: ", e1);
-			}
+			Configuration.exceptionHandler.handle(e);
 		}
 	}
 
@@ -308,13 +304,12 @@ class ProxyRoute extends Route {
 			}
 			res.putHeader("Content-Disposition", "inline; filename=\""+file.getName()+"\"");
 		}
-		if( file.exists() ){
-			ByteData bytes = new ByteData(file);
-			res.append(bytes);
-			res.putHeader("Content-Length", bytes.length());
-		}else{
-			res.setResponseCode(404);
-		}
+//		logger.debug("**** Proxy file response :: {}",res);
+//		if( file.exists() ){
+//			ByteData bytes = new ByteData(file);
+			res.append(new ByteData(file));
+//			res.putHeader("Content-Length", bytes.length());
+//		}
 	}
 
 	void handleDirectory(Request req, Response res, File f) throws IOException {
@@ -341,14 +336,14 @@ class ProxyRoute extends Route {
 		res.putHeader("Content-Length", buf.length());
 	}
 
-	@Override
-	final Response getResponse(Request req) {
-		if (!NullCheck.isNullOrEmpty(dir)) {
-			return super.getResponse(req);
-		} else {
-			return new ResponseImpl(req, headers);
-		}
-	}
+//	@Override
+//	final Response getResponse(Request req) {
+//		if (!NullCheck.isNullOrEmpty(dir)) {
+//			return super.getResponse(req);
+//		} else {
+//			return new ResponseImpl(req, headers);
+//		}
+//	}
 
 	@Override
 	final void disable() {
@@ -363,9 +358,12 @@ class ProxyRoute extends Route {
 	}
 
 	@Override
-	final public String toString() {
-		return "ProxyRoute [name=" + name + ", uri=" + uri + ", httpMethod=" + httpMethod + "]";
+	public String toString() {
+		return "ProxyRoute [proxy_pass=" + proxy_pass + ", dir=" + dir + ", name=" + name + ", uri=" + uri
+				+ ", httpMethod=" + httpMethod + ", headers=" + Utils.toString(headers) + "]";
 	}
+
+	
 
 }
 final class AdminRoute extends ProxyRoute {
@@ -767,6 +765,21 @@ final class AsynContextImpl  implements AsynContext{
 			
 			logger.debug(" request :: {} response :: {}", request.toString() ,state.resBuff.cl);			
 			key.interestOps(SelectionKey.OP_WRITE);
+		}
+	}
+	
+}
+final class DefaultExceptionHandler implements ExceptionHandler{
+	private static final Logger logger = LoggerFactory.getLogger(DefaultExceptionHandler.class);
+	
+	@Override
+	public void handle(Throwable t) {
+		Response res = StaticRef.getResponse();
+		res.setResponseCode(400);
+		try {
+			res.append(RequestUtil.getStackTrace(t));
+		} catch (IOException e1) {
+			logger.error("Failed in route " + this + " :: ", e1);
 		}
 	}
 	

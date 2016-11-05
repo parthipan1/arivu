@@ -15,6 +15,7 @@ import java.util.Map;
 
 import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
+import org.arivu.datastructure.DoublyLinkedSet;
 import org.arivu.utils.NullCheck;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -931,6 +932,50 @@ public class RequestUtilTest {
 
 	}
 
+	@Test
+	public void testGetPaths() throws ClassNotFoundException, IOException {
+		System.setProperty("lightninglog.json", "./lightninglog.json");
+		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
+		System.setProperty("access.log", "./access.log");
+
+		Collection<String> packageNames = new DoublyLinkedSet<String>();
+
+		Collection<Route> paths = PackageScanner.getPaths("System", packageNames);
+		assertTrue(NullCheck.isNullOrEmpty(paths));
+
+		packageNames.add("org.arivu.nioserver");
+		paths = PackageScanner.getPaths("System", packageNames);
+
+		assertFalse(NullCheck.isNullOrEmpty(paths));
+	}
+
+	@Test
+	public void testGetClassesForPackage() throws ClassNotFoundException {
+
+		System.setProperty("lightninglog.json", "./lightninglog.json");
+		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
+		System.setProperty("access.log", "./access.log");
+
+		Collection<Class<?>> classesForPackage = PackageScanner
+				.getClassesForPackage(Thread.currentThread().getContextClassLoader(), "org.arivu.nioserver", false);
+		assertFalse(NullCheck.isNullOrEmpty(classesForPackage));
+		// for( Class<?> c:classesForPackage )
+		// System.out.println(c.getName());
+	}
+
+	@Test
+	public void testAddMethod() {
+		Collection<Route> reqPaths = new DoublyLinkedSet<Route>();
+
+		assertTrue(NullCheck.isNullOrEmpty(reqPaths));
+		PackageScanner.addMethod("System", reqPaths, Connection.class);
+		assertTrue(NullCheck.isNullOrEmpty(reqPaths));
+
+		PackageScanner.addMethod("System", reqPaths, Admin.class);
+		assertFalse(NullCheck.isNullOrEmpty(reqPaths));
+
+	}
+	
 }
 
 class TestRoute {
