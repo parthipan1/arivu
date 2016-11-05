@@ -177,11 +177,11 @@ final class Connection {
 				if (req == null) {
 					final int headerIndex = RequestUtil.getHeaderIndex(readBuf, RequestUtil.BYTE_13, RequestUtil.BYTE_10, 2);
 					if (headerIndex == -1) {
-						if (bytesRead == readBuf.length) {
+//						if (bytesRead == readBuf.length) {
 							state.in.add(ByteData.wrap(readBuf));
-						} else {
-							state.in.add(ByteData.wrap(Arrays.copyOfRange(readBuf, 0, bytesRead)));
-						}
+//						} else {
+//							state.in.add(ByteData.wrap(Arrays.copyOfRange(readBuf, 0, bytesRead)));
+//						}
 					} else {
 						state.in.add(ByteData.wrap(Arrays.copyOfRange(readBuf, 0, headerIndex - 1)));
 						req = RequestUtil.parseRequest(state.in);
@@ -357,13 +357,6 @@ final class ConnectionState{
 	}
 
 	void clearBytes() {
-//		if(poll!=null){
-//			try {
-//				poll.close();
-//			} catch (IOException e) {
-//				logger.error("Error closing RandomAccessFile :: ", e);
-//			}
-//		}
 		poll = null;
 		pos = 0;
 		rem = 0;	
@@ -375,26 +368,3 @@ final class ConnectionState{
 		rollOver = bb;
 	}
 }
-//final class ReadHelper{
-//	final List<ByteData> in = new DoublyLinkedList<>();
-//	boolean onceFlag = false;
-//	int contentLen = 0;
-//	int start = 0;
-//	int mi = 0;
-//	ByteData rollOver = null;
-//	
-//	void reset(){
-//		in.clear();
-//		onceFlag = false;
-//		start = 0;
-//		mi = 0;
-//		rollOver = null;
-//		contentLen = 0;
-//	}
-//	
-//	void setValue(int s,int m, ByteData bb){
-//		start = s;
-//		mi = m;
-//		rollOver = bb;
-//	}
-//}

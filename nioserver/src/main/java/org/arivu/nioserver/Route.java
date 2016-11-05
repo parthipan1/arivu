@@ -180,7 +180,7 @@ class ProxyRoute extends Route {
 
 	String proxy_pass;
 	String dir;
-	Threadlocal<HttpMethodCall> proxyTh;
+	Threadlocal<JavaHttpMethodCall> proxyTh;
 
 	/**
 	 * @param uri
@@ -202,10 +202,10 @@ class ProxyRoute extends Route {
 			throw new IllegalArgumentException("Invalid config " + name + " !");
 		} else if (!NullCheck.isNullOrEmpty(dir)) {
 		} else if (!NullCheck.isNullOrEmpty(proxy_pass)) {
-			this.proxyTh = new Threadlocal<HttpMethodCall>(new Threadlocal.Factory<HttpMethodCall>() {
+			this.proxyTh = new Threadlocal<JavaHttpMethodCall>(new Threadlocal.Factory<JavaHttpMethodCall>() {
 
 				@Override
-				public HttpMethodCall create(Map<String, Object> params) {
+				public JavaHttpMethodCall create(Map<String, Object> params) {
 					return new JavaHttpMethodCall();
 				}
 			}, 30000);
@@ -241,7 +241,7 @@ class ProxyRoute extends Route {
 		String queryStr = URLDecoder.decode(req.getUriWithParams().substring(indexOf),
 				RequestUtil.ENC_UTF_8);
 		String loc = this.proxy_pass + req.getUri().substring(this.uri.length()) + queryStr;
-		HttpMethodCall httpMethodCall = proxyTh.get(null);
+		JavaHttpMethodCall httpMethodCall = proxyTh.get(null);
 		ProxyRes pres = null;
 		switch (req.getMethod()) {
 		case HEAD:
@@ -420,27 +420,27 @@ final class ProxyRes {
 
 }
 
-interface HttpMethodCall {
-	ProxyRes trace(String uri, Map<String, List<Object>> headers) throws IOException;
+//interface HttpMethodCall {
+//	ProxyRes trace(String uri, Map<String, List<Object>> headers) throws IOException;
+//
+//	ProxyRes head(String uri, Map<String, List<Object>> headers) throws IOException;
+//
+//	ProxyRes connect(String uri, Map<String, List<Object>> headers) throws IOException;
+//
+//	ProxyRes options(String uri, String body, Map<String, List<Object>> headers) throws IOException;
+//
+//	ProxyRes get(String uri, Map<String, List<Object>> headers) throws IOException;
+//
+//	ProxyRes post(String uri, String body, Map<String, List<Object>> headers) throws IOException;
+//
+//	ProxyRes put(String uri, String body, Map<String, List<Object>> headers) throws IOException;
+//
+//	ProxyRes delete(String uri, Map<String, List<Object>> headers) throws IOException;
+//}
 
-	ProxyRes head(String uri, Map<String, List<Object>> headers) throws IOException;
+class JavaHttpMethodCall {//implements HttpMethodCall
 
-	ProxyRes connect(String uri, Map<String, List<Object>> headers) throws IOException;
-
-	ProxyRes options(String uri, String body, Map<String, List<Object>> headers) throws IOException;
-
-	ProxyRes get(String uri, Map<String, List<Object>> headers) throws IOException;
-
-	ProxyRes post(String uri, String body, Map<String, List<Object>> headers) throws IOException;
-
-	ProxyRes put(String uri, String body, Map<String, List<Object>> headers) throws IOException;
-
-	ProxyRes delete(String uri, Map<String, List<Object>> headers) throws IOException;
-}
-
-class JavaHttpMethodCall implements HttpMethodCall {
-
-	@Override
+//	@Override
 	public ProxyRes delete(String uri, Map<String, List<Object>> headers) throws IOException {
 		// System.out.println("DELETE "+uri);
 		final URL obj = new URL(uri);
@@ -469,7 +469,7 @@ class JavaHttpMethodCall implements HttpMethodCall {
 		}
 	}
 
-	@Override
+//	@Override
 	public ProxyRes get(final String uri, Map<String, List<Object>> headers) throws IOException {
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
@@ -481,7 +481,7 @@ class JavaHttpMethodCall implements HttpMethodCall {
 		return extractResponse(con);
 	}
 
-	@Override
+//	@Override
 	public ProxyRes post(final String uri, final String body, Map<String, List<Object>> headers) throws IOException {
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
@@ -501,7 +501,7 @@ class JavaHttpMethodCall implements HttpMethodCall {
 		return extractResponse(con);
 	}
 
-	@Override
+//	@Override
 	public ProxyRes put(final String uri, final String body, Map<String, List<Object>> headers) throws IOException {
 
 		final URL obj = new URL(uri);
@@ -551,7 +551,7 @@ class JavaHttpMethodCall implements HttpMethodCall {
 		return proxyRes;
 	}
 
-	@Override
+//	@Override
 	public ProxyRes trace(String uri, Map<String, List<Object>> headers) throws IOException {
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
@@ -563,7 +563,7 @@ class JavaHttpMethodCall implements HttpMethodCall {
 		return extractResponse(con);
 	}
 
-	@Override
+//	@Override
 	public ProxyRes head(String uri, Map<String, List<Object>> headers) throws IOException {
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
@@ -575,13 +575,13 @@ class JavaHttpMethodCall implements HttpMethodCall {
 		return extractResponse(con);
 	}
 
-	@Override
+//	@Override
 	public ProxyRes connect(String uri, Map<String, List<Object>> headers) throws IOException {
 		// TODO Auto-generated httpMethod stub
 		return null;
 	}
 
-	@Override
+//	@Override
 	public ProxyRes options(String uri, String body, Map<String, List<Object>> headers) throws IOException {
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();

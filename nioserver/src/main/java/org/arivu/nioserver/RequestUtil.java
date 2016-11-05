@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -76,9 +75,6 @@ public final class RequestUtil {
 	final static int BYTE_SEARCH_DEFLT = Integer.MIN_VALUE;
 
 	private static final String LINE_SEPARATOR = System.lineSeparator();
-
-	// final static DateFormat dateFormat = new SimpleDateFormat("EEE MMM d
-	// hh:mm:ss.SSS yyyy");
 
 	final static DateFormat dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z");
 
@@ -599,16 +595,7 @@ public final class RequestUtil {
 	}
 
 	static void allUrls(File root, List<URL> urls) throws MalformedURLException {
-		File[] list = root.listFiles(new FilenameFilter() {
-
-			@Override
-			public boolean accept(File dir, String name) {
-				if (NullCheck.isNullOrEmpty(name))
-					return false;
-				final String ln = name.toLowerCase(Locale.getDefault());
-				return ln.endsWith(".jar") || ln.endsWith(".properties") || ln.endsWith(".xml") || ln.endsWith(".json");
-			}
-		});
+		File[] list = root.listFiles();
 		if (NullCheck.isNullOrEmpty(list))
 			return;
 
@@ -616,8 +603,11 @@ public final class RequestUtil {
 			if (f.isDirectory()) {
 				allUrls(f, urls);
 			} else {
-				urls.add(f.toURI().toURL());
-				logger.info("Hotdeploy :: Added file {}", f.getAbsoluteFile());
+				final String ln = f.getName().toLowerCase(Locale.getDefault());
+				if(ln.endsWith(".jar") || ln.endsWith(".properties") || ln.endsWith(".xml") || ln.endsWith(".json")){
+					urls.add(f.toURI().toURL());
+					logger.info("Hotdeploy :: Added file {}", f.getAbsoluteFile());
+				}
 			}
 		}
 	}

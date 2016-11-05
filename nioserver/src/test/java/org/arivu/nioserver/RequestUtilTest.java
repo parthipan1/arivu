@@ -5,9 +5,12 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -39,6 +42,36 @@ public class RequestUtilTest {
 
 	@After
 	public void tearDown() throws Exception {
+	}
+	
+	@Test
+	public void testGetFirstHeaderValue(){
+		Map<String, List<Object>> headers = new Amap<>();
+		List<Object> v = new DoublyLinkedList<>();
+		v.add("one");
+		
+		assertTrue(RequestUtil.getFirstHeaderValue(null, "one")==null);
+		assertTrue(RequestUtil.getFirstHeaderValue(headers, "one")==null);
+		
+		headers.put("one", v);
+		
+		assertTrue(RequestUtil.getFirstHeaderValue(headers, "one").equals("one"));
+		assertTrue(RequestUtil.getFirstHeaderValue(headers, "two")==null);
+	}
+	
+
+	@Test
+	public void testUnModifiable(){
+		Map<String, List<Object>> headers = new Amap<>();
+		List<Object> v = new DoublyLinkedList<>();
+		v.add("one");
+		
+		assertTrue(RequestUtil.unModifiable(null)==null);
+		assertTrue(RequestUtil.unModifiable(headers)==null);
+		
+		headers.put("one", v);
+		
+		assertTrue(RequestUtil.unModifiable(headers).size()==1);
 	}
 	
 	@Test
@@ -522,16 +555,25 @@ public class RequestUtilTest {
 	
 	@Test
 	public void testUnZipAndDel() throws IOException, InterruptedException {
-		File dd = new File("testUnzip");
+		File dd = new File("testUnzip/download");
 		assertFalse(dd.exists());
-		RequestUtil.unzip(dd, new File("download.zip"));
+		RequestUtil.unzip(new File("testUnzip/download/libs"), new File("download.zip"));
 		assertTrue(dd.exists());
+		
+		try (FileOutputStream fileOutputStream = new FileOutputStream(new File("testUnzip/download/scanpackages"), true);
+			FileChannel channel = fileOutputStream.getChannel();) {
+			channel.write( ByteBuffer.wrap("com.rjil".getBytes()) );
+		}
+		
 		List<URL> urls = new DoublyLinkedList<>();
 		RequestUtil.allUrls(dd, urls);
 		assertFalse(urls.isEmpty());
 		assertTrue(urls.size() == RequestUtil.toArray(urls).length);
-		RequestUtil.scanApps(dd);
-		RequestUtil.del(dd);
+		
+		new File("testUnzip/download2").mkdirs();
+		
+		RequestUtil.scanApps(new File("testUnzip"));
+		RequestUtil.del(new File("testUnzip"));
 		assertFalse(dd.exists());
 	}
 
