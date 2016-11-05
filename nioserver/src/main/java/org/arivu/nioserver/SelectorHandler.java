@@ -299,8 +299,7 @@ final class SelectorHandler {
 			if (key.isReadable()) {
 				client.read(key, clientSelector);
 			} else {
-				client.write(key);
-				clientSelector.wakeup();
+				client.write(key, clientSelector);
 			}
 		} catch (IOException e) {
 			logger.error("Failed with Error::", e);

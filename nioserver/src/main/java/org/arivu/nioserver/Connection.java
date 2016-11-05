@@ -51,7 +51,7 @@ final class Connection {
 		startTime = 0;
 	}
 
-	void write(SelectionKey key) throws IOException {
+	void write(SelectionKey key, Selector clientSelector) throws IOException {
 		logger.debug(" write  :: {} " , state.resBuff);
 		if (state.resBuff != null) {
 			try {
@@ -75,7 +75,7 @@ final class Connection {
 				}
 				logger.debug("{}  3 write bytes from  :: {}  length :: {} to :: {} size :: {}",state.resBuff,state.pos,length,(state.pos + length),state.rem);
 				state.pos += length;
-				finishByteBuff(key);
+				finishByteBuff(key, clientSelector);
 			} catch (Throwable e) {
 				logger.error("Failed in write req "+req+" :: ", e);
 				finish(key);
@@ -83,7 +83,7 @@ final class Connection {
 		}
 	}
 
-	void finishByteBuff(SelectionKey key) throws IOException {
+	void finishByteBuff(SelectionKey key, Selector clientSelector) throws IOException {
 		boolean empty = state.resBuff.queue.isEmpty();
 		logger.debug("{} 4 finishByteBuff! empty :: {} queueSize :: {} read :: {} size :: {}", state.resBuff, empty, state.resBuff.queue.size(), state.pos, state.rem );
 		if (state.rem == state.pos) {
@@ -94,6 +94,7 @@ final class Connection {
 			}
 		}
 		key.interestOps(SelectionKey.OP_WRITE);
+		clientSelector.wakeup();
 	}
 
 	void finish(SelectionKey key) throws IOException {
@@ -246,14 +247,6 @@ final class Connection {
 					}
 				}
 			}
-//			if(state.is404Res){
-//				nextRead(key, bytesRead, EOL0);
-//			}else if (req != null && req.isMultipart) {
-//				nextMultiPartNext(key, bytesRead, EOL0, readBuf);
-//			} else {
-////				System.out.println(" bytesRead "+bytesRead+" EOL0 "+EOL0+" req "+rh.contentLen);
-//				nextRead(key, bytesRead, EOL0);
-//			}
 		} catch (Throwable e) {
 			logger.error("Failed in read :: ", e);
 			finish(key);
@@ -318,9 +311,10 @@ final class Connection {
 			}
 		} finally {
 			StaticRef.clear();
-			if(ctx==null)
+			if(ctx==null){
 				key.interestOps(SelectionKey.OP_WRITE);
-			else if( !ctx.isAsynchronousFinish() ){
+				clientSelector.wakeup();
+			}else if( !ctx.isAsynchronousFinish() ){
 				ctx.setAsynchronousFinish(true);
 				ctx.finish();
 			}
