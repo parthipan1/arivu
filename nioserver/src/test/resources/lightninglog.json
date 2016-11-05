@@ -1,7 +1,7 @@
 {
 	"appenders":["file","console"],
 	"loggers":{
-		"root":"info"
+		"root":"debug"
 	},
 	"buffer":{
 		"batch":1,

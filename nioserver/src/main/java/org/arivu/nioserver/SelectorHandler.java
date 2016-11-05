@@ -297,11 +297,11 @@ final class SelectorHandler {
 		try {
 			Connection client = (Connection) key.attachment();
 			if (key.isReadable()) {
-				client.read(key);
+				client.read(key, clientSelector);
 			} else {
 				client.write(key);
+				clientSelector.wakeup();
 			}
-			clientSelector.wakeup();
 		} catch (IOException e) {
 			logger.error("Failed with Error::", e);
 		}

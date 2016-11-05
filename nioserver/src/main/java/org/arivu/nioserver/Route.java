@@ -11,6 +11,7 @@ import java.net.InetAddress;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.Locale;
@@ -696,17 +697,18 @@ final class AsynContextImpl  implements AsynContext{
 	private static final Logger logger = LoggerFactory.getLogger(AsynContextImpl.class);
 	
 	boolean flag = false;
-	final SelectionKey key;
-	
+	SelectionKey key;
+	Selector clientSelector;
 	final Request request;
 	final Response response;
-	final ConnectionState state;
+	ConnectionState state;
 
 	final int threadId = Thread.currentThread().hashCode();
 	
-	AsynContextImpl(SelectionKey key, Request request, Response response, ConnectionState state) {
+	AsynContextImpl(SelectionKey key, Request request, Response response, ConnectionState state, Selector clientSelector) {
 		super();
 		this.key = key;
+		this.clientSelector = clientSelector;
 		this.request = request;
 		this.response = response;
 		this.state = state;
@@ -757,14 +759,14 @@ final class AsynContextImpl  implements AsynContext{
 	public void finish() {
 		if( flag && key.isValid()){
 			state.resBuff = RequestUtil.getResponseBytes(request, response);
-//			if (state.resBuff != null && state.resBuff.cl > Configuration.defaultChunkSize) {
-//				((SocketChannel) key.channel()).socket().setSoTimeout(0);
-//			}
 			if( response instanceof ResponseImpl )
 				((ResponseImpl)response).done = true;
 			
 			logger.debug(" request :: {} response :: {}", request.toString() ,state.resBuff.cl);			
 			key.interestOps(SelectionKey.OP_WRITE);
+			clientSelector.wakeup();
+			clientSelector = null;
+			key = null;
 		}
 	}
 	

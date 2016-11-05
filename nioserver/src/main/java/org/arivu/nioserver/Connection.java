@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.List;
@@ -163,7 +164,7 @@ final class Connection {
 		req.multiParts.put(parseAsMultiPart.name, parseAsMultiPart);
 	}
 
-	void read(final SelectionKey key) throws IOException {
+	void read(final SelectionKey key, final Selector clientSelector) throws IOException {
 		int bytesRead = 0;
 		byte EOL0 = 1;
 		try {
@@ -191,17 +192,17 @@ final class Connection {
 //						 System.out.println(" Got Request :: "+req+" route "+route);
 						if (route == Configuration.defaultRoute) {
 							if( req.getHttpMethod() == HttpMethod.GET){
-								processRequest(key);
+								processRequest(key, clientSelector);
 								return;
 							}else if( state.contentLen>0) {
 								state.is404Res = true;
 							}else{
-								processRequest(key);
+								processRequest(key, clientSelector);
 								return;
 							}
 						}
 						if( state.contentLen == 0l){
-							processRequest(key);
+							processRequest(key, clientSelector);
 							return;
 						}else if (headerIndex + 1 < bytesRead) {
 							if (req.isMultipart) {
@@ -217,7 +218,7 @@ final class Connection {
 						// System.out.println(" Got Request :: "+req+"\n total
 						// "+(total+headerIndex)+"");
 					}
-					nextRead(key, bytesRead, EOL0);
+					nextRead(key, bytesRead, EOL0, clientSelector);
 				} else {
 					state.contentLen -= bytesRead;
 					if(!state.is404Res){
@@ -231,17 +232,17 @@ final class Connection {
 							} else {
 								processMultipartInBytes(Arrays.copyOfRange(readBuf, 0, bytesRead));
 							}
-							nextMultiPartNext(key, bytesRead, EOL0, readBuf);
+							nextMultiPartNext(key, bytesRead, EOL0, readBuf, clientSelector);
 						} else {
 							if (bytesRead == readBuf.length) {
 								req.body.add(ByteData.wrap(readBuf));
 							} else {
 								req.body.add(ByteData.wrap(Arrays.copyOfRange(readBuf, 0, bytesRead)));
 							}
-							nextRead(key, bytesRead, EOL0);
+							nextRead(key, bytesRead, EOL0, clientSelector);
 						}
 					}else{
-						nextRead(key, bytesRead, EOL0);
+						nextRead(key, bytesRead, EOL0, clientSelector);
 					}
 				}
 			}
@@ -259,21 +260,26 @@ final class Connection {
 		}
 	}
 
-	void nextMultiPartNext(final SelectionKey key, int bytesRead, byte EOL0, byte[] readBuf) {
+	void nextMultiPartNext(final SelectionKey key, int bytesRead, byte EOL0, byte[] readBuf, Selector clientSelector) {
 		int size = req.body.size();
-		if (size == 0) 
+		if (size == 0) {
 			key.interestOps(SelectionKey.OP_READ);
-		else  if (bytesRead == -1 || EOL0 == RequestUtil.BYTE_10 && isEndOfLine(bytesRead, readBuf)) 
-			processRequest(key);
-		else
+			clientSelector.wakeup();
+		}else  if (bytesRead == -1 || EOL0 == RequestUtil.BYTE_10 && isEndOfLine(bytesRead, readBuf)) 
+			processRequest(key, clientSelector);
+		else{
 			key.interestOps(SelectionKey.OP_READ);
+			clientSelector.wakeup();
+		}
 	}
 
-	void nextRead(final SelectionKey key, int bytesRead, byte EOL0) {
+	void nextRead(final SelectionKey key, int bytesRead, byte EOL0, Selector clientSelector) {
 		if (bytesRead == -1 || state.contentLen == 0l || (state.contentLen == -1l && EOL0 == RequestUtil.BYTE_10))
-			processRequest(key);
-		else
+			processRequest(key, clientSelector);
+		else{
 			key.interestOps(SelectionKey.OP_READ);
+			clientSelector.wakeup();
+		}
 	}
 
 	void setContentLen() {
@@ -298,14 +304,14 @@ final class Connection {
 		return endOfLineBuf.toString().startsWith(string + "--");
 	}
 
-	public void processRequest(final SelectionKey key) {
+	public void processRequest(final SelectionKey key, Selector clientSelector) {
 		logger.debug("process connection from {}" , ((SocketChannel) key.channel()).socket().getRemoteSocketAddress());
 		AsynContext ctx = null;
 		try {
 			if (route != null) {
 				final Response response = route.getResponse(req);
 				if (response != null) {
-					ctx = new AsynContextImpl(key, req, response, state);
+					ctx = new AsynContextImpl(key, req, response, state, clientSelector);
 					StaticRef.set(req, response, route, ctx, key);
 					route.handle(req, response);
 				}
