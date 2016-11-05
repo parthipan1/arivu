@@ -157,7 +157,7 @@ final class Admin {
 		Response response = StaticRef.getResponse();
 		Request request = StaticRef.getRequest();
 		if (!isOriginateFromAdminPage(request)) {
-			response.setResponseCode(401);
+			response.setResponseCode(ResponseCodes.Unauthorized);
 			return;
 		}
 		StringBuffer buf = getAllActiveRoutes();

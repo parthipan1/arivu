@@ -123,6 +123,26 @@ public final class Ason {
 			return arr;
 	}
 	
+	@SuppressWarnings("unchecked")
+	public static Collection<Map<String,Object>> getList(Map<String, Object> json,String token,Collection<Map<String,Object>> deflt){
+		Object object = get(json, token, null);
+		if( object instanceof Collection<?>){
+			Collection<Map<String,Object>> arr = (Collection<Map<String,Object>>) object;
+			if( arr==null || arr.size()==0 )
+				return deflt;
+			else
+				return arr;
+		}else if( object instanceof Map){
+			Map<String,Object> map = (Map<String,Object>)object;
+			Collection<Map<String,Object>> arr = new ArrayList<>();
+			for(Entry<String, Object> e:map.entrySet()){
+				arr.add((Map<String,Object>)e.getValue());
+			}
+			return arr;
+		}
+		return null;
+	}
+	
 	public static Number getNumber(Map<String, Object> json,String token,Number deflt){
 		return (Number) get(json, token, deflt);
 	}
