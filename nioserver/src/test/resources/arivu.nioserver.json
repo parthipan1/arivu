@@ -40,7 +40,7 @@
          "Cache-Control":"private, max-age=1",
          "Server":"clownresserver",
          "X-XSS-Protection":"1; mode=block",
-         "Set-Cookie":"rest=back;Secure; HttpOnly",
+         "Set-Cookie":"rest=back;Secure; HttpOnly"
       }
    }
 }
