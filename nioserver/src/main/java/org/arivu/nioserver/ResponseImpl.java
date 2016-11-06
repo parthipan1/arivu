@@ -122,17 +122,6 @@ final class ResponseImpl implements Response {
 		headers.putAll(m);
 	}
 
-//	/*
-//	 * (non-Javadoc)
-//	 * 
-//	 * @see org.arivu.nioserver.Response#replaceHeader(java.lang.String,
-//	 * java.lang.Object)
-//	 */
-//	@Override
-//	public Object replaceHeader(String key, Object value) {
-//		return headers.replace(key, value);
-//	}
-
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -211,50 +200,12 @@ final class ResponseImpl implements Response {
 	public String getSendRedirectUrl(){
 		return this.redirectUrl;
 	}
+
+	@Override
+	public String toString() {
+		return "ResponseImpl [headers=" + Utils.toString(headers) + ", out=" + out + ", responseCode=" + responseCode + ", request="
+				+ request + ", redirectUrl=" + redirectUrl + ", contentLength=" + contentLength + ", done=" + done
+				+ "]";
+	}
 	
 }
-// class ProxyResponse extends ResponseImpl{
-//
-// /**
-// * @param requestImpl
-// * @param clientSocket
-// * @param headers
-// */
-// ProxyResponse(RequestImpl requestImpl, SocketChannel clientSocket,
-// Map<String, Object> headers) {
-// super(requestImpl, clientSocket, headers);
-// }
-//
-//// @Override
-//// public void close() throws Exception {
-//// final StringBuffer responseBody = new StringBuffer();
-////
-//// Object rescodetxt = null;
-//// if(!NullCheck.isNullOrEmpty(Configuration.defaultResponseCodes)){
-//// rescodetxt =
-// Configuration.defaultResponseCodes.get(String.valueOf(responseCode));
-//// }
-////
-//// if(rescodetxt==null)
-//// responseBody.append(requestImpl.protocol).append("
-// ").append(responseCode).append(" ").append(System.lineSeparator());
-//// else
-//// responseBody.append(requestImpl.protocol).append("
-// ").append(responseCode).append("
-// ").append(rescodetxt).append(System.lineSeparator());
-////
-//// responseBody.append("Date: ").append(new
-// Date().toString()).append(System.lineSeparator());
-//////
-//// for (Entry<String, Object> e : headers.entrySet()) {
-//// responseBody.append(e.getKey()).append(":
-// ").append(e.getValue()).append(System.lineSeparator());
-//// }
-//// responseBody.append(System.lineSeparator());
-////// responseBody.append(body);
-////
-//// this.socketChannel.write(ByteBuffer.wrap(body.toString().getBytes()));
-//// this.socketChannel.close();
-//// }
-//
-// }

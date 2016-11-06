@@ -28,15 +28,18 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
+import org.arivu.utils.Env;
 import org.arivu.utils.NullCheck;
 import org.arivu.utils.Utils;
 import org.slf4j.Logger;
@@ -73,10 +76,8 @@ public final class RequestUtil {
 
 	private static final String LINE_SEPARATOR = System.lineSeparator();
 
-//	final static DateFormat dateFormat = new SimpleDateFormat("EEE MMM d hh:mm:ss.SSS yyyy");
-	
 	final static DateFormat dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z");
-	
+
 	static final Pattern validUrl = Pattern.compile("^[a-zA-Z0-9-_]*$");
 
 	public static Object getFirstHeaderValue(final Map<String, List<Object>> headers, final String headerToken) {
@@ -90,10 +91,11 @@ public final class RequestUtil {
 	}
 
 	static Map<String, List<Object>> unModifiable(final Map<String, List<Object>> headers) {
-		if (!NullCheck.isNullOrEmpty(headers) ) {
-			Map<String, List<Object>> theaders  = new Amap<String, List<Object>>();
-			for(Entry<String, List<Object>> e:headers.entrySet()){
-				theaders.put(e.getKey(), Utils.unmodifiableList(e.getValue()) );
+		if (!NullCheck.isNullOrEmpty(headers)) {
+			Map<String, List<Object>> theaders = new Amap<String, List<Object>>();
+			Set<Entry<String, List<Object>>> entrySet = headers.entrySet();
+			for (Entry<String, List<Object>> e : entrySet) {
+				theaders.put(e.getKey(), Utils.unmodifiableList(e.getValue()));
 			}
 			return Utils.unmodifiableMap(theaders);
 		}
@@ -179,7 +181,7 @@ public final class RequestUtil {
 			int indexOf2 = h.indexOf(":");
 			if (indexOf2 != -1) {
 				// tempheaders.put(h, "");
-//			} else {
+				// } else {
 				tempheaders.put(h.substring(0, indexOf2), h.substring(indexOf2 + 1).trim());
 			}
 		}
@@ -238,8 +240,8 @@ public final class RequestUtil {
 		if (!NullCheck.isNullOrEmpty(contType)) {
 			requestImpl.isMultipart = contType.contains(MULTIPART_FORM_DATA);
 			if (requestImpl.isMultipart) {
-				contType = Utils.replaceAll(contType, MULTIPART_FORM_DATA+";", "").trim();
-				contType = Utils.replaceAll(contType, BOUNDARY+"=", "").trim();
+				contType = Utils.replaceAll(contType, MULTIPART_FORM_DATA + ";", "").trim();
+				contType = Utils.replaceAll(contType, BOUNDARY + "=", "").trim();
 				requestImpl.boundary = ("--" + contType).getBytes();
 			}
 		}
@@ -265,18 +267,17 @@ public final class RequestUtil {
 		int indexOf = -1;
 		if (cnt == 2) {
 			int inc = 1;
-			for (int i = 3; i < bytes.length; i+=inc) {
-				if (bytes[i] == bytes[i - 2] && bytes[i] == second ) {
-					if(bytes[i - 1] == bytes[i - 3]
-							&& bytes[i - 1] == first){
+			for (int i = 3; i < bytes.length; i += inc) {
+				if (bytes[i] == bytes[i - 2] && bytes[i] == second) {
+					if (bytes[i - 1] == bytes[i - 3] && bytes[i - 1] == first) {
 						indexOf = i;
 						break;
 					}
 					inc = 2;
-				}else{
+				} else {
 					inc = 1;
 				}
-				
+
 			}
 		} else if (cnt == 1) {
 			for (int i = 1; i < bytes.length; i++) {
@@ -378,7 +379,7 @@ public final class RequestUtil {
 			} else {
 				int ei = uritkn.indexOf(CLOSE_CHAIN_BRKT);
 				String paramName = uritkn.substring(1, uritkn.length() - 1);
-				if ( si != 0 && ei != uritkn.length() - 1 || NullCheck.isNullOrEmpty(paramName)
+				if (si != 0 && ei != uritkn.length() - 1 || NullCheck.isNullOrEmpty(paramName)
 						|| !validUrl.matcher(paramName).matches()) {
 					return false;
 				}
@@ -397,7 +398,10 @@ public final class RequestUtil {
 			} else if (route.rut == null) {
 				if (in.equals(route))
 					return route;
-				else if (route.httpMethod == HttpMethod.ALL) {
+				else if ( route.httpMethod == HttpMethod.GET
+						&& (httpMethod == HttpMethod.GET || httpMethod == HttpMethod.HEAD) && route.uri.equals(uri)) {
+					return route;// !(route instanceof ProxyRoute) && 
+				} else if (route.httpMethod == HttpMethod.ALL) {
 					if (route.uri.equals(uri))
 						return route;
 					else if (route instanceof ProxyRoute && uri.startsWith(route.uri))
@@ -406,7 +410,9 @@ public final class RequestUtil {
 					return route;
 				}
 			} else {
-				if (route.httpMethod == HttpMethod.ALL || route.httpMethod == httpMethod) {
+				if (route.httpMethod == HttpMethod.ALL || route.httpMethod == httpMethod
+						|| (route.httpMethod == HttpMethod.GET
+								&& (httpMethod == HttpMethod.GET || httpMethod == HttpMethod.HEAD))) {
 					String[] split = uri.split(URI_PATH_DIVIDER);
 					if (route.rut.uriTokens.length == split.length) {
 						boolean match = true;
@@ -511,18 +517,27 @@ public final class RequestUtil {
 			responseBody.append(protocol).append(" ").append(responseCode).append(" ").append(rescodetxt)
 					.append(LINE_SEPARATOR);
 
-//		Date endtime = new Date();
+		// Date endtime = new Date();
 		long enddate = System.currentTimeMillis();
 		responseBody.append("Date: ").append(dateFormat.format(enddate)).append(LINE_SEPARATOR);
 
+		boolean conLenSet = false;
 		for (Entry<String, List<Object>> e : headers.entrySet()) {
 			List<Object> value = e.getValue();
 			if (!NullCheck.isNullOrEmpty(value)) {
 				for (Object ov : value) {
 					responseBody.append(e.getKey()).append(": ").append(ov).append(LINE_SEPARATOR);
 				}
+				if (e.getKey().equalsIgnoreCase("Content-Length")) {
+					conLenSet = true;
+				}
 			}
 		}
+
+		if (!conLenSet) {
+			responseBody.append("Content-Length").append(": ").append(contentLen).append(LINE_SEPARATOR);
+		}
+
 		responseBody.append(LINE_SEPARATOR);
 
 		Ref ref = new Ref();
@@ -530,15 +545,21 @@ public final class RequestUtil {
 		ref.uri = uri;
 		ref.method = method;
 		ref.endtime = enddate;
-		
+
 		ref.queue.add(new ByteData(responseBody.toString().getBytes()));
-		ref.queue.addAll(out);
+
+		if (method == HttpMethod.HEAD || method == HttpMethod.TRACE) {
+		} else {
+			ref.queue.addAll(out);
+		}
+
 		ref.cl = contentLen;
 		return ref;
 	}
 
 	static void stopRemote() {
-		String url = DEFAULT_PROTOCOL+"://" + Server.DEFAULT_HOST + ":" + Server.DEFAULT_PORT + Configuration.stopUri;
+		String url = DEFAULT_PROTOCOL + "://" + Env.getEnv("host", "localhost") + ":"
+				+ Integer.parseInt(Env.getEnv("port", "8080")) + Configuration.stopUri;
 		BufferedReader in = null;
 		try {
 			final HttpURLConnection con = (HttpURLConnection) new URL(url).openConnection();
@@ -582,7 +603,7 @@ public final class RequestUtil {
 			if (f.isDirectory()) {
 				allUrls(f, urls);
 			} else {
-				String ln = f.getName();
+				final String ln = f.getName().toLowerCase(Locale.getDefault());
 				if(ln.endsWith(".jar") || ln.endsWith(".properties") || ln.endsWith(".xml") || ln.endsWith(".json")){
 					urls.add(f.toURI().toURL());
 					logger.info("Hotdeploy :: Added file {}", f.getAbsoluteFile());
@@ -711,20 +732,21 @@ public final class RequestUtil {
 		for (File f : list) {
 			try {
 				File scanpackagesFile = new File(f, SCANPACKAGES_TOKEN);
-				if( scanpackagesFile.exists() )
+				if (scanpackagesFile.exists())
 					new App(f.getName(), new String(read(scanpackagesFile))).deploy();
-				else{
+				else {
 					del(f);
-					logger.info("Invalid folder " + f.getAbsolutePath()+" removed!");					
+					logger.info("Invalid folder " + f.getAbsolutePath() + " removed!");
 				}
 			} catch (Exception e) {
 				logger.error("Failed in scan Apps :: ", e);
 			}
 		}
-		logger.info("Discovered Apps :: " + Utils.toString(Admin.allHotDeployedArtifacts.keySet()) );
+		logger.info("Discovered Apps :: " + Utils.toString(Admin.allHotDeployedArtifacts.keySet()));
 	}
 
-	static void addProxyRouteRuntime(String name, String method, String location, String proxyPass, String dir, Collection<Route> rts, Map<String, List<Object>> header) {
+	static void addProxyRouteRuntime(String name, String method, String location, String proxyPass, String dir,
+			Collection<Route> rts, Map<String, List<Object>> header) {
 		HttpMethod httpMethod = HttpMethod.ALL;
 		if (!NullCheck.isNullOrEmpty(method))
 			httpMethod = HttpMethod.valueOf(method);
@@ -737,18 +759,19 @@ public final class RequestUtil {
 		boolean notNullDir = !NullCheck.isNullOrEmpty(dir);
 		if (notNullProxy && notNullDir)
 			throw new IllegalArgumentException("Illegal proxy_pass(" + proxyPass + ") and dir(" + dir + ") specified!");
-		else if(!notNullProxy && !notNullDir)
+		else if (!notNullProxy && !notNullDir)
 			throw new IllegalArgumentException("Illegal proxy_pass(" + proxyPass + ") and dir(" + dir + ") specified!");
-		
+
 		if (notNullProxy) {
-			proxy_pass = Utils.replaceAll(proxy_pass, "$host", Server.DEFAULT_HOST);
-			proxy_pass = Utils.replaceAll(proxy_pass, "$port", String.valueOf(Server.DEFAULT_PORT));
+			proxy_pass = Utils.replaceAll(proxy_pass, "$host", Env.getEnv("host", "localhost"));
+			proxy_pass = Utils.replaceAll(proxy_pass, "$port",
+					String.valueOf(Integer.parseInt(Env.getEnv("port", "8080"))));
 		}
 		if (notNullDir) {
 			dir = Utils.replaceAll(dir, "$home", new File(".").getAbsolutePath());
 		}
 		ProxyRoute prp = new ProxyRoute(name, proxy_pass, dir, location, httpMethod, null, null, false, header);
-//		Collection<Route> rts = Configuration.routes;
+		// Collection<Route> rts = Configuration.routes;
 		for (Route rt : rts) {
 			if (rt instanceof ProxyRoute) {
 				ProxyRoute prt = (ProxyRoute) rt;
@@ -776,7 +799,7 @@ public final class RequestUtil {
 					out.put(e.getKey(), list);
 				}
 				list.add(e.getValue());
-			} 
+			}
 		}
 		return out;
 	}

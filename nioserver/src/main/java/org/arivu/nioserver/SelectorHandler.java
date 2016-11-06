@@ -25,6 +25,7 @@ import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.pool.ConcurrentPool;
 import org.arivu.pool.Pool;
 import org.arivu.pool.PoolFactory;
+import org.arivu.utils.Env;
 import org.arivu.utils.NullCheck;
 import org.arivu.utils.Utils;
 import org.slf4j.Logger;
@@ -36,6 +37,7 @@ import org.slf4j.LoggerFactory;
  */
 final class SelectorHandler {
 	private static final Logger logger = LoggerFactory.getLogger(SelectorHandler.class);
+	
 	volatile boolean shutdown = false;
 	Selector clientSelector = null;
 	String beanNameStr = null;
@@ -195,7 +197,7 @@ final class SelectorHandler {
 	void registerMXBean() {
 		try {
 			MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
-			beanNameStr = "org.arivu.niosever:type=" + Server.class.getSimpleName() + "." + Server.DEFAULT_PORT;
+			beanNameStr = "org.arivu.niosever:type=" + Server.class.getSimpleName() + "." + Integer.parseInt(Env.getEnv("port", "8080"));
 			mbs.registerMBean(mxBean, new ObjectName(beanNameStr));
 			logger.info(" Jmx bean beanName {} registered!",beanNameStr);
 		} catch (Exception e) {
@@ -219,7 +221,7 @@ final class SelectorHandler {
 		clientSelector = Selector.open();
 		ServerSocketChannel ssc = ServerSocketChannel.open();
 		ssc.configureBlocking(false);
-		InetSocketAddress sa = new InetSocketAddress(Server.DEFAULT_PORT);//InetAddress.getByName(Server.DEFAULT_HOST),
+		InetSocketAddress sa = new InetSocketAddress(Integer.parseInt(Env.getEnv("port", "8080")));//InetAddress.getByName(Server.DEFAULT_HOST),
 		ssc.socket().bind(sa, Server.DEFAULT_SOCKET_BACKLOG);
 		logger.info("Server started at " + sa);
 		ssc.register(clientSelector, SelectionKey.OP_ACCEPT);
@@ -295,11 +297,10 @@ final class SelectorHandler {
 		try {
 			Connection client = (Connection) key.attachment();
 			if (key.isReadable()) {
-				client.read(key);
+				client.read(key, clientSelector);
 			} else {
-				client.write(key);
+				client.write(key, clientSelector);
 			}
-			clientSelector.wakeup();
 		} catch (IOException e) {
 			logger.error("Failed with Error::", e);
 		}

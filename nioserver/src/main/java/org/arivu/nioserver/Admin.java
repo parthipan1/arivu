@@ -40,33 +40,8 @@ final class Admin {
 	private static final String HASH_HEADER = "X-HASH";
 
 	private static final Logger logger = LoggerFactory.getLogger(Admin.class);
-	//
-	// @Path(value = "/multipart", httpMethod = HttpMethod.POST)
-	// static void multiPart() throws Exception {
-	// StaticRef.getResponse().setResponseCode(200);
-	//
-	// Map<String, MultiPart> multiParts =
-	// StaticRef.getRequest().getMultiParts();
-	// for (Entry<String, MultiPart> e : multiParts.entrySet()) {
-	// MultiPart mp = e.getValue();
-	// if (NullCheck.isNullOrEmpty(mp.filename)) {
-	// System.out.println("Headers :: \n" + RequestUtil.getString(mp.headers));
-	// System.out.println("body :: \n" + RequestUtil.convert(mp.body));
-	// } else {
-	// File file = new File("1_" + mp.filename);
-	// System.out.println("Headers :: \n" + RequestUtil.getString(mp.headers));
-	// System.out.println("uploaded file to :: " + file.getAbsolutePath());
-	// mp.writeTo(file, true);
-	// }
-	// System.out.println("*********************************************************************************");
-	// }
-	// }
-	// {\"uri\":\"" + uri + "\",\"name\":\"" + name + "\",\"loc\":\"" + loc +
-	// "\",\"type\":\"" + typeRoute + "\"}
 
 	static final Map<String, App> allHotDeployedArtifacts = new Amap<String, App>();
-
-//	static byte[] iconBytes = null;
 
 	static boolean isOriginateFromAdminPage(Request request) {
 		List<Object> list = request.getHeaders().get("Referer");
@@ -182,7 +157,7 @@ final class Admin {
 		Response response = StaticRef.getResponse();
 		Request request = StaticRef.getRequest();
 		if (!isOriginateFromAdminPage(request)) {
-			response.setResponseCode(401);
+			response.setResponseCode(ResponseCodes.Unauthorized);
 			return;
 		}
 		StringBuffer buf = getAllActiveRoutes();
@@ -254,7 +229,7 @@ final class Admin {
 
 	@Path(value = Configuration.stopUri, httpMethod = HttpMethod.GET)
 	static void stop() throws Exception {
-		StaticRef.getResponse().setResponseCode(200);
+//		StaticRef.getResponse().setResponseCode(200);
 		final ScheduledExecutorService exe = Executors.newScheduledThreadPool(1);
 		exe.schedule(new Runnable() {
 
@@ -271,7 +246,9 @@ final class Admin {
 	static void handle404(Request request, Response res) throws Exception {
 		if (Configuration.ADMIN_MODULE_ENABLED && request.getUri().equals("/")) {
 			res.sendRedirect("/admin/Admin.html");
-		} else {
+		} else if ( request.getMethod() == HttpMethod.TRACE  && request.getUri().equals("/") ){
+			//
+		}else {
 			logger.debug(request.toString());
 			res.setResponseCode(404);
 		}
@@ -283,7 +260,7 @@ final class Admin {
 		res.setResponseCode(200);
 		ByteData bytes = new ByteData(ICON_FILE);
 		res.append(bytes);
-		res.putHeader("Content-Length", bytes.length());
+//		res.putHeader("Content-Length", bytes.length());
 		res.putHeader("Content-Type", "image/x-icon");
 		res.putHeader("Cache-Control", "max-age=31536000");
 	}

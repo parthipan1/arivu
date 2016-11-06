@@ -1,0 +1,46 @@
+{  
+   "request":{  
+	  "buffer":131072,   	
+      "scanpackages":[  
+           "org.test.nio"
+      ],
+      "proxies":{
+         "googleSite":{  
+            "header":{  
+               "Expires":-1,
+               "Cache-Control":"private, max-age=0",
+               "Server":"clowngoogleserver",
+               "X-XSS-Protection":"1; mode=block",
+               "Set-Cookie":"Secure; HttpOnly",
+               "Connection":"close"
+            },
+            "location":"/search",
+            "method":"GET",
+            "proxy_pass":"https://www.google.co.in/search"
+         },
+         "staticContent":{  
+            "header":{  
+               "Expires":-1,
+               "Cache-Control":"private, max-age=0",
+               "Server":"clowntestserver",
+               "X-XSS-Protection":"1; mode=block",
+               "Set-Cookie":"theme=light;Secure; HttpOnly",
+               "Connection":"keepalive"
+            },
+            "location":"/testproxydir",
+            "dir":"./src/test/resources"
+         }
+      }
+   },
+   "response":{  
+      "defaultcode":200,
+      "chunkSize":131072,
+      "header":{  
+         "Expires":-1,
+         "Cache-Control":"private, max-age=1",
+         "Server":"clownresserver",
+         "X-XSS-Protection":"1; mode=block",
+         "Set-Cookie":"rest=back;Secure; HttpOnly",
+      }
+   }
+}

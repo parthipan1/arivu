@@ -5,9 +5,12 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -15,6 +18,7 @@ import java.util.Map;
 
 import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
+import org.arivu.datastructure.DoublyLinkedSet;
 import org.arivu.utils.NullCheck;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -38,6 +42,36 @@ public class RequestUtilTest {
 
 	@After
 	public void tearDown() throws Exception {
+	}
+	
+	@Test
+	public void testGetFirstHeaderValue(){
+		Map<String, List<Object>> headers = new Amap<String, List<Object>>();
+		List<Object> v = new DoublyLinkedList<Object>();
+		v.add("one");
+		
+		assertTrue(RequestUtil.getFirstHeaderValue(null, "one")==null);
+		assertTrue(RequestUtil.getFirstHeaderValue(headers, "one")==null);
+		
+		headers.put("one", v);
+		
+		assertTrue(RequestUtil.getFirstHeaderValue(headers, "one").equals("one"));
+		assertTrue(RequestUtil.getFirstHeaderValue(headers, "two")==null);
+	}
+	
+
+	@Test
+	public void testUnModifiable(){
+		Map<String, List<Object>> headers = new Amap<String, List<Object>>();
+		List<Object> v = new DoublyLinkedList<Object>();
+		v.add("one");
+		
+		assertTrue(RequestUtil.unModifiable(null)==null);
+		assertTrue(RequestUtil.unModifiable(headers)==null);
+		
+		headers.put("one", v);
+		
+		assertTrue(RequestUtil.unModifiable(headers).size()==1);
 	}
 	
 	@Test
@@ -521,16 +555,29 @@ public class RequestUtilTest {
 	
 	@Test
 	public void testUnZipAndDel() throws IOException, InterruptedException {
-		File dd = new File("testUnzip");
+		File dd = new File("testUnzip/download");
 		assertFalse(dd.exists());
-		RequestUtil.unzip(dd, new File("arivu.nioserver-1.0.0.zip"));
+		RequestUtil.unzip(new File("testUnzip/download/libs"), new File("download.zip"));
 		assertTrue(dd.exists());
+		
+		FileOutputStream fileOutputStream = new FileOutputStream(new File("testUnzip/download/scanpackages"), true);
+		FileChannel channel = fileOutputStream.getChannel();
+		try {
+			channel.write( ByteBuffer.wrap("com.rjil".getBytes()) );
+		}finally{
+			channel.close();
+			fileOutputStream.close();
+		}
+		
 		List<URL> urls = new DoublyLinkedList<URL>();
 		RequestUtil.allUrls(dd, urls);
 		assertFalse(urls.isEmpty());
 		assertTrue(urls.size() == RequestUtil.toArray(urls).length);
-		RequestUtil.scanApps(dd);
-		RequestUtil.del(dd);
+		
+		new File("testUnzip/download2").mkdirs();
+		
+		RequestUtil.scanApps(new File("testUnzip"));
+		RequestUtil.del(new File("testUnzip"));
 		assertFalse(dd.exists());
 	}
 
@@ -845,7 +892,6 @@ public class RequestUtilTest {
 	}
 
 	@Test
-//	@Ignore
 	public void testParseUriTokens() throws Exception {
 
 		System.setProperty("lightninglog.json", "./lightninglog.json");
@@ -932,6 +978,50 @@ public class RequestUtilTest {
 
 	}
 
+	@Test
+	public void testGetPaths() throws ClassNotFoundException, IOException {
+		System.setProperty("lightninglog.json", "./lightninglog.json");
+		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
+		System.setProperty("access.log", "./access.log");
+
+		Collection<String> packageNames = new DoublyLinkedSet<String>();
+
+		Collection<Route> paths = PackageScanner.getPaths("System", packageNames);
+		assertTrue(NullCheck.isNullOrEmpty(paths));
+
+		packageNames.add("org.arivu.nioserver");
+		paths = PackageScanner.getPaths("System", packageNames);
+
+		assertFalse(NullCheck.isNullOrEmpty(paths));
+	}
+
+	@Test
+	public void testGetClassesForPackage() throws ClassNotFoundException {
+
+		System.setProperty("lightninglog.json", "./lightninglog.json");
+		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
+		System.setProperty("access.log", "./access.log");
+
+		Collection<Class<?>> classesForPackage = PackageScanner
+				.getClassesForPackage(Thread.currentThread().getContextClassLoader(), "org.arivu.nioserver", false);
+		assertFalse(NullCheck.isNullOrEmpty(classesForPackage));
+		// for( Class<?> c:classesForPackage )
+		// System.out.println(c.getName());
+	}
+
+	@Test
+	public void testAddMethod() {
+		Collection<Route> reqPaths = new DoublyLinkedSet<Route>();
+
+		assertTrue(NullCheck.isNullOrEmpty(reqPaths));
+		PackageScanner.addMethod("System", reqPaths, Connection.class);
+		assertTrue(NullCheck.isNullOrEmpty(reqPaths));
+
+		PackageScanner.addMethod("System", reqPaths, Admin.class);
+		assertFalse(NullCheck.isNullOrEmpty(reqPaths));
+
+	}
+	
 }
 
 class TestRoute {

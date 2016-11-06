@@ -408,9 +408,12 @@ dependencies {
 	compile project(':resourcepool')
 	compile project(':datastructure')
 	compile project(':utils')
+	testCompile group: 'io.rest-assured', name: 'rest-assured', version: '3.0.1'
     runtime project(':lightninglog')
   }
-  
+  test {
+     forkEvery = 1
+  }
 	// deployment directory
 	def deployDir = project.getProject().getProjectDir().getAbsolutePath() 
   
