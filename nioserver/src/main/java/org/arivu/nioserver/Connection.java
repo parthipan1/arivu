@@ -193,7 +193,10 @@ final class Connection {
 						setContentLen();
 //						 System.out.println(" Got Request :: "+req+" route "+route);
 						if (route == Configuration.defaultRoute) {
-							if( req.getHttpMethod() == HttpMethod.GET){
+							if( req.getHttpMethod() == HttpMethod.GET ||
+								req.getHttpMethod() == HttpMethod.TRACE ||
+								req.getHttpMethod() == HttpMethod.HEAD 
+							){
 								processRequest(key, clientSelector);
 								return;
 							}else if( state.contentLen>0) {
