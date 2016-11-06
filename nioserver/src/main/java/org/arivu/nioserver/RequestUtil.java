@@ -193,15 +193,15 @@ public final class RequestUtil {
 		String[] split = metadata.split(System.lineSeparator());
 		String[] split2 = split[0].split(" ");
 
-		HttpMethod valueOf = HttpMethod.valueOf(split2[0]);
+		HttpMethod valueOf = HttpMethod.valueOf(split2[0].trim());
 		if (valueOf == null)
 			throw new IllegalArgumentException("Unknown RequestImpl " + metadata);
-		String uriWithParams = split2[1];
-		String protocol = split2[2];
+		String uriWithParams = split2[1].trim();
+		String protocol = split2[2].trim();
 
 		Map<String, List<Object>> tempheaders = new Amap<String, List<Object>>();
 		for (int i = 1; i < split.length; i++) {
-			String h = split[i];
+			String h = split[i].trim();
 			int indexOf2 = h.indexOf(":");
 			if (indexOf2 == -1) {
 				String key = h;

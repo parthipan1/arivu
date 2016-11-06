@@ -174,6 +174,7 @@ final class Connection {
 			if ((bytesRead = ((SocketChannel) key.channel()).read(wrap)) > 0) {
 				EOL0 = wrap.get(wrap.position() - 1);
 //				System.out.println("\n ******%"+new String(readBuf)+"%******\n");
+				logger.debug("Message read {}",new String(readBuf));
 				if (req == null) {
 					final int headerIndex = RequestUtil.getHeaderIndex(readBuf, RequestUtil.BYTE_13, RequestUtil.BYTE_10, 2);
 					if (headerIndex == -1) {
