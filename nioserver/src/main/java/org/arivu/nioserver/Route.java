@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
+import java.net.SocketException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.channels.SelectionKey;
@@ -609,6 +610,11 @@ final class AsynContextImpl  implements AsynContext{
 	public void setAsynchronousFinish(boolean flag) {
 		if( this.threadId == Thread.currentThread().hashCode() ){
 			this.flag = flag;
+			try {
+				((SocketChannel) key.channel()).socket().setSoTimeout(0);
+			} catch (SocketException e) {
+				logger.error("Error in setSoTimeout " + this + " :: ", e);
+			}
 		}else{
 			throw new IllegalStateException("Cannot modify ouside the created Thread!");
 		}
