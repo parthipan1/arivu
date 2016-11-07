@@ -67,7 +67,7 @@ final class Admin {
 				String serverHash = AdminRoute.authTokens.get(keyv);
 				if (!NullCheck.isNullOrEmpty(serverHash)) {
 					logger.debug("Hash auth server hash {} client hash{}", serverHash, clientHash);
-					return Long.parseLong(clientHash)>=Long.parseLong(serverHash);
+					return Long.parseLong(clientHash.trim())>=Long.parseLong(serverHash);
 				} 
 			}
 		}

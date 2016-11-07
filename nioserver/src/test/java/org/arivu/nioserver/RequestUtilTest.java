@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
@@ -42,6 +43,123 @@ public class RequestUtilTest {
 
 	@After
 	public void tearDown() throws Exception {
+	}
+	/*
+--rd_fssKjEw5P9pFdW-nfFsq9M37FvSn
+Content-Disposition: form-data; name="file"; filename="lightninglog.json"
+Content-Type: application/octet-stream
+Content-Transfer-Encoding: binary
+
+{
+	"appenders":["file","console"],
+	"loggers":{
+		"root":"debug"
+	},
+	"buffer":{
+		"batch":1,
+		"ring":1
+	},
+	"log":{
+		"showDateTime":true,
+		"showThreadName":true,
+		"showName":true,
+		"showShortName":true,
+		"file":"logs//nioserver.log",
+		"fileSize":5242880000,
+		"dateTimeFormat":"yyyy-MM-dd HH:mm:ss:SSS Z",
+		"fileDateTimeExt":"yyyy-MM-dd'T'HH:mm:ss:SSS'Z'"
+	}
+}
+--rd_fssKjEw5P9pFdW-nfFsq9M37FvSn
+Content-Disposition: form-data; name="name"
+Content-Type: text/plain
+
+test
+--rd_fssKjEw5P9pFdW-nfFsq9M37FvSn
+Content-Disposition: form-data; name="scanpackages"
+Content-Type: text/plain
+
+com.rjil
+--rd_fssKjEw5P9pFdW-nfFsq9M37FvSn--
+	 */
+	
+	
+	static String HOL = new String(new byte[]{RequestUtil.BYTE_13,RequestUtil.BYTE_10});
+	
+	static String boundaryStr = "--rd_fssKjEw5P9pFdW-nfFsq9M37FvSn";
+	
+	static String body = "";
+	static{
+		body = boundaryStr+System.lineSeparator();
+		body += "Content-Disposition: form-data; name=\"name\""+System.lineSeparator();
+		body += "Content-Type: text/plain"+HOL+HOL;
+		body += "test"+HOL;
+		body += "--rd_fssKjEw5P9pFdW-nfFsq9M37FvSn"+System.lineSeparator();
+		body += "Content-Disposition: form-data; name=\"file\"; filename=\"lightninglog.json\""+System.lineSeparator();
+		body += "Content-Type: application/octet-stream"+System.lineSeparator();
+		body += "Content-Transfer-Encoding: binary"+HOL+HOL;
+		body += "{"+System.lineSeparator();
+		body += "	\"appenders\":[\"file\",\"console\"],"+System.lineSeparator();
+		body += "	\"loggers\":{"+System.lineSeparator();
+		body += "		\"root\":\"debug\""+System.lineSeparator();
+		body += "	},"+System.lineSeparator();
+		body += "	\"buffer\":{"+System.lineSeparator();
+		body += "		\"batch\":1,"+System.lineSeparator();
+		body += "		\"ring\":1"+System.lineSeparator();
+		body += "	},"+System.lineSeparator();
+		body += "	\"log\":{"+System.lineSeparator();
+		body += "		\"showDateTime\":true,"+System.lineSeparator();
+		body += "		\"showThreadName\":true,"+System.lineSeparator();
+		body += "		\"showName\":true,"+System.lineSeparator();
+		body += "		\"showShortName\":true,"+System.lineSeparator();
+		body += "		\"file\":\"logs//nioserver.log\","+System.lineSeparator();
+		body += "		\"fileSize\":5242880000,"+System.lineSeparator();
+		body += "		\"dateTimeFormat\":\"yyyy-MM-dd HH:mm:ss:SSS Z\","+System.lineSeparator();
+		body += "		\"fileDateTimeExt\":\"yyyy-MM-dd'T'HH:mm:ss:SSS'Z'\""+System.lineSeparator();
+		body += "	}"+System.lineSeparator();
+		body += "}"+HOL;
+		body += "--rd_fssKjEw5P9pFdW-nfFsq9M37FvSn"+System.lineSeparator();
+		body += "Content-Disposition: form-data; name=\"scanpackages\""+System.lineSeparator();
+		body += "Content-Type: text/plain"+HOL+HOL;
+		body += "com.rjil"+HOL;
+		body += "--rd_fssKjEw5P9pFdW-nfFsq9M37FvSn--"+System.lineSeparator();
+	}
+	
+	@Test
+	public void testSearchMultipartPattern(){
+		
+		final byte[] content = body.getBytes();
+		final byte[] pattern = boundaryStr.getBytes();
+		int[] lens = {369,4,8};
+		String[] values = {null,"test","com.rjil"};
+		
+		
+		int[] splitByValues = {50,100,150,300,500,1024};
+		
+		for( final int splitBy : splitByValues ){
+			
+			Connection conn = new Connection(null);
+			conn.reset();
+			conn.state.start = pattern.length + 1;
+			
+			conn.req = new RequestImpl(HttpMethod.POST, "/test", "/test", "HTTP/1.1", null, null);
+			conn.req.isMultipart = true;
+			conn.req.boundary = pattern;
+			
+			for(int i=0;i<content.length;i+=splitBy){
+				conn.processMultipartInBytes(Arrays.copyOfRange(content, i, Math.min(i+splitBy, content.length)));
+			}
+			int i = 0;
+			Map<String, MultiPart> multiParts = conn.req.getMultiParts();
+			for (Entry<String, MultiPart> e : multiParts.entrySet()) {
+				MultiPart mp = e.getValue();
+				String convert = RequestUtil.convert(mp.body);
+				String v = values[i];
+				if(v!=null)
+					assertTrue("Failed ob splitby "+splitBy+" value",v.equals(convert));
+				assertTrue("Failed ob splitby "+splitBy+" length",lens[i++]==convert.length());
+			}
+		}
 	}
 	
 	@Test
@@ -489,7 +607,7 @@ public class RequestUtilTest {
 	public void testSearchPattern(){
 		assertTrue(RequestUtil.searchPattern("123456".getBytes(), "a".getBytes(), 0, 0)==RequestUtil.BYTE_SEARCH_DEFLT);
 		assertTrue(RequestUtil.searchPattern("123456".getBytes(), "6".getBytes(), 0, 0)==5);
-		assertTrue(RequestUtil.searchPattern("123456".getBytes(), "34".getBytes(), 0, 0)==2);
+		assertTrue("Got :: "+RequestUtil.searchPattern("123456".getBytes(), "34".getBytes(), 0, 0),RequestUtil.searchPattern("123456".getBytes(), "34".getBytes(), 0, 0)==3);
 		assertTrue(RequestUtil.searchPattern("123456".getBytes(), "67".getBytes(), 0, 0)==-1);
 	}
 	
@@ -961,7 +1079,7 @@ public class RequestUtilTest {
 				+ System.lineSeparator() + "Content-Type: application/octet-stream" + System.lineSeparator()
 				+ System.lineSeparator()).getBytes();
 
-		assertTrue(RequestUtil.searchPattern(content, pattern, 0, 0) == 0);
+		assertTrue(RequestUtil.searchPattern(content, pattern, 0, 0) == pattern.length-1);
 
 		byte[] copyOfRange = Arrays.copyOfRange(content,
 				RequestUtil.searchPattern(content, pattern, 0, 0) + pattern.length + 1,
@@ -969,8 +1087,8 @@ public class RequestUtilTest {
 		int headerIndex = RequestUtil.getHeaderIndex(copyOfRange, RequestUtil.BYTE_10, RequestUtil.BYTE_10, 1);
 		byte[] header = Arrays.copyOfRange(copyOfRange, 0, headerIndex - 1);
 		byte[] body = Arrays.copyOfRange(copyOfRange, headerIndex + 1, copyOfRange.length - 1);
-		System.out.println("%" + new String(header) + "%");
-		System.out.println("%" + new String(body) + "%");
+//		System.out.println("%" + new String(header) + "%");
+//		System.out.println("%" + new String(body) + "%");
 
 	}
 

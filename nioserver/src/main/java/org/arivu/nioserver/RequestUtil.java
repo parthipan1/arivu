@@ -109,7 +109,11 @@ public final class RequestUtil {
 				mi++;
 				if (mi == pattern.length) {
 					// logger.debug(" searchPattern 1 "+(i + 1 - mi));
-					return i + 1 - mi;
+					return i;
+//					if(j<0)
+//						return i+1;
+//					else
+//						return j;
 				}
 			} else {
 				mi = 0;
@@ -173,7 +177,7 @@ public final class RequestUtil {
 	}
 
 	static Map<String, String> parseMultipartHeader(String metadata) {
-		// System.out.println(" parseMultipartHeader :: "+metadata);
+//		System.out.println(" parseMultipartHeader :: "+metadata);
 		String[] split = metadata.split(System.lineSeparator());
 		Map<String, String> tempheaders = new Amap<String, String>();
 		for (int i = 0; i < split.length; i++) {

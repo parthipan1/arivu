@@ -214,8 +214,8 @@ public class TestAdminApis {
 		io.restassured.response.Response response = RestAssured.given().
 					multiPart("dist",inputFile).
 					multiPart("name","download").
-					multiPart("scanpackages","com.rjil.cloud.snw.download").
 					multiPart("X-HASH",hash).
+					multiPart("scanpackages","com.rjil.cloud.snw.download").
 						when().post("/__admin/deploy");
 		
 		response.then().statusCode(201);
