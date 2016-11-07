@@ -73,8 +73,8 @@ final class Configuration {
 				.transform((Map<String, Object>) Ason.getObj(json, "response.header", new Amap<String, Object>()));
 
 		defaultResCode = Ason.getNumber(json, "response.defaultcode", 200).intValue();
-		defaultChunkSize = Ason.getNumber(json, "response.chunkSize", 131072).intValue();
-		defaultRequestBuffer = Ason.getNumber(json, "request.buffer", 131072).intValue();
+		defaultChunkSize = Math.max(1024, Ason.getNumber(json, "response.chunkSize", 131072).intValue()) ;
+		defaultRequestBuffer = Math.max(1024, Ason.getNumber(json, "request.buffer", 131072).intValue()) ;
 
 		Collection<String> array = Ason.getArray(json, "request.scanpackages", null);
 		if (NullCheck.isNullOrEmpty(array)) {

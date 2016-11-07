@@ -334,13 +334,6 @@ public class TestHttpMethodsMultiThreaded {
 		response.then().statusCode(404);
 	}
 
-	// "Expires":-1,
-	// "Cache-Control":"private, max-age=0",
-	// "Server":"clowngoogleserver",
-	// "X-XSS-Protection":"1; mode=block",
-	// "Set-Cookie":"Secure; HttpOnly",
-	// "Connection":"close"
-
 	@Test
 	public void testPostMultipart3() throws IOException {
 		int oldValue = Configuration.defaultRequestBuffer;
@@ -367,6 +360,79 @@ public class TestHttpMethodsMultiThreaded {
 		Configuration.defaultRequestBuffer = oldValue;
 	}
 
+
+	@Test
+	public void testPostMultipart4() throws IOException {
+		int oldValue = Configuration.defaultRequestBuffer;
+		Configuration.defaultRequestBuffer = 150;
+		File inputFile = new File("multiByte.txt");
+		File expectedFile = new File("1_multiByte.txt");
+		if (expectedFile.exists())
+			expectedFile.delete();
+		io.restassured.response.Response response = RestAssured.given().multiPart(inputFile).header("Expires", "-1")
+				.header("Cache-Control", "private, max-age=0").header("Server", "clownhggashgasserver")
+				.header("X-XSS-Protection", "1; mode=block").header("Connection", "close").when()
+				.post("/test/multipart");
+
+		response.then().statusCode(200);
+		byte[] responseBodyAsByteArray = RequestUtil.read(inputFile);
+		byte[] read = RequestUtil.read(expectedFile);
+		assertTrue(responseBodyAsByteArray.length == read.length);
+		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
+			if (responseBodyAsByteArray[i] != read[i]) {
+				fail("Filed on Get Content!");
+			}
+		}
+		expectedFile.delete();
+		Configuration.defaultRequestBuffer = oldValue;
+	}
+
+	@Test
+	public void testPostMultipart5() throws IOException {
+//		int oldValue = Configuration.defaultRequestBuffer;
+//		Configuration.defaultRequestBuffer = 1024;
+		File inputFile = new File("arivu.nioserver-1.0.1.zip");
+		File expectedFile = new File("1_arivu.nioserver-1.0.1.zip");
+		io.restassured.response.Response response = RestAssured.given().multiPart(inputFile).when()
+				.post("/test/multipart");
+
+		response.then().statusCode(200);
+		byte[] responseBodyAsByteArray = RequestUtil.read(inputFile);
+		byte[] read = RequestUtil.read(expectedFile);
+		assertTrue(responseBodyAsByteArray.length == read.length);
+		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
+			if (responseBodyAsByteArray[i] != read[i]) {
+				fail("Filed on Get Content!");
+			}
+		}
+		expectedFile.delete();
+//		Configuration.defaultRequestBuffer = oldValue;
+	}
+	
+	@Test
+	public void testPostMultipart6() throws IOException {
+		File inputFile = new File("multiByte.txt");
+		File expectedFile = new File("1_multiByte.txt");
+		if (expectedFile.exists())
+			expectedFile.delete();
+		io.restassured.response.Response response = RestAssured.given().multiPart(inputFile).header("Expires", "-1")
+				.header("Cache-Control", "private, max-age=0").header("Server", "clownhggashgasserver")
+				.header("X-XSS-Protection", "1; mode=block").header("Connection", "close").when()
+				.post("/test/multipart");
+
+		response.then().statusCode(200);
+		byte[] responseBodyAsByteArray = RequestUtil.read(inputFile);
+		byte[] read = RequestUtil.read(expectedFile);
+		assertTrue(responseBodyAsByteArray.length == read.length);
+		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
+			if (responseBodyAsByteArray[i] != read[i]) {
+				fail("Filed on Get Content!");
+			}
+		}
+		expectedFile.delete();
+	}
+
+	
 	@Test
 	public void testPost1() throws IOException {
 		final String body = "Test POST";

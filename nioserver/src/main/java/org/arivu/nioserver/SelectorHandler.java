@@ -114,7 +114,7 @@ final class SelectorHandler {
 
 		@Override
 		public void setRequestBufferSize(int size) {
-			Configuration.defaultRequestBuffer = size;
+			Configuration.defaultRequestBuffer = Math.max(1024, size) ;
 		}
 
 		@Override
@@ -124,7 +124,7 @@ final class SelectorHandler {
 
 		@Override
 		public void setResponseChunkSize(int size) {
-			Configuration.defaultChunkSize = size;
+			Configuration.defaultChunkSize = Math.max(1024, size) ;
 		}
 
 		@Override

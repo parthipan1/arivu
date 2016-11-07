@@ -115,7 +115,7 @@ final class Connection {
 	void processMultipartInBytes(final byte[] content) {
 		do {
 			int searchPattern = RequestUtil.searchPattern(content, req.boundary, state.start, state.mi);
-			logger.debug(" searchPattern :: {} start :: {} mi {}", searchPattern, state.start, state.mi);
+			logger.info(" searchPattern :: {} start :: {} mi {} content.length {}", searchPattern, state.start, state.mi, content.length);
 			if (searchPattern == RequestUtil.BYTE_SEARCH_DEFLT) {
 				// System.out.println(" searchPattern :: "+searchPattern+" start
 				// :: "+start+" mi "+mi);
@@ -173,8 +173,8 @@ final class Connection {
 			final ByteBuffer wrap = ByteBuffer.wrap(readBuf);
 			if ((bytesRead = ((SocketChannel) key.channel()).read(wrap)) > 0) {
 				EOL0 = wrap.get(wrap.position() - 1);
-//				System.out.println("\n ******%"+new String(readBuf)+"%******\n");
-				logger.debug("Message read {}",new String(readBuf));
+//				logger.info("\n ******%"+new String(readBuf)+"%******\n");
+//				logger.debug("Message read {}",new String(readBuf));
 				if (req == null) {
 					final int headerIndex = RequestUtil.getHeaderIndex(readBuf, RequestUtil.BYTE_13, RequestUtil.BYTE_10, 2);
 					if (headerIndex == -1) {
