@@ -223,6 +223,7 @@ final class SelectorHandler {
 		ssc.configureBlocking(false);
 		InetSocketAddress sa = new InetSocketAddress(Integer.parseInt(Env.getEnv("port", "8080")));//InetAddress.getByName(Server.DEFAULT_HOST),
 		ssc.socket().bind(sa, Server.DEFAULT_SOCKET_BACKLOG);
+		ssc.socket().setSoTimeout(Integer.parseInt(Env.getEnv("socket.timeout", "0")));
 		logger.info("Server started at " + sa);
 		ssc.register(clientSelector, SelectionKey.OP_ACCEPT);
 
