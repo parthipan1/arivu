@@ -308,8 +308,8 @@ public class TestHttpMethodsMultiThreaded {
 
 	@Test
 	public void testPostMultipart1() throws IOException {
-		File inputFile = new File("arivu.nioserver-1.0.1.zip");
-		File expectedFile = new File("1_arivu.nioserver-1.0.1.zip");
+		File inputFile = new File("arivu.nioserver-1.0.0.zip");
+		File expectedFile = new File("1_arivu.nioserver-1.0.0.zip");
 		io.restassured.response.Response response = RestAssured.given().multiPart(inputFile).when()
 				.post("/test/multipart");
 
@@ -327,7 +327,7 @@ public class TestHttpMethodsMultiThreaded {
 
 	@Test
 	public void testPostMultipart2() throws IOException {
-		File inputFile = new File("arivu.nioserver-1.0.1.zip");
+		File inputFile = new File("arivu.nioserver-1.0.0.zip");
 		io.restassured.response.Response response = RestAssured.given().multiPart(inputFile).when()
 				.post("/test/multipart1");
 
