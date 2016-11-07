@@ -436,8 +436,8 @@ public final class Btree implements Serializable {
 
 	boolean addObj(final Object obj, final int[] arr) {
 		final Lock l = this.locks[arr[0]];// cas;//
-		l.lock();
 		Object[] n = root;
+		l.lock();
 		try {
 			for (int i = 0; i <= arr.length - 2; i++) {
 				Object[] n1 = (Object[]) n[arr[i]];
