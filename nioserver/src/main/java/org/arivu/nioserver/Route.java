@@ -1,9 +1,7 @@
 package org.arivu.nioserver;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
@@ -13,6 +11,7 @@ import java.net.URLDecoder;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -20,7 +19,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.arivu.datastructure.Amap;
-import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.datastructure.Threadlocal;
 import org.arivu.utils.NullCheck;
 import org.arivu.utils.Utils;
@@ -98,13 +96,6 @@ class Route {
 			this.tl = null;
 		}
 	}
-
-//	boolean match(String requri) {
-//		if (uri.equals(requri))
-//			return true;
-//
-//		return false;
-//	}
 
 	Response getResponse(Request req) {
 		return new ResponseImpl(req, headers);
@@ -229,7 +220,7 @@ class ProxyRoute extends Route {
 			} else {
 				handleProxy(req, res);
 			}
-			logger.debug("**** handle proxy res {}",res);
+//			logger.debug("**** handle proxy res {}",res);
 		} catch (Throwable e) {
 			logger.error("Failed in route " + this + " :: ", e);
 			Configuration.exceptionHandler.handle(e);
@@ -241,45 +232,9 @@ class ProxyRoute extends Route {
 		String queryStr = URLDecoder.decode(req.getUriWithParams().substring(indexOf),
 				RequestUtil.ENC_UTF_8);
 		String loc = this.proxy_pass + req.getUri().substring(this.uri.length()) + queryStr;
-		JavaHttpMethodCall httpMethodCall = proxyTh.get(null);
-		ProxyRes pres = null;
-		switch (req.getMethod()) {
-		case HEAD:
-			pres = httpMethodCall.head(loc, req.getHeaders());
-			break;
-		case OPTIONS:
-			pres = httpMethodCall.options(loc, RequestUtil.convert(req.getBody()) , req.getHeaders());
-			break;
-		case CONNECT:
-			pres = httpMethodCall.connect(loc, req.getHeaders());
-			break;
-		case TRACE:
-			pres = httpMethodCall.trace(loc, req.getHeaders());
-			break;
-		case GET:
-			pres = httpMethodCall.get(loc, req.getHeaders());
-			break;
-		case POST:
-			pres = httpMethodCall.post(loc, RequestUtil.convert(req.getBody()), req.getHeaders());
-			break;
-		case PUT:
-			pres = httpMethodCall.put(loc, RequestUtil.convert(req.getBody()), req.getHeaders());
-			break;
-		case DELETE:
-			pres = httpMethodCall.delete(loc, req.getHeaders());
-			break;
-		default:
-			break;
-		}
-		if (pres != null) {
-			res.setResponseCode(pres.responseCode);
-			res.append(pres.response);
-			res.putAllHeader(pres.headers);
-		}
+		req.getMethod().proxy(proxyTh.get(null), loc, req, res);
 	}
 
-//	final Lock readLock = new AtomicWFReentrantLock();
-	
 	final void handleBrowser(Request req, Response res) throws IOException {
 		String fileLoc = this.dir + URLDecoder.decode(req.getUri().substring(this.uri.length()), RequestUtil.ENC_UTF_8);
 		File file = new File(fileLoc);
@@ -305,12 +260,7 @@ class ProxyRoute extends Route {
 			}
 			res.putHeader("Content-Disposition", "inline; filename=\""+file.getName()+"\"");
 		}
-//		logger.debug("**** Proxy file response :: {}",res);
-//		if( file.exists() ){
-//			ByteData bytes = new ByteData(file);
-			res.append(new ByteData(file));
-//			res.putHeader("Content-Length", bytes.length());
-//		}
+		res.append(new ByteData(file));
 	}
 
 	void handleDirectory(Request req, Response res, File f) throws IOException {
@@ -337,15 +287,6 @@ class ProxyRoute extends Route {
 		res.putHeader("Content-Length", buf.length());
 	}
 
-//	@Override
-//	final Response getResponse(Request req) {
-//		if (!NullCheck.isNullOrEmpty(dir)) {
-//			return super.getResponse(req);
-//		} else {
-//			return new ResponseImpl(req, headers);
-//		}
-//	}
-
 	@Override
 	final void disable() {
 		super.disable();
@@ -363,9 +304,6 @@ class ProxyRoute extends Route {
 		return "ProxyRoute [proxy_pass=" + proxy_pass + ", dir=" + dir + ", name=" + name + ", uri=" + uri
 				+ ", httpMethod=" + httpMethod + ", headers=" + Utils.toString(headers) + "]";
 	}
-
-	
-
 }
 final class AdminRoute extends ProxyRoute {
 	static final Map<String,String> authTokens = new Amap<String,String>();
@@ -391,57 +329,12 @@ final class AdminRoute extends ProxyRoute {
 				}
 			}
 		}
-		
 	}
-	
-}
-//final class FileData{
-//	final long time;
-//	final WeakReference<ByteData> data;
-//	final File file;
-//	FileData(WeakReference<ByteData> data,File file) {
-//		super();
-//		this.data = data;
-//		this.file = file;
-//		this.time = file.lastModified();
-//	}
-//	
-//}
-final class ProxyRes {
-	final String response;
-	final int responseCode;
-	Map<String, List<Object>> headers = new Amap<String, List<Object>>();
-
-	ProxyRes(int responseCode, String response) {
-		super();
-		this.responseCode = responseCode;
-		this.response = response;
-	}
-
 }
 
-//interface HttpMethodCall {
-//	ProxyRes trace(String uri, Map<String, List<Object>> headers) throws IOException;
-//
-//	ProxyRes head(String uri, Map<String, List<Object>> headers) throws IOException;
-//
-//	ProxyRes connect(String uri, Map<String, List<Object>> headers) throws IOException;
-//
-//	ProxyRes options(String uri, String body, Map<String, List<Object>> headers) throws IOException;
-//
-//	ProxyRes get(String uri, Map<String, List<Object>> headers) throws IOException;
-//
-//	ProxyRes post(String uri, String body, Map<String, List<Object>> headers) throws IOException;
-//
-//	ProxyRes put(String uri, String body, Map<String, List<Object>> headers) throws IOException;
-//
-//	ProxyRes delete(String uri, Map<String, List<Object>> headers) throws IOException;
-//}
+final class JavaHttpMethodCall {
 
-class JavaHttpMethodCall {//implements HttpMethodCall
-
-//	@Override
-	public ProxyRes delete(String uri, Map<String, List<Object>> headers) throws IOException {
+	public void delete(String uri, Map<String, List<Object>> headers, Response res) throws IOException {
 		// System.out.println("DELETE "+uri);
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
@@ -450,7 +343,7 @@ class JavaHttpMethodCall {//implements HttpMethodCall
 		// add requestImpl header
 		addReqHeaders(con, headers);
 
-		return extractResponse(con);
+		pipeResponse(con,res);
 	}
 
 	private void addReqHeaders(final HttpURLConnection con, Map<String, List<Object>> headers) {
@@ -469,8 +362,7 @@ class JavaHttpMethodCall {//implements HttpMethodCall
 		}
 	}
 
-//	@Override
-	public ProxyRes get(final String uri, Map<String, List<Object>> headers) throws IOException {
+	public void get(final String uri, Map<String, List<Object>> headers, Response res) throws IOException {
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
@@ -478,11 +370,10 @@ class JavaHttpMethodCall {//implements HttpMethodCall
 		con.setRequestMethod("GET");
 		addReqHeaders(con, headers);
 
-		return extractResponse(con);
+		pipeResponse(con,res);
 	}
 
-//	@Override
-	public ProxyRes post(final String uri, final String body, Map<String, List<Object>> headers) throws IOException {
+	public void post(final String uri, final String body, Map<String, List<Object>> headers, Response res) throws IOException {
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
@@ -498,11 +389,10 @@ class JavaHttpMethodCall {//implements HttpMethodCall
 		} finally {
 			wr.close();
 		}
-		return extractResponse(con);
+		pipeResponse(con,res);
 	}
 
-//	@Override
-	public ProxyRes put(final String uri, final String body, Map<String, List<Object>> headers) throws IOException {
+	public void put(final String uri, final String body, Map<String, List<Object>> headers, Response res) throws IOException {
 
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
@@ -519,40 +409,39 @@ class JavaHttpMethodCall {//implements HttpMethodCall
 		} finally {
 			wr.close();
 		}
-		return extractResponse(con);
+		pipeResponse(con,res);
 	}
 
-	private ProxyRes extractResponse(final HttpURLConnection con) throws IOException {
-		int responseCode = con.getResponseCode();
-
+	private void pipeResponse(final HttpURLConnection con, Response res) throws IOException {
+		final int responseCode = con.getResponseCode();
+		res.setResponseCode(responseCode);
 		Map<String, List<String>> map = con.getHeaderFields();
 
-		final StringBuffer response = new StringBuffer();
-		final BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
 		try {
-			String inputLine;
-			while ((inputLine = in.readLine()) != null) {
-				response.append(inputLine);
-			}
+			int nRead = 0;
+			byte[] responseData = new byte[Configuration.defaultChunkSize];
+			while ((nRead = con.getInputStream().read(responseData)) != -1) {
+				if (nRead == responseData.length)
+					res.append(new ByteData(responseData));
+				else
+					res.append(new ByteData(Arrays.copyOfRange(responseData, 0, nRead)));
+
+				responseData = new byte[Configuration.defaultChunkSize];
+			} 
 		} finally {
-			in.close();
+			con.getInputStream().close();
 		}
-		ProxyRes proxyRes = new ProxyRes(responseCode, response.toString());
 		for (Map.Entry<String, List<String>> entry : map.entrySet()) {
 			final String key = entry.getKey();
 			List<String> value = entry.getValue();
 			if (!NullCheck.isNullOrEmpty(key) && !NullCheck.isNullOrEmpty(value)){
-				List<Object> ovs = new DoublyLinkedList<Object>();
-				ovs.addAll(value);
-				proxyRes.headers.put(key, ovs);
+				for( String v1:value )
+					res.putHeader(key, v1);
 			}
-				
 		}
-		return proxyRes;
 	}
 
-//	@Override
-	public ProxyRes trace(String uri, Map<String, List<Object>> headers) throws IOException {
+	public void trace(String uri, Map<String, List<Object>> headers, Response res) throws IOException {
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
@@ -560,11 +449,10 @@ class JavaHttpMethodCall {//implements HttpMethodCall
 		con.setRequestMethod("TRACE");
 		addReqHeaders(con, headers);
 
-		return extractResponse(con);
+		pipeResponse(con,res);
 	}
 
-//	@Override
-	public ProxyRes head(String uri, Map<String, List<Object>> headers) throws IOException {
+	public void head(String uri, Map<String, List<Object>> headers, Response res) throws IOException {
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
@@ -572,17 +460,13 @@ class JavaHttpMethodCall {//implements HttpMethodCall
 		con.setRequestMethod("HEAD");
 		addReqHeaders(con, headers);
 
-		return extractResponse(con);
+		pipeResponse(con,res);
 	}
 
-//	@Override
-	public ProxyRes connect(String uri, Map<String, List<Object>> headers) throws IOException {
-		// TODO Auto-generated httpMethod stub
-		return null;
+	public void connect(String uri, Map<String, List<Object>> headers, Response res) throws IOException {
 	}
 
-//	@Override
-	public ProxyRes options(String uri, String body, Map<String, List<Object>> headers) throws IOException {
+	public void options(String uri, String body, Map<String, List<Object>> headers, Response res) throws IOException {
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
@@ -598,7 +482,7 @@ class JavaHttpMethodCall {//implements HttpMethodCall
 		} finally {
 			wr.close();
 		}
-		return extractResponse(con);
+		pipeResponse(con,res);
 	}
 
 }
