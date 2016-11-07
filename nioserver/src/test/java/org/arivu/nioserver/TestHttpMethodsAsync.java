@@ -150,6 +150,24 @@ public class TestHttpMethodsAsync extends TestHttpMethodsMultiThreaded {
 	}
 
 	@Override @Test
+	public void testPostMultipart4() throws IOException {
+		
+		super.testPostMultipart4();
+	}
+
+	@Override @Test
+	public void testPostMultipart5() throws IOException {
+		
+		super.testPostMultipart5();
+	}
+
+	@Override @Test
+	public void testPostMultipart6() throws IOException {
+		
+		super.testPostMultipart6();
+	}
+	
+	@Override @Test
 	public void testPost1() throws IOException {
 		
 		super.testPost1();

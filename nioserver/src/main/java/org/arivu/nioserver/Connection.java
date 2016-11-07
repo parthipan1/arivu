@@ -115,34 +115,46 @@ final class Connection {
 	void processMultipartInBytes(final byte[] content) {
 		do {
 			int searchPattern = RequestUtil.searchPattern(content, req.boundary, state.start, state.mi);
-			logger.debug(" searchPattern :: {} start :: {} mi {}", searchPattern, state.start, state.mi);
+			logger.debug(" searchPattern :: {} start :: {} mi {} content.length {}", searchPattern, state.start, state.mi, content.length);
 			if (searchPattern == RequestUtil.BYTE_SEARCH_DEFLT) {
-				// System.out.println(" searchPattern :: "+searchPattern+" start
-				// :: "+start+" mi "+mi);
-				if (state.rollOver != null)
+				logger.debug(" searchPattern :: {} start :: {} mi {}", searchPattern, state.start, state.mi );
+//				System.out.println(" searchPattern :: "+searchPattern+" start :: "+state.start+" mi "+state.mi);
+				if (state.rollOver != null){
 					req.body.add(state.rollOver);
+				}
 				req.body.add(ByteData.wrap(Arrays.copyOfRange(content, state.start, content.length)));
 				state.setValue(0, 0, null);
 				break;
 			} else if (searchPattern < 0) {
 //				logger.debug(" searchPattern :: "+searchPattern+" content("+content.length+") :: "+new String(content)+" boundary("+req.boundary.length+") :: "+new String(req.boundary));
-				// System.err.println(" searchPattern :: "+searchPattern+" start
-				// :: "+start+" mi "+mi);
+//				System.out.println(" searchPattern :: "+searchPattern+" start :: "+state.start+" mi "+state.mi+"  ");//+new String(content)
+				logger.debug(" searchPattern :: {} start :: {} mi {}", searchPattern, state.start, state.mi );
 				if (state.mi > 0 && state.rollOver != null){
 					req.body.add(state.rollOver);
 				}
-				state.setValue(0, searchPattern * -1 - 1, ByteData.wrap(Arrays.copyOfRange(content,state.start, content.length)));
+				state.setValue(0, searchPattern * -1 , ByteData.wrap(Arrays.copyOfRange(content,state.start, content.length)));
 				break;
 			} else if (searchPattern > 0) {
-				// System.err.println(" searchPattern :: "+searchPattern+" start
-				// :: "+start+" mi "+mi);
-				if (state.rollOver != null)
-					req.body.add(state.rollOver);
-				req.body.add(ByteData.wrap(Arrays.copyOfRange(content, state.start, searchPattern - 2)));
+//				System.err.println(" searchPattern :: "+searchPattern+" start :: "+state.start+" mi "+state.mi);
+				logger.debug(" searchPattern :: {} start :: {} mi {}", searchPattern, state.start, state.mi );
+				if( searchPattern <= req.boundary.length ){
+					if (state.rollOver != null){
+						byte[] prevContent = state.rollOver.array();
+						req.body.add(ByteData.wrap(Arrays.copyOfRange(prevContent, state.start, prevContent.length - (req.boundary.length+1-searchPattern))));
+					}
+				}else{
+					if (state.rollOver != null)
+						req.body.add(state.rollOver);
+					
+					req.body.add(ByteData.wrap(Arrays.copyOfRange(content, state.start, searchPattern - req.boundary.length - 1)));
+					
+				}
 				addMultiPart();
 				req.body.clear();
-				state.setValue(searchPattern + req.boundary.length + 1, 0, null);
+				state.setValue(searchPattern + 1, 0, null);
 			} else if (searchPattern == 0) {
+//				System.err.println(" searchPattern :: "+searchPattern+" start :: "+state.start+" mi "+state.mi);
+				logger.debug(" searchPattern :: {} start :: {} mi {}", searchPattern, state.start, state.mi );
 				if (state.mi > 0) {
 					if (state.rollOver != null){
 						byte[] prevContent = state.rollOver.array();
@@ -161,6 +173,7 @@ final class Connection {
 	}
 
 	void addMultiPart() {
+//		System.out.println("\n%"+RequestUtil.convert(req.body)+"%\n");
 		MultiPart parseAsMultiPart = RequestUtil.parseAsMultiPart(req.body);
 		req.multiParts.put(parseAsMultiPart.name, parseAsMultiPart);
 	}
@@ -173,8 +186,8 @@ final class Connection {
 			final ByteBuffer wrap = ByteBuffer.wrap(readBuf);
 			if ((bytesRead = ((SocketChannel) key.channel()).read(wrap)) > 0) {
 				EOL0 = wrap.get(wrap.position() - 1);
-//				System.out.println("\n ******%"+new String(readBuf)+"%******\n");
-				logger.debug("Message read {}",new String(readBuf));
+//				logger.info("\n ******%"+new String(readBuf)+"%******\n");
+//				logger.debug("Message read {}",new String(readBuf));
 				if (req == null) {
 					final int headerIndex = RequestUtil.getHeaderIndex(readBuf, RequestUtil.BYTE_13, RequestUtil.BYTE_10, 2);
 					if (headerIndex == -1) {
@@ -194,8 +207,8 @@ final class Connection {
 //						 System.out.println(" Got Request :: "+req+" route "+route);
 						if (route == Configuration.defaultRoute) {
 							if( req.getHttpMethod() == HttpMethod.GET ||
-								req.getHttpMethod() == HttpMethod.TRACE ||
-								req.getHttpMethod() == HttpMethod.HEAD 
+								req.getHttpMethod() == HttpMethod.HEAD ||
+								req.getHttpMethod() == HttpMethod.TRACE
 							){
 								processRequest(key, clientSelector);
 								return;
