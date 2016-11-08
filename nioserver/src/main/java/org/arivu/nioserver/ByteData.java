@@ -27,6 +27,15 @@ import org.slf4j.LoggerFactory;
 public final class ByteData {
 	private static final Logger logger = LoggerFactory.getLogger(ByteData.class);
 
+	static{
+		Server.registerShutdownHook(new Runnable() {
+			@Override
+			public void run() {
+				clean(true, null);	
+			}
+		});
+	}
+	
 	private static final Threadlocal<Map<String, RandomAccessFileHelper>> mdc = new Threadlocal<Map<String, RandomAccessFileHelper>>(
 			new Factory<Map<String, RandomAccessFileHelper>>() {
 

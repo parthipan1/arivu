@@ -1085,11 +1085,7 @@ com.rjil
 				RequestUtil.searchPattern(content, pattern, 0, 0) + pattern.length + 1,
 				RequestUtil.searchPattern(content, pattern, pattern.length, 0));
 		int headerIndex = RequestUtil.getHeaderIndex(copyOfRange, RequestUtil.BYTE_10, RequestUtil.BYTE_10, 1);
-		byte[] header = Arrays.copyOfRange(copyOfRange, 0, headerIndex - 1);
-		byte[] body = Arrays.copyOfRange(copyOfRange, headerIndex + 1, copyOfRange.length - 1);
-//		System.out.println("%" + new String(header) + "%");
-//		System.out.println("%" + new String(body) + "%");
-
+		assertTrue(headerIndex>0);
 	}
 
 	@Test

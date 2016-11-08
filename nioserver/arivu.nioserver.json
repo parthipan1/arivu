@@ -28,7 +28,7 @@
                "Connection":"close"
             },
             "location":"/static",
-            "dir":"."
+            "dir":"/Users/parthipangounder/Downloads"
          }
       }
    },
