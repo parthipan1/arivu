@@ -159,14 +159,44 @@ public final class ByteData {
 				throw new ArrayIndexOutOfBoundsException(
 						" to " + to + " higher than the max len " + (offset + fileLen));
 			final int len = (int) (to - from);
-			byte[] arr = new byte[len];
-			RandomAccessFile raf = getRAF(file);
-			raf.seek(offset + from);
-			raf.readFully(arr);
-			return arr;
+			if( len == Configuration.defaultChunkSize ){
+				byte[] arr = getChunkData();//new byte[len];
+//				System.out.println(" Buffer chunk len :: "+len);
+				RandomAccessFile raf = getRAF(file);
+				raf.seek(offset + from);
+				raf.readFully(arr);
+				return arr;
+			}else{
+				byte[] arr = new byte[len];
+//				System.out.println(" Buffer len :: "+len);
+				RandomAccessFile raf = getRAF(file);
+				raf.seek(offset + from);
+				raf.readFully(arr);
+				return arr;
+			}
 		}
 	}
-
+	
+	private static final byte INIT_VAL = (new byte[1])[0];
+	
+	byte[] getChunkData() {
+		boolean first = false;
+		Map<String, RandomAccessFileHelper> map = mdc.get(null);
+		RandomAccessFileHelper randomAccessFileHelper = map.get("chunk");
+		if (randomAccessFileHelper == null) {
+			randomAccessFileHelper = new RandomAccessFileHelper();
+			map.put("chunk", randomAccessFileHelper);
+			first = true;
+		}
+		
+		byte[] byteBuffer = randomAccessFileHelper.chunkData;
+		if(!first){
+			for(int i=0;i<byteBuffer.length;i++)
+				byteBuffer[i] = INIT_VAL;
+		}
+		return byteBuffer;
+	}
+	
 	public static ByteData wrap(byte[] array) {
 		return new ByteData(array);
 	}
@@ -177,15 +207,27 @@ public final class ByteData {
 		private final File file;
 		volatile long time = 0l;
 		long lmt = 0l;
-		RandomAccessFileHelper(File file) throws FileNotFoundException {
+		private final byte[] chunkData;
+		
+		RandomAccessFileHelper(){
+			this.file = null;
+			this.raf = null;//new RandomAccessFile(file, "r");
+			this.time = 0l;
+			this.lmt = 0l;
+			this.chunkData = new byte[Configuration.defaultChunkSize];//ByteBuffer.allocateDirect(Configuration.defaultChunkSize);
+		}
+		
+		RandomAccessFileHelper(File file) throws IOException {
 			super();
 			this.file = file;
-			this.raf = new RandomAccessFile(file, "r");;
+			this.raf = new RandomAccessFile(file, "r");
 			this.time = System.currentTimeMillis();
 			this.lmt = file.lastModified();
+			this.chunkData = null;
 		}
-
+		
 		RandomAccessFile get() throws IOException {
+			
 			if( !file.exists() ){
 				raf.close();
 				throw new FileNotFoundException(this.file.getAbsolutePath());
