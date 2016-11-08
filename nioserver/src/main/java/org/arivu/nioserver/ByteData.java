@@ -142,7 +142,7 @@ public final class ByteData {
 		if (file == null) {
 			return data.length;
 		} else {
-			return fileLen;
+			return fileLen-offset;
 		}
 	}
 
