@@ -12,6 +12,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class TestHttpMethods extends TestHttpMethodsMultiThreaded {
@@ -108,7 +109,7 @@ public class TestHttpMethods extends TestHttpMethodsMultiThreaded {
 		super.testGetProxyDir3();
 	}
 
-	@Override @Test
+	@Override @Test @Ignore
 	public void testGetProxy1() throws IOException {
 		
 		super.testGetProxy1();
