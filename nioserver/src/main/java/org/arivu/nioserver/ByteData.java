@@ -83,16 +83,6 @@ public final class ByteData {
 		}
 	}
 
-//	static {
-//		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-//
-//			@Override
-//			public void run() {
-//				
-//			}
-//		}));
-//	}
-
 	private static RandomAccessFileHelper getRAF(File f) throws IOException {
 		final String name = f.getAbsolutePath();
 		Map<String, RandomAccessFileHelper> map = mdc.get(null);
@@ -121,7 +111,7 @@ public final class ByteData {
 	public ByteData(File f) throws IOException {
 		super();
 		this.data = null;
-		this.file = f;// new RandomAccessFile(f, "r");
+		this.file = f;
 		this.fileLen = this.file.length();
 		this.offset = 0l;
 	}
@@ -129,7 +119,7 @@ public final class ByteData {
 	public ByteData(File f, long offset, long len) throws IOException {
 		super();
 		this.data = null;
-		this.file = f;// new RandomAccessFile(f, "r");
+		this.file = f;
 		this.fileLen = len;
 		this.offset = offset;
 	}
@@ -165,28 +155,31 @@ public final class ByteData {
 				throw new ArrayIndexOutOfBoundsException(
 						" to " + to + " higher than the max len " + (offset + fileLen));
 			
+			final RandomAccessFileHelper rafh = getRAF(file);
+//			System.out.println(rafh.file.getAbsolutePath()+" copyOfRange from :: "+from+" to :: "+to+"  len :: "+len+" file.len :: "+rafh.file.length()+" rafh.chunkData.length :: "+rafh.chunkData.length+" Configuration.defaultChunkSize :: "+Configuration.defaultChunkSize);
 			if( len == Configuration.defaultChunkSize ){
 				byte[] arr = getChunkData(false);
-				RandomAccessFile raf = getRAF(file).get();
+				RandomAccessFile raf = rafh.get();
+				raf.seek(offset + from);
+				raf.readFully(arr);
+				return arr;
+			}else if(len == rafh.chunkData.length){
+				RandomAccessFile raf = rafh.get();
+				byte[] arr = rafh.chunkData;
+				if(to == rafh.file.length()){
+					if( rafh.chunkSet ) return arr;
+					rafh.chunkSet = true;
+				}
+				reset(arr);
 				raf.seek(offset + from);
 				raf.readFully(arr);
 				return arr;
 			}else{
-				RandomAccessFileHelper rafh = getRAF(file);
-				if(rafh.chunkData.length==len){
-					RandomAccessFile raf = rafh.get();
-					byte[] arr = rafh.chunkData;
-					reset(arr);
-					raf.seek(offset + from);
-					raf.readFully(arr);
-					return arr;
-				}else{
-					RandomAccessFile raf = rafh.get();
-					byte[] arr = new byte[len];
-					raf.seek(offset + from);
-					raf.readFully(arr);
-					return arr;
-				}
+				RandomAccessFile raf = rafh.get();
+				byte[] arr = new byte[len];
+				raf.seek(offset + from);
+				raf.readFully(arr);
+				return arr;
 			}
 		}
 	}
@@ -226,13 +219,14 @@ public final class ByteData {
 		volatile long time = 0l;
 		long lmt = 0l;
 		private final byte[] chunkData;
-		
+		volatile boolean chunkSet = false;
 		RandomAccessFileHelper(){
 			this.file = null;
-			this.raf = null;//new RandomAccessFile(file, "r");
+			this.raf = null;
 			this.time = 0l;
 			this.lmt = 0l;
-			this.chunkData = new byte[Configuration.defaultChunkSize];//ByteBuffer.allocateDirect(Configuration.defaultChunkSize);
+			this.chunkData = new byte[Configuration.defaultChunkSize];
+			this.chunkSet = false;
 		}
 		
 		RandomAccessFileHelper(File file) throws IOException {
@@ -242,11 +236,13 @@ public final class ByteData {
 			this.time = System.currentTimeMillis();
 			this.lmt = file.lastModified();
 			this.chunkData = new byte[(int) (file.length()%Configuration.defaultChunkSize)];
+			this.chunkSet = false;
 		}
 		
 		RandomAccessFile get() throws IOException {
-			
-			if( !file.exists() ){
+			if(file==null)
+				return null;
+			else if( !file.exists() ){
 				raf.close();
 				throw new FileNotFoundException(this.file.getAbsolutePath());
 			}else if( file.lastModified() > lmt ){
