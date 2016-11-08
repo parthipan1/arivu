@@ -5,8 +5,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.arivu.utils.NullCheck;
 import org.arivu.utils.Utils;
@@ -324,8 +322,7 @@ final class TestApis{
 		if( runAsync ){
 			final AsynContext asynContext = StaticRef.getAsynContext();
 			asynContext.setAsynchronousFinish(true);
-			final ExecutorService exe = Executors.newFixedThreadPool(1);
-			exe.execute(new Runnable() {
+			Server.getExecutorService().execute(new Runnable() {
 				
 				@Override
 				public void run() {
@@ -335,7 +332,6 @@ final class TestApis{
 						response.setResponseCode(400);
 					}finally {
 						asynContext.finish();
-						exe.shutdownNow();
 					}
 				}
 			});

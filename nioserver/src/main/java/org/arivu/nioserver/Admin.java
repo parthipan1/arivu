@@ -16,8 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import javax.script.ScriptException;
@@ -229,16 +227,12 @@ final class Admin {
 
 	@Path(value = Configuration.stopUri, httpMethod = HttpMethod.GET)
 	static void stop() throws Exception {
-//		StaticRef.getResponse().setResponseCode(200);
-		final ScheduledExecutorService exe = Executors.newScheduledThreadPool(1);
-		exe.schedule(new Runnable() {
-
+		Server.getScheduledExecutorService().schedule(new Runnable() {
 			@Override
 			public void run() {
-				exe.shutdownNow();
-				Server.handler.stop();
+				Server.stop();
 			}
-		}, 1, TimeUnit.SECONDS);
+		}, 2, TimeUnit.SECONDS);
 
 	}
 

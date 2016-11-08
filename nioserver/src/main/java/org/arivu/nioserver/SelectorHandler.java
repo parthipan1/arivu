@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -37,16 +38,17 @@ import org.slf4j.LoggerFactory;
  */
 final class SelectorHandler {
 	private static final Logger logger = LoggerFactory.getLogger(SelectorHandler.class);
-	
+
 	volatile boolean shutdown = false;
 	Selector clientSelector = null;
 	String beanNameStr = null;
 	final ExecutorService exe;
+	final ScheduledExecutorService sexe;
 	final ServerMXBean mxBean = new ServerMXBean() {
 
 		@Override
 		public void shutdown() {
-			stop();
+			close();
 		}
 
 		@Override
@@ -56,7 +58,7 @@ final class SelectorHandler {
 			String[] ret = new String[rts.size()];
 			int i = 0;
 			for (Route rt : rts) {
-				if(rt.active)
+				if (rt.active)
 					ret[i++] = rt.uri + " " + rt.httpMethod;
 			}
 
@@ -66,13 +68,14 @@ final class SelectorHandler {
 		@Override
 		public void removeRoute(String route) {
 			Route route2 = getRoute(route);
-			if(route2!=null){
+			if (route2 != null) {
 				route2.disable();
 			}
 		}
-		
+
 		Route getRoute(String route) {
-			if( NullCheck.isNullOrEmpty(route) ) return null;
+			if (NullCheck.isNullOrEmpty(route))
+				return null;
 			Collection<Route> rts = Configuration.routes;
 			for (Route rt : rts) {
 				if ((rt.uri + " " + rt.httpMethod).equals(route))
@@ -99,7 +102,7 @@ final class SelectorHandler {
 			Route route2 = getRoute(route);
 			if (route2 != null && !NullCheck.isNullOrEmpty(route2.headers)) {
 				List<Object> list = route2.headers.get(header);
-				if(list==null){
+				if (list == null) {
 					list = new DoublyLinkedList<Object>();
 					route2.headers.put(header, list);
 				}
@@ -114,7 +117,7 @@ final class SelectorHandler {
 
 		@Override
 		public void setRequestBufferSize(int size) {
-			Configuration.defaultRequestBuffer = size;
+			Configuration.defaultRequestBuffer = Math.max(1024, size);
 		}
 
 		@Override
@@ -124,7 +127,7 @@ final class SelectorHandler {
 
 		@Override
 		public void setResponseChunkSize(int size) {
-			Configuration.defaultChunkSize = size;
+			Configuration.defaultChunkSize = Math.max(1024, size);
 		}
 
 		@Override
@@ -142,7 +145,7 @@ final class SelectorHandler {
 		@Override
 		public void addResponseHeader(String header, String value) {
 			List<Object> list = Configuration.defaultResponseHeader.get(header);
-			if(list==null){
+			if (list == null) {
 				list = new DoublyLinkedList<Object>();
 				Configuration.defaultResponseHeader.put(header, list);
 			}
@@ -158,7 +161,8 @@ final class SelectorHandler {
 		@Override
 		public String getRouteResponseHeader(String route) {
 			Route route2 = getRoute(route);
-			if( route2!= null ) return Utils.toString(route2.headers);
+			if (route2 != null)
+				return Utils.toString(route2.headers);
 			return null;
 		}
 
@@ -192,14 +196,36 @@ final class SelectorHandler {
 		this.connectionPool.setLifeSpan(-1);
 		this.connectionPool.setIdleTimeout(30000);
 		this.exe = Executors.newCachedThreadPool();
+		this.sexe = Executors.newScheduledThreadPool(5);
+		Server.registerShutdownHook(new Runnable() {
+			
+			@Override
+			public void run() {
+				exe.shutdownNow();
+				sexe.shutdownNow();
+				try {
+					connectionPool.close();
+				} catch (Exception e) {
+					logger.error("Failed to close connectionPool::", e);
+				}
+			}
+		});
 	}
 
 	void registerMXBean() {
 		try {
 			MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
-			beanNameStr = "org.arivu.niosever:type=" + Server.class.getSimpleName() + "." + Integer.parseInt(Env.getEnv("port", "8080"));
+			beanNameStr = "org.arivu.niosever:type=" + Server.class.getSimpleName() + "."
+					+ Integer.parseInt(Env.getEnv("port", "8080"));
 			mbs.registerMBean(mxBean, new ObjectName(beanNameStr));
-			logger.info(" Jmx bean beanName {} registered!",beanNameStr);
+			logger.info(" Jmx bean beanName {} registered!", beanNameStr);
+			Server.registerShutdownHook(new Runnable() {
+				
+				@Override
+				public void run() {
+					unregisterMXBean();	
+				}
+			});
 		} catch (Exception e) {
 			logger.error("Failed with Error::", e);
 		}
@@ -216,15 +242,13 @@ final class SelectorHandler {
 		}
 	}
 
-	void sync() throws IOException {
+	void handle(InetSocketAddress sa) throws IOException {
 		registerMXBean();
 		clientSelector = Selector.open();
 		ServerSocketChannel ssc = ServerSocketChannel.open();
 		ssc.configureBlocking(false);
-		InetSocketAddress sa = new InetSocketAddress(Integer.parseInt(Env.getEnv("port", "8080")));//InetAddress.getByName(Server.DEFAULT_HOST),
 		ssc.socket().bind(sa, Server.DEFAULT_SOCKET_BACKLOG);
 		ssc.socket().setSoTimeout(Integer.parseInt(Env.getEnv("socket.timeout", "0")));
-		logger.info("Server started at " + sa);
 		ssc.register(clientSelector, SelectionKey.OP_ACCEPT);
 
 		while (!shutdown) {
@@ -259,39 +283,20 @@ final class SelectorHandler {
 				logger.error("Failed with Error::", e);
 			}
 		}
+		
 	}
 
-	void stop() {
+	void close() {
+		if (shutdown)
+			return;
+		
 		shutdown = true;
 		try {
-			try {
-				clientSelector.close();
-			} catch (IOException e) {
-				logger.error("Failed in clientSelector close :: ", e);
-			}
-			exe.shutdownNow();
-			unregisterMXBean();
-			closeAccessLog();
-			try {
-				connectionPool.close();
-			} catch (Exception e) {
-				logger.error("Failed to close connectionPool::", e);
-			}
-			ByteData.clean(true, null);
-		} finally {
-			logger.info("Server stopped!");
-			System.exit(0);
+			clientSelector.close();
+		} catch (IOException e) {
+			logger.error("Failed in clientSelector close :: ", e);
 		}
-	}
-
-	void closeAccessLog() {
-		if (Server.accessLog != null) {
-			try {
-				Server.accessLog.close();
-			} catch (Exception e) {
-				logger.error("Failed to close accesslog::", e);
-			}
-		}
+			
 	}
 
 	void process(final SelectionKey key) {
