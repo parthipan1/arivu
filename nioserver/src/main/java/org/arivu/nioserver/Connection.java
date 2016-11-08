@@ -182,7 +182,7 @@ final class Connection {
 		int bytesRead = 0;
 		byte EOL0 = 1;
 		try {
-			final byte[] readBuf = new byte[Configuration.defaultRequestBuffer];
+			final byte[] readBuf = ByteData.getChunkData(false);//new byte[Configuration.defaultRequestBuffer];
 			final ByteBuffer wrap = ByteBuffer.wrap(readBuf);
 			if ((bytesRead = ((SocketChannel) key.channel()).read(wrap)) > 0) {
 				EOL0 = wrap.get(wrap.position() - 1);
