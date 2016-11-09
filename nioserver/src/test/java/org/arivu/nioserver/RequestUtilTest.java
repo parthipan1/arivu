@@ -147,7 +147,7 @@ com.rjil
 			conn.req.boundary = pattern;
 			
 			for(int i=0;i<content.length;i+=splitBy){
-				conn.processMultipartInBytes(Arrays.copyOfRange(content, i, Math.min(i+splitBy, content.length)));
+				conn.processMultipartInBytes(Arrays.copyOfRange(content, i, Math.min(i+splitBy, content.length)), null, null);
 			}
 			int i = 0;
 			Map<String, MultiPart> multiParts = conn.req.getMultiParts();
