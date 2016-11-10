@@ -307,9 +307,7 @@ public class TestHttpMethods extends TestHttpMethodsMultiThreaded {
 		super.testDelete();
 	}
 
-	
 }
-
 
 final class TestApis{
 
@@ -431,7 +429,7 @@ final class TestApis{
 			@Override
 			public void handle(Request request, Response response) {
 				try {
-					response.append(new ByteData(new File("README.md")));
+					response.append(new ByteData(new File(TestHttpMethodsMultiThreaded.README_MD)));
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -448,7 +446,7 @@ final class TestApis{
 			@Override
 			public void handle(Request request, Response response) {
 				try {
-					response.append(new ByteData(new File("multiByte.txt")));
+					response.append(new ByteData(new File(TestHttpMethodsMultiThreaded.SRC_TEST_RESOURCES_MULTI_BYTE_TXT)));
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -465,7 +463,7 @@ final class TestApis{
 			@Override
 			public void handle(Request request, Response response) {
 				try {
-					response.append(new ByteData(new File("download.zip")));
+					response.append(new ByteData(new File(TestHttpMethodsMultiThreaded.DOWNLOAD_ZIP)));
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

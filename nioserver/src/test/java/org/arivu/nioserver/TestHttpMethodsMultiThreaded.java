@@ -20,6 +20,23 @@ import io.restassured.RestAssured;
 import io.restassured.http.Headers;
 
 public class TestHttpMethodsMultiThreaded {
+	private static final String TEST_RESOURCE_BASE = "."+File.separator+"src"+File.separator+"test"+File.separator+"resources"+File.separator;
+	private static final String TEST_RESOURCE_ADMIN_BASE = TEST_RESOURCE_BASE+"admin";
+
+	static final String ARIVU_NIOSERVER_ZIP = TEST_RESOURCE_BASE+"arivu.nioserver.zip";
+
+	static final String README_MD = TEST_RESOURCE_BASE+"README.md";
+
+	static final String DOWNLOAD_ZIP = TEST_RESOURCE_BASE+"download.zip";
+
+	static final String SRC_TEST_RESOURCES_ADMIN_ADMIN_CSS = TEST_RESOURCE_ADMIN_BASE+File.separator+"Admin.css";
+
+	static final String SRC_TEST_RESOURCES_ADMIN_ADMIN_HTML = TEST_RESOURCE_ADMIN_BASE+File.separator+"Admin.html";
+
+	static final String SRC_TEST_RESOURCES_LIGHTNINGLOG_JSON = TEST_RESOURCE_BASE+"lightninglog.json";
+
+	static final String SRC_TEST_RESOURCES_MULTI_BYTE_TXT = TEST_RESOURCE_BASE+"multiByte.txt";
+
 	// private static final Logger logger =
 	// LoggerFactory.getLogger(TestHttpMethods.class);
 	static final String port = "8188";
@@ -34,12 +51,12 @@ public class TestHttpMethodsMultiThreaded {
 
 	static void init(String singleThread) throws InterruptedException {
 		RestAssured.baseURI = "http://localhost:" + port;
-		System.setProperty("access.log", "./logs/access.log");
+		System.setProperty("access.log", "."+File.separator+"logs"+File.separator+"access.log");
 		System.setProperty("singleThread", singleThread);
 		System.setProperty("port", port);
 
 		System.setProperty("adminMod", "true");
-		System.setProperty("adminLoc", "./src/test/resources/admin");
+		System.setProperty("adminLoc", TEST_RESOURCE_ADMIN_BASE);
 
 		exe.execute(new Runnable() {
 
@@ -81,7 +98,7 @@ public class TestHttpMethodsMultiThreaded {
 
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != v) {
-				fail("Filed on Get Content!");
+				fail("Failed on Get Content!");
 			}
 		}
 
@@ -97,7 +114,7 @@ public class TestHttpMethodsMultiThreaded {
 
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != v) {
-				fail("Filed on Get Content!");
+				fail("Failed on Get Content!");
 			}
 		}
 
@@ -113,7 +130,7 @@ public class TestHttpMethodsMultiThreaded {
 
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != v) {
-				fail("Filed on Get Content!");
+				fail("Failed on Get Content!");
 			}
 		}
 
@@ -124,12 +141,12 @@ public class TestHttpMethodsMultiThreaded {
 		io.restassured.response.Response response = RestAssured.given().when().get("/test/get4");
 		response.then().statusCode(200);
 		byte[] responseBodyAsByteArray = response.asByteArray();
-		File expectedFile = new File("README.md");
+		File expectedFile = new File(README_MD);
 		byte[] read = RequestUtil.read(expectedFile);
 		assertTrue(responseBodyAsByteArray.length == read.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != read[i]) {
-				fail("Filed on Get Content!");
+				fail("Failed on Get Content!");
 			}
 		}
 	}
@@ -139,12 +156,12 @@ public class TestHttpMethodsMultiThreaded {
 		io.restassured.response.Response response = RestAssured.given().when().get("/test/get5");
 		response.then().statusCode(200);
 		byte[] responseBodyAsByteArray = response.asByteArray();
-		File expectedFile = new File("multiByte.txt");
+		File expectedFile = new File(SRC_TEST_RESOURCES_MULTI_BYTE_TXT);
 		byte[] read = RequestUtil.read(expectedFile);
 		assertTrue(responseBodyAsByteArray.length == read.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != read[i]) {
-				fail("Filed on Get Content!");
+				fail("Failed on Get Content!");
 			}
 		}
 	}
@@ -154,12 +171,12 @@ public class TestHttpMethodsMultiThreaded {
 		io.restassured.response.Response response = RestAssured.given().when().get("/test/get6");
 		response.then().statusCode(200);
 		byte[] responseBodyAsByteArray = response.asByteArray();
-		File expectedFile = new File("download.zip");
+		File expectedFile = new File(DOWNLOAD_ZIP);
 		byte[] read = RequestUtil.read(expectedFile);
 		assertTrue(responseBodyAsByteArray.length == read.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != read[i]) {
-				fail("Filed on Get Content!");
+				fail("Failed on Get Content!");
 			}
 		}
 	}
@@ -216,14 +233,14 @@ public class TestHttpMethodsMultiThreaded {
 		io.restassured.response.Response response = RestAssured.given().when().get("/testproxydir/lightninglog.json");
 		response.then().statusCode(200);
 		byte[] responseBodyAsByteArray = response.asByteArray();
-		File expectedFile = new File("./src/test/resources/lightninglog.json");
+		File expectedFile = new File(SRC_TEST_RESOURCES_LIGHTNINGLOG_JSON);
 		byte[] read = RequestUtil.read(expectedFile);
 		// System.out.println("******** response ::
 		// "+responseBodyAsByteArray.length+" read :: "+read.length);
 		assertTrue(responseBodyAsByteArray.length == read.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != read[i]) {
-				fail("Filed on Get Content!");
+				fail("Failed on Get Content!");
 			}
 		}
 		Headers headers = response.getHeaders();
@@ -266,12 +283,12 @@ public class TestHttpMethodsMultiThreaded {
 		io.restassured.response.Response response = RestAssured.given().when().get("/admin");
 		response.then().statusCode(200);
 		byte[] responseBodyAsByteArray = response.asByteArray();
-		File expectedFile = new File("./src/test/resources/admin/Admin.html");
+		File expectedFile = new File(SRC_TEST_RESOURCES_ADMIN_ADMIN_HTML);
 		byte[] read = RequestUtil.read(expectedFile);
 		assertTrue(responseBodyAsByteArray.length == read.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != read[i]) {
-				fail("Filed on Get Content!");
+				fail("Failed on Get Content!");
 			}
 		}
 	}
@@ -281,12 +298,12 @@ public class TestHttpMethodsMultiThreaded {
 		io.restassured.response.Response response = RestAssured.given().when().get("/admin/Admin.html");
 		response.then().statusCode(200);
 		byte[] responseBodyAsByteArray = response.asByteArray();
-		File expectedFile = new File("./src/test/resources/admin/Admin.html");
+		File expectedFile = new File(SRC_TEST_RESOURCES_ADMIN_ADMIN_HTML);
 		byte[] read = RequestUtil.read(expectedFile);
 		assertTrue(responseBodyAsByteArray.length == read.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != read[i]) {
-				fail("Filed on Get Content!");
+				fail("Failed on Get Content!");
 			}
 		}
 	}
@@ -296,20 +313,23 @@ public class TestHttpMethodsMultiThreaded {
 		io.restassured.response.Response response = RestAssured.given().when().get("/admin/Admin.css");
 		response.then().statusCode(200);
 		byte[] responseBodyAsByteArray = response.asByteArray();
-		File expectedFile = new File("./src/test/resources/admin/Admin.css");
+		File expectedFile = new File(SRC_TEST_RESOURCES_ADMIN_ADMIN_CSS);
 		byte[] read = RequestUtil.read(expectedFile);
 		assertTrue(responseBodyAsByteArray.length == read.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != read[i]) {
-				fail("Filed on Get Content!");
+				fail("Failed on Get Content!");
 			}
 		}
 	}
 
 	@Test
 	public void testPostMultipart1() throws IOException {
-		File inputFile = new File("arivu.nioserver-1.0.1.zip");
-		File expectedFile = new File("1_arivu.nioserver-1.0.1.zip");
+		File inputFile = new File(ARIVU_NIOSERVER_ZIP);
+		File expectedFile = new File("1_arivu.nioserver.zip");
+		if (expectedFile.exists())
+			expectedFile.delete();
+		
 		io.restassured.response.Response response = RestAssured.given().multiPart(inputFile).when()
 				.post("/test/multipart");
 
@@ -319,7 +339,7 @@ public class TestHttpMethodsMultiThreaded {
 		assertTrue(responseBodyAsByteArray.length == read.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != read[i]) {
-				fail("Filed on Get Content!");
+				fail("Failed on Get Content!");
 			}
 		}
 		expectedFile.delete();
@@ -327,7 +347,7 @@ public class TestHttpMethodsMultiThreaded {
 
 	@Test
 	public void testPostMultipart2() throws IOException {
-		File inputFile = new File("arivu.nioserver-1.0.1.zip");
+		File inputFile = new File(ARIVU_NIOSERVER_ZIP);
 		io.restassured.response.Response response = RestAssured.given().multiPart(inputFile).when()
 				.post("/test/multipart1");
 
@@ -338,7 +358,7 @@ public class TestHttpMethodsMultiThreaded {
 	public void testPostMultipart3() throws IOException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;
-		File inputFile = new File("lightninglog.json");
+		File inputFile = new File(SRC_TEST_RESOURCES_LIGHTNINGLOG_JSON);
 		File expectedFile = new File("1_lightninglog.json");
 		if (expectedFile.exists())
 			expectedFile.delete();
@@ -357,7 +377,7 @@ public class TestHttpMethodsMultiThreaded {
 		assertTrue(responseBodyAsByteArray.length == read.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != read[i]) {
-				fail("Filed on Get Content!");
+				fail("Failed on Get Content!");
 			}
 		}
 		expectedFile.delete();
@@ -369,7 +389,7 @@ public class TestHttpMethodsMultiThreaded {
 	public void testPostMultipart4() throws IOException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;
-		File inputFile = new File("multiByte.txt");
+		File inputFile = new File(SRC_TEST_RESOURCES_MULTI_BYTE_TXT);
 		File expectedFile = new File("1_multiByte.txt");
 		if (expectedFile.exists())
 			expectedFile.delete();
@@ -384,7 +404,7 @@ public class TestHttpMethodsMultiThreaded {
 		assertTrue(responseBodyAsByteArray.length == read.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != read[i]) {
-				fail("Filed on Get Content!");
+				fail("Failed on Get Content!");
 			}
 		}
 		expectedFile.delete();
@@ -395,8 +415,10 @@ public class TestHttpMethodsMultiThreaded {
 	public void testPostMultipart5() throws IOException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 1024;
-		File inputFile = new File("arivu.nioserver-1.0.1.zip");
-		File expectedFile = new File("1_arivu.nioserver-1.0.1.zip");
+		File inputFile = new File(ARIVU_NIOSERVER_ZIP);
+		File expectedFile = new File("1_arivu.nioserver.zip");
+		if (expectedFile.exists())
+			expectedFile.delete();
 		io.restassured.response.Response response = RestAssured.given().multiPart(inputFile).when()
 				.post("/test/multipart");
 
@@ -406,7 +428,7 @@ public class TestHttpMethodsMultiThreaded {
 		assertTrue("Exp :: "+read.length+" but got :: "+responseBodyAsByteArray.length,responseBodyAsByteArray.length == read.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != read[i]) {
-				fail("Filed on Get Content!");
+				fail("Failed on Get Content!");
 			}
 		}
 		expectedFile.delete();
@@ -415,7 +437,7 @@ public class TestHttpMethodsMultiThreaded {
 	
 	@Test
 	public void testPostMultipart6() throws IOException {
-		File inputFile = new File("multiByte.txt");
+		File inputFile = new File(SRC_TEST_RESOURCES_MULTI_BYTE_TXT);
 		File expectedFile = new File("1_multiByte.txt");
 		if (expectedFile.exists())
 			expectedFile.delete();
@@ -430,7 +452,7 @@ public class TestHttpMethodsMultiThreaded {
 		assertTrue(responseBodyAsByteArray.length == read.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != read[i]) {
-				fail("Filed on Get Content!");
+				fail("Failed on Get Content!");
 			}
 		}
 		expectedFile.delete();
@@ -502,7 +524,7 @@ public class TestHttpMethodsMultiThreaded {
 	public void testPost3() throws IOException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;
-		final byte[] body = RequestUtil.read(new File("lightninglog.json"));
+		final byte[] body = RequestUtil.read(new File(SRC_TEST_RESOURCES_LIGHTNINGLOG_JSON));
 		io.restassured.response.Response response = RestAssured.given().header("Expires", "-1")
 				.header("Cache-Control", "private, max-age=0").header("Server", "clownhggashgasserver")
 				.header("X-XSS-Protection", "1; mode=block").
@@ -517,7 +539,7 @@ public class TestHttpMethodsMultiThreaded {
 				responseBodyAsByteArray.length == body.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != body[i]) {
-				fail("Filed on Get Content!");
+				fail("Failed on Get Content!");
 			}
 		}
 
@@ -544,7 +566,7 @@ public class TestHttpMethodsMultiThreaded {
 	public void testPost4() throws IOException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;
-		final byte[] body = RequestUtil.read(new File("lightninglog.json"));
+		final byte[] body = RequestUtil.read(new File(SRC_TEST_RESOURCES_LIGHTNINGLOG_JSON));
 		io.restassured.response.Response response = RestAssured.given().header("Expires", "-1")
 				.header("Cache-Control", "private, max-age=0").header("Server", "clownhggashgasserver")
 				.header("X-XSS-Protection", "1; mode=block").header("Connection", "close").body(body).when()
@@ -558,7 +580,7 @@ public class TestHttpMethodsMultiThreaded {
 	public void testPost5() throws IOException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;
-		final byte[] body = RequestUtil.read(new File("multiByte.txt"));
+		final byte[] body = RequestUtil.read(new File(SRC_TEST_RESOURCES_MULTI_BYTE_TXT));
 		io.restassured.response.Response response = RestAssured.given().header("Expires", "-1")
 				.header("Cache-Control", "private, max-age=0").header("Server", "clownhggashgasserver")
 				.header("X-XSS-Protection", "1; mode=block").
@@ -573,7 +595,7 @@ public class TestHttpMethodsMultiThreaded {
 				responseBodyAsByteArray.length == body.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != body[i]) {
-				fail("Filed on Get Content!");
+				fail("Failed on Get Content!");
 			}
 		}
 
@@ -600,7 +622,7 @@ public class TestHttpMethodsMultiThreaded {
 	public void testPost6() throws IOException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;
-		final byte[] body = RequestUtil.read(new File("multiByte.txt"));
+		final byte[] body = RequestUtil.read(new File(SRC_TEST_RESOURCES_MULTI_BYTE_TXT));
 		io.restassured.response.Response response = RestAssured.given().body(body).header("Expires", "-1")
 				.header("Cache-Control", "private, max-age=0").header("Server", "clownhggashgasserver")
 				.header("X-XSS-Protection", "1; mode=block").header("Connection", "close").when().post("/test/post101");
@@ -629,7 +651,7 @@ public class TestHttpMethodsMultiThreaded {
 				responseBodyAsByteArray.length == body.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != body[i]) {
-				fail("Filed on Get Content!");
+				fail("Failed on Get Content!");
 			}
 		}
 
@@ -640,7 +662,7 @@ public class TestHttpMethodsMultiThreaded {
 	public void testPost8() throws IOException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;
-		final byte[] body = RequestUtil.read(new File("multiByte.txt"));
+		final byte[] body = RequestUtil.read(new File(SRC_TEST_RESOURCES_MULTI_BYTE_TXT));
 		io.restassured.response.Response response = RestAssured.given().body(body).header("Expires", "-1")
 				.header("Cache-Control", "private, max-age=0").header("Server", "clownhggashgasserver")
 				.header("X-XSS-Protection", "1; mode=block").header("Connection", "close").when().post("/test/postexp");
@@ -714,7 +736,7 @@ public class TestHttpMethodsMultiThreaded {
 	public void testPut3() throws IOException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;
-		final byte[] body = RequestUtil.read(new File("lightninglog.json"));
+		final byte[] body = RequestUtil.read(new File(SRC_TEST_RESOURCES_LIGHTNINGLOG_JSON));
 		io.restassured.response.Response response = RestAssured.given().header("Expires", "-1")
 				.header("Cache-Control", "private, max-age=0").header("Server", "clownhggashgasserver")
 				.header("X-XSS-Protection", "1; mode=block").
@@ -729,7 +751,7 @@ public class TestHttpMethodsMultiThreaded {
 				responseBodyAsByteArray.length == body.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != body[i]) {
-				fail("Filed on Get Content!");
+				fail("Failed on Get Content!");
 			}
 		}
 
@@ -756,7 +778,7 @@ public class TestHttpMethodsMultiThreaded {
 	public void testPut4() throws IOException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;
-		final byte[] body = RequestUtil.read(new File("lightninglog.json"));
+		final byte[] body = RequestUtil.read(new File(SRC_TEST_RESOURCES_LIGHTNINGLOG_JSON));
 		io.restassured.response.Response response = RestAssured.given().header("Expires", "-1")
 				.header("Cache-Control", "private, max-age=0").header("Server", "clownhggashgasserver")
 				.header("X-XSS-Protection", "1; mode=block").header("Connection", "close").body(body).when()
@@ -770,7 +792,7 @@ public class TestHttpMethodsMultiThreaded {
 	public void testPut5() throws IOException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;
-		final byte[] body = RequestUtil.read(new File("multiByte.txt"));
+		final byte[] body = RequestUtil.read(new File(SRC_TEST_RESOURCES_MULTI_BYTE_TXT));
 		io.restassured.response.Response response = RestAssured.given().header("Expires", "-1")
 				.header("Cache-Control", "private, max-age=0").header("Server", "clownhggashgasserver")
 				.header("X-XSS-Protection", "1; mode=block").
@@ -785,7 +807,7 @@ public class TestHttpMethodsMultiThreaded {
 				responseBodyAsByteArray.length == body.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != body[i]) {
-				fail("Filed on Get Content!");
+				fail("Failed on Get Content!");
 			}
 		}
 
@@ -812,7 +834,7 @@ public class TestHttpMethodsMultiThreaded {
 	public void testPut6() throws IOException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;
-		final byte[] body = RequestUtil.read(new File("multiByte.txt"));
+		final byte[] body = RequestUtil.read(new File(SRC_TEST_RESOURCES_MULTI_BYTE_TXT));
 		io.restassured.response.Response response = RestAssured.given().body(body).header("Expires", "-1")
 				.header("Cache-Control", "private, max-age=0").header("Server", "clownhggashgasserver")
 				.header("X-XSS-Protection", "1; mode=block").header("Connection", "close").when().put("/test/put101");
@@ -825,8 +847,7 @@ public class TestHttpMethodsMultiThreaded {
 	public void testPut7() throws IOException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;
-		final byte[] body = "".getBytes();// RequestUtil.read(new
-											// File("multiByte.txt"));
+		final byte[] body = "".getBytes();
 		io.restassured.response.Response response = RestAssured.given().body(body).header("Expires", "-1")
 				.header("Cache-Control", "private, max-age=0").header("Server", "clownhggashgasserver")
 				.header("X-XSS-Protection", "1; mode=block").header("Connection", "close").when().put("/test/put1");
@@ -834,14 +855,12 @@ public class TestHttpMethodsMultiThreaded {
 		response.then().statusCode(200);
 
 		byte[] responseBodyAsByteArray = response.asByteArray();
-		// System.out.println("\n\n*****************************%\n"+new
-		// String(responseBodyAsByteArray)+"\n%*****************************\n\n");
 		assertTrue(
 				"failed in multibyte contentlen check exp::" + body.length + " got::" + responseBodyAsByteArray.length,
 				responseBodyAsByteArray.length == body.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != body[i]) {
-				fail("Filed on Get Content!");
+				fail("Failed on Get Content!");
 			}
 		}
 
@@ -852,7 +871,7 @@ public class TestHttpMethodsMultiThreaded {
 	public void testPut8() throws IOException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;
-		final byte[] body = RequestUtil.read(new File("multiByte.txt"));
+		final byte[] body = RequestUtil.read(new File(SRC_TEST_RESOURCES_MULTI_BYTE_TXT));
 		io.restassured.response.Response response = RestAssured.given().body(body).header("Expires", "-1")
 				.header("Cache-Control", "private, max-age=0").header("Server", "clownhggashgasserver")
 				.header("X-XSS-Protection", "1; mode=block").header("Connection", "close").when().put("/test/putexp");

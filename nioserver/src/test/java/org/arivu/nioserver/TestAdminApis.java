@@ -210,7 +210,7 @@ public class TestAdminApis {
 		
 		assertFalse(appDir.exists());
 		
-		File inputFile = new File("download.zip");
+		File inputFile = new File(TestHttpMethodsMultiThreaded.DOWNLOAD_ZIP);
 		io.restassured.response.Response response = RestAssured.given().
 					multiPart("dist",inputFile).
 					multiPart("name","download").

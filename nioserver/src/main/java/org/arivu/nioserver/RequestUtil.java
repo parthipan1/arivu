@@ -59,8 +59,8 @@ public final class RequestUtil {
 
 	private static final String CONTENT_DISPOSITION = "Content-Disposition";
 
-	private static final String MULTIPART_FORM_DATA = "multipart/form-data";
-
+	private static final String[] MULTIPART_CTS = {"multipart/form-data","multipart/mixed","multipart/related","multipart/alternative","multipart/digest","multipart/parallel"};
+	
 	private static final String CONTENT_TYPE = "Content-Type";
 
 	private static final String SCANPACKAGES_TOKEN = "scanpackages";
@@ -240,13 +240,16 @@ public final class RequestUtil {
 		List<Object> list = requestImpl.getHeaders().get(CONTENT_TYPE);
 		if (!NullCheck.isNullOrEmpty(list)) {
 			contType = list.get(0).toString();
-		}
-		if (!NullCheck.isNullOrEmpty(contType)) {
-			requestImpl.isMultipart = contType.contains(MULTIPART_FORM_DATA);
-			if (requestImpl.isMultipart) {
-				contType = Utils.replaceAll(contType, MULTIPART_FORM_DATA + ";", "").trim();
-				contType = Utils.replaceAll(contType, BOUNDARY + "=", "").trim();
-				requestImpl.boundary = ("--" + contType).getBytes();
+			if (!NullCheck.isNullOrEmpty(contType)) {
+				for(String mpfd:MULTIPART_CTS){
+					requestImpl.isMultipart = contType.contains(mpfd);
+					if( requestImpl.isMultipart ){
+						contType = Utils.replaceAll(contType, mpfd + ";", "").trim();
+						contType = Utils.replaceAll(contType, BOUNDARY + "=", "").trim();
+						requestImpl.boundary = ("--" + contType).getBytes();
+						break;
+					}
+				}
 			}
 		}
 

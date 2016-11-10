@@ -674,8 +674,9 @@ com.rjil
 	@Test
 	public void testUnZipAndDel() throws IOException, InterruptedException {
 		File dd = new File("testUnzip/download");
+		RequestUtil.del(dd);
 		assertFalse(dd.exists());
-		RequestUtil.unzip(new File("testUnzip/download/libs"), new File("download.zip"));
+		RequestUtil.unzip(new File("testUnzip/download/libs"), new File(TestHttpMethodsMultiThreaded.DOWNLOAD_ZIP));
 		assertTrue(dd.exists());
 		
 		try (FileOutputStream fileOutputStream = new FileOutputStream(new File("testUnzip/download/scanpackages"), true);
