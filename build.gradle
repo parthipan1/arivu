@@ -418,11 +418,11 @@ project(':nioserver'){
 	compile project(':resourcepool')
 	compile project(':datastructure')
 	compile project(':utils')
+    compile project(':lightninglog')
 	
 	testCompile group: 'io.rest-assured', name: 'rest-assured', version: '3.0.1'
 	testCompile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.2'
 	    
-    runtime project(':lightninglog')
   }
   test {
     forkEvery = 1
