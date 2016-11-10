@@ -115,16 +115,15 @@ final class Connection {
 		pool.put(this);
 	}
 
-	boolean processMultipartInBytes(final byte[] content, final SelectionKey key, final Selector clientSelector) {
-		boolean process = false;
+	ReadState processMultipartInBytes(final byte[] content) {
 		do {
 			int searchPattern = RequestUtil.searchPattern(content, req.boundary, state.start, state.mi);
-			logger.debug(" m searchPattern :: {} start :: {} mi {} content.length {} req.boundary.length {} ",
-					searchPattern, state.start, state.mi, content.length, req.boundary.length);
+//			logger.debug(" m searchPattern :: {} start :: {} mi {} content.length {} req.boundary.length {} ",
+//					searchPattern, state.start, state.mi, content.length, req.boundary.length);
 			if (searchPattern == RequestUtil.BYTE_SEARCH_DEFLT) {
-				logger.debug(" d searchPattern :: {} start :: {} mi {}", searchPattern, state.start, state.mi);
-				// System.out.println(" searchPattern :: "+searchPattern+" start
-				// :: "+state.start+" mi "+state.mi);
+//				logger.debug(" d searchPattern :: {} start :: {} mi {}", searchPattern, state.start, state.mi);
+				logger.debug(" d searchPattern :: {} start :: {} mi {} content.length {} req.boundary.length {} ",
+						searchPattern, state.start, state.mi, content.length, req.boundary.length);
 				if (state.rollOver != null) {
 					req.body.add(state.rollOver);
 				}
@@ -132,13 +131,9 @@ final class Connection {
 				state.setValue(0, 0, null);
 				break;
 			} else if (searchPattern < 0) {
-				// logger.debug(" searchPattern :: "+searchPattern+"
-				// content("+content.length+") :: "+new String(content)+"
-				// boundary("+req.boundary.length+") :: "+new
-				// String(req.boundary));
-				// System.out.println(" searchPattern :: "+searchPattern+" start
-				// :: "+state.start+" mi "+state.mi+" ");//+new String(content)
-				logger.debug(" l searchPattern :: {} start :: {} mi {}", searchPattern, state.start, state.mi);
+//				logger.debug(" l searchPattern :: {} start :: {} mi {}", searchPattern, state.start, state.mi);
+				logger.debug(" l searchPattern :: {} start :: {} mi {} content.length {} req.boundary.length {} ",
+						searchPattern, state.start, state.mi, content.length, req.boundary.length);
 				if (state.mi > 0 && state.rollOver != null) {
 					req.body.add(state.rollOver);
 				}
@@ -146,9 +141,9 @@ final class Connection {
 						ByteData.wrap(Arrays.copyOfRange(content, state.start, content.length)));
 				break;
 			} else if (searchPattern >= 0) {
-				// System.err.println(" searchPattern :: "+searchPattern+" start
-				// :: "+state.start+" mi "+state.mi);
-				logger.debug(" e searchPattern :: {} start :: {} mi {}", searchPattern, state.start, state.mi);
+//				logger.debug(" e searchPattern :: {} start :: {} mi {}", searchPattern, state.start, state.mi);
+				logger.debug(" e searchPattern :: {} start :: {} mi {} content.length {} req.boundary.length {} ",
+						searchPattern, state.start, state.mi, content.length, req.boundary.length);
 				if (searchPattern <= req.boundary.length) {
 					if (state.rollOver != null) {
 						byte[] prevContent = state.rollOver.array();
@@ -167,36 +162,12 @@ final class Connection {
 				req.body.clear();
 				state.setValue(searchPattern + 1, 0, null);
 				if (searchPattern + 5 == content.length) {
-					// logger.debug(" e searchPattern :: %{}% EOL reached", new
-					// String(content) );
-					process = true;
-					break;
+					return ReadState.proc;
 				}
-				// } else if (searchPattern == 0) {
-				//// System.err.println(" searchPattern :: "+searchPattern+"
-				// start :: "+state.start+" mi "+state.mi);
-				// logger.debug(" searchPattern :: {} start :: {} mi {}",
-				// searchPattern, state.start, state.mi );
-				// if (state.mi > 0) {
-				// if (state.rollOver != null){
-				// byte[] prevContent = state.rollOver.array();
-				// req.body.add(ByteData.wrap(Arrays.copyOfRange(prevContent, 0,
-				// prevContent.length - state.mi)));
-				// }
-				// addMultiPart();
-				// req.body.clear();
-				// state.setValue(req.boundary.length + 1 - state.mi, 0, null);
-				// } else {
-				// addMultiPart();
-				// req.body.clear();
-				// state.setValue(req.boundary.length + 1 , 0, null);
-				// }
 			}
 		} while (true);
 
-//		if (process)
-//			processRequest(key, clientSelector);
-		return process;
+		return ReadState.nextMp;
 	}
 
 	void addMultiPart() {
@@ -207,103 +178,96 @@ final class Connection {
 
 	void read(final SelectionKey key, final Selector clientSelector) throws IOException {
 		int bytesRead = 0;
-		byte EOL0 = 1;
+		byte endOfLineByte = 1;
 		try {
 			final byte[] readBuf = new byte[Configuration.defaultRequestBuffer];// ByteData.getChunkData(false);//
 			final ByteBuffer wrap = ByteBuffer.wrap(readBuf);
 			if ((bytesRead = ((SocketChannel) key.channel()).read(wrap)) > 0) {
-				EOL0 = wrap.get(wrap.position() - 1);
-				// logger.info("\n ******%"+new String(readBuf)+"%******\n");
-				// logger.debug("Message read {}",new String(readBuf));
+				endOfLineByte = wrap.get(wrap.position() - 1);
 				if (req == null) {
-					final int headerIndex = RequestUtil.getHeaderIndex(readBuf, RequestUtil.BYTE_13,
-							RequestUtil.BYTE_10, 2);
-//					boolean processReq = false;
-					if (headerIndex == -1) {
-						// if (bytesRead == readBuf.length) {
-						state.in.add(ByteData.wrap(readBuf));
-						// } else {
-						// state.in.add(ByteData.wrap(Arrays.copyOfRange(readBuf,
-						// 0, bytesRead)));
-						// }
-					} else {
-						state.in.add(ByteData.wrap(Arrays.copyOfRange(readBuf, 0, headerIndex - 1)));
-						req = RequestUtil.parseRequest(state.in);
-						route = RequestUtil.getMatchingRoute(Configuration.routes, req.getUri(), req.getHttpMethod(),
-								false);
-						state.in.clear();
-						logger.debug(" Got Request :: {}", req);
-						setContentLen();
-						// System.out.println(" Got Request :: "+req+" route
-						// "+route);
-						if (route == Configuration.defaultRoute) {
-							if (req.getHttpMethod() == HttpMethod.GET || req.getHttpMethod() == HttpMethod.HEAD
-									|| req.getHttpMethod() == HttpMethod.TRACE) {
-								processRequest(key, clientSelector);
-								return;
-							} else if (state.contentLen > 0) {
-								state.is404Res = true;
-							} else {
-								processRequest(key, clientSelector);
-								return;
-							}
-						}
-						if (state.contentLen == 0l) {
-							processRequest(key, clientSelector);
-							return;
-						} else if (headerIndex + 1 < bytesRead) {
-							if (req.isMultipart) {
-								state.start = req.boundary.length + 1;
-								state.onceFlag = true;
-//								processReq = 
-								processMultipartInBytes(Arrays.copyOfRange(readBuf, headerIndex + 1, bytesRead), key,
-										clientSelector);
-							} else {
-								req.body.add(ByteData.wrap(Arrays.copyOfRange(readBuf, headerIndex + 1, bytesRead)));
-							}
-							state.contentLen -= (bytesRead - headerIndex - 1);
-						}
-
-						// System.out.println(" Got Request :: "+req+"\n total
-						// "+(total+headerIndex)+"");
-					}
-					nextRead(key, bytesRead, EOL0, clientSelector);
+					readRawRequestHeader(key, clientSelector, bytesRead, readBuf).andProcessIt(this, key,
+							bytesRead, endOfLineByte, readBuf, clientSelector);
 				} else {
-					state.contentLen -= bytesRead;
-					if (!state.is404Res) {
-						if (req.isMultipart) {
-							if (!state.onceFlag) {
-								state.onceFlag = true;
-								state.start = req.boundary.length + 1;
-							}
-							boolean processReq = false;
-							if (bytesRead == readBuf.length) {
-								processReq = processMultipartInBytes(readBuf, key, clientSelector);
-							} else {
-								processReq = processMultipartInBytes(Arrays.copyOfRange(readBuf, 0, bytesRead), key, clientSelector);
-							}
-							if(processReq){
-								processRequest(key, clientSelector);
-							}else{
-								nextMultiPartNext(key, bytesRead, EOL0, readBuf, clientSelector);
-							}
-						} else {
-							if (bytesRead == readBuf.length) {
-								req.body.add(ByteData.wrap(readBuf));
-							} else {
-								req.body.add(ByteData.wrap(Arrays.copyOfRange(readBuf, 0, bytesRead)));
-							}
-							nextRead(key, bytesRead, EOL0, clientSelector);
-						}
-					} else {
-						nextRead(key, bytesRead, EOL0, clientSelector);
-					}
+					readRawRequestBody(key, clientSelector, bytesRead, readBuf).andProcessIt(this, key, bytesRead,
+							endOfLineByte, readBuf, clientSelector);
 				}
 			}
 		} catch (Throwable e) {
 			logger.error("Failed in read :: ", e);
 			finish(key);
 		}
+	}
+
+	byte[] getBytesRead(final int bytesRead,
+			final byte[] readBuf){
+		if (bytesRead == readBuf.length) {
+			return readBuf;
+		}else{
+			return Arrays.copyOfRange(readBuf, 0, bytesRead);
+		}
+	}
+	
+	ReadState readRawRequestBody(final SelectionKey key, final Selector clientSelector, final int bytesRead,
+			final byte[] readBuf) {
+		state.contentLen -= bytesRead;
+		if (!state.is404Res) {
+			if (req.isMultipart) {
+				if (!state.onceFlag) {
+					state.onceFlag = true;
+					state.start = req.boundary.length + 1;
+				}
+				return processMultipartInBytes(getBytesRead( bytesRead, readBuf));
+			} else {
+				req.body.add(ByteData.wrap(getBytesRead( bytesRead, readBuf)));
+			}
+		}
+		return ReadState.next;
+	}
+
+	ReadState readRawRequestHeader(final SelectionKey key, final Selector clientSelector, final int bytesRead, final byte[] readBuf) {
+		final int headerIndex = RequestUtil.getHeaderIndex(readBuf, RequestUtil.BYTE_13,
+				RequestUtil.BYTE_10, 2);
+		if (headerIndex == -1) {
+			state.in.add(ByteData.wrap(readBuf));
+		} else {
+			state.in.add(ByteData.wrap(Arrays.copyOfRange(readBuf, 0, headerIndex - 1)));
+			if (parseRequestAndRoute()) {
+				return ReadState.proc;
+			}
+			if (state.contentLen == 0l) {
+				return ReadState.proc;
+			} else if (headerIndex + 1 < bytesRead) {
+				state.contentLen -= (bytesRead - headerIndex - 1);
+				if (req.isMultipart) {
+					state.start = req.boundary.length + 1;
+					state.onceFlag = true;
+					return processMultipartInBytes(Arrays.copyOfRange(readBuf, headerIndex + 1, bytesRead));
+				} else {
+					req.body.add(ByteData.wrap(Arrays.copyOfRange(readBuf, headerIndex + 1, bytesRead)));
+				}
+			}
+		}
+		return ReadState.next;
+	}
+
+	boolean parseRequestAndRoute() {
+		req = RequestUtil.parseRequest(state.in);
+		route = RequestUtil.getMatchingRoute(Configuration.routes, req.getUri(), req.getHttpMethod(), false);
+		state.in.clear();
+		logger.debug(" Got Request :: {}", req);
+		setContentLen();
+		if (route == Configuration.defaultRoute) {
+			if (req.getHttpMethod() == HttpMethod.GET || req.getHttpMethod() == HttpMethod.HEAD
+					|| req.getHttpMethod() == HttpMethod.TRACE) {
+
+				return true;
+			} else if (state.contentLen > 0) {
+				state.is404Res = true;
+			} else {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	void nextMultiPartNext(final SelectionKey key, int bytesRead, byte EOL0, byte[] readBuf, Selector clientSelector) {
@@ -421,5 +385,31 @@ final class ConnectionState {
 		start = s;
 		mi = m;
 		rollOver = bb;
+	}
+}
+enum ReadState {
+	next {
+
+		@Override
+		void andProcessIt(Connection c, SelectionKey key, int bytesRead, byte EOL0, byte[] readBuf,
+				Selector clientSelector) {
+			c.nextRead(key, bytesRead, EOL0, clientSelector);
+		}
+
+	},
+	nextMp {
+
+		@Override
+		void andProcessIt(Connection c, SelectionKey key, int bytesRead, byte EOL0, byte[] readBuf,
+				Selector clientSelector) {
+			c.nextMultiPartNext(key, bytesRead, EOL0, readBuf, clientSelector);
+		}
+
+	},
+	proc;
+
+	void andProcessIt(Connection c, final SelectionKey key, int bytesRead, byte EOL0, byte[] readBuf,
+			Selector clientSelector) {
+		c.processRequest(key, clientSelector);
 	}
 }
