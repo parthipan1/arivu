@@ -400,7 +400,6 @@ project(':resourcepool'){
 dependencies {
     compile project(':datastructure')
     testCompile project(':lightninglog')
-    runtime project(':lightninglog')
   }
 }
 
@@ -421,6 +420,7 @@ project(':nioserver'){
 	compile project(':utils')
 	
 	testCompile group: 'io.rest-assured', name: 'rest-assured', version: '3.0.1'
+	testCompile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.2'
 	    
     runtime project(':lightninglog')
   }

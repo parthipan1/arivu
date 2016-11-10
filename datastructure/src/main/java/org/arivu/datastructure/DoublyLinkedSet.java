@@ -289,20 +289,32 @@ public final class DoublyLinkedSet<T> implements Aset<T> {
 		final DoublyLinkedSet<T> ref = this;
 		return new Iterator<T>() {
 			DoublyLinkedSet<T> cursor = ref.right;
-
+			DoublyLinkedSet<T> cursorr = cursor.right;
 			@Override
 			public boolean hasNext() {
 				// if(ref==null)
 				// return false;
 				// else
+				if(cursor==null) return false;
 				return !(cursor == ref);
 			}
 
 			@Override
 			public T next() {
+				if( cursor==null ){
+					cursor = cursorr;
+				}
 				T t = cursor.obj;
+				
 				cursor = cursor.right;
+				if( cursor!=null)
+					cursorr = cursor.right;
+				else
+					cursorr = null;
 				return t;
+//				T t = cursor.obj;
+//				cursor = cursor.right;
+//				return t;
 			}
 		};
 	}

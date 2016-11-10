@@ -4,6 +4,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class TestPoolsLessCnt {
@@ -62,6 +63,7 @@ public class TestPoolsLessCnt {
 	}
 	
 	@Test
+	@Ignore
 	public void test6NoPool() throws Exception {
 		final Pool<Resource> pool = new NoPool<Resource>(helper.factory, Resource.class);//
 		helper.testPool(pool, helper.nThreads, true);

@@ -317,16 +317,25 @@ public final class DoublyLinkedList<T> implements Alist<T> {
 		final DoublyLinkedList<T> ref = this;
 		return new Iterator<T>() {
 			DoublyLinkedList<T> cursor = ref.right;
-
+			DoublyLinkedList<T> cursorr = cursor.right;
 			@Override
 			public boolean hasNext() {
+				if(cursor==null) return false;
 				return !(cursor == ref);
 			}
 
 			@Override
 			public T next() {
+				if( cursor==null ){
+					cursor = cursorr;
+				}
 				T t = cursor.obj;
+				
 				cursor = cursor.right;
+				if( cursor!=null)
+					cursorr = cursor.right;
+				else
+					cursorr = null;
 				return t;
 			}
 		};
