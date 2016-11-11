@@ -40,6 +40,7 @@ public class Server {
 			closeAccessLog();
 			runAllShutdownHooks();
 			logger.info("Server stopped!");
+			System.exit(0);
 		}
 	}
 

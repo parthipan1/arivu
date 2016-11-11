@@ -195,8 +195,8 @@ final class SelectorHandler {
 		this.connectionPool.setMaxReuseCount(-1);
 		this.connectionPool.setLifeSpan(-1);
 		this.connectionPool.setIdleTimeout(30000);
-		this.exe = Executors.newCachedThreadPool();
-		this.sexe = Executors.newScheduledThreadPool(5);
+		this.exe = Executors.newFixedThreadPool( Math.max(300, Integer.parseInt(Env.getEnv("threadCnt", "300")) ) );//Executors.newCachedThreadPool();
+		this.sexe = Executors.newScheduledThreadPool(2);
 		Server.registerShutdownHook(new Runnable() {
 			
 			@Override
