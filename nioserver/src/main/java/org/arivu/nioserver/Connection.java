@@ -51,54 +51,68 @@ final class Connection {
 		startTime = 0;
 	}
 
-	void write(SelectionKey key, Selector clientSelector) throws IOException {
+	void write(final SelectionKey key, final Selector clientSelector) throws IOException {
 		logger.debug(" write  :: {} ", state.resBuff);
 		if (state.resBuff != null) {
-			try {
-				if (state.poll == null) {
-					state.poll = state.resBuff.queue.poll();
-					if (state.poll != null) {
-						state.rem = (int) state.poll.length();
-						logger.debug("{} 1 write next ByteBuff size :: {} queueSize :: {}", state.resBuff, state.rem,
-								state.resBuff.queue.size());
-					} else {
-						logger.debug("{} 2 write next ByteBuff is null! finish!", state.resBuff);
-						finish(key);
-						return;
+			if( Configuration.SINGLE_THREAD_MODE ){
+				Server.getExecutorService().execute(new Runnable() {
+					
+					@Override
+					public void run() {
+						innerWrite(key);
 					}
-				}
-
-				final int length = Math.min(Configuration.defaultChunkSize, state.rem - state.pos);
-				final SocketChannel socketChannel = (SocketChannel) key.channel();
-				final ByteBuffer wrap = ByteBuffer.wrap(state.poll.copyOfRange(state.pos, state.pos + length));
-				while (wrap.remaining() > 0) {
-					socketChannel.write(wrap);
-				}
-				logger.debug("{}  3 write bytes from  :: {}  length :: {} to :: {} size :: {}", state.resBuff,
-						state.pos, length, (state.pos + length), state.rem);
-				state.pos += length;
-				finishByteBuff(key, clientSelector);
-			} catch (Throwable e) {
-				logger.error("Failed in write req " + req + " :: ", e);
-				finish(key);
+				});
+			}else{
+				innerWrite(key);
 			}
 		}
 	}
 
-	void finishByteBuff(SelectionKey key, Selector clientSelector) throws IOException {
-		boolean empty = state.resBuff.queue.isEmpty();
-		logger.debug("{} 4 finishByteBuff! empty :: {} queueSize :: {} read :: {} size :: {}", state.resBuff, empty,
-				state.resBuff.queue.size(), state.pos, state.rem);
-		if (state.rem == state.pos) {
-			state.clearBytes();
-			if (empty) {
+	private void innerWrite(final SelectionKey key) {
+		try {
+			while( (state.poll = state.resBuff.queue.poll()) != null ){
+				state.rem = (int) state.poll.length();
+				logger.debug("{} 1 write next ByteBuff size :: {} queueSize :: {}", state.resBuff, state.rem,
+						state.resBuff.queue.size());
+				
+				while( state.rem > state.pos ){
+					final int length = Math.min(Configuration.defaultChunkSize, state.rem - state.pos);
+					final SocketChannel socketChannel = (SocketChannel) key.channel();
+					final ByteBuffer wrap = ByteBuffer.wrap(state.poll.copyOfRange(state.pos, state.pos + length));
+					while (wrap.hasRemaining()) {
+						socketChannel.write(wrap);
+					}
+					logger.debug("{}  3 write bytes from  :: {}  length :: {} to :: {} size :: {}", state.resBuff,
+							state.pos, length, (state.pos + length), state.rem);
+					state.pos += length;
+				}
+				state.clearBytes();
+			}
+			logger.debug("{} 2 write next ByteBuff is null! finish!", state.resBuff);
+			finish(key);
+		} catch (Throwable e) {
+			logger.error("Failed in write req " + req + " :: ", e);
+			try {
 				finish(key);
-				return;
+			} catch (IOException e1) {
+				logger.error("Failed in write finish req " + req + " :: ", e1);
 			}
 		}
-		key.interestOps(SelectionKey.OP_WRITE);
-		clientSelector.wakeup();
 	}
+//	void finishByteBuff(SelectionKey key, Selector clientSelector) throws IOException {
+//		boolean empty = state.resBuff.queue.isEmpty();
+//		logger.debug("{} 4 finishByteBuff! empty :: {} queueSize :: {} read :: {} size :: {}", state.resBuff, empty,
+//				state.resBuff.queue.size(), state.pos, state.rem);
+//		if (state.rem == state.pos) {
+//			state.clearBytes();
+//			if (empty) {
+//				finish(key);
+//				return;
+//			}
+//		}
+//		key.interestOps(SelectionKey.OP_WRITE);
+//		clientSelector.wakeup();
+//	}
 
 	void finish(final SelectionKey key) throws IOException {
 		SocketChannel channel = (SocketChannel) key.channel();

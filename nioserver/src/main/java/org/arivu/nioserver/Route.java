@@ -235,12 +235,28 @@ class ProxyRoute extends Route {
 		}
 	}
 
-	final void handleProxy(Request req, Response res) throws IOException {
-		int indexOf = Math.max(req.getUri().length(), req.getUriWithParams().indexOf("?")) ;
-		String queryStr = URLDecoder.decode(req.getUriWithParams().substring(indexOf),
-				RequestUtil.ENC_UTF_8);
-		String loc = this.proxy_pass + req.getUri().substring(this.uri.length()) + queryStr;
-		req.getMethod().proxy(proxyTh.get(null), loc, req, res);
+	final void handleProxy(final Request req, final Response res) throws IOException {
+		final AsynContext ctx = StaticRef.getAsynContext();
+		ctx.setAsynchronousFinish(true);
+		Server.getExecutorService().execute(new Runnable() {
+			
+			@Override
+			public void run() {
+				
+				try {
+					final int indexOf = Math.max(req.getUri().length(), req.getUriWithParams().indexOf("?")) ;
+					String queryStr = URLDecoder.decode(req.getUriWithParams().substring(indexOf),
+							RequestUtil.ENC_UTF_8);
+					String loc = proxy_pass + req.getUri().substring(uri.length()) + queryStr;
+					req.getMethod().proxy(proxyTh.get(null), loc, req, res);
+				} catch (IOException e) {
+					logger.error("Failed in route " + this + " :: ", e);
+					Configuration.exceptionHandler.handle(e);
+				}finally {
+					ctx.finish();
+				}
+			}
+		});
 	}
 
 	final void handleBrowser(Request req, Response res) throws IOException {
