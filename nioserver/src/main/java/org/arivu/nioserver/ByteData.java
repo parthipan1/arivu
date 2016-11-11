@@ -72,6 +72,7 @@ public final class ByteData {
 						if (randomAccessFile != null) {
 							e.setValue(null);
 							randomAccessFile.close();
+							value.chunkData = null;
 							logger.debug("Closing file {}", e.getKey());
 						}
 					} catch (IOException e1) {
@@ -157,7 +158,13 @@ public final class ByteData {
 			
 			final RandomAccessFileHelper rafh = getRAF(file);
 //			System.out.println(rafh.file.getAbsolutePath()+" copyOfRange from :: "+from+" to :: "+to+"  len :: "+len+" file.len :: "+rafh.file.length()+" rafh.chunkData.length :: "+rafh.chunkData.length+" Configuration.defaultChunkSize :: "+Configuration.defaultChunkSize);
-			if( len == Configuration.defaultChunkSize ){
+			if( !Configuration.SINGLE_THREAD_MODE ){
+				RandomAccessFile raf = rafh.get();
+				byte[] arr = new byte[len];
+				raf.seek(offset + from);
+				raf.readFully(arr);
+				return arr;
+			}else if( len == Configuration.defaultChunkSize ){
 				byte[] arr = getChunkData(false);
 				RandomAccessFile raf = rafh.get();
 				raf.seek(offset + from);
@@ -218,7 +225,7 @@ public final class ByteData {
 		private final File file;
 		volatile long time = 0l;
 		long lmt = 0l;
-		private final byte[] chunkData;
+		byte[] chunkData;
 		volatile boolean chunkSet = false;
 		RandomAccessFileHelper(){
 			this.file = null;
