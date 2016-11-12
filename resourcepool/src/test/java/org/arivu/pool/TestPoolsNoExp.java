@@ -4,6 +4,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class TestPoolsNoExp {
@@ -12,9 +13,9 @@ public class TestPoolsNoExp {
 	
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-		helper.maxThreadCnt = 500;
-		helper.nThreads = 1000000;
-		helper.poolSize = 375;
+//		helper.maxThreadCnt = 500;
+//		helper.nThreads = 10000;
+		helper.poolSize = 37;
 		helper.reuseCount = -1;
 		helper.lifeSpan = -1;
 		helper.setUpBeforeClass();
@@ -49,6 +50,7 @@ public class TestPoolsNoExp {
 	}
 	
 	@Test
+	@Ignore
 	public void test6NoPool() throws Exception {
 		final Pool<Resource> pool = new NoPool<Resource>(helper.factory, Resource.class);//
 		helper.testPool(pool, helper.nThreads, true);
