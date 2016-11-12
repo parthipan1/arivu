@@ -13,11 +13,11 @@ public class TestPoolsLessCnt {
 	
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-		helper.maxThreadCnt = 500;
-		helper.nThreads = 1000000;
-		helper.poolSize = 375;
-		helper.reuseCount = 2500;
-		helper.lifeSpan = 30000;
+//		helper.maxThreadCnt = 500;
+//		helper.nThreads = 10000;
+		helper.poolSize = 37;
+		helper.reuseCount = 250;
+		helper.lifeSpan = 3000;
 		helper.setUpBeforeClass();
 	}
 

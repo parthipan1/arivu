@@ -21,7 +21,7 @@ import org.arivu.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class PackageScanner {
+final class PackageScanner {
 	static final Logger logger = LoggerFactory.getLogger(PackageScanner.class);
 
 	static Collection<Route> getPaths(String name, Collection<String> packageNames) throws ClassNotFoundException, IOException {

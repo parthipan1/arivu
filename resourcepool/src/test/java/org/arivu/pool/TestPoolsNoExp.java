@@ -13,9 +13,9 @@ public class TestPoolsNoExp {
 	
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-		helper.maxThreadCnt = 500;
-		helper.nThreads = 1000000;
-		helper.poolSize = 375;
+//		helper.maxThreadCnt = 500;
+//		helper.nThreads = 10000;
+		helper.poolSize = 37;
 		helper.reuseCount = -1;
 		helper.lifeSpan = -1;
 		helper.setUpBeforeClass();

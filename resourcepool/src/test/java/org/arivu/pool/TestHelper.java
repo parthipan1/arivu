@@ -21,11 +21,11 @@ public class TestHelper {
 
 	 private static final Logger logger = LoggerFactory.getLogger(TestHelper.class);
 
-	int maxThreadCnt = 500;
-	int nThreads = 1000000;
-	int poolSize = 625;
-	int reuseCount = 2500;
-	int lifeSpan = 30000;
+	int maxThreadCnt = 50;
+	int nThreads = 100000;
+	int poolSize = 62;
+	int reuseCount = 250;
+	int lifeSpan = 3000;
 	
 	ExecutorService exe = null;
 

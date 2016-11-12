@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
  * @author P
  *
  */
-public class Server {
+public final class Server {
 	private static final Logger logger = LoggerFactory.getLogger(Server.class);
 	/**
 	 * @param args

@@ -20,11 +20,12 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-//@Ignore
+@Ignore
 public class TestPoolsSb {
 	static final Logger logger = LoggerFactory.getLogger(TestPoolsSb.class);
 	static final int nThreads = 100;
