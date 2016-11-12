@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.arivu.datastructure.DoublyLinkedList;
@@ -32,6 +33,8 @@ public class Server {
 		if (args != null && args.length > 0 && args[0].equalsIgnoreCase("stop")) {
 			RequestUtil.stopRemote();
 		} else {
+			exe = Executors.newFixedThreadPool( Math.max(300, Integer.parseInt(Env.getEnv("threadCnt", "300")) ) );//Executors.newCachedThreadPool();
+			sexe = Executors.newScheduledThreadPool( Math.max(2, Integer.parseInt(Env.getEnv("schedulerCnt", "2")) ) );
 			accessLog = Appenders.file
 					.get(Env.getEnv("access.log", ".." + File.separator + "logs" + File.separator + "access.log"));
 			InetSocketAddress sa = new InetSocketAddress(Integer.parseInt(Env.getEnv("port", "8080")));
@@ -39,6 +42,8 @@ public class Server {
 			(handler = new SelectorHandler()).handle(sa);
 			closeAccessLog();
 			runAllShutdownHooks();
+			exe.shutdownNow();
+			sexe.shutdownNow();
 			logger.info("Server stopped!");
 			System.exit(0);
 		}
@@ -55,6 +60,9 @@ public class Server {
 		Server.shutdownHooks.clear();
 	}
 
+	static ExecutorService exe;
+	static ScheduledExecutorService sexe;
+	
 	static SelectorHandler handler = null;
 
 	static Appender accessLog = null;
@@ -62,11 +70,11 @@ public class Server {
 	static final int DEFAULT_SOCKET_BACKLOG = Integer.parseInt(Env.getEnv("socket.backlog", "1024"));
 
 	public static ExecutorService getExecutorService() {
-		return handler.exe;
+		return exe;
 	}
 
 	public static ScheduledExecutorService getScheduledExecutorService() {
-		return handler.sexe;
+		return sexe;
 	}
 	
 	static final List<Runnable> shutdownHooks = new DoublyLinkedList<>();

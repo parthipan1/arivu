@@ -15,9 +15,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -42,8 +39,6 @@ final class SelectorHandler {
 	volatile boolean shutdown = false;
 	Selector clientSelector = null;
 	String beanNameStr = null;
-	final ExecutorService exe;
-	final ScheduledExecutorService sexe;
 	final ServerMXBean mxBean = new ServerMXBean() {
 
 		@Override
@@ -195,14 +190,10 @@ final class SelectorHandler {
 		this.connectionPool.setMaxReuseCount(-1);
 		this.connectionPool.setLifeSpan(-1);
 		this.connectionPool.setIdleTimeout(30000);
-		this.exe = Executors.newFixedThreadPool( Math.max(300, Integer.parseInt(Env.getEnv("threadCnt", "300")) ) );//Executors.newCachedThreadPool();
-		this.sexe = Executors.newScheduledThreadPool(2);
 		Server.registerShutdownHook(new Runnable() {
 			
 			@Override
 			public void run() {
-				exe.shutdownNow();
-				sexe.shutdownNow();
 				try {
 					connectionPool.close();
 				} catch (Exception e) {
@@ -271,7 +262,7 @@ final class SelectorHandler {
 						if (Configuration.SINGLE_THREAD_MODE) {
 							process(key);
 						} else {
-							exe.execute(new Runnable() {
+							Server.getExecutorService().execute(new Runnable() {
 								public void run() {
 									process(key);
 								}

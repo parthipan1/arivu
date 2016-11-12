@@ -31,7 +31,8 @@ public final class ByteData {
 		Server.registerShutdownHook(new Runnable() {
 			@Override
 			public void run() {
-				clean(true, null);	
+				clean(true, null);
+				mdc.close();
 			}
 		});
 	}
