@@ -371,8 +371,8 @@ final class JavaHttpMethodCall {
 	}
 
 	private void addReqHeaders(final HttpURLConnection con, Map<String, List<Object>> headers) {
-		con.setRequestProperty("User-Agent", "Java8");
-		con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
+//		con.setRequestProperty("User-Agent", "Java8");
+//		con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
 		if (!NullCheck.isNullOrEmpty(headers)) {
 			Set<Entry<String, List<Object>>> entrySet = headers.entrySet();
 			for (Entry<String, List<Object>> e : entrySet) {
