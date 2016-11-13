@@ -91,5 +91,9 @@ public interface ServerMXBean {
 	 * 
 	 */
 	void shutdown();
+	
+	int getByteCacheCnt();
+	
+	void clearByteCache();
 
 }

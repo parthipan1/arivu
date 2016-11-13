@@ -8,15 +8,16 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.Threadlocal;
 import org.arivu.datastructure.Threadlocal.Factory;
+import org.arivu.utils.NullCheck;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +26,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 public final class ByteData {
+	private static final String CHUNK_DATA_KEY = "chunk";
 	private static final Logger logger = LoggerFactory.getLogger(ByteData.class);
 
 	static{
@@ -37,7 +39,7 @@ public final class ByteData {
 		});
 	}
 	
-	private static final Threadlocal<Map<String, RandomAccessFileHelper>> mdc = new Threadlocal<Map<String, RandomAccessFileHelper>>(
+	static final Threadlocal<Map<String, RandomAccessFileHelper>> mdc = new Threadlocal<Map<String, RandomAccessFileHelper>>(
 			new Factory<Map<String, RandomAccessFileHelper>>() {
 
 				@Override
@@ -63,25 +65,36 @@ public final class ByteData {
 	}
 
 	private static void innerClose(final boolean force, final String name) {
-		Collection<Map<String, RandomAccessFileHelper>> all = mdc.getAll();
-		for (Map<String, RandomAccessFileHelper> threadValues : all) {
-			for (Entry<String, RandomAccessFileHelper> e : threadValues.entrySet()) {
-				RandomAccessFileHelper value = e.getValue();
-				if (force || (name != null && value.isExpired() && !e.getKey().equals(name))) {
-					try {
-						final RandomAccessFile randomAccessFile = value.get();
-						if (randomAccessFile != null) {
-							e.setValue(null);
-							randomAccessFile.close();
-							value.chunkData = null;
-							logger.debug("Closing file {}", e.getKey());
+		Set<Entry<Object, Map<String, RandomAccessFileHelper>>> all2 = mdc.getAll();
+		
+		for(Entry<Object, Map<String, RandomAccessFileHelper>> e1:all2){
+				Map<String, RandomAccessFileHelper> value2 = e1.getValue();
+				for (Entry<String, RandomAccessFileHelper> e : value2.entrySet()) {
+					RandomAccessFileHelper value = e.getValue();
+					if (force || (name != null && value.isExpired() && !e.getKey().equals(name))) {
+						try {
+							final RandomAccessFile randomAccessFile = value.get();
+							if (randomAccessFile != null) {
+								if( value.file != null ){
+									e.setValue(null);
+//									value2.remove(value.file.getAbsolutePath());
+//									System.out.println(" clearing "+e1.getKey()+"("+ Utils.toString(value2.keySet()) +") = "+value.file.getAbsolutePath());
+									randomAccessFile.close();
+									value.chunkData = null;
+									logger.debug("Closing file {}", e.getKey());
+								}
+							}
+						} catch (IOException e3) {
+							logger.error("Error closing file " + e.getKey(), e3);
 						}
-					} catch (IOException e1) {
-						logger.error("Error closing file " + e.getKey(), e1);
 					}
 				}
-			}
-
+				if( force && !NullCheck.isNullOrEmpty(value2) && value2.size()==1 && value2.containsKey(CHUNK_DATA_KEY) ){
+					RandomAccessFileHelper randomAccessFileHelper = value2.get(CHUNK_DATA_KEY);
+					mdc.remove(e1.getKey());
+					if(randomAccessFileHelper!=null)
+						randomAccessFileHelper.chunkData = null;
+				}
 		}
 	}
 
@@ -159,13 +172,14 @@ public final class ByteData {
 			
 			final RandomAccessFileHelper rafh = getRAF(file);
 //			System.out.println(rafh.file.getAbsolutePath()+" copyOfRange from :: "+from+" to :: "+to+"  len :: "+len+" file.len :: "+rafh.file.length()+" rafh.chunkData.length :: "+rafh.chunkData.length+" Configuration.defaultChunkSize :: "+Configuration.defaultChunkSize);
-			if( !Configuration.SINGLE_THREAD_MODE ){
-				RandomAccessFile raf = rafh.get();
-				byte[] arr = new byte[len];
-				raf.seek(offset + from);
-				raf.readFully(arr);
-				return arr;
-			}else if( len == Configuration.defaultChunkSize ){
+//			if( !Configuration.SINGLE_THREAD_MODE ){
+//				RandomAccessFile raf = rafh.get();
+//				byte[] arr = new byte[len];
+//				raf.seek(offset + from);
+//				raf.readFully(arr);
+//				return arr;
+//			}else 
+			if( len == Configuration.defaultChunkSize ){
 				byte[] arr = getChunkData(false);
 				RandomAccessFile raf = rafh.get();
 				raf.seek(offset + from);
@@ -197,10 +211,10 @@ public final class ByteData {
 	public static byte[] getChunkData(final boolean dirty) {
 		boolean first = false;
 		Map<String, RandomAccessFileHelper> map = mdc.get(null);
-		RandomAccessFileHelper randomAccessFileHelper = map.get("chunk");
+		RandomAccessFileHelper randomAccessFileHelper = map.get(CHUNK_DATA_KEY);
 		if (randomAccessFileHelper == null) {
 			randomAccessFileHelper = new RandomAccessFileHelper();
-			map.put("chunk", randomAccessFileHelper);
+			map.put(CHUNK_DATA_KEY, randomAccessFileHelper);
 			first = true;
 		}
 		

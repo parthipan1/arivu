@@ -593,3 +593,10 @@ final class TestApis{
 		}, StaticRef.getRequest(), StaticRef.getResponse());
 	}
 }
+final class ProxyTestApi{
+	
+	@Path(value="/test/proxy",httpMethod=HttpMethod.ALL) 
+	public static void testProxy(Request request,Response response) throws IOException{
+		response.append(request.getHttpMethod().name());
+	}
+}
