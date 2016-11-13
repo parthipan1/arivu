@@ -63,7 +63,43 @@ final class Connection {
 					}
 				});
 			}else{
-				innerWrite(key);
+				try {
+					if (state.poll == null) {
+						state.poll = state.resBuff.queue.poll();
+						if (state.poll != null) {
+							state.rem = (int) state.poll.length();
+							logger.debug("{} 1 write next ByteBuff size :: {} queueSize :: {}", state.resBuff, state.rem,
+									state.resBuff.queue.size());
+//						} else {
+//							logger.debug("{} 2 write next ByteBuff is null! finish!", state.resBuff);
+//							finish(key);
+//							return;
+						}
+					}
+
+					final int length = Math.min(Configuration.defaultChunkSize, state.rem - state.pos);
+					final SocketChannel socketChannel = (SocketChannel) key.channel();
+					final ByteBuffer wrap = ByteBuffer.wrap(state.poll.copyOfRange(state.pos, state.pos + length));
+					while (wrap.remaining() > 0) {
+//						if( socketChannel.isConnected() )
+							socketChannel.write(wrap);
+//						else{
+//							finish(key);
+//							return;
+//						}
+					}
+					logger.debug("{}  3 write bytes from  :: {}  length :: {} to :: {} size :: {}", state.resBuff,
+							state.pos, length, (state.pos + length), state.rem);
+					state.pos += length;
+					finishByteBuff(key, clientSelector);
+				} catch (Throwable e) {
+					logger.error("Failed in write req " + req + " :: ", e);
+					try {
+						finish(key);
+					} catch (IOException e1) {
+						logger.error("Failed in write finish req " + req + " :: ", e1);
+					}
+				}
 			}
 		}
 	}
@@ -80,7 +116,12 @@ final class Connection {
 					final SocketChannel socketChannel = (SocketChannel) key.channel();
 					final ByteBuffer wrap = ByteBuffer.wrap(state.poll.copyOfRange(state.pos, state.pos + length));
 					while (wrap.hasRemaining()) {
-						socketChannel.write(wrap);
+//						if( socketChannel.isConnected() )
+							socketChannel.write(wrap);
+//						else{
+//							finish(key);
+//							return;
+//						}
 					}
 					logger.debug("{}  3 write bytes from  :: {}  length :: {} to :: {} size :: {}", state.resBuff,
 							state.pos, length, (state.pos + length), state.rem);
@@ -99,20 +140,21 @@ final class Connection {
 			}
 		}
 	}
-//	void finishByteBuff(SelectionKey key, Selector clientSelector) throws IOException {
-//		boolean empty = state.resBuff.queue.isEmpty();
-//		logger.debug("{} 4 finishByteBuff! empty :: {} queueSize :: {} read :: {} size :: {}", state.resBuff, empty,
-//				state.resBuff.queue.size(), state.pos, state.rem);
-//		if (state.rem == state.pos) {
-//			state.clearBytes();
-//			if (empty) {
-//				finish(key);
-//				return;
-//			}
-//		}
-//		key.interestOps(SelectionKey.OP_WRITE);
-//		clientSelector.wakeup();
-//	}
+	
+	void finishByteBuff(SelectionKey key, Selector clientSelector) throws IOException {
+		boolean empty = state.resBuff.queue.isEmpty();
+		logger.debug("{} 4 finishByteBuff! empty :: {} queueSize :: {} read :: {} size :: {}", state.resBuff, empty,
+				state.resBuff.queue.size(), state.pos, state.rem);
+		if (state.rem == state.pos) {
+			state.clearBytes();
+			if (empty) {
+				finish(key);
+				return;
+			}
+		}
+		key.interestOps(SelectionKey.OP_WRITE);
+		clientSelector.wakeup();
+	}
 
 	void finish(final SelectionKey key) throws IOException {
 		SocketChannel channel = (SocketChannel) key.channel();
