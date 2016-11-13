@@ -146,7 +146,7 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 			return value;
 		}
 
-		AnEntry e = new AnEntry(key, value, binaryTree);
+		AnEntry e = new AnEntry(key, value, this);
 		Object object = binaryTree.get(e);
 		if (object != null) {
 //			@SuppressWarnings("unchecked")
@@ -177,9 +177,9 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 			} else {
 //				binaryTree.cas.lock();
 //				nc = 0;
-				if( this.nullValue!=null ){
+//				if( this.nullValue!=null ){
 					size.decrementAndGet();
-				}
+//				}
 				V value = this.nullValue;
 				this.nullValue = null;
 //				binaryTree.cas.unlock();
@@ -194,6 +194,9 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 			AnEntry e = (AnEntry) object;
 			binaryTree.remove(e.inverted);
 //			binaryTree.cas.unlock();
+			e.inverted = null;
+			e.inverse = null;
+			e.owner = null;
 			return (V) e.getValue();
 		} else {
 //			binaryTree.cas.unlock();
@@ -237,7 +240,7 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 					public void run() {
 						for (Object e : all) {
 							AnEntry e1 = (AnEntry) e;
-							e1.tree = null;
+							e1.owner = null;
 						}
 						cancelSubmit();
 						exe.shutdownNow();
@@ -289,7 +292,8 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 		for (Object e : binaryTree.getAll()) {
 			AnEntry e1 = (AnEntry) e;
 			if( e1.inverse == null )
-				entries.add(new MapEntry<K, V>((K)e1.k,(V)e1.v));
+				entries.add((java.util.Map.Entry<K, V>) e1);
+//				entries.add(new MapEntry<K, V>((K)e1.k,(V)e1.v));
 		}
 		if(nullValue!=null)
 			entries.add(new MapEntry<K, V>((K)null,(V)nullValue));
@@ -346,7 +350,7 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 		Object k = null;
 		Object v = null;
 		AnEntry inverted = null;
-		Btree tree;
+		Amap<?,?> owner;
 
 		AnEntry inverse = null;
 		AnEntry(AnEntry inverse){
@@ -359,11 +363,11 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 		 * @param v
 		 * @param tree
 		 */
-		AnEntry(Object k, Object v, Btree tree) {
+		AnEntry(Object k, Object v, Amap<?,?> owner) {
 			super();
 			this.k = k;
 			this.v = v;
-			this.tree = tree;
+			this.owner = owner;
 		}
 
 		@Override
@@ -379,20 +383,12 @@ public final class Amap<K, V> implements Map<K, V>, Serializable {
 		@Override
 		public Object setValue(Object value) {
 			Object v1 = this.v;
-			if (value == null && tree != null) {
-				tree.remove(AnEntry.this);
-				
-				if( inverted != null )
-					tree.remove(inverted);
-				
+			if (value == null && owner != null) {
+				owner.remove(k);
+			}else if (value != null && owner != null && inverted != null ) {
+				owner.binaryTree.remove(inverted);
 				this.v = value;
-				tree=null;
-			}else if (value != null && tree != null && inverted != null ) {
-				tree.remove(inverted);
-				
-				this.v = value;
-				
-				tree.add(inverted);
+				owner.binaryTree.add(inverted);
 			}else{
 				this.v = value;
 			}

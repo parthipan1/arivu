@@ -161,6 +161,16 @@ final class SelectorHandler {
 			return null;
 		}
 
+		@Override
+		public int getByteCacheCnt() {
+			return ByteData.mdc.size();
+		}
+
+		@Override
+		public void clearByteCache() {
+			ByteData.clean(true, null);
+		}
+
 	};
 
 	final Pool<Connection> connectionPool = new ConcurrentPool<Connection>(new PoolFactory<Connection>() {
