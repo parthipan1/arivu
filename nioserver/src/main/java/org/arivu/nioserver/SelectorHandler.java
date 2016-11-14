@@ -3,15 +3,23 @@
  */
 package org.arivu.nioserver;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.nio.channels.spi.SelectorProvider;
+import java.security.KeyStore;
+import java.security.SecureRandom;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
 
 import org.arivu.pool.ConcurrentPool;
 import org.arivu.pool.Pool;
@@ -29,7 +37,6 @@ final class SelectorHandler {
 
 	volatile boolean shutdown = false;
 	Selector clientSelector = null;
-	
 
 	final Pool<Connection> connectionPool = new ConcurrentPool<Connection>(new PoolFactory<Connection>() {
 
@@ -71,12 +78,29 @@ final class SelectorHandler {
 		});
 	}
 
-	void start(int port) throws IOException {
-		InetSocketAddress sa = new InetSocketAddress(port);
-		logger.info("Server started at " + sa);
-		clientSelector = Selector.open();
+	void start(final int port, final boolean ssl) throws Exception {
+		SSLContext sslContext = null;
+		if(ssl){
+			String keyStorePath = "keystore.jks";
+			String keyStorePassword = "parthipan";
+			
+			KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+			KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+			keyStore.load(new FileInputStream(keyStorePath), keyStorePassword.toCharArray());
+			keyManagerFactory.init(keyStore, keyStorePassword.toCharArray());
+			
+			sslContext = SSLContext.getInstance("TLS");
+			sslContext.init(keyManagerFactory.getKeyManagers(), null, new SecureRandom());
+			
+			clientSelector = SelectorProvider.provider().openSelector();
+		}else{
+			clientSelector = Selector.open();
+		}
+		
 		ServerSocketChannel ssc = ServerSocketChannel.open();
 		ssc.configureBlocking(false);
+		InetSocketAddress sa = new InetSocketAddress(port);
+		logger.info("Server started at " + sa);
 		ssc.socket().bind(sa, Server.DEFAULT_SOCKET_BACKLOG);
 		ssc.socket().setSoTimeout(Integer.parseInt(Env.getEnv("socket.timeout", "0")));
 		ssc.register(clientSelector, SelectionKey.OP_ACCEPT);
@@ -92,10 +116,29 @@ final class SelectorHandler {
 					if (!key.isValid()) {
 						continue;
 					} else if (key.isAcceptable()) {
-						SocketChannel clientSocket = ssc.accept();
-						clientSocket.configureBlocking(false);
-						SelectionKey key1 = clientSocket.register(clientSelector, SelectionKey.OP_READ);
-						key1.attach(connectionPool.get(null).assign());
+						if(ssl){
+							SocketChannel clientSocket = ((ServerSocketChannel) key.channel()).accept();
+					        clientSocket.configureBlocking(false);
+
+					        SSLEngine engine = sslContext.createSSLEngine();
+					        engine.setUseClientMode(false);
+					        engine.beginHandshake();
+
+					        Connection sllConn = (Connection) connectionPool.get(null).assign(ssl);
+					        if (sllConn.doHandshake(clientSocket, engine)) {
+					        	SelectionKey key1 = clientSocket.register(clientSelector, SelectionKey.OP_READ);
+					        	key1.attach(sllConn);
+					        } else {
+					        	clientSocket.close();
+					        	connectionPool.put(sllConn);
+					            logger.debug("SSLConnection closed due to handshake failure.");
+					        }
+						}else{
+							SocketChannel clientSocket = ssc.accept();
+							clientSocket.configureBlocking(false);
+							SelectionKey key1 = clientSocket.register(clientSelector, SelectionKey.OP_READ);
+							key1.attach(connectionPool.get(null).assign(ssl));
+						}
 					} else {
 						key.interestOps(0);
 						if (Configuration.SINGLE_THREAD_MODE) {

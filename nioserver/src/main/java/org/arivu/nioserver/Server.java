@@ -173,13 +173,15 @@ public final class Server {
 	 * @throws InterruptedException
 	 * @throws IOException
 	 */
-	public static void main(String[] args) throws InterruptedException, IOException {
+	public static void main(String[] args) {
 		if (args != null && args.length > 0 && args[0].equalsIgnoreCase("stop")) {
 			RequestUtil.stopRemote();
 		} else {
-			beforeStart();
 			try {
-				(handler = new SelectorHandler()).start(Integer.parseInt(Env.getEnv("port", Server.DEFAULT_PORT)));
+				beforeStart();
+				(handler = new SelectorHandler()).start(Integer.parseInt(Env.getEnv("port", Server.DEFAULT_PORT)), Boolean.parseBoolean(Env.getEnv("ssl", "false")));
+			} catch (Throwable e) {
+				e.printStackTrace();
 			} finally {
 				afterStop();
 			}
@@ -196,13 +198,13 @@ public final class Server {
 	}
 
 	
-	private static final Thread systemShutdownHook = new Thread(new Runnable() {
-		
-		@Override
-		public void run() {
-			afterStop();
-		}
-	});
+//	private static final Thread systemShutdownHook = new Thread(new Runnable() {
+//		
+//		@Override
+//		public void run() {
+//			afterStop();
+//		}
+//	});
 	
 	private static void beforeStart() throws IOException {
 		exe = Executors.newFixedThreadPool( Math.max(300, Integer.parseInt(Env.getEnv("threadCnt", "300")) ) );
@@ -210,7 +212,7 @@ public final class Server {
 		accessLog = Appenders.file
 				.get(Env.getEnv("access.log", ".." + File.separator + "logs" + File.separator + "access.log"));
 		registerMXBean();
-		Runtime.getRuntime().addShutdownHook(systemShutdownHook);
+//		Runtime.getRuntime().addShutdownHook(systemShutdownHook);
 	}
 
 	static void runAllShutdownHooks() {
@@ -296,7 +298,7 @@ public final class Server {
 	}
 
 	static void stop() {
-		Runtime.getRuntime().removeShutdownHook(systemShutdownHook);
+//		Runtime.getRuntime().removeShutdownHook(systemShutdownHook);
 		handler.close();
 	}
 	
