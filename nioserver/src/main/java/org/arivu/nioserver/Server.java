@@ -5,16 +5,23 @@ package org.arivu.nioserver;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetSocketAddress;
+import java.lang.management.ManagementFactory;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 
 import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.log.Appender;
 import org.arivu.log.appender.Appenders;
 import org.arivu.utils.Env;
+import org.arivu.utils.NullCheck;
+import org.arivu.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +30,144 @@ import org.slf4j.LoggerFactory;
  *
  */
 public final class Server {
+	public static final String DEFAULT_PORT = "8080";
+
 	private static final Logger logger = LoggerFactory.getLogger(Server.class);
+	
+	static final ServerMXBean mxBean = new ServerMXBean() {
+
+		@Override
+		public void shutdown() {
+			stop();
+		}
+
+		@Override
+		public String[] getAllRoute() {
+			Collection<Route> rts = Configuration.routes;
+
+			String[] ret = new String[rts.size()];
+			int i = 0;
+			for (Route rt : rts) {
+				if (rt.active)
+					ret[i++] = rt.uri + " " + rt.httpMethod;
+			}
+
+			return ret;
+		}
+
+		@Override
+		public void removeRoute(String route) {
+			Route route2 = getRoute(route);
+			if (route2 != null) {
+				route2.disable();
+			}
+		}
+
+		Route getRoute(String route) {
+			if (NullCheck.isNullOrEmpty(route))
+				return null;
+			Collection<Route> rts = Configuration.routes;
+			for (Route rt : rts) {
+				if ((rt.uri + " " + rt.httpMethod).equals(route))
+					return rt;
+			}
+			return null;
+		}
+
+		@Override
+		public void addProxyRoute(String name, String method, String location, String proxyPass, String dir) {
+			RequestUtil.addProxyRouteRuntime(name, method, location, proxyPass, dir, Configuration.routes, null);
+		}
+
+		@Override
+		public void removeRouteHeader(String route, String header) {
+			Route route2 = getRoute(route);
+			if (route2 != null && !NullCheck.isNullOrEmpty(route2.headers)) {
+				route2.headers.remove(header);
+			}
+		}
+
+		@Override
+		public void addRouteHeader(String route, String header, String value) {
+			Route route2 = getRoute(route);
+			if (route2 != null && !NullCheck.isNullOrEmpty(route2.headers)) {
+				List<Object> list = route2.headers.get(header);
+				if (list == null) {
+					list = new DoublyLinkedList<Object>();
+					route2.headers.put(header, list);
+				}
+				list.add(value);
+			}
+		}
+
+		@Override
+		public int getRequestBufferSize() {
+			return Configuration.defaultRequestBuffer;
+		}
+
+		@Override
+		public void setRequestBufferSize(int size) {
+			Configuration.defaultRequestBuffer = Math.max(1024, size);
+		}
+
+		@Override
+		public int getResponseChunkSize() {
+			return Configuration.defaultChunkSize;
+		}
+
+		@Override
+		public void setResponseChunkSize(int size) {
+			Configuration.defaultChunkSize = Math.max(1024, size);
+		}
+
+		@Override
+		public void scanPackage(String packageName) throws Exception {
+			if (!NullCheck.isNullOrEmpty(packageName)) {
+				PackageScanner.getPaths(Configuration.routes, packageName, "System");
+			}
+		}
+
+		@Override
+		public void removeResponseHeader(String header) {
+			Configuration.defaultResponseHeader.remove(header);
+		}
+
+		@Override
+		public void addResponseHeader(String header, String value) {
+			List<Object> list = Configuration.defaultResponseHeader.get(header);
+			if (list == null) {
+				list = new DoublyLinkedList<Object>();
+				Configuration.defaultResponseHeader.put(header, list);
+			}
+			list.add(value);
+		}
+
+		@Override
+		public String getResponseHeader() {
+			Map<String, List<Object>> defaultresponseheader = Configuration.defaultResponseHeader;
+			return Utils.toString(defaultresponseheader);
+		}
+
+		@Override
+		public String getRouteResponseHeader(String route) {
+			Route route2 = getRoute(route);
+			if (route2 != null)
+				return Utils.toString(route2.headers);
+			return null;
+		}
+
+		@Override
+		public int getByteCacheCnt() {
+			return ByteData.mdc.size();
+		}
+
+		@Override
+		public void clearByteCache() {
+			ByteData.clean(true, null);
+		}
+
+	};
+	
 	/**
 	 * @param args
 	 * @throws InterruptedException
@@ -33,20 +177,40 @@ public final class Server {
 		if (args != null && args.length > 0 && args[0].equalsIgnoreCase("stop")) {
 			RequestUtil.stopRemote();
 		} else {
-			exe = Executors.newFixedThreadPool( Math.max(300, Integer.parseInt(Env.getEnv("threadCnt", "300")) ) );//Executors.newCachedThreadPool();
-			sexe = Executors.newScheduledThreadPool( Math.max(2, Integer.parseInt(Env.getEnv("schedulerCnt", "2")) ) );
-			accessLog = Appenders.file
-					.get(Env.getEnv("access.log", ".." + File.separator + "logs" + File.separator + "access.log"));
-			InetSocketAddress sa = new InetSocketAddress(Integer.parseInt(Env.getEnv("port", "8080")));
-			logger.info("Server started at " + sa);
-			(handler = new SelectorHandler()).handle(sa);
-			closeAccessLog();
-			runAllShutdownHooks();
-			exe.shutdownNow();
-			sexe.shutdownNow();
-			logger.info("Server stopped!");
-			System.exit(0);
+			beforeStart();
+			try {
+				(handler = new SelectorHandler()).start(Integer.parseInt(Env.getEnv("port", Server.DEFAULT_PORT)));
+			} finally {
+				afterStop();
+			}
 		}
+	}
+
+	private static void afterStop() {
+		closeAccessLog();
+		runAllShutdownHooks();
+		exe.shutdownNow();
+		sexe.shutdownNow();
+		logger.info("Server stopped!");
+		System.exit(0);
+	}
+
+	
+	private static final Thread systemShutdownHook = new Thread(new Runnable() {
+		
+		@Override
+		public void run() {
+			afterStop();
+		}
+	});
+	
+	private static void beforeStart() throws IOException {
+		exe = Executors.newFixedThreadPool( Math.max(300, Integer.parseInt(Env.getEnv("threadCnt", "300")) ) );
+		sexe = Executors.newScheduledThreadPool( Math.max(2, Integer.parseInt(Env.getEnv("schedulerCnt", "2")) ) );
+		accessLog = Appenders.file
+				.get(Env.getEnv("access.log", ".." + File.separator + "logs" + File.separator + "access.log"));
+		registerMXBean();
+		Runtime.getRuntime().addShutdownHook(systemShutdownHook);
 	}
 
 	static void runAllShutdownHooks() {
@@ -90,6 +254,37 @@ public final class Server {
 		};
 	}
 	
+	private static String beanNameStr = null;
+	private static void registerMXBean() {
+		try {
+			MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+			beanNameStr = "org.arivu.niosever:type=" + Server.class.getSimpleName() + "."
+					+ Integer.parseInt(Env.getEnv("port", DEFAULT_PORT));
+			mbs.registerMBean(mxBean, new ObjectName(beanNameStr));
+			logger.info(" Jmx bean beanName {} registered!", beanNameStr);
+			registerShutdownHook(new Runnable() {
+				
+				@Override
+				public void run() {
+					unregisterMXBean();	
+				}
+			});
+		} catch (Exception e) {
+			logger.error("Failed with Error::", e);
+		}
+	}
+
+	private static 	void unregisterMXBean() {
+		if (beanNameStr != null) {
+			try {
+				ManagementFactory.getPlatformMBeanServer().unregisterMBean(new ObjectName(beanNameStr));
+				logger.info("Unregister Jmx bean {}", beanNameStr);
+			} catch (Exception e) {
+				logger.error("Failed with Error::", e);
+			}
+		}
+	}
+
 	private static void closeAccessLog() {
 		if (Server.accessLog != null) {
 			try {
@@ -100,7 +295,8 @@ public final class Server {
 		}
 	}
 
-	public static void stop() {
+	static void stop() {
+		Runtime.getRuntime().removeShutdownHook(systemShutdownHook);
 		handler.close();
 	}
 	

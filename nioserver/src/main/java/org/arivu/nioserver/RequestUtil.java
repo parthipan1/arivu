@@ -566,7 +566,7 @@ public final class RequestUtil {
 
 	static void stopRemote() {
 		String url = DEFAULT_PROTOCOL + "://" + Env.getEnv("host", "localhost") + ":"
-				+ Integer.parseInt(Env.getEnv("port", "8080")) + Configuration.stopUri;
+				+ Integer.parseInt(Env.getEnv("port", Server.DEFAULT_PORT)) + Configuration.stopUri;
 		BufferedReader in = null;
 		try {
 			final HttpURLConnection con = (HttpURLConnection) new URL(url).openConnection();
