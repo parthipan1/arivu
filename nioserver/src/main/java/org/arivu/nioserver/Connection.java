@@ -317,6 +317,9 @@ final class Connection {
 					return processMultipartInBytes(Arrays.copyOfRange(readBuf, headerIndex + 1, bytesRead));
 				} else {
 					req.body.add(ByteData.wrap(Arrays.copyOfRange(readBuf, headerIndex + 1, bytesRead)));
+					if (state.contentLen < 0l) {
+						return ReadState.proc;
+					}
 				}
 			}
 		}
@@ -424,7 +427,7 @@ final class Connection {
 	
 	void readSsl(SelectionKey key, Selector clientSelector) throws IOException {
 		SocketChannel socketChannel = (SocketChannel) key.channel();
-		logger.debug("About to read from a client...");
+//		logger.debug("About to read from a client...");
 
 		peerNetData.clear();
 		int bytesRead = socketChannel.read(peerNetData);
@@ -436,14 +439,15 @@ final class Connection {
 				switch (result.getStatus()) {
 				case OK:
 					peerAppData.flip();
-					byte[] array = peerAppData.array();
-					logger.debug("OK from client bytesRead {} msg {} array.length {} ",bytesRead,new String(array),array.length);
-					byte endOfLineByte = array[bytesRead-1];//peerAppData.get(peerAppData.position() - 1);
+					final byte[] array = peerAppData.array();
+					final int bytesRemaining = peerAppData.remaining();
+					logger.debug("readSsl bytesRead {} bytesRemaining {} contentLn {} array.length {} ",bytesRead,bytesRemaining,state.contentLen,array.length);
+					byte endOfLineByte = array[bytesRemaining-1];//peerAppData.get(peerAppData.position() - 1);
 					if (req == null) {
-						readRawRequestHeader(key, clientSelector, bytesRead, array).andProcessIt(this, key,
-								bytesRead, endOfLineByte, array, clientSelector);
+						readRawRequestHeader(key, clientSelector, bytesRemaining, array).andProcessIt(this, key,
+								bytesRemaining, endOfLineByte, array, clientSelector);
 					} else {
-						readRawRequestBody(key, clientSelector, bytesRead, array).andProcessIt(this, key, bytesRead,
+						readRawRequestBody(key, clientSelector, bytesRemaining, array).andProcessIt(this, key, bytesRemaining,
 								endOfLineByte, array, clientSelector);
 					}
 					break;
@@ -454,9 +458,9 @@ final class Connection {
 					peerNetData = handleBufferUnderflow(peerNetData);
 					break;
 				case CLOSED:
-					logger.debug("Client wants to close connection...");
+//					logger.debug("Client wants to close connection...");
 					closeConnection(key);
-					logger.debug("Goodbye client!");
+//					logger.debug("Goodbye client!");
 					return;
 				default:
 					throw new IllegalStateException("Invalid SSL status: " + result.getStatus());
@@ -472,7 +476,7 @@ final class Connection {
 	void writeSsl(SelectionKey key, Selector clientSelector) throws IOException {
 
 		SocketChannel socketChannel = (SocketChannel) key.channel();
-		logger.debug("About to write to a client...");
+//		logger.debug("About to write to a client...");
 
 		if (state.poll == null) {
 			state.poll = state.resBuff.queue.poll();
@@ -499,7 +503,7 @@ final class Connection {
 				while (myNetData.hasRemaining()) {
 					socketChannel.write(myNetData);
 				}
-				logger.debug("Message sent to the client: " + "Thanks");
+//				logger.debug("Message sent to the client: " + "Thanks");
 				break;
 			case BUFFER_OVERFLOW:
 				myNetData = enlargePacketBuffer(myNetData);
@@ -520,7 +524,7 @@ final class Connection {
 	boolean doHandshake(SocketChannel socketChannel, SSLEngine engine) throws IOException {
 
 		this.engine = engine;
-		logger.debug("About to do handshake...");
+//		logger.debug("About to do handshake...");
 
 		SSLEngineResult result;
 		HandshakeStatus handshakeStatus;

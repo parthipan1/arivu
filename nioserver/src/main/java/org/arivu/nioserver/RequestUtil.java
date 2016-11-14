@@ -565,7 +565,11 @@ public final class RequestUtil {
 	}
 
 	static void stopRemote() {
-		String url = DEFAULT_PROTOCOL + "://" + Env.getEnv("host", "localhost") + ":"
+		
+		boolean parseBoolean = Boolean.parseBoolean(Env.getEnv("ssl", "false"));
+		String s = "";
+		if(parseBoolean) s = "s";
+		String url = DEFAULT_PROTOCOL + s + "://" + Env.getEnv("host", "localhost") + ":"
 				+ Integer.parseInt(Env.getEnv("port", Server.DEFAULT_PORT)) + Configuration.stopUri;
 		BufferedReader in = null;
 		try {
