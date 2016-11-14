@@ -81,15 +81,15 @@ final class SelectorHandler {
 	void start(final int port, final boolean ssl) throws Exception {
 		SSLContext sslContext = null;
 		if(ssl){
-			String keyStorePath = "keystore.jks";
-			String keyStorePassword = "parthipan";
+			String keyStorePath = Env.getEnv("ssl.ksfile", "keystore.jks");
+			String keyStorePassword = Env.getEnv("ssl.pass", "parthipan");
 			
 			KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
 			KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
 			keyStore.load(new FileInputStream(keyStorePath), keyStorePassword.toCharArray());
 			keyManagerFactory.init(keyStore, keyStorePassword.toCharArray());
 			
-			sslContext = SSLContext.getInstance("TLS");
+			sslContext = SSLContext.getInstance( Env.getEnv("ssl.protocol", "TLS") );
 			sslContext.init(keyManagerFactory.getKeyManagers(), null, new SecureRandom());
 			
 			clientSelector = SelectorProvider.provider().openSelector();
