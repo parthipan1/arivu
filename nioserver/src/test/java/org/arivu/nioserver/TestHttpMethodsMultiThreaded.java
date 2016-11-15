@@ -47,14 +47,12 @@ public class TestHttpMethodsMultiThreaded {
 			public void run() {
 				try {
 					Server.main(null);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
+				} catch (Exception e) {
 					e.printStackTrace();
 				}
 			}
 		});
-		Thread.sleep(100);
+		Thread.sleep(1000);
 	}
 
 	@AfterClass

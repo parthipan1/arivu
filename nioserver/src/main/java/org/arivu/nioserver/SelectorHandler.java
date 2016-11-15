@@ -3,29 +3,33 @@
  */
 package org.arivu.nioserver;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.Collection;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
 
-import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.pool.ConcurrentPool;
 import org.arivu.pool.Pool;
 import org.arivu.pool.PoolFactory;
 import org.arivu.utils.Env;
-import org.arivu.utils.NullCheck;
-import org.arivu.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,140 +42,6 @@ final class SelectorHandler {
 
 	volatile boolean shutdown = false;
 	Selector clientSelector = null;
-	String beanNameStr = null;
-	final ServerMXBean mxBean = new ServerMXBean() {
-
-		@Override
-		public void shutdown() {
-			close();
-		}
-
-		@Override
-		public String[] getAllRoute() {
-			Collection<Route> rts = Configuration.routes;
-
-			String[] ret = new String[rts.size()];
-			int i = 0;
-			for (Route rt : rts) {
-				if (rt.active)
-					ret[i++] = rt.uri + " " + rt.httpMethod;
-			}
-
-			return ret;
-		}
-
-		@Override
-		public void removeRoute(String route) {
-			Route route2 = getRoute(route);
-			if (route2 != null) {
-				route2.disable();
-			}
-		}
-
-		Route getRoute(String route) {
-			if (NullCheck.isNullOrEmpty(route))
-				return null;
-			Collection<Route> rts = Configuration.routes;
-			for (Route rt : rts) {
-				if ((rt.uri + " " + rt.httpMethod).equals(route))
-					return rt;
-			}
-			return null;
-		}
-
-		@Override
-		public void addProxyRoute(String name, String method, String location, String proxyPass, String dir) {
-			RequestUtil.addProxyRouteRuntime(name, method, location, proxyPass, dir, Configuration.routes, null);
-		}
-
-		@Override
-		public void removeRouteHeader(String route, String header) {
-			Route route2 = getRoute(route);
-			if (route2 != null && !NullCheck.isNullOrEmpty(route2.headers)) {
-				route2.headers.remove(header);
-			}
-		}
-
-		@Override
-		public void addRouteHeader(String route, String header, String value) {
-			Route route2 = getRoute(route);
-			if (route2 != null && !NullCheck.isNullOrEmpty(route2.headers)) {
-				List<Object> list = route2.headers.get(header);
-				if (list == null) {
-					list = new DoublyLinkedList<Object>();
-					route2.headers.put(header, list);
-				}
-				list.add(value);
-			}
-		}
-
-		@Override
-		public int getRequestBufferSize() {
-			return Configuration.defaultRequestBuffer;
-		}
-
-		@Override
-		public void setRequestBufferSize(int size) {
-			Configuration.defaultRequestBuffer = Math.max(1024, size);
-		}
-
-		@Override
-		public int getResponseChunkSize() {
-			return Configuration.defaultChunkSize;
-		}
-
-		@Override
-		public void setResponseChunkSize(int size) {
-			Configuration.defaultChunkSize = Math.max(1024, size);
-		}
-
-		@Override
-		public void scanPackage(String packageName) throws Exception {
-			if (!NullCheck.isNullOrEmpty(packageName)) {
-				PackageScanner.getPaths(Configuration.routes, packageName, "System");
-			}
-		}
-
-		@Override
-		public void removeResponseHeader(String header) {
-			Configuration.defaultResponseHeader.remove(header);
-		}
-
-		@Override
-		public void addResponseHeader(String header, String value) {
-			List<Object> list = Configuration.defaultResponseHeader.get(header);
-			if (list == null) {
-				list = new DoublyLinkedList<Object>();
-				Configuration.defaultResponseHeader.put(header, list);
-			}
-			list.add(value);
-		}
-
-		@Override
-		public String getResponseHeader() {
-			Map<String, List<Object>> defaultresponseheader = Configuration.defaultResponseHeader;
-			return Utils.toString(defaultresponseheader);
-		}
-
-		@Override
-		public String getRouteResponseHeader(String route) {
-			Route route2 = getRoute(route);
-			if (route2 != null)
-				return Utils.toString(route2.headers);
-			return null;
-		}
-
-		@Override
-		public int getByteCacheCnt() {
-			return ByteData.mdc.size();
-		}
-
-		@Override
-		public void clearByteCache() {
-			ByteData.clean(true, null);
-		}
-
-	};
 
 	final Pool<Connection> connectionPool = new ConcurrentPool<Connection>(new PoolFactory<Connection>() {
 
@@ -213,41 +83,14 @@ final class SelectorHandler {
 		});
 	}
 
-	void registerMXBean() {
-		try {
-			MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
-			beanNameStr = "org.arivu.niosever:type=" + Server.class.getSimpleName() + "."
-					+ Integer.parseInt(Env.getEnv("port", "8080"));
-			mbs.registerMBean(mxBean, new ObjectName(beanNameStr));
-			logger.info(" Jmx bean beanName {} registered!", beanNameStr);
-			Server.registerShutdownHook(new Runnable() {
-				
-				@Override
-				public void run() {
-					unregisterMXBean();	
-				}
-			});
-		} catch (Exception e) {
-			logger.error("Failed with Error::", e);
-		}
-	}
-
-	void unregisterMXBean() {
-		if (beanNameStr != null) {
-			try {
-				ManagementFactory.getPlatformMBeanServer().unregisterMBean(new ObjectName(beanNameStr));
-				logger.info("Unregister Jmx bean {}", beanNameStr);
-			} catch (Exception e) {
-				logger.error("Failed with Error::", e);
-			}
-		}
-	}
-
-	void handle(InetSocketAddress sa) throws IOException {
-		registerMXBean();
+	void start(final int port, final boolean ssl) throws Exception {
+		SSLContext sslContext = getSSLContext(ssl);
+		
 		clientSelector = Selector.open();
 		ServerSocketChannel ssc = ServerSocketChannel.open();
 		ssc.configureBlocking(false);
+		InetSocketAddress sa = new InetSocketAddress(port);
+		logger.info("Server started at " + sa);
 		ssc.socket().bind(sa, Server.DEFAULT_SOCKET_BACKLOG);
 		ssc.socket().setSoTimeout(Integer.parseInt(Env.getEnv("socket.timeout", "0")));
 		ssc.register(clientSelector, SelectionKey.OP_ACCEPT);
@@ -263,10 +106,29 @@ final class SelectorHandler {
 					if (!key.isValid()) {
 						continue;
 					} else if (key.isAcceptable()) {
-						SocketChannel clientSocket = ssc.accept();
-						clientSocket.configureBlocking(false);
-						SelectionKey key1 = clientSocket.register(clientSelector, SelectionKey.OP_READ);
-						key1.attach(connectionPool.get(null).assign());
+						if(ssl){
+							SocketChannel clientSocket = ((ServerSocketChannel) key.channel()).accept();
+					        clientSocket.configureBlocking(false);
+
+					        SSLEngine engine = sslContext.createSSLEngine();
+					        engine.setUseClientMode(false);
+					        engine.beginHandshake();
+
+					        Connection sllConn = (Connection) connectionPool.get(null).assign(ssl);
+					        if (sllConn.doHandshake(clientSocket, engine)) {
+					        	SelectionKey key1 = clientSocket.register(clientSelector, SelectionKey.OP_READ);
+					        	key1.attach(sllConn);
+					        } else {
+					        	clientSocket.close();
+					        	connectionPool.put(sllConn);
+					            logger.debug("SSLConnection closed due to handshake failure.");
+					        }
+						}else{
+							SocketChannel clientSocket = ssc.accept();
+							clientSocket.configureBlocking(false);
+							SelectionKey key1 = clientSocket.register(clientSelector, SelectionKey.OP_READ);
+							key1.attach(connectionPool.get(null).assign(ssl));
+						}
 					} else {
 						key.interestOps(0);
 						if (Configuration.SINGLE_THREAD_MODE) {
@@ -285,6 +147,24 @@ final class SelectorHandler {
 			}
 		}
 		
+	}
+
+	private SSLContext getSSLContext(final boolean ssl) throws NoSuchAlgorithmException, KeyStoreException, IOException,
+			CertificateException, FileNotFoundException, UnrecoverableKeyException, KeyManagementException {
+		SSLContext sslContext = null;
+		if(ssl){
+			String keyStorePath = Env.getEnv("ssl.ksfile", "keystore.jks");
+			String keyStorePassword = Env.getEnv("ssl.pass", "parthipan");
+			
+			KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+			KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+			keyStore.load(new FileInputStream(keyStorePath), keyStorePassword.toCharArray());
+			keyManagerFactory.init(keyStore, keyStorePassword.toCharArray());
+			
+			sslContext = SSLContext.getInstance( Env.getEnv("ssl.protocol", "TLSv1.2") );
+			sslContext.init(keyManagerFactory.getKeyManagers(), null, new SecureRandom());
+		}
+		return sslContext;
 	}
 
 	void close() {

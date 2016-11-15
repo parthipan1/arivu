@@ -123,7 +123,7 @@ final class Admin {
 		}
 
 		String convert = RequestUtil.convert(request.getBody());
-		logger.debug("disable/enable route json -> {}", convert);
+		logger.debug("disable/enable route json -> %{}%", convert);
 		Map<String, Object> fromJson = new Ason().fromJson(convert);
 		if (!NullCheck.isNullOrEmpty(fromJson)) {
 			Object uriObj = fromJson.get("uri");
