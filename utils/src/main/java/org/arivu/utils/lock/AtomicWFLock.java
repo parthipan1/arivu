@@ -5,7 +5,6 @@ package org.arivu.utils.lock;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
@@ -15,6 +14,7 @@ import sun.misc.Unsafe;
  * @author P
  *
  */
+@SuppressWarnings("restriction")
 public final class AtomicWFLock implements Lock {
 
 	final LinkedReference<CountDownLatch> waits = new LinkedReference<CountDownLatch>();
