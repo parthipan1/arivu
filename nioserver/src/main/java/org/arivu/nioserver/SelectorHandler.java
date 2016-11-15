@@ -4,15 +4,20 @@
 package org.arivu.nioserver;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.nio.channels.spi.SelectorProvider;
+import java.security.KeyManagementException;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -79,24 +84,9 @@ final class SelectorHandler {
 	}
 
 	void start(final int port, final boolean ssl) throws Exception {
-		SSLContext sslContext = null;
-		if(ssl){
-			String keyStorePath = Env.getEnv("ssl.ksfile", "keystore.jks");
-			String keyStorePassword = Env.getEnv("ssl.pass", "parthipan");
-			
-			KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-			KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-			keyStore.load(new FileInputStream(keyStorePath), keyStorePassword.toCharArray());
-			keyManagerFactory.init(keyStore, keyStorePassword.toCharArray());
-			
-			sslContext = SSLContext.getInstance( Env.getEnv("ssl.protocol", "TLS") );
-			sslContext.init(keyManagerFactory.getKeyManagers(), null, new SecureRandom());
-			
-			clientSelector = SelectorProvider.provider().openSelector();
-		}else{
-			clientSelector = Selector.open();
-		}
+		SSLContext sslContext = getSSLContext(ssl);
 		
+		clientSelector = Selector.open();
 		ServerSocketChannel ssc = ServerSocketChannel.open();
 		ssc.configureBlocking(false);
 		InetSocketAddress sa = new InetSocketAddress(port);
@@ -157,6 +147,24 @@ final class SelectorHandler {
 			}
 		}
 		
+	}
+
+	private SSLContext getSSLContext(final boolean ssl) throws NoSuchAlgorithmException, KeyStoreException, IOException,
+			CertificateException, FileNotFoundException, UnrecoverableKeyException, KeyManagementException {
+		SSLContext sslContext = null;
+		if(ssl){
+			String keyStorePath = Env.getEnv("ssl.ksfile", "keystore.jks");
+			String keyStorePassword = Env.getEnv("ssl.pass", "parthipan");
+			
+			KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+			KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+			keyStore.load(new FileInputStream(keyStorePath), keyStorePassword.toCharArray());
+			keyManagerFactory.init(keyStore, keyStorePassword.toCharArray());
+			
+			sslContext = SSLContext.getInstance( Env.getEnv("ssl.protocol", "TLSv1.2") );
+			sslContext.init(keyManagerFactory.getKeyManagers(), null, new SecureRandom());
+		}
+		return sslContext;
 	}
 
 	void close() {

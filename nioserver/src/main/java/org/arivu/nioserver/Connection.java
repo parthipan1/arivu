@@ -49,6 +49,13 @@ final class Connection {
 	RequestImpl req = null;
 	Route route = null;
 	boolean ssl = false;
+	ByteBuffer myAppData;
+	ByteBuffer myNetData;
+	ByteBuffer peerAppData;
+	ByteBuffer peerNetData;
+	SSLEngine engine;
+	int appBufferSize = 0;
+	
 	Connection assign(boolean ssl) {
 		this.ssl = ssl;
 		startTime = System.currentTimeMillis();
@@ -60,6 +67,14 @@ final class Connection {
 		req = null;
 		route = null;
 		startTime = 0;
+		
+		ssl = true;
+		myAppData = null;
+		myNetData = null;
+		peerAppData = null;
+		peerNetData = null;
+		engine = null;
+		appBufferSize = 0;
 	}
 	 
 	void read(SelectionKey key, Selector clientSelector) throws IOException {
@@ -417,14 +432,6 @@ final class Connection {
 		}
 	}
 
-
-	ByteBuffer myAppData;
-	ByteBuffer myNetData;
-	ByteBuffer peerAppData;
-	ByteBuffer peerNetData;
-	SSLEngine engine;
-	int appBufferSize = 0;
-	
 	void readSsl(SelectionKey key, Selector clientSelector) throws IOException {
 		SocketChannel socketChannel = (SocketChannel) key.channel();
 //		logger.debug("About to read from a client...");
@@ -441,7 +448,7 @@ final class Connection {
 					peerAppData.flip();
 					final byte[] array = peerAppData.array();
 					final int bytesRemaining = peerAppData.remaining();
-					logger.debug("readSsl bytesRead {} bytesRemaining {} contentLn {} array.length {} ",bytesRead,bytesRemaining,state.contentLen,array.length);
+					logger.debug("readSsl {} bytesRead {} bytesRemaining {} contentLn {} array.length {} ",this,bytesRead,bytesRemaining,state.contentLen,array.length);
 					byte endOfLineByte = array[bytesRemaining-1];//peerAppData.get(peerAppData.position() - 1);
 					if (req == null) {
 						readRawRequestHeader(key, clientSelector, bytesRemaining, array).andProcessIt(this, key,
