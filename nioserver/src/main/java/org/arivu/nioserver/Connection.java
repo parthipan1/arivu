@@ -551,9 +551,9 @@ final class Connection {
 		// Here we initialize these two local buffers
 		// to be used for the handshake, while keeping client's buffers at the
 		// same size.
-		int appBufferSize = session.getApplicationBufferSize();
-		ByteBuffer myAppData = ByteBuffer.allocate(appBufferSize);
-		ByteBuffer peerAppData = ByteBuffer.allocate(appBufferSize);
+//		int appBufferSize = session.getApplicationBufferSize();
+//		ByteBuffer myAppData = ByteBuffer.allocate(appBufferSize);
+//		ByteBuffer peerAppData = ByteBuffer.allocate(appBufferSize);
 		myNetData.clear();
 		peerNetData.clear();
 
