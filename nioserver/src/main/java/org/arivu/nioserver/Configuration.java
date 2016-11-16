@@ -1,6 +1,7 @@
 package org.arivu.nioserver;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -91,10 +92,14 @@ final class Configuration {
 		if (!NullCheck.isNullOrEmpty(proxies)) {
 			for (Entry<String, Object> e : proxies.entrySet()) {
 				Map<String, Object> proxy = (Map<String, Object>) e.getValue();
-				RequestUtil.addProxyRouteRuntime(e.getKey(), Ason.getStr(proxy, "httpMethod", "ALL"),
-						Ason.getStr(proxy, "location", null), Ason.getStr(proxy, "proxy_pass", null),
-						Ason.getStr(proxy, "dir", null), routes,
-						RequestUtil.transform((Map<String, Object>) Ason.getObj(proxy, "header", null)));
+				try {
+					RequestUtil.addProxyRouteRuntime(e.getKey(), Ason.getStr(proxy, "httpMethod", "ALL"),
+							Ason.getStr(proxy, "location", null), Ason.getStr(proxy, "proxy_pass", null),
+							Ason.getStr(proxy, "dir", null), routes,
+							RequestUtil.transform((Map<String, Object>) Ason.getObj(proxy, "header", null)));
+				} catch (IOException e1) {
+					logger.error("Failed to add Route :: ", e);
+				}
 			}
 		}
 		try {

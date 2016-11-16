@@ -104,7 +104,7 @@ public class TestAdminApis {
 				activeCnt++;
 		}
 		
-		String postBody = "{\"uri\":\"/uri1\",\"name\":\"name1\",\"loc\":\"loc1\",\"type\":\"browser\"}";
+		String postBody = "{\"uri\":\"/uri1\",\"name\":\"name1\",\"loc\":\".\",\"type\":\"browser\"}";
 
 		final byte[] body = postBody.getBytes();//RequestUtil.read(new File("multiByte.txt"));
 		io.restassured.response.Response response3 = RestAssured.given().

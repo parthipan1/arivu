@@ -76,7 +76,11 @@ public final class Server {
 
 		@Override
 		public void addProxyRoute(String name, String method, String location, String proxyPass, String dir) {
-			RequestUtil.addProxyRouteRuntime(name, method, location, proxyPass, dir, Configuration.routes, null);
+			try {
+				RequestUtil.addProxyRouteRuntime(name, method, location, proxyPass, dir, Configuration.routes, null);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
 		}
 
 		@Override

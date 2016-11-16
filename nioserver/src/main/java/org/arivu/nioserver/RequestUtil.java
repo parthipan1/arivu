@@ -748,7 +748,7 @@ public final class RequestUtil {
 	}
 
 	static void addProxyRouteRuntime(String name, String method, String location, String proxyPass, String dir,
-			Collection<Route> rts, Map<String, List<Object>> header) {
+			Collection<Route> rts, Map<String, List<Object>> header) throws IOException {
 		HttpMethod httpMethod = HttpMethod.ALL;
 		if (!NullCheck.isNullOrEmpty(method))
 			httpMethod = HttpMethod.valueOf(method);
@@ -760,9 +760,9 @@ public final class RequestUtil {
 		boolean notNullProxy = !NullCheck.isNullOrEmpty(proxy_pass);
 		boolean notNullDir = !NullCheck.isNullOrEmpty(dir);
 		if (notNullProxy && notNullDir)
-			throw new IllegalArgumentException("Illegal proxy_pass(" + proxyPass + ") and dir(" + dir + ") specified!");
+			throw new IOException("Illegal proxy_pass(" + proxyPass + ") and dir(" + dir + ") specified!");
 		else if (!notNullProxy && !notNullDir)
-			throw new IllegalArgumentException("Illegal proxy_pass(" + proxyPass + ") and dir(" + dir + ") specified!");
+			throw new IOException("Illegal proxy_pass(" + proxyPass + ") and dir(" + dir + ") specified!");
 
 		if (notNullProxy) {
 			proxy_pass = Utils.replaceAll(proxy_pass, "$host", Env.getEnv("host", "localhost"));
@@ -771,6 +771,11 @@ public final class RequestUtil {
 		}
 		if (notNullDir) {
 			dir = Utils.replaceAll(dir, "$home", new File(".").getAbsolutePath());
+			File dirFile = new File(dir);
+			if( !dirFile.exists() || !dirFile.isDirectory() ){
+				throw new IOException(
+						"Invalid dir(" + dir + ") specified!");
+			}
 		}
 		ProxyRoute prp = new ProxyRoute(name, proxy_pass, dir, location, httpMethod, null, null, false, header);
 		// Collection<Route> rts = Configuration.routes;

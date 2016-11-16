@@ -302,7 +302,7 @@ com.rjil
 	}
 	
 	@Test
-	public void testGetMatchingRoute_Case1(){
+	public void testGetMatchingRoute_Case1() throws IOException{
 		System.setProperty("lightninglog.json", "./lightninglog.json");
 		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
 		System.setProperty("access.log", "./access.log");
@@ -346,7 +346,7 @@ com.rjil
 	}
 	
 	@Test
-	public void testGetMatchingRoute_Case2(){
+	public void testGetMatchingRoute_Case2() throws IOException{
 		System.setProperty("lightninglog.json", "./lightninglog.json");
 		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
 		System.setProperty("access.log", "./access.log");
@@ -390,7 +390,7 @@ com.rjil
 	}
 	
 	@Test
-	public void testGetMatchingRoute_Case3(){
+	public void testGetMatchingRoute_Case3() throws IOException{
 		System.setProperty("lightninglog.json", "./lightninglog.json");
 		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
 		System.setProperty("access.log", "./access.log");
@@ -437,7 +437,7 @@ com.rjil
 	}
 	
 	@Test
-	public void testGetMatchingRoute_Case4(){
+	public void testGetMatchingRoute_Case4() throws IOException{
 		System.setProperty("lightninglog.json", "./lightninglog.json");
 		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
 		System.setProperty("access.log", "./access.log");
@@ -484,7 +484,7 @@ com.rjil
 	}
 
 	@Test
-	public void testGetMatchingRoute_Case5(){
+	public void testGetMatchingRoute_Case5() throws IOException{
 		System.setProperty("lightninglog.json", "./lightninglog.json");
 		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
 		System.setProperty("access.log", "./access.log");
@@ -544,7 +544,7 @@ com.rjil
 	
 	
 	@Test
-	public void testGetMatchingRoute_Case6(){
+	public void testGetMatchingRoute_Case6() throws IOException{
 		System.setProperty("lightninglog.json", "./lightninglog.json");
 		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
 		System.setProperty("access.log", "./access.log");
@@ -718,7 +718,7 @@ com.rjil
 	}
 
 	@Test
-	public void testAddProxyRouteRuntime() {
+	public void testAddProxyRouteRuntime() throws IOException {
 		Collection<Route> routes = new DoublyLinkedList<Route>();
 
 		routes.add(new Route("/one", HttpMethod.ALL));
