@@ -21,7 +21,7 @@ final class Configuration {
 	private static final Logger logger = LoggerFactory.getLogger(Configuration.class);
 
 	static final String stopUri = "/__admin/shutdown";
-	static final boolean SINGLE_THREAD_MODE = Boolean.parseBoolean(Env.getEnv("singleThread", "false"));
+	static final boolean SINGLE_THREAD_MODE = Boolean.parseBoolean(Env.getEnv("singleThread", "true"));
 	static final boolean ADMIN_MODULE_ENABLED = Boolean.parseBoolean(Env.getEnv("adminMod", "false"));
 	static final String DEPLOY_LOC = Env.getEnv("deployLoc", ".." + File.separator + "apps");
 	static final String ADMIN_LOC = Env.getEnv("adminLoc", ".." + File.separator + "admin");
