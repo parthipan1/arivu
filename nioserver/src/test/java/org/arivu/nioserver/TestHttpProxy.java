@@ -13,7 +13,7 @@ public class TestHttpProxy {
 	
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-		TestHttpMethodsMultiThreaded.init("true");
+		TestHttpMethodsMultiThreaded.init("true", false);
 	}
 
 	@AfterClass

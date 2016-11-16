@@ -143,6 +143,8 @@ final class Connection {
 					}
 				}
 			}
+		}else{
+			finish(key);
 		}
 	}
 
@@ -476,7 +478,7 @@ final class Connection {
 		} else if (bytesRead < 0) {
 			logger.error("Received end of stream. Will try to close connection with client...");
 			handleEndOfStream(key);
-			logger.debug("Goodbye client!");
+//			logger.debug("Goodbye client!");
 		}
 	}
 

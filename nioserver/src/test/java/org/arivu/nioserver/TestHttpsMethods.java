@@ -9,23 +9,19 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-//@Ignore
-public class TestHttpMethodsAsync extends TestHttpMethodsMultiThreaded {
+@Ignore
+public class TestHttpsMethods extends TestHttpMethodsMultiThreaded {
 //	private static final Logger logger = LoggerFactory.getLogger(TestHttpMethods.class);
 	
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-		TestApis.runAsync = true;
-		init("false", false);
+		TestApis.runAsync = false;
+		init("true", true);
 	}
 
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception {
-		TestApis.runAsync = false;
 		TestHttpMethodsMultiThreaded.tearDownAfterClass();
-//		Server.handler.stop();
-//		exe.shutdownNow();
-//		TestApis.exe.shutdownNow();
 	}
 
 	@Before
@@ -306,5 +302,4 @@ public class TestHttpMethodsAsync extends TestHttpMethodsMultiThreaded {
 		super.testDelete();
 	}
 
-	
 }

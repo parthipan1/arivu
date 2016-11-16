@@ -46,11 +46,19 @@ public class TestHttpMethodsMultiThreaded {
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		TestApis.runAsync = false;
-		init("false");
+		init("false", false);
 	}
 
-	static void init(String singleThread) throws InterruptedException {
-		RestAssured.baseURI = "http://localhost:" + port;
+	static void init(String singleThread, boolean ssl) throws InterruptedException {
+		if(ssl){
+			RestAssured.baseURI = "https://localhost:" + port;
+			RestAssured.config.sslConfig(RestAssured.config().getSSLConfig().keyStore("./keystore.jks", "parthipan")) ;
+			System.setProperty("ssl", "true");	
+		}else{
+			RestAssured.baseURI = "http://localhost:" + port;
+		}
+		
+		
 		System.setProperty("access.log", "."+File.separator+"logs"+File.separator+"access.log");
 		System.setProperty("singleThread", singleThread);
 		System.setProperty("port", port);

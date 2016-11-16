@@ -31,6 +31,7 @@ public final class Utils {
 	}
 	
 	public static String replaceAll(String txt, String key, String value) {
+		if( key.equals(value) ) return txt;
 		int index = txt.indexOf(key);
 		while (index >= 0) {
 			txt = txt.substring(0, index) + value + txt.substring(index + key.length(), txt.length());
