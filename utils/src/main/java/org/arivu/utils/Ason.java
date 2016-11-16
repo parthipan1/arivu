@@ -147,18 +147,13 @@ public final class Ason {
 		return (Number) get(json, token, deflt);
 	}
 	
-	public static Map<String, Object> loadProperties(final String file) {
+	public static Map<String, Object> loadProperties(final String file,final ClassLoader classLoader) {
 		InputStream in = null;
 		String instr = Env.getEnv(file, null);
 		if (instr == null) {
 			in = AccessController.doPrivileged(new PrivilegedAction<InputStream>() {
 				public InputStream run() {
-					ClassLoader threadCL = Thread.currentThread().getContextClassLoader();
-					if (threadCL != null) {
-						return threadCL.getResourceAsStream(file);
-					} else {
-						return ClassLoader.getSystemResourceAsStream(file);
-					}
+					return classLoader.getResourceAsStream(file);
 				}
 			});
 		} else {
@@ -178,5 +173,14 @@ public final class Ason {
 			}
 		}
 		return null;
+	}
+	
+	public static Map<String, Object> loadProperties(final String file) {
+		ClassLoader threadCL = Thread.currentThread().getContextClassLoader();
+		if (threadCL != null) {
+			return loadProperties(file, threadCL);//threadCL.getResourceAsStream(file);
+		} else {
+			return loadProperties(file, ClassLoader.getSystemClassLoader());//ClassLoader.getSystemResourceAsStream(file);
+		}
 	}
 }
