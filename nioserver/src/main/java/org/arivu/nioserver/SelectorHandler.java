@@ -153,8 +153,8 @@ final class SelectorHandler {
 			CertificateException, FileNotFoundException, UnrecoverableKeyException, KeyManagementException {
 		SSLContext sslContext = null;
 		if(ssl){
-			String keyStorePath = Env.getEnv("ssl.ksfile", "keystore.jks");
-			String keyStorePassword = Env.getEnv("ssl.pass", "parthipan");
+			String keyStorePath = Env.getEnv("ssl.ksfile", "nioserver.jks");
+			String keyStorePassword = Env.getEnv("ssl.pass", "nioserver");
 			
 			KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
 			KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());

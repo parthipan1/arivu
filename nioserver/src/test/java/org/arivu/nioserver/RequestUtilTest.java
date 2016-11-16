@@ -737,7 +737,7 @@ com.rjil
 		}
 
 		try {
-			RequestUtil.addProxyRouteRuntime("test", null, "/uri", "proxyPass", "proxyPass", routes, null);
+			RequestUtil.addProxyRouteRuntime("test", null, "/uri", "proxyPass", "logs", routes, null);
 			fail("Failed on proxy and dir notnull validation!");
 		} catch (Throwable e) {
 			assertTrue(e != null);
@@ -787,10 +787,10 @@ com.rjil
 
 		// Dir duplicate
 		routes.clear();
-		RequestUtil.addProxyRouteRuntime("test", null, "/uri", null, "dir", routes, null);
+		RequestUtil.addProxyRouteRuntime("test", null, "/uri", null, "logs", routes, null);
 
 		try {
-			RequestUtil.addProxyRouteRuntime("test", null, "/uri", null, "dir", routes, null);
+			RequestUtil.addProxyRouteRuntime("test", null, "/uri", null, "logs", routes, null);
 			fail("Failed on Duplicate dir route validation!");
 		} catch (Throwable e) {
 			assertTrue(e != null);
@@ -798,10 +798,10 @@ com.rjil
 
 		routes.clear();
 
-		RequestUtil.addProxyRouteRuntime("test", "ALL", "/uri", null, "dir", routes, null);
+		RequestUtil.addProxyRouteRuntime("test", "ALL", "/uri", null, "logs", routes, null);
 
 		try {
-			RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", null, "dir", routes, null);
+			RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", null, "logs", routes, null);
 			fail("Failed on Duplicate dir route validation!");
 		} catch (Throwable e) {
 			assertTrue(e != null);
@@ -809,10 +809,10 @@ com.rjil
 
 		routes.clear();
 
-		RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", null, "dir", routes, null);
+		RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", null, "logs", routes, null);
 
 		try {
-			RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", null, "dir", routes, null);
+			RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", null, "logs", routes, null);
 			fail("Failed on Duplicate dir route validation!");
 		} catch (Throwable e) {
 			assertTrue(e != null);
@@ -820,10 +820,10 @@ com.rjil
 
 		routes.clear();
 
-		RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", null, "dir", routes, null);
+		RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", null, "logs", routes, null);
 
 		try {
-			RequestUtil.addProxyRouteRuntime("test", "POST", "/uri", null, "dir", routes, null);
+			RequestUtil.addProxyRouteRuntime("test", "POST", "/uri", null, "logs", routes, null);
 		} catch (Throwable e) {
 			fail("Failed on Duplicate dir route validation!");
 		}

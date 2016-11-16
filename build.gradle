@@ -467,6 +467,11 @@ project(':nioserver'){
 		into(deployDir+FS+"dist"+FS+"bin") 
 	} 
 	
+	copy{
+		from("nioserver.jks")
+		into(deployDir+FS+"dist"+FS+"bin") 
+	} 
+	
 	configurations.compile.resolve().each{ f ->
 		if( f.getAbsolutePath().contains("nioserver-admin") ){
 		}else{

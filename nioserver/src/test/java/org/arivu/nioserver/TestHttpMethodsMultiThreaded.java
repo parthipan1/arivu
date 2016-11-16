@@ -5,10 +5,13 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.security.KeyStore;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.arivu.utils.Env;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -49,10 +52,17 @@ public class TestHttpMethodsMultiThreaded {
 		init("false", false);
 	}
 
-	static void init(String singleThread, boolean ssl) throws InterruptedException {
+	static void init(String singleThread, boolean ssl) throws Exception {
 		if(ssl){
 			RestAssured.baseURI = "https://localhost:" + port;
-			RestAssured.config.sslConfig(RestAssured.config().getSSLConfig().keyStore("./keystore.jks", "parthipan")) ;
+			String keyStorePath = Env.getEnv("ssl.ksfile", "nioserver.jks");
+			String keyStorePassword = Env.getEnv("ssl.pass", "nioserver");
+			
+			KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+			keyStore.load(new FileInputStream(keyStorePath), keyStorePassword.toCharArray());
+			RestAssured.trustStore(keyStore);
+			RestAssured.useRelaxedHTTPSValidation();
+			
 			System.setProperty("ssl", "true");	
 		}else{
 			RestAssured.baseURI = "http://localhost:" + port;
@@ -361,6 +371,7 @@ public class TestHttpMethodsMultiThreaded {
 	}
 
 	@Test
+	@Ignore
 	public void testPostMultipart3() throws IOException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;

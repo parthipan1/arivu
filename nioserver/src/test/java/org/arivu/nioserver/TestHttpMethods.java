@@ -145,7 +145,7 @@ public class TestHttpMethods extends TestHttpMethodsMultiThreaded {
 		super.testPostMultipart2();
 	}
 
-	@Override @Test
+	@Override @Test @Ignore
 	public void testPostMultipart3() throws IOException {
 		
 		super.testPostMultipart3();
