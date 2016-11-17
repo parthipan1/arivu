@@ -62,6 +62,7 @@ public class TestHttpMethodsMultiThreaded {
 			keyStore.load(new FileInputStream(keyStorePath), keyStorePassword.toCharArray());
 			RestAssured.trustStore(keyStore);
 			RestAssured.useRelaxedHTTPSValidation();
+			RestAssured.config.getSSLConfig().allowAllHostnames();
 			
 			System.setProperty("ssl", "true");
 			System.setProperty("ssl.protocol", "TLSv1.2");
@@ -93,7 +94,7 @@ public class TestHttpMethodsMultiThreaded {
 
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception {
-		Server.main(new String[] { "stop" });
+		Server.stop();//.main(new String[] { "stop" });
 		exe.shutdownNow();
 	}
 

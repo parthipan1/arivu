@@ -24,7 +24,7 @@ public class TestHttpsMethods2 {
 
 	@Before
 	public void setUp() throws Exception {
-		Thread.sleep(200);
+//		Thread.sleep(200);
 	}
 	
 	static TestHttpMethodsMultiThreaded instance = new TestHttpMethodsMultiThreaded();

@@ -458,7 +458,7 @@ final class Connection {
 					int noofReads = bytesRemaining/Configuration.defaultChunkSize;
 					int tailLen = bytesRemaining%Configuration.defaultChunkSize;
 					for(int i=0;i<noofReads;i++){
-						byte[] array = ByteData.getChunkData(false);//peerAppData.array();
+						byte[] array = new byte[Configuration.defaultChunkSize];//ByteData.getChunkData(false);//peerAppData.array();
 						peerAppData.get(array);
 						readIn(key, clientSelector, array);
 					}
