@@ -14,9 +14,9 @@ import java.util.List;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
+import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
-import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 
 import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.pool.Pool;
@@ -454,17 +454,17 @@ final class Connection {
 				switch (result.getStatus()) {
 				case OK:
 					peerAppData.flip();
-					final byte[] array = peerAppData.array();
 					final int bytesRemaining = peerAppData.remaining();
-					logger.debug("readSsl {} bytesRead {} bytesRemaining {} contentLn {} array.length {} ",this,bytesRead,bytesRemaining,state.contentLen,array.length);
-					byte endOfLineByte = array[bytesRemaining-1];//peerAppData.get(peerAppData.position() - 1);
-					if (req == null) {
-						readRawRequestHeader(key, clientSelector, bytesRemaining, array).andProcessIt(this, key,
-								bytesRemaining, endOfLineByte, array, clientSelector);
-					} else {
-						readRawRequestBody(key, clientSelector, bytesRemaining, array).andProcessIt(this, key, bytesRemaining,
-								endOfLineByte, array, clientSelector);
+					int noofReads = bytesRemaining/Configuration.defaultChunkSize;
+					int tailLen = bytesRemaining%Configuration.defaultChunkSize;
+					for(int i=0;i<noofReads;i++){
+						byte[] array = ByteData.getChunkData(false);//peerAppData.array();
+						peerAppData.get(array);
+						readIn(key, clientSelector, array);
 					}
+					byte[] array = new byte[tailLen];
+					peerAppData.get(array);
+					readIn(key, clientSelector, array);
 					break;
 				case BUFFER_OVERFLOW:
 					peerAppData = enlargeSslApplicationDataBuffer(peerAppData);
@@ -486,6 +486,20 @@ final class Connection {
 		} else if (bytesRead < 0) {
 			handleSslEndOfStream(key);
 		}
+	}
+
+	private void readIn(SelectionKey key, Selector clientSelector,
+			byte[] array) {
+		logger.debug("readSsl {} contentLn {} array.length {} ",this,state.contentLen,array.length);
+		byte endOfLineByte = array[array.length-1];//peerAppData.get(peerAppData.position() - 1);
+		ReadState rstate = ReadState.next;
+		if (req == null) {
+			rstate = readRawRequestHeader(key, clientSelector, array.length, array);
+		} else {
+			rstate = readRawRequestBody(key, clientSelector, array.length, array);
+		}
+		rstate.andProcessIt(this, key,
+				array.length, endOfLineByte, array, clientSelector);
 	}
 
 	void writeSsl(SelectionKey key, Selector clientSelector) throws IOException {
@@ -540,10 +554,10 @@ final class Connection {
 
 		SSLSession session = engine.getSession();
 		appBufferSize = session.getApplicationBufferSize();
-		myAppData = ByteBuffer.allocate(appBufferSize);
-		myNetData = ByteBuffer.allocate(session.getPacketBufferSize());
-		peerAppData = ByteBuffer.allocate(appBufferSize);
-		peerNetData = ByteBuffer.allocate(session.getPacketBufferSize());
+		myAppData = ByteBuffer.allocateDirect(appBufferSize);
+		myNetData = ByteBuffer.allocateDirect(session.getPacketBufferSize());
+		peerAppData = ByteBuffer.allocateDirect(appBufferSize);
+		peerNetData = ByteBuffer.allocateDirect(session.getPacketBufferSize());
 
 		myNetData.clear();
 		peerNetData.clear();
@@ -668,9 +682,9 @@ final class Connection {
 
 	ByteBuffer enlargeSslDataBuffer(ByteBuffer buffer, int sessionProposedCapacity) {
 		if (sessionProposedCapacity > buffer.capacity()) {
-			buffer = ByteBuffer.allocate(sessionProposedCapacity);
+			buffer = ByteBuffer.allocateDirect(sessionProposedCapacity);
 		} else {
-			buffer = ByteBuffer.allocate(buffer.capacity() * 2);
+			buffer = ByteBuffer.allocateDirect(buffer.capacity() * 2);
 		}
 		return buffer;
 	}
