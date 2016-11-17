@@ -200,8 +200,8 @@ final class Connection {
 		SocketChannel channel = (SocketChannel) key.channel();
 		SocketAddress remoteSocketAddress = channel.socket().getRemoteSocketAddress();
 		
-		if(ssl && engine!=null)
-			engine.closeOutbound();
+//		if(ssl && engine!=null)
+//			engine.closeOutbound();
 		
 		channel.close();
 		key.cancel();
@@ -679,7 +679,7 @@ final class Connection {
 		SocketChannel socketChannel = (SocketChannel) key.channel();
         engine.closeOutbound();
         doSslHandshake(socketChannel, engine);
-        engine = null;
+//        engine = null;
         finish(key);
     }
 	
