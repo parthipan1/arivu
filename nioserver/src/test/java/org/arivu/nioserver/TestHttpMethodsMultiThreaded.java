@@ -63,7 +63,8 @@ public class TestHttpMethodsMultiThreaded {
 			RestAssured.trustStore(keyStore);
 			RestAssured.useRelaxedHTTPSValidation();
 			
-			System.setProperty("ssl", "true");	
+			System.setProperty("ssl", "true");
+			System.setProperty("ssl.protocol", "TLSv1.2");
 		}else{
 			RestAssured.baseURI = "http://localhost:" + port;
 		}
@@ -371,7 +372,7 @@ public class TestHttpMethodsMultiThreaded {
 	}
 
 	@Test
-//	@Ignore
+	@Ignore
 	public void testPostMultipart3() throws IOException, InterruptedException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;

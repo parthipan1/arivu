@@ -315,7 +315,10 @@ final class Connection {
 				req.body.add(ByteData.wrap(getBytesRead( bytesRead, readBuf)));
 			}
 		}
-		return ReadState.next;
+		if (req.isMultipart) 
+			return ReadState.nextMp;
+		else
+			return ReadState.next;
 	}
 
 	ReadState readRawRequestHeader(final SelectionKey key, final Selector clientSelector, final int bytesRead, final byte[] readBuf) {
@@ -468,6 +471,10 @@ final class Connection {
 					break;
 				case BUFFER_UNDERFLOW:
 					peerNetData = handleSslDataBufferUnderflow(peerNetData);
+//					ByteBuffer replaceBuffer = ByteBuffer.allocate(peerNetData.capacity() * 2);
+//					peerNetData.flip();
+//					replaceBuffer.put(peerNetData);
+//					peerNetData = replaceBuffer;
 					break;
 				case CLOSED:
 					closeSslConnection(key);
