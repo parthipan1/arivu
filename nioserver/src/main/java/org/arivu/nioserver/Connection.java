@@ -473,7 +473,7 @@ final class Connection {
 					closeSslConnection(key);
 					return;
 				default:
-					throw new IllegalStateException("Invalid SSL status: " + result.getStatus());
+					throw new IllegalStateException("Invalid SSL status :: " + result.getStatus());
 				}
 			}
 		} else if (bytesRead < 0) {
@@ -517,7 +517,7 @@ final class Connection {
 				closeSslConnection(key);
 				return;
 			default:
-				throw new IllegalStateException("Invalid SSL status: " + result.getStatus());
+				throw new IllegalStateException("Invalid SSL status :: " + result.getStatus());
 			}
 		}
 		state.pos += length;
@@ -687,7 +687,7 @@ final class Connection {
         try {
             engine.closeInbound();
         } catch (Exception e) {
-            logger.error("This engine was forced to close inbound, without having received the proper SSL/TLS close notification message from the peer, due to end of stream.");
+            logger.error("Error handleSslEndOfStream :: ",e);
         }
         closeSslConnection(key);
     }
