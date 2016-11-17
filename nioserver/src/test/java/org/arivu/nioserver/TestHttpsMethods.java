@@ -9,7 +9,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-//@Ignore
+@Ignore
 public class TestHttpsMethods extends TestHttpMethodsMultiThreaded {
 //	private static final Logger logger = LoggerFactory.getLogger(TestHttpMethods.class);
 	
@@ -26,6 +26,7 @@ public class TestHttpsMethods extends TestHttpMethodsMultiThreaded {
 
 	@Before
 	public void setUp() throws Exception {
+//		Thread.sleep(100);
 	}
 
 	@After
@@ -128,37 +129,37 @@ public class TestHttpsMethods extends TestHttpMethodsMultiThreaded {
 		super.testGetAdminProxy3();
 	}
 
-	@Override @Test @Ignore
+	@Override @Test 
 	public void testPostMultipart1() throws IOException {
 		
 		super.testPostMultipart1();
 	}
 
-	@Override @Test @Ignore
+	@Override @Test 
 	public void testPostMultipart2() throws IOException {
 		
 		super.testPostMultipart2();
 	}
 
-	@Override @Test @Ignore
-	public void testPostMultipart3() throws IOException {
+	@Override @Test
+	public void testPostMultipart3() throws IOException, InterruptedException {
 		
 		super.testPostMultipart3();
 	}
 
-	@Override @Test @Ignore
+	@Override @Test
 	public void testPostMultipart4() throws IOException {
 		
 		super.testPostMultipart4();
 	}
 
-	@Override @Test @Ignore
+	@Override @Test
 	public void testPostMultipart5() throws IOException {
 		
 		super.testPostMultipart5();
 	}
 
-	@Override @Test @Ignore
+	@Override @Test
 	public void testPostMultipart6() throws IOException {
 		
 		super.testPostMultipart6();

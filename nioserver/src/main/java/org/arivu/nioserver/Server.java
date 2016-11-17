@@ -214,7 +214,7 @@ public final class Server {
 		if( Configuration.SINGLE_THREAD_MODE ){
 			exe = Executors.newCachedThreadPool();
 		}else{
-			exe = Executors.newFixedThreadPool( Math.max(300, Integer.parseInt(Env.getEnv("threadCnt", "300")) ) );
+			exe = Executors.newFixedThreadPool( Math.max(50, Integer.parseInt(Env.getEnv("threadCnt", "50")) ) );
 		}
 		sexe = Executors.newScheduledThreadPool( Math.max(2, Integer.parseInt(Env.getEnv("schedulerCnt", "2")) ) );
 		accessLog = Appenders.file

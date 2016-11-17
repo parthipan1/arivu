@@ -115,7 +115,7 @@ final class SelectorHandler {
 					        engine.beginHandshake();
 
 					        Connection sllConn = (Connection) connectionPool.get(null).assign(ssl);
-					        if (sllConn.doHandshake(clientSocket, engine)) {
+					        if (sllConn.doSslHandshake(clientSocket, engine)) {
 					        	SelectionKey key1 = clientSocket.register(clientSelector, SelectionKey.OP_READ);
 					        	key1.attach(sllConn);
 					        } else {

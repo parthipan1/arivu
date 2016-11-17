@@ -146,7 +146,7 @@ public class TestHttpMethods extends TestHttpMethodsMultiThreaded {
 	}
 
 	@Override @Test @Ignore
-	public void testPostMultipart3() throws IOException {
+	public void testPostMultipart3() throws IOException, InterruptedException {
 		
 		super.testPostMultipart3();
 	}

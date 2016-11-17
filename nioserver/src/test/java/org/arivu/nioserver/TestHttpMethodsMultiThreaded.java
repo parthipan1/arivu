@@ -372,7 +372,7 @@ public class TestHttpMethodsMultiThreaded {
 
 	@Test
 //	@Ignore
-	public void testPostMultipart3() throws IOException {
+	public void testPostMultipart3() throws IOException, InterruptedException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;
 		File inputFile = new File(SRC_TEST_RESOURCES_LIGHTNINGLOG_JSON);

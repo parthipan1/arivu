@@ -196,9 +196,13 @@ final class Connection {
 	}
 
 	void finish(final SelectionKey key) throws IOException {
+		
 		SocketChannel channel = (SocketChannel) key.channel();
 		SocketAddress remoteSocketAddress = channel.socket().getRemoteSocketAddress();
-		// channel.finishConnect();
+		
+		if(ssl && engine!=null)
+			engine.closeOutbound();
+		
 		channel.close();
 		key.cancel();
 		if (state.resBuff != null)
@@ -410,7 +414,7 @@ final class Connection {
 		return endOfLineBuf.toString().startsWith(string + "--");
 	}
 
-	public void processRequest(final SelectionKey key, Selector clientSelector) {
+	void processRequest(final SelectionKey key, Selector clientSelector) {
 		logger.debug("process connection from {}", ((SocketChannel) key.channel()).socket().getRemoteSocketAddress());
 		AsynContext ctx = null;
 		try {
@@ -436,7 +440,6 @@ final class Connection {
 
 	void readSsl(SelectionKey key, Selector clientSelector) throws IOException {
 		SocketChannel socketChannel = (SocketChannel) key.channel();
-//		logger.debug("About to read from a client...");
 
 		peerNetData.clear();
 		int bytesRead = socketChannel.read(peerNetData);
@@ -461,31 +464,26 @@ final class Connection {
 					}
 					break;
 				case BUFFER_OVERFLOW:
-					peerAppData = enlargeApplicationBuffer(peerAppData);
+					peerAppData = enlargeSslApplicationDataBuffer(peerAppData);
 					break;
 				case BUFFER_UNDERFLOW:
-					peerNetData = handleBufferUnderflow(peerNetData);
+					peerNetData = handleSslDataBufferUnderflow(peerNetData);
 					break;
 				case CLOSED:
-//					logger.debug("Client wants to close connection...");
-					closeConnection(key);
-//					logger.debug("Goodbye client!");
+					closeSslConnection(key);
 					return;
 				default:
 					throw new IllegalStateException("Invalid SSL status: " + result.getStatus());
 				}
 			}
 		} else if (bytesRead < 0) {
-			logger.error("Received end of stream. Will try to close connection with client...");
-			handleEndOfStream(key);
-//			logger.debug("Goodbye client!");
+			handleSslEndOfStream(key);
 		}
 	}
 
 	void writeSsl(SelectionKey key, Selector clientSelector) throws IOException {
 
 		SocketChannel socketChannel = (SocketChannel) key.channel();
-//		logger.debug("About to write to a client...");
 
 		if (state.poll == null) {
 			state.poll = state.resBuff.queue.poll();
@@ -501,9 +499,6 @@ final class Connection {
 		myAppData.flip();
 		
 		while (myAppData.hasRemaining()) {
-			// The loop has a meaning for (outgoing) messages larger than 16KB.
-			// Every wrap call will remove 16KB from the original message and
-			// send it to the remote peer.
 			myNetData.clear();
 			SSLEngineResult result = engine.wrap(myAppData, myNetData);
 			switch (result.getStatus()) {
@@ -512,15 +507,14 @@ final class Connection {
 				while (myNetData.hasRemaining()) {
 					socketChannel.write(myNetData);
 				}
-//				logger.debug("Message sent to the client: " + "Thanks");
 				break;
 			case BUFFER_OVERFLOW:
-				myNetData = enlargePacketBuffer(myNetData);
+				myNetData = enlargeSslDataBuffer(myNetData);
 				break;
 			case BUFFER_UNDERFLOW:
-				throw new SSLException("Buffer underflow occured after a wrap. I don't think we should ever get here.");
+				throw new SSLException("Buffer underflow occured after a wrap!");
 			case CLOSED:
-				closeConnection(key);
+				closeSslConnection(key);
 				return;
 			default:
 				throw new IllegalStateException("Invalid SSL status: " + result.getStatus());
@@ -530,10 +524,9 @@ final class Connection {
 		finishByteBuff(key, clientSelector);
 	}
 
-	boolean doHandshake(SocketChannel socketChannel, SSLEngine engine) throws IOException {
+	boolean doSslHandshake(SocketChannel socketChannel, SSLEngine engine) throws IOException {
 
 		this.engine = engine;
-//		logger.debug("About to do handshake...");
 
 		SSLEngineResult result;
 		HandshakeStatus handshakeStatus;
@@ -545,17 +538,6 @@ final class Connection {
 		peerAppData = ByteBuffer.allocate(appBufferSize);
 		peerNetData = ByteBuffer.allocate(session.getPacketBufferSize());
 
-		// NioSsl fields myAppData and peerAppData are supposed to be
-		// large enough to hold all message data the peer
-		// will send and expects to receive from the other peer respectively.
-		// Since the messages to be exchanged will usually be less
-		// than 16KB long the capacity of these fields should also be smaller.
-		// Here we initialize these two local buffers
-		// to be used for the handshake, while keeping client's buffers at the
-		// same size.
-//		int appBufferSize = session.getApplicationBufferSize();
-//		ByteBuffer myAppData = ByteBuffer.allocate(appBufferSize);
-//		ByteBuffer peerAppData = ByteBuffer.allocate(appBufferSize);
 		myNetData.clear();
 		peerNetData.clear();
 
@@ -571,12 +553,9 @@ final class Connection {
 					try {
 						engine.closeInbound();
 					} catch (SSLException e) {
-						logger.error(
-								"This engine was forced to close inbound, without having received the proper SSL/TLS close notification message from the peer, due to end of stream.");
+						logger.error("Error handshake :: ", e);
 					}
 					engine.closeOutbound();
-					// After closeOutbound the engine will be set to WRAP state,
-					// in order to try to send a close message to the client.
 					handshakeStatus = engine.getHandshakeStatus();
 					break;
 				}
@@ -586,8 +565,7 @@ final class Connection {
 					peerNetData.compact();
 					handshakeStatus = result.getHandshakeStatus();
 				} catch (SSLException sslException) {
-					logger.error(
-							"A problem was encountered while processing the data that caused the SSLEngine to abort. Will try to properly close connection...");
+					logger.error("Error Unwrapping handshake :: ",sslException);
 					engine.closeOutbound();
 					handshakeStatus = engine.getHandshakeStatus();
 					break;
@@ -596,15 +574,10 @@ final class Connection {
 				case OK:
 					break;
 				case BUFFER_OVERFLOW:
-					// Will occur when peerAppData's capacity is smaller than
-					// the data derived from peerNetData's unwrap.
-					peerAppData = enlargeApplicationBuffer(peerAppData);
+					peerAppData = enlargeSslApplicationDataBuffer(peerAppData);
 					break;
 				case BUFFER_UNDERFLOW:
-					// Will occur either when no data was read from the peer or
-					// when the peerNetData buffer was too small to hold all
-					// peer's data.
-					peerNetData = handleBufferUnderflow(peerNetData);
+					peerNetData = handleSslDataBufferUnderflow(peerNetData);
 					break;
 				case CLOSED:
 					if (engine.isOutboundDone()) {
@@ -615,7 +588,7 @@ final class Connection {
 						break;
 					}
 				default:
-					throw new IllegalStateException("Invalid SSL status: " + result.getStatus());
+					throw new IllegalStateException("Invalid SSL status :: " + result.getStatus());
 				}
 				break;
 			case NEED_WRAP:
@@ -624,8 +597,7 @@ final class Connection {
 					result = engine.wrap(myAppData, myNetData);
 					handshakeStatus = result.getHandshakeStatus();
 				} catch (SSLException sslException) {
-					logger.error(
-							"A problem was encountered while processing the data that caused the SSLEngine to abort. Will try to properly close connection...");
+					logger.error("Error wraping handshake :: ", sslException);
 					engine.closeOutbound();
 					handshakeStatus = engine.getHandshakeStatus();
 					break;
@@ -638,35 +610,25 @@ final class Connection {
 					}
 					break;
 				case BUFFER_OVERFLOW:
-					// Will occur if there is not enough space in myNetData
-					// buffer to write all the data that would be generated by
-					// the method wrap.
-					// Since myNetData is set to session's packet size we should
-					// not get to this point because SSLEngine is supposed
-					// to produce messages smaller or equal to that, but a
-					// general handling would be the following:
-					myNetData = enlargePacketBuffer(myNetData);
+					myNetData = enlargeSslDataBuffer(myNetData);
 					break;
 				case BUFFER_UNDERFLOW:
 					throw new SSLException(
-							"Buffer underflow occured after a wrap. I don't think we should ever get here.");
+							"Buffer underflow occured after wrap!");
 				case CLOSED:
 					try {
 						myNetData.flip();
 						while (myNetData.hasRemaining()) {
 							socketChannel.write(myNetData);
 						}
-						// At this point the handshake status will probably be
-						// NEED_UNWRAP so we make sure that peerNetData is clear
-						// to read.
 						peerNetData.clear();
 					} catch (Exception e) {
-						logger.error("Failed to send server's CLOSE message due to socket channel's failure.");
+						logger.error("Error on socket write :: ",e);
 						handshakeStatus = engine.getHandshakeStatus();
 					}
 					break;
 				default:
-					throw new IllegalStateException("Invalid SSL status: " + result.getStatus());
+					throw new IllegalStateException("Invalid SSL status :: " + result.getStatus());
 				}
 				break;
 			case NEED_TASK:
@@ -681,7 +643,7 @@ final class Connection {
 			case NOT_HANDSHAKING:
 				break;
 			default:
-				throw new IllegalStateException("Invalid SSL status: " + handshakeStatus);
+				throw new IllegalStateException("Invalid SSL status :: " + handshakeStatus);
 			}
 		}
 
@@ -689,15 +651,15 @@ final class Connection {
 
 	}
 
-	ByteBuffer enlargePacketBuffer(ByteBuffer buffer) {
-		return enlargeBuffer(buffer, engine.getSession().getPacketBufferSize());
+	ByteBuffer enlargeSslDataBuffer(ByteBuffer buffer) {
+		return enlargeSslDataBuffer(buffer, engine.getSession().getPacketBufferSize());
 	}
 
-	ByteBuffer enlargeApplicationBuffer(ByteBuffer buffer) {
-		return enlargeBuffer(buffer, engine.getSession().getApplicationBufferSize());
+	ByteBuffer enlargeSslApplicationDataBuffer(ByteBuffer buffer) {
+		return enlargeSslDataBuffer(buffer, engine.getSession().getApplicationBufferSize());
 	}
 
-	ByteBuffer enlargeBuffer(ByteBuffer buffer, int sessionProposedCapacity) {
+	ByteBuffer enlargeSslDataBuffer(ByteBuffer buffer, int sessionProposedCapacity) {
 		if (sessionProposedCapacity > buffer.capacity()) {
 			buffer = ByteBuffer.allocate(sessionProposedCapacity);
 		} else {
@@ -706,31 +668,28 @@ final class Connection {
 		return buffer;
 	}
 
-	ByteBuffer handleBufferUnderflow(ByteBuffer buffer) {
-		if (engine.getSession().getPacketBufferSize() < buffer.limit()) {
-			return buffer;
-		} else {
-			ByteBuffer replaceBuffer = enlargePacketBuffer(buffer);
-			buffer.flip();
-			replaceBuffer.put(buffer);
-			return replaceBuffer;
-		}
+	ByteBuffer handleSslDataBufferUnderflow(ByteBuffer buffer) {
+		ByteBuffer replaceBuffer = enlargeSslDataBuffer(buffer);
+		buffer.flip();
+		replaceBuffer.put(buffer);
+		return replaceBuffer;
 	}
 	
-	void closeConnection(SelectionKey key) throws IOException  {
+	void closeSslConnection(SelectionKey key) throws IOException  {
 		SocketChannel socketChannel = (SocketChannel) key.channel();
         engine.closeOutbound();
-        doHandshake(socketChannel, engine);
+        doSslHandshake(socketChannel, engine);
+        engine = null;
         finish(key);
     }
 	
-	void handleEndOfStream(SelectionKey key) throws IOException  {
+	void handleSslEndOfStream(SelectionKey key) throws IOException  {
         try {
             engine.closeInbound();
         } catch (Exception e) {
             logger.error("This engine was forced to close inbound, without having received the proper SSL/TLS close notification message from the peer, due to end of stream.");
         }
-        closeConnection(key);
+        closeSslConnection(key);
     }
 
 }
