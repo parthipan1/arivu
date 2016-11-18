@@ -134,7 +134,7 @@ final class SelectorHandler {
 						if (Configuration.SINGLE_THREAD_MODE) {
 							process(key);
 						} else {
-							Server.getExecutorService().execute(new Runnable() {
+							Server.getExecutorService().submit(new Runnable() {
 								public void run() {
 									process(key);
 								}
