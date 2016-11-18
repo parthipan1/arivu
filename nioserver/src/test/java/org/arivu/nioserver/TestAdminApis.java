@@ -64,6 +64,7 @@ public class TestAdminApis {
 
 	@Before
 	public void setUp() throws Exception {
+		Thread.sleep(200);
 	}
 
 	@After
