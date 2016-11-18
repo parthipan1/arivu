@@ -111,6 +111,7 @@ final class SelectorHandler {
 					        clientSocket.configureBlocking(false);
 
 					        SSLEngine engine = sslContext.createSSLEngine();
+					        engine.setEnabledCipherSuites(Env.getEnv("ssl.cipherSuites", "TLS_RSA_WITH_AES_128_CBC_SHA").split(","));
 					        engine.setUseClientMode(false);
 					        engine.beginHandshake();
 

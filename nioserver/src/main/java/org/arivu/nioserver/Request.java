@@ -4,6 +4,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Request class representing a valid request from a client.
+ * 
+ * 
+ * @author Mr P
+ *
+ */
 public interface Request {
 
 	Map<String, List<Object>> getHeaders();

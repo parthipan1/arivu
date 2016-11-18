@@ -4,6 +4,13 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Response class representing a valid response to a client's request.
+ * 
+ * 
+ * @author Mr P
+ *
+ */
 public interface Response {
 
 	int getResponseCode();

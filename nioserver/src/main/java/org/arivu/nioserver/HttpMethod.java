@@ -2,6 +2,13 @@ package org.arivu.nioserver;
 
 import java.io.IOException;
 
+/**
+ * Represents Http method.
+ * 
+ * 
+ * @author Mr p
+ *
+ */
 public enum HttpMethod {
 	HEAD {
 

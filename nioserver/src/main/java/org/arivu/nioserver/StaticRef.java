@@ -7,6 +7,12 @@ import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.Threadlocal;
 import org.arivu.datastructure.Threadlocal.Factory;
 
+/**
+ * Mdc implementation for access to Request,Response and AsynContext.
+ * 
+ * @author Mr P
+ *
+ */
 public final class StaticRef {
 
 	private static final String ROUTE_TOKEN = "rte";

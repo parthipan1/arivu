@@ -10,6 +10,12 @@ import java.util.Map;
 
 import org.arivu.utils.Utils;
 
+/**
+ * Encapsulates multi-part request data.
+ * 
+ * @author Mr P
+ *
+ */
 public final class MultiPart {
 	final Map<String, String> headers;
 	final List<ByteData> body;

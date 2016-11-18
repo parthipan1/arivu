@@ -26,6 +26,28 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * This is the Nio server main class , entry point for all Apps.
+ * Fastest java Nio server out there. Some of the configuration parameters
+ * 
+ * -DsingleThread=true/false -> Either run on single thread mode or multi-threaded mode (only read and process request). default to true
+ *     Note: Write operation is asynchronous and always happens in new seperate thread even on single thread mode. Performance may vary based on the use case.
+ * -DthreadCnt=xxx(Number)  -> no of threads (only on multi threaded mode) default 50
+ * -DschedulerCnt=xxx(Number)  -> no of schedule threads default 2
+ * -Daccess.log=<Location of access.log> -> default ../logs/access.log
+ * -Dport=xxx(Number)  -> port on which the sever will run. default to 8080
+ * -Dsocket.backlog=xxx(Number) -> Server socket backlog.
+ * -Dsocket.timeout=xxx(Number) -> server socket timeout. default to 0
+ * -DadminMod=true/false  -> Enable admin module as home page. default false
+ * -DadminLoc=<Dir Location>  -> admin module location. default ../admin
+ * -DdeployLoc=<Dir Location> -> location to deploy apps. default ../apps
+ * -Darivu.nioserver.json=<location of json config file> -> default ./arivu.nioserver.json
+ * -Dssl=true/false  -> Enable ssl protocol.
+ * -Dssl.ksfile=<keystore file Loc>  -> ssl keystore file Location. default 'nioserver.jks'
+ * -Dssl.pass=<keystore password>  -> ssl keystore password. default 'nioserver'
+ * -Dssl.protocol=<Protocol>  ->  ssl protocol. default 'TLSv1.2'
+ * -Dssl.cipherSuites=<List of Cipher suites>  -> default TLS_RSA_WITH_AES_128_CBC_SHA
+ * 
+ * 
  * @author P
  *
  */
