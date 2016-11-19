@@ -10,13 +10,13 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 //@Ignore
-public class TestHttpMethodsAsync extends TestHttpMethodsMultiThreaded {
+public class TestHttpMethodsAsync {
 //	private static final Logger logger = LoggerFactory.getLogger(TestHttpMethods.class);
-	
+	static TestHttpMethodsMultiThreaded instance = new TestHttpMethodsMultiThreaded();
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		TestApis.runAsync = true;
-		init("false", false);
+		TestHttpMethodsMultiThreaded.init("false", false);
 	}
 
 	@AfterClass
@@ -33,274 +33,274 @@ public class TestHttpMethodsAsync extends TestHttpMethodsMultiThreaded {
 	public void tearDown() throws Exception {
 	}
 
-	@Override @Test
+	@Test
 	public void testGet1() {
 		
-		super.testGet1();
+		instance.testGet1();
 	}
 
-	@Override @Test
+	@Test
 	public void testGet2() {
 		
-		super.testGet2();
+		instance.testGet2();
 	}
 
-	@Override @Test
+	@Test
 	public void testGet3() {
 		
-		super.testGet3();
+		instance.testGet3();
 	}
 
-	@Override @Test
+	@Test
 	public void testGet4() throws IOException {
 		
-		super.testGet4();
+		instance.testGet4();
 	}
 
-	@Override @Test
+	@Test
 	public void testGet5() throws IOException {
 		
-		super.testGet5();
+		instance.testGet5();
 	}
 
-	@Override @Test
+	@Test
 	public void testGet6() throws IOException {
 		
-		super.testGet6();
+		instance.testGet6();
 	}
 
-	@Override @Test
+	@Test
 	public void testGet7() throws IOException {
 		
-		super.testGet7();
+		instance.testGet7();
 	}
 
-	@Override @Test
+	@Test
 	public void testGet8() throws IOException {
 		
-		super.testGet8();
+		instance.testGet8();
 	}
 
-	@Override @Test
+	@Test
 	public void testGet9() throws IOException {
 		
-		super.testGet9();
+		instance.testGet9();
 	}
 
-	@Override @Test
+	@Test
 	public void testGetProxyDir1() throws IOException {
 		
-		super.testGetProxyDir1();
+		instance.testGetProxyDir1();
 	}
 
-	@Override @Test
+	@Test
 	public void testGetProxyDir2() throws IOException {
 		
-		super.testGetProxyDir2();
+		instance.testGetProxyDir2();
 	}
 
-	@Override @Test
+	@Test
 	public void testGetProxyDir3() throws IOException {
 		
-		super.testGetProxyDir3();
+		instance.testGetProxyDir3();
 	}
 
-	@Override @Test @Ignore
+	@Test @Ignore
 	public void testGetProxy1() throws IOException {
 		
-		super.testGetProxy1();
+		instance.testGetProxy1();
 	}
 
-	@Override @Test
+	@Test
 	public void testGetAdminProxy1() throws IOException {
 		
-		super.testGetAdminProxy1();
+		instance.testGetAdminProxy1();
 	}
 
-	@Override @Test
+	@Test
 	public void testGetAdminProxy2() throws IOException {
 		
-		super.testGetAdminProxy2();
+		instance.testGetAdminProxy2();
 	}
 
-	@Override @Test
+	@Test
 	public void testGetAdminProxy3() throws IOException {
 		
-		super.testGetAdminProxy3();
+		instance.testGetAdminProxy3();
 	}
 
-	@Override @Test
+	@Test
 	public void testPostMultipart1() throws IOException {
 		
-		super.testPostMultipart1();
+		instance.testPostMultipart1();
 	}
 
-	@Override @Test
+	@Test
 	public void testPostMultipart2() throws IOException {
 		
-		super.testPostMultipart2();
+		instance.testPostMultipart2();
 	}
 
-	@Override @Test
+	@Test
 	public void testPostMultipart3() throws IOException, InterruptedException {
 		
-		super.testPostMultipart3();
+		instance.testPostMultipart3();
 	}
 
-	@Override @Test
+	@Test
 	public void testPostMultipart4() throws IOException {
 		
-		super.testPostMultipart4();
+		instance.testPostMultipart4();
 	}
 
-	@Override @Test
+	@Test
 	public void testPostMultipart5() throws IOException {
 		
-		super.testPostMultipart5();
+		instance.testPostMultipart5();
 	}
 
-	@Override @Test
+	@Test
 	public void testPostMultipart6() throws IOException {
 		
-		super.testPostMultipart6();
+		instance.testPostMultipart6();
 	}
 	
-	@Override @Test
+	@Test
 	public void testPost1() throws IOException {
 		
-		super.testPost1();
+		instance.testPost1();
 	}
 
-	@Override @Test
+	@Test
 	public void testPost2() throws IOException {
 		
-		super.testPost2();
+		instance.testPost2();
 	}
 
-	@Override @Test
+	@Test
 	public void testPost3() throws IOException {
 		
-		super.testPost3();
+		instance.testPost3();
 	}
 
-	@Override @Test
+	@Test
 	public void testPost4() throws IOException {
 		
-		super.testPost4();
+		instance.testPost4();
 	}
 
-	@Override @Test
+	@Test
 	public void testPost5() throws IOException {
 		
-		super.testPost5();
+		instance.testPost5();
 	}
 
-	@Override @Test
+	@Test
 	public void testPost6() throws IOException {
 		
-		super.testPost6();
+		instance.testPost6();
 	}
 
-	@Override @Test
+	@Test
 	public void testPost7() throws IOException {
 		
-		super.testPost7();
+		instance.testPost7();
 	}
 
-	@Override @Test
+	@Test
 	public void testPost8() throws IOException {
 		
-		super.testPost8();
+		instance.testPost8();
 	}
 
-	@Override @Test
+	@Test
 	public void testPut1() throws IOException {
 		
-		super.testPut1();
+		instance.testPut1();
 	}
 
-	@Override @Test
+	@Test
 	public void testPut2() throws IOException {
 		
-		super.testPut2();
+		instance.testPut2();
 	}
 
-	@Override @Test
+	@Test
 	public void testPut3() throws IOException {
 		
-		super.testPut3();
+		instance.testPut3();
 	}
 
-	@Override @Test
+	@Test
 	public void testPut4() throws IOException {
 		
-		super.testPut4();
+		instance.testPut4();
 	}
 
-	@Override @Test
+	@Test
 	public void testPut5() throws IOException {
 		
-		super.testPut5();
+		instance.testPut5();
 	}
 
-	@Override @Test
+	@Test
 	public void testPut6() throws IOException {
 		
-		super.testPut6();
+		instance.testPut6();
 	}
 
-	@Override @Test
+	@Test
 	public void testPut7() throws IOException {
 		
-		super.testPut7();
+		instance.testPut7();
 	}
 
-	@Override @Test
+	@Test
 	public void testPut8() throws IOException {
 		
-		super.testPut8();
+		instance.testPut8();
 	}
 
-	@Override @Test
+	@Test
 	public void testHead1() {
 		
-		super.testHead1();
+		instance.testHead1();
 	}
 
-	@Override @Test
+	@Test
 	public void testHead2() throws IOException {
 		
-		super.testHead2();
+		instance.testHead2();
 	}
 
-	@Override @Test
+	@Test
 	public void testHead3() throws IOException {
 		
-		super.testHead3();
+		instance.testHead3();
 	}
 
-	@Override @Test
+	@Test
 	public void testHead4() throws IOException {
 		
-		super.testHead4();
+		instance.testHead4();
 	}
 
-	@Override @Test
+	@Test
 	public void testHead5() throws IOException {
 		
-		super.testHead5();
+		instance.testHead5();
 	}
 
-	@Override @Test
+	@Test
 	public void testHead6() throws IOException {
 		
-		super.testHead6();
+		instance.testHead6();
 	}
 
-	@Override @Test
+	@Test
 	public void testDelete() throws IOException {
 		
-		super.testDelete();
+		instance.testDelete();
 	}
 
 	
