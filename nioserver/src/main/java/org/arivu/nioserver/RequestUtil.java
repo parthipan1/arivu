@@ -8,7 +8,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.io.RandomAccessFile;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
@@ -18,9 +17,6 @@ import java.net.MalformedURLException;
 import java.net.SocketAddress;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -45,6 +41,12 @@ import org.arivu.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Utility helper class.
+ * 
+ * @author Mr P
+ *
+ */
 public final class RequestUtil {
 
 	private static final String CLOSE_CHAIN_BRKT = "}";
@@ -59,8 +61,8 @@ public final class RequestUtil {
 
 	private static final String CONTENT_DISPOSITION = "Content-Disposition";
 
-	private static final String MULTIPART_FORM_DATA = "multipart/form-data";
-
+	private static final String[] MULTIPART_CTS = {"multipart/form-data","multipart/mixed","multipart/related","multipart/alternative","multipart/digest","multipart/parallel"};
+	
 	private static final String CONTENT_TYPE = "Content-Type";
 
 	private static final String SCANPACKAGES_TOKEN = "scanpackages";
@@ -240,13 +242,16 @@ public final class RequestUtil {
 		List<Object> list = requestImpl.getHeaders().get(CONTENT_TYPE);
 		if (!NullCheck.isNullOrEmpty(list)) {
 			contType = list.get(0).toString();
-		}
-		if (!NullCheck.isNullOrEmpty(contType)) {
-			requestImpl.isMultipart = contType.contains(MULTIPART_FORM_DATA);
-			if (requestImpl.isMultipart) {
-				contType = Utils.replaceAll(contType, MULTIPART_FORM_DATA + ";", "").trim();
-				contType = Utils.replaceAll(contType, BOUNDARY + "=", "").trim();
-				requestImpl.boundary = ("--" + contType).getBytes();
+			if (!NullCheck.isNullOrEmpty(contType)) {
+				for(String mpfd:MULTIPART_CTS){
+					requestImpl.isMultipart = contType.contains(mpfd);
+					if( requestImpl.isMultipart ){
+						contType = Utils.replaceAll(contType, mpfd + ";", "").trim();
+						contType = Utils.replaceAll(contType, BOUNDARY + "=", "").trim();
+						requestImpl.boundary = ("--" + contType).getBytes();
+						break;
+					}
+				}
 			}
 		}
 
@@ -562,8 +567,12 @@ public final class RequestUtil {
 	}
 
 	static void stopRemote() {
-		String url = DEFAULT_PROTOCOL + "://" + Env.getEnv("host", "localhost") + ":"
-				+ Integer.parseInt(Env.getEnv("port", "8080")) + Configuration.stopUri;
+		
+		boolean parseBoolean = Boolean.parseBoolean(Env.getEnv("ssl", "false"));
+		String s = "";
+		if(parseBoolean) s = "s";
+		String url = DEFAULT_PROTOCOL + s + "://" + Env.getEnv("host", "localhost") + ":"
+				+ Integer.parseInt(Env.getEnv("port", Server.DEFAULT_PORT)) + Configuration.stopUri;
 		BufferedReader in = null;
 		try {
 			final HttpURLConnection con = (HttpURLConnection) new URL(url).openConnection();
@@ -622,6 +631,7 @@ public final class RequestUtil {
 			destinationFolder.mkdirs();
 
 		byte[] buffer = new byte[2048];
+
 		FileInputStream fInput = null;
 		ZipInputStream zipInput = null;
 		try {
@@ -693,34 +703,34 @@ public final class RequestUtil {
 		}
 	}
 
-	public static byte[] read(File file) throws IOException {
-		if (file == null)
-			return null;
-		else if (!file.exists())
-			return null;
-
-		ByteBuffer bb = readBB(file);
-		byte[] data = new byte[bb.remaining()];
-		bb.get(data, 0, data.length);
-		return data;
-	}
-
-	public static MappedByteBuffer readBB(File file) throws IOException {
-		if (file == null)
-			return null;
-		else if (!file.exists())
-			return null;
-		RandomAccessFile randomAccessFile = null;
-		try {
-			randomAccessFile = new RandomAccessFile(file, "r");
-			final FileChannel fileChannel = randomAccessFile.getChannel();
-			return fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size());
-		} finally {
-			if (randomAccessFile != null) {
-				randomAccessFile.close();
-			}
-		}
-	}
+//	public static byte[] read(File file) throws IOException {
+//		if (file == null)
+//			return null;
+//		else if (!file.exists())
+//			return null;
+//
+//		ByteBuffer bb = readBB(file);
+//		byte[] data = new byte[bb.remaining()];
+//		bb.get(data, 0, data.length);
+//		return data;
+//	}
+//
+//	public static MappedByteBuffer readBB(File file) throws IOException {
+//		if (file == null)
+//			return null;
+//		else if (!file.exists())
+//			return null;
+//		RandomAccessFile randomAccessFile = null;
+//		try {
+//			randomAccessFile = new RandomAccessFile(file, "r");
+//			final FileChannel fileChannel = randomAccessFile.getChannel();
+//			return fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size());
+//		} finally {
+//			if (randomAccessFile != null) {
+//				randomAccessFile.close();
+//			}
+//		}
+//	}
 
 	static void scanApps(File root) {
 		File[] list = root.listFiles(new FileFilter() {
@@ -737,7 +747,7 @@ public final class RequestUtil {
 			try {
 				File scanpackagesFile = new File(f, SCANPACKAGES_TOKEN);
 				if (scanpackagesFile.exists())
-					new App(f.getName(), new String(read(scanpackagesFile))).deploy();
+					new App(f.getName(), new String(Utils.read(scanpackagesFile))).deploy();
 				else {
 					del(f);
 					logger.info("Invalid folder " + f.getAbsolutePath() + " removed!");
@@ -750,7 +760,7 @@ public final class RequestUtil {
 	}
 
 	static void addProxyRouteRuntime(String name, String method, String location, String proxyPass, String dir,
-			Collection<Route> rts, Map<String, List<Object>> header) {
+			Collection<Route> rts, Map<String, List<Object>> header) throws IOException {
 		HttpMethod httpMethod = HttpMethod.ALL;
 		if (!NullCheck.isNullOrEmpty(method))
 			httpMethod = HttpMethod.valueOf(method);
@@ -762,9 +772,9 @@ public final class RequestUtil {
 		boolean notNullProxy = !NullCheck.isNullOrEmpty(proxy_pass);
 		boolean notNullDir = !NullCheck.isNullOrEmpty(dir);
 		if (notNullProxy && notNullDir)
-			throw new IllegalArgumentException("Illegal proxy_pass(" + proxyPass + ") and dir(" + dir + ") specified!");
+			throw new IOException("Illegal proxy_pass(" + proxyPass + ") and dir(" + dir + ") specified!");
 		else if (!notNullProxy && !notNullDir)
-			throw new IllegalArgumentException("Illegal proxy_pass(" + proxyPass + ") and dir(" + dir + ") specified!");
+			throw new IOException("Illegal proxy_pass(" + proxyPass + ") and dir(" + dir + ") specified!");
 
 		if (notNullProxy) {
 			proxy_pass = Utils.replaceAll(proxy_pass, "$host", Env.getEnv("host", "localhost"));
@@ -773,6 +783,11 @@ public final class RequestUtil {
 		}
 		if (notNullDir) {
 			dir = Utils.replaceAll(dir, "$home", new File(".").getAbsolutePath());
+			File dirFile = new File(dir);
+			if( !dirFile.exists() || !dirFile.isDirectory() ){
+				throw new IOException(
+						"Invalid dir(" + dir + ") specified!");
+			}
 		}
 		ProxyRoute prp = new ProxyRoute(name, proxy_pass, dir, location, httpMethod, null, null, false, header);
 		// Collection<Route> rts = Configuration.routes;

@@ -1,0 +1,14 @@
+POST %URL% HTTP/1.1
+Content-Type: multipart/mixed; boundary=xxBOUNDARYxx
+Content-Length: {POST body length in bytes}
+
+--xxBOUNDARYxx
+Content-Type: application/json
+
+{"Text":"Here you go", "Html":null}
+--xxBOUNDARYxx
+Content-Disposition: form-data; name=""; filename="testFile.jpg"
+Content-Type: image/jpeg
+
+{binary JPEG data from file}
+--xxBOUNDARYxx--

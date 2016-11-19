@@ -22,6 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Byte data which can be read and written from request and response Objects.
+ * 
  * @author P
  *
  */
@@ -77,10 +79,7 @@ public final class ByteData {
 							if (randomAccessFile != null) {
 								if( value.file != null ){
 									e.setValue(null);
-//									value2.remove(value.file.getAbsolutePath());
-//									System.out.println(" clearing "+e1.getKey()+"("+ Utils.toString(value2.keySet()) +") = "+value.file.getAbsolutePath());
-									randomAccessFile.close();
-									value.chunkData = null;
+									value.close();
 									logger.debug("Closing file {}", e.getKey());
 								}
 							}
@@ -92,8 +91,13 @@ public final class ByteData {
 				if( force && !NullCheck.isNullOrEmpty(value2) && value2.size()==1 && value2.containsKey(CHUNK_DATA_KEY) ){
 					RandomAccessFileHelper randomAccessFileHelper = value2.get(CHUNK_DATA_KEY);
 					mdc.remove(e1.getKey());
-					if(randomAccessFileHelper!=null)
-						randomAccessFileHelper.chunkData = null;
+					if(randomAccessFileHelper!=null){
+						try {
+							randomAccessFileHelper.close();
+						} catch (IOException e2) {
+							logger.error("Error closing file " + e1.getKey(), e2);
+						}
+					}
 				}
 		}
 	}
@@ -185,9 +189,9 @@ public final class ByteData {
 				raf.seek(offset + from);
 				raf.readFully(arr);
 				return arr;
-			}else if(len == rafh.chunkData.length){
+			}else if(len == rafh.getArr().length){
 				RandomAccessFile raf = rafh.get();
-				byte[] arr = rafh.chunkData;
+				byte[] arr = rafh.getArr();
 				if(to == rafh.file.length()){
 					if( rafh.chunkSet ) return arr;
 					rafh.chunkSet = true;
@@ -218,7 +222,7 @@ public final class ByteData {
 			first = true;
 		}
 		
-		final byte[] byteBuffer = randomAccessFileHelper.chunkData;
+		final byte[] byteBuffer = randomAccessFileHelper.getArr();
 		if( !dirty && !first){
 			reset(byteBuffer);
 		}
@@ -234,56 +238,68 @@ public final class ByteData {
 		return new ByteData(array);
 	}
 
-	private static final class RandomAccessFileHelper {
-		private static final int THRESHOLD_TIME_MILLISECS = 300000;
-		private RandomAccessFile raf;
-		private final File file;
-		volatile long time = 0l;
-		long lmt = 0l;
-		byte[] chunkData;
-		volatile boolean chunkSet = false;
-		RandomAccessFileHelper(){
-			this.file = null;
-			this.raf = null;
-			this.time = 0l;
-			this.lmt = 0l;
-			this.chunkData = new byte[Configuration.defaultChunkSize];
-			this.chunkSet = false;
-		}
-		
-		RandomAccessFileHelper(File file) throws IOException {
-			super();
-			this.file = file;
-			this.raf = new RandomAccessFile(file, "r");
+}
+final class RandomAccessFileHelper {
+	private static final int THRESHOLD_TIME_MILLISECS = 300000;
+	private RandomAccessFile raf;
+	final File file;
+	private volatile long time = 0l;
+	private long lmt = 0l;
+	private byte[] chunkData;
+	
+	volatile boolean chunkSet = false;
+	RandomAccessFileHelper(){
+		this.file = null;
+		this.raf = null;
+		this.time = 0l;
+		this.lmt = 0l;
+		this.chunkData = new byte[Configuration.defaultChunkSize];
+		this.chunkSet = false;
+	}
+	
+	RandomAccessFileHelper(File file) throws IOException {
+		super();
+		this.file = file;
+		this.raf = new RandomAccessFile(file, "r");
+		this.time = System.currentTimeMillis();
+		this.lmt = file.lastModified();
+		this.chunkData = new byte[(int) (file.length()%Configuration.defaultChunkSize)];
+		this.chunkSet = false;
+	}
+	
+	byte[] getArr() {
+		this.time = System.currentTimeMillis();
+		return chunkData;
+	}
+	
+	RandomAccessFile get() throws IOException {
+		if(file==null)
+			return null;
+		else if( !file.exists() ){
+			raf.close();
+			throw new FileNotFoundException(this.file.getAbsolutePath());
+		}else if( file.lastModified() > lmt ){
+			this.raf.close();
+			this.raf = new RandomAccessFile(file, "r");;
 			this.time = System.currentTimeMillis();
 			this.lmt = file.lastModified();
-			this.chunkData = new byte[(int) (file.length()%Configuration.defaultChunkSize)];
-			this.chunkSet = false;
+			return this.raf;
+		}else{
+			long currentTimeMillis = System.currentTimeMillis();
+			if (currentTimeMillis - this.time > THRESHOLD_TIME_MILLISECS)
+				ByteData.clean(false, file.getAbsolutePath());
+			this.time = currentTimeMillis;
+			return raf;
 		}
-		
-		RandomAccessFile get() throws IOException {
-			if(file==null)
-				return null;
-			else if( !file.exists() ){
-				raf.close();
-				throw new FileNotFoundException(this.file.getAbsolutePath());
-			}else if( file.lastModified() > lmt ){
-				this.raf.close();
-				this.raf = new RandomAccessFile(file, "r");;
-				this.time = System.currentTimeMillis();
-				this.lmt = file.lastModified();
-				return this.raf;
-			}else{
-				long currentTimeMillis = System.currentTimeMillis();
-				if (currentTimeMillis - this.time > THRESHOLD_TIME_MILLISECS)
-					clean(false, file.getAbsolutePath());
-				this.time = currentTimeMillis;
-				return raf;
-			}
-		}
+	}
 
-		boolean isExpired() {
-			return System.currentTimeMillis() - this.time > THRESHOLD_TIME_MILLISECS;
-		}
+	boolean isExpired() {
+		return System.currentTimeMillis() - this.time > THRESHOLD_TIME_MILLISECS;
+	}
+	
+	void close() throws IOException{
+		if(this.raf!=null)
+			this.raf.close();
+		this.chunkData = null;
 	}
 }

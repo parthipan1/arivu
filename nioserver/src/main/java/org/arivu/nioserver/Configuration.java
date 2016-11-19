@@ -1,6 +1,7 @@
 package org.arivu.nioserver;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +21,7 @@ final class Configuration {
 	private static final Logger logger = LoggerFactory.getLogger(Configuration.class);
 
 	static final String stopUri = "/__admin/shutdown";
-	static final boolean SINGLE_THREAD_MODE = Boolean.parseBoolean(Env.getEnv("singleThread", "false"));
+	static final boolean SINGLE_THREAD_MODE = Boolean.parseBoolean(Env.getEnv("singleThread", "true"));
 	static final boolean ADMIN_MODULE_ENABLED = Boolean.parseBoolean(Env.getEnv("adminMod", "false"));
 	static final String DEPLOY_LOC = Env.getEnv("deployLoc", ".." + File.separator + "apps");
 	static final String ADMIN_LOC = Env.getEnv("adminLoc", ".." + File.separator + "admin");
@@ -63,7 +64,7 @@ final class Configuration {
 				}else{
 					logger.info("{} config value is not an implementation of {} ",exceptionHandlerStr,ExceptionHandler.class.getCanonicalName());
 				}
-			} catch (Throwable e1) {
+			} catch (Exception e1) {
 				logger.error("Failed in ExceptionHandler registering :: ", e1);
 				throw new IllegalStateException(e1);
 			}
@@ -73,8 +74,8 @@ final class Configuration {
 				.transform((Map<String, Object>) Ason.getObj(json, "response.header", new Amap<String, Object>()));
 
 		defaultResCode = Ason.getNumber(json, "response.defaultcode", 200).intValue();
-		defaultChunkSize = Ason.getNumber(json, "response.chunkSize", 131072).intValue();
-		defaultRequestBuffer = Ason.getNumber(json, "request.buffer", 131072).intValue();
+		defaultChunkSize = Math.max(1024, Ason.getNumber(json, "response.chunkSize", 131072).intValue()) ;
+		defaultRequestBuffer = Math.max(1024, Ason.getNumber(json, "request.buffer", 131072).intValue()) ;
 
 		Collection<String> array = Ason.getArray(json, "request.scanpackages", null);
 		if (NullCheck.isNullOrEmpty(array)) {
@@ -91,10 +92,14 @@ final class Configuration {
 		if (!NullCheck.isNullOrEmpty(proxies)) {
 			for (Entry<String, Object> e : proxies.entrySet()) {
 				Map<String, Object> proxy = (Map<String, Object>) e.getValue();
-				RequestUtil.addProxyRouteRuntime(e.getKey(), Ason.getStr(proxy, "httpMethod", "ALL"),
-						Ason.getStr(proxy, "location", null), Ason.getStr(proxy, "proxy_pass", null),
-						Ason.getStr(proxy, "dir", null), routes,
-						RequestUtil.transform((Map<String, Object>) Ason.getObj(proxy, "header", null)));
+				try {
+					RequestUtil.addProxyRouteRuntime(e.getKey(), Ason.getStr(proxy, "httpMethod", "ALL"),
+							Ason.getStr(proxy, "location", null), Ason.getStr(proxy, "proxy_pass", null),
+							Ason.getStr(proxy, "dir", null), routes,
+							RequestUtil.transform((Map<String, Object>) Ason.getObj(proxy, "header", null)));
+				} catch (IOException e1) {
+					logger.error("Failed to add Route :: ", e);
+				}
 			}
 		}
 		try {

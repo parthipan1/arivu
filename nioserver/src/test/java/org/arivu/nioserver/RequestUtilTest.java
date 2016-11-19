@@ -21,6 +21,7 @@ import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.datastructure.DoublyLinkedSet;
 import org.arivu.utils.NullCheck;
+import org.arivu.utils.Utils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -302,7 +303,7 @@ com.rjil
 	}
 	
 	@Test
-	public void testGetMatchingRoute_Case1(){
+	public void testGetMatchingRoute_Case1() throws IOException{
 		System.setProperty("lightninglog.json", "./lightninglog.json");
 		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
 		System.setProperty("access.log", "./access.log");
@@ -346,7 +347,7 @@ com.rjil
 	}
 	
 	@Test
-	public void testGetMatchingRoute_Case2(){
+	public void testGetMatchingRoute_Case2() throws IOException{
 		System.setProperty("lightninglog.json", "./lightninglog.json");
 		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
 		System.setProperty("access.log", "./access.log");
@@ -390,7 +391,7 @@ com.rjil
 	}
 	
 	@Test
-	public void testGetMatchingRoute_Case3(){
+	public void testGetMatchingRoute_Case3() throws IOException{
 		System.setProperty("lightninglog.json", "./lightninglog.json");
 		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
 		System.setProperty("access.log", "./access.log");
@@ -437,7 +438,7 @@ com.rjil
 	}
 	
 	@Test
-	public void testGetMatchingRoute_Case4(){
+	public void testGetMatchingRoute_Case4() throws IOException{
 		System.setProperty("lightninglog.json", "./lightninglog.json");
 		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
 		System.setProperty("access.log", "./access.log");
@@ -484,7 +485,7 @@ com.rjil
 	}
 
 	@Test
-	public void testGetMatchingRoute_Case5(){
+	public void testGetMatchingRoute_Case5() throws IOException{
 		System.setProperty("lightninglog.json", "./lightninglog.json");
 		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
 		System.setProperty("access.log", "./access.log");
@@ -544,7 +545,7 @@ com.rjil
 	
 	
 	@Test
-	public void testGetMatchingRoute_Case6(){
+	public void testGetMatchingRoute_Case6() throws IOException{
 		System.setProperty("lightninglog.json", "./lightninglog.json");
 		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
 		System.setProperty("access.log", "./access.log");
@@ -674,8 +675,9 @@ com.rjil
 	@Test
 	public void testUnZipAndDel() throws IOException, InterruptedException {
 		File dd = new File("testUnzip/download");
+		RequestUtil.del(dd);
 		assertFalse(dd.exists());
-		RequestUtil.unzip(new File("testUnzip/download/libs"), new File("download.zip"));
+		RequestUtil.unzip(new File("testUnzip/download/libs"), new File(TestHttpMethodsMultiThreaded.DOWNLOAD_ZIP));
 		assertTrue(dd.exists());
 		
 		FileOutputStream fileOutputStream = new FileOutputStream(new File("testUnzip/download/scanpackages"), true);
@@ -707,21 +709,21 @@ com.rjil
 	
 	@Test
 	public void testReadBB() throws IOException {
-		assertTrue(RequestUtil.readBB(null) == null);
-		assertTrue(RequestUtil.readBB(new File("donotexists")) == null);
+		assertTrue(Utils.readBB(null) == null);
+		assertTrue(Utils.readBB(new File("donotexists")) == null);
 
-		MappedByteBuffer readBB = RequestUtil.readBB(new File("README.md"));
+		MappedByteBuffer readBB = Utils.readBB(new File("README.md"));
 		assertTrue(readBB != null);
 
-		assertTrue(RequestUtil.read(null) == null);
-		assertTrue(RequestUtil.read(new File("donotexists")) == null);
-		byte[] read = RequestUtil.read(new File("README.md"));
+		assertTrue(Utils.read(null) == null);
+		assertTrue(Utils.read(new File("donotexists")) == null);
+		byte[] read = Utils.read(new File("README.md"));
 		assertTrue(read != null);
 		assertTrue(read.length == 1113);
 	}
 
 	@Test
-	public void testAddProxyRouteRuntime() {
+	public void testAddProxyRouteRuntime() throws IOException {
 		Collection<Route> routes = new DoublyLinkedList<Route>();
 
 		routes.add(new Route("/one", HttpMethod.ALL));
@@ -740,7 +742,7 @@ com.rjil
 		}
 
 		try {
-			RequestUtil.addProxyRouteRuntime("test", null, "/uri", "proxyPass", "proxyPass", routes, null);
+			RequestUtil.addProxyRouteRuntime("test", null, "/uri", "proxyPass", "logs", routes, null);
 			fail("Failed on proxy and dir notnull validation!");
 		} catch (Throwable e) {
 			assertTrue(e != null);
@@ -790,10 +792,10 @@ com.rjil
 
 		// Dir duplicate
 		routes.clear();
-		RequestUtil.addProxyRouteRuntime("test", null, "/uri", null, "dir", routes, null);
+		RequestUtil.addProxyRouteRuntime("test", null, "/uri", null, "logs", routes, null);
 
 		try {
-			RequestUtil.addProxyRouteRuntime("test", null, "/uri", null, "dir", routes, null);
+			RequestUtil.addProxyRouteRuntime("test", null, "/uri", null, "logs", routes, null);
 			fail("Failed on Duplicate dir route validation!");
 		} catch (Throwable e) {
 			assertTrue(e != null);
@@ -801,10 +803,10 @@ com.rjil
 
 		routes.clear();
 
-		RequestUtil.addProxyRouteRuntime("test", "ALL", "/uri", null, "dir", routes, null);
+		RequestUtil.addProxyRouteRuntime("test", "ALL", "/uri", null, "logs", routes, null);
 
 		try {
-			RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", null, "dir", routes, null);
+			RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", null, "logs", routes, null);
 			fail("Failed on Duplicate dir route validation!");
 		} catch (Throwable e) {
 			assertTrue(e != null);
@@ -812,10 +814,10 @@ com.rjil
 
 		routes.clear();
 
-		RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", null, "dir", routes, null);
+		RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", null, "logs", routes, null);
 
 		try {
-			RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", null, "dir", routes, null);
+			RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", null, "logs", routes, null);
 			fail("Failed on Duplicate dir route validation!");
 		} catch (Throwable e) {
 			assertTrue(e != null);
@@ -823,10 +825,10 @@ com.rjil
 
 		routes.clear();
 
-		RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", null, "dir", routes, null);
+		RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", null, "logs", routes, null);
 
 		try {
-			RequestUtil.addProxyRouteRuntime("test", "POST", "/uri", null, "dir", routes, null);
+			RequestUtil.addProxyRouteRuntime("test", "POST", "/uri", null, "logs", routes, null);
 		} catch (Throwable e) {
 			fail("Failed on Duplicate dir route validation!");
 		}

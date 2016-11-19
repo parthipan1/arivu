@@ -111,11 +111,12 @@ final class SelectorHandler {
 					        clientSocket.configureBlocking(false);
 
 					        SSLEngine engine = sslContext.createSSLEngine();
+					        engine.setEnabledCipherSuites(Env.getEnv("ssl.cipherSuites", "TLS_RSA_WITH_AES_128_CBC_SHA").split(","));
 					        engine.setUseClientMode(false);
 					        engine.beginHandshake();
 
 					        Connection sllConn = (Connection) connectionPool.get(null).assign(ssl);
-					        if (sllConn.doHandshake(clientSocket, engine)) {
+					        if (sllConn.doSslHandshake(clientSocket, engine)) {
 					        	SelectionKey key1 = clientSocket.register(clientSelector, SelectionKey.OP_READ);
 					        	key1.attach(sllConn);
 					        } else {
@@ -153,8 +154,8 @@ final class SelectorHandler {
 			CertificateException, FileNotFoundException, UnrecoverableKeyException, KeyManagementException {
 		SSLContext sslContext = null;
 		if(ssl){
-			String keyStorePath = Env.getEnv("ssl.ksfile", "keystore.jks");
-			String keyStorePassword = Env.getEnv("ssl.pass", "parthipan");
+			String keyStorePath = Env.getEnv("ssl.ksfile", "nioserver.jks");
+			String keyStorePassword = Env.getEnv("ssl.pass", "nioserver");
 			
 			KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
 			KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());

@@ -1,5 +1,11 @@
 package org.arivu.nioserver;
 
+/**
+ * List of all response codes.
+ * 
+ * @author Mr P
+ *
+ */
 public interface ResponseCodes {
 	public int Continue = 100;
 	public int Switching_Protocols = 101;

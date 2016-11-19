@@ -9,19 +9,16 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-//@Ignore
-public class TestHttpMethodsAsync {
-//	private static final Logger logger = LoggerFactory.getLogger(TestHttpMethods.class);
-	static TestHttpMethodsMultiThreaded instance = new TestHttpMethodsMultiThreaded();
+@Ignore
+public class TestHttpsMethods2 {
+	
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-		TestApis.runAsync = true;
-		TestHttpMethodsMultiThreaded.init(false, false);
+		TestHttpMethodsMultiThreaded.init(true, true);
 	}
 
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception {
-		TestApis.runAsync = false;
 		TestHttpMethodsMultiThreaded.tearDownAfterClass();
 	}
 
@@ -29,142 +26,109 @@ public class TestHttpMethodsAsync {
 	public void setUp() throws Exception {
 //		Thread.sleep(200);
 	}
-
+	
+	static TestHttpMethodsMultiThreaded instance = new TestHttpMethodsMultiThreaded();
+	
 	@After
 	public void tearDown() throws Exception {
 	}
+	
 
-	@Test
-	public void testGet1() {
-		
-		instance.testGet1();
-	}
-
-	@Test
-	public void testGet2() {
-		
-		instance.testGet2();
-	}
-
-	@Test
-	public void testGet3() {
-		
-		instance.testGet3();
-	}
-
-	@Test
-	public void testGet4() throws IOException {
-		
-		instance.testGet4();
-	}
-
-	@Test
-	public void testGet5() throws IOException {
-		
-		instance.testGet5();
-	}
-
-	@Test
-	public void testGet6() throws IOException {
-		
-		instance.testGet6();
-	}
-
-	@Test
-	public void testGet7() throws IOException {
-		
-		instance.testGet7();
-	}
-
-	@Test
-	public void testGet8() throws IOException {
-		
-		instance.testGet8();
-	}
-
-	@Test
-	public void testGet9() throws IOException {
-		
-		instance.testGet9();
-	}
-
-	@Test
-	public void testGetProxyDir1() throws IOException {
-		
-		instance.testGetProxyDir1();
-	}
-
-	@Test
-	public void testGetProxyDir2() throws IOException {
-		
-		instance.testGetProxyDir2();
-	}
-
-	@Test
-	public void testGetProxyDir3() throws IOException {
-		
-		instance.testGetProxyDir3();
-	}
-
-	@Test @Ignore
-	public void testGetProxy1() throws IOException {
-		
-		instance.testGetProxy1();
-	}
-
-	@Test
-	public void testGetAdminProxy1() throws IOException {
-		
-		instance.testGetAdminProxy1();
-	}
-
-	@Test
-	public void testGetAdminProxy2() throws IOException {
-		
-		instance.testGetAdminProxy2();
-	}
-
-	@Test
-	public void testGetAdminProxy3() throws IOException {
-		
-		instance.testGetAdminProxy3();
-	}
-
-	@Test
-	public void testPostMultipart1() throws IOException {
-		
-		instance.testPostMultipart1();
-	}
-
-	@Test
-	public void testPostMultipart2() throws IOException {
-		
-		instance.testPostMultipart2();
-	}
-
-	@Test
-	public void testPostMultipart3() throws IOException, InterruptedException {
-		
-		instance.testPostMultipart3();
-	}
-
-	@Test
-	public void testPostMultipart4() throws IOException {
-		
-		instance.testPostMultipart4();
-	}
-
-	@Test
-	public void testPostMultipart5() throws IOException {
-		
-		instance.testPostMultipart5();
-	}
-
-	@Test
-	public void testPostMultipart6() throws IOException {
-		
-		instance.testPostMultipart6();
-	}
+//	@Test
+//	public void testGet1() {
+//		
+//		instance.testGet1();
+//	}
+//
+//	@Test
+//	public void testGet2() {
+//		
+//		instance.testGet2();
+//	}
+//
+//	@Test
+//	public void testGet3() {
+//		
+//		instance.testGet3();
+//	}
+//
+//	@Test
+//	public void testGet4() throws IOException {
+//		
+//		instance.testGet4();
+//	}
+//
+//	@Test
+//	public void testGet5() throws IOException {
+//		
+//		instance.testGet5();
+//	}
+//
+//	@Test
+//	public void testGet6() throws IOException {
+//		
+//		instance.testGet6();
+//	}
+//
+//	@Test
+//	public void testGet7() throws IOException {
+//		
+//		instance.testGet7();
+//	}
+//
+//	@Test
+//	public void testGet8() throws IOException {
+//		
+//		instance.testGet8();
+//	}
+//
+//	@Test
+//	public void testGet9() throws IOException {
+//		
+//		instance.testGet9();
+//	}
+//
+//	@Test
+//	public void testGetProxyDir1() throws IOException {
+//		
+//		instance.testGetProxyDir1();
+//	}
+//
+//	@Test
+//	public void testGetProxyDir2() throws IOException {
+//		
+//		instance.testGetProxyDir2();
+//	}
+//
+//	@Test
+//	public void testGetProxyDir3() throws IOException {
+//		
+//		instance.testGetProxyDir3();
+//	}
+//
+//	@Test @Ignore
+//	public void testGetProxy1() throws IOException {
+//		
+//		instance.testGetProxy1();
+//	}
+//
+//	@Test
+//	public void testGetAdminProxy1() throws IOException {
+//		
+//		instance.testGetAdminProxy1();
+//	}
+//
+//	@Test
+//	public void testGetAdminProxy2() throws IOException {
+//		
+//		instance.testGetAdminProxy2();
+//	}
+//
+//	@Test
+//	public void testGetAdminProxy3() throws IOException {
+//		
+//		instance.testGetAdminProxy3();
+//	}
 	
 	@Test
 	public void testPost1() throws IOException {
@@ -304,5 +268,4 @@ public class TestHttpMethodsAsync {
 		instance.testDelete();
 	}
 
-	
 }

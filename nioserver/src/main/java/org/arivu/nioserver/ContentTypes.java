@@ -1,5 +1,11 @@
 package org.arivu.nioserver;
 
+/**
+ * List of all content types values.
+ * 
+ * @author Mr P
+ *
+ */
 public interface ContentTypes {
 	public String C_Content = "text/x-c";
 	public String F_Content = "text/x-fortran";

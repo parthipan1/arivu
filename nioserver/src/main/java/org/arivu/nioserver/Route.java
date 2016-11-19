@@ -260,7 +260,7 @@ class ProxyRoute extends Route {
 	}
 
 	final void handleBrowser(Request req, Response res) throws IOException {
-		String fileLoc = this.dir + URLDecoder.decode(req.getUri().substring(this.uri.length()), RequestUtil.ENC_UTF_8);
+		String fileLoc = this.dir + Utils.replaceAll(URLDecoder.decode(req.getUri().substring(this.uri.length()), RequestUtil.ENC_UTF_8), "/", File.separator)  ;
 		File file = new File(fileLoc);
 		if (!file.exists()) {
 			res.setResponseCode(404);
@@ -371,8 +371,8 @@ final class JavaHttpMethodCall {
 	}
 
 	private void addReqHeaders(final HttpURLConnection con, Map<String, List<Object>> headers) {
-		con.setRequestProperty("User-Agent", "Java8");
-		con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
+//		con.setRequestProperty("User-Agent", "Java8");
+//		con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
 		if (!NullCheck.isNullOrEmpty(headers)) {
 			Set<Entry<String, List<Object>>> entrySet = headers.entrySet();
 			for (Entry<String, List<Object>> e : entrySet) {

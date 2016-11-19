@@ -13,6 +13,7 @@ import javax.script.ScriptException;
 
 import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.utils.Ason;
+import org.arivu.utils.Utils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -48,7 +49,7 @@ public class TestAdminApis {
 				}
 			}
 		});
-		Thread.sleep(1000);
+		Thread.sleep(2000);
 	}
 	
 	@BeforeClass
@@ -60,10 +61,12 @@ public class TestAdminApis {
 	public static void tearDownAfterClass() throws Exception {
 		Server.main(new String[]{"stop"});
 		exe.shutdownNow();
+		Thread.sleep(2000);
 	}
 
 	@Before
 	public void setUp() throws Exception {
+//		Thread.sleep(200);
 	}
 
 	@After
@@ -104,7 +107,7 @@ public class TestAdminApis {
 				activeCnt++;
 		}
 		
-		String postBody = "{\"uri\":\"/uri1\",\"name\":\"name1\",\"loc\":\"loc1\",\"type\":\"browser\"}";
+		String postBody = "{\"uri\":\"/uri1\",\"name\":\"name1\",\"loc\":\".\",\"type\":\"browser\"}";
 
 		final byte[] body = postBody.getBytes();//RequestUtil.read(new File("multiByte.txt"));
 		io.restassured.response.Response response3 = RestAssured.given().
@@ -182,7 +185,7 @@ public class TestAdminApis {
 
 	@Test
 	public void testIconGet() throws ScriptException, IOException {
-		final byte[] body = RequestUtil.read(new File("favicon.ico"));
+		final byte[] body = Utils.read(new File("favicon.ico"));
 		io.restassured.response.Response response = RestAssured.given().when().get("/favicon.ico");
 		response.then().statusCode(200);
 		
@@ -208,12 +211,12 @@ public class TestAdminApis {
 		
 		assertFalse(appDir.exists());
 		
-		File inputFile = new File("download.zip");
+		File inputFile = new File(TestHttpMethodsMultiThreaded.DOWNLOAD_ZIP);
 		io.restassured.response.Response response = RestAssured.given().
 					multiPart("dist",inputFile).
 					multiPart("name","download").
-					multiPart("scanpackages","com.rjil.cloud.snw.download").
 					multiPart("X-HASH",hash).
+					multiPart("scanpackages","com.rjil.cloud.snw.download").
 						when().post("/__admin/deploy");
 		
 		response.then().statusCode(201);

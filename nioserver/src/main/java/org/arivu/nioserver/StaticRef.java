@@ -7,9 +7,14 @@ import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.Threadlocal;
 import org.arivu.datastructure.Threadlocal.Factory;
 
+/**
+ * Mdc implementation for access to Request,Response and AsynContext.
+ * 
+ * @author Mr P
+ *
+ */
 public final class StaticRef {
 
-	private static final String ROUTE_TOKEN = "rte";
 	private static final String RESPONSE_TOKEN = "res";
 	private static final String REQUEST_TOKEN = "req";
 	private static final String ASYNC_CTX_TOKEN = "ctx";
@@ -23,11 +28,10 @@ public final class StaticRef {
 		
 	});
 	
-	static void set(Request req,Response res, Route route, AsynContext actx, SelectionKey key){
+	static void set(Request req,Response res, AsynContext actx, SelectionKey key){
 		Map<String, Object> map = mdc.get(null);
 		map.put(REQUEST_TOKEN, req);
 		map.put(RESPONSE_TOKEN, res);
-		map.put(ROUTE_TOKEN, route);
 		map.put(ASYNC_CTX_TOKEN, actx);
 		map.put(SELECT_KEY_TOKEN, key);
 	}
@@ -45,12 +49,6 @@ public final class StaticRef {
 	public static Response getResponse(){
 		Map<String, Object> map = mdc.get();
 		if(map!=null) return (Response) map.get(RESPONSE_TOKEN);
-		return null;
-	}
-
-	public static Route getRoute(){
-		Map<String, Object> map = mdc.get();
-		if(map!=null) return (Route) map.get(ROUTE_TOKEN);
 		return null;
 	}
 
