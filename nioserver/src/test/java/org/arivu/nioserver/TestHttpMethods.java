@@ -31,6 +31,7 @@ public class TestHttpMethods {
 
 	@Before
 	public void setUp() throws Exception {
+//		Thread.sleep(200);
 	}
 
 	@After
@@ -145,7 +146,7 @@ public class TestHttpMethods {
 		instance.testPostMultipart2();
 	}
 
-	@Test @Ignore
+	@Test
 	public void testPostMultipart3() throws IOException, InterruptedException {
 		
 		instance.testPostMultipart3();

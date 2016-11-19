@@ -27,6 +27,7 @@ public class TestHttpMethodsAsync {
 
 	@Before
 	public void setUp() throws Exception {
+//		Thread.sleep(200);
 	}
 
 	@After

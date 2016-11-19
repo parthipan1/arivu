@@ -428,6 +428,12 @@ project(':nioserver'){
     forkEvery = 1
   }
   
+  jar {
+    manifest {
+        attributes 'Main-Class': 'org.arivu.nioserver.Server'
+    }
+  }
+  
 	// deployment directory
 	def deployDir = project.getProject().getProjectDir().getAbsolutePath() 
   

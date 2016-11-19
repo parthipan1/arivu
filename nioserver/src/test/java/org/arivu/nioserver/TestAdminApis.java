@@ -49,7 +49,7 @@ public class TestAdminApis {
 				}
 			}
 		});
-		Thread.sleep(1000);
+		Thread.sleep(2000);
 	}
 	
 	@BeforeClass
@@ -61,11 +61,12 @@ public class TestAdminApis {
 	public static void tearDownAfterClass() throws Exception {
 		Server.main(new String[]{"stop"});
 		exe.shutdownNow();
+		Thread.sleep(2000);
 	}
 
 	@Before
 	public void setUp() throws Exception {
-		Thread.sleep(200);
+//		Thread.sleep(200);
 	}
 
 	@After

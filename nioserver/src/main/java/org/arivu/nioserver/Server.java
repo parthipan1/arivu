@@ -26,27 +26,35 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This is the Nio server main class , entry point for all Apps.
- * Fastest java Nio server out there. Some of the configuration parameters
- * 
+ * This is the Nio server main class , entry point for all Apps. Server download able from main <a href="https://github.com/parthipan1/arivu/blob/master/nioserver/arivu.nioserver-1.0.1.zip">distribution</a> or can be used part of your build.
+ * If used part of build following command will start the server 
+ * <pre>
+ * 	java -server -classpath XXX org.arivu.nioserver.Server start
+ * 		OR
+ *  java -jar nioserver-1.0.1.jar
+ * </pre>
+ * Some of the configuration parameters all are optional.
+ * <ul>
+ * <li>
  * -DsingleThread=true/false -> Either run on single thread mode or multi-threaded mode (only read and process request). default to true
- *     Note: Write operation is asynchronous and always happens in new seperate thread even on single thread mode. Performance may vary based on the use case.
- * -DthreadCnt=xxx(Number)  -> no of threads (only on multi threaded mode) default 50
- * -DschedulerCnt=xxx(Number)  -> no of schedule threads default 2
- * -Daccess.log=<Location of access.log> -> default ../logs/access.log
- * -Dport=xxx(Number)  -> port on which the sever will run. default to 8080
- * -Dsocket.backlog=xxx(Number) -> Server socket backlog.
- * -Dsocket.timeout=xxx(Number) -> server socket timeout. default to 0
- * -DadminMod=true/false  -> Enable admin module as home page. default false
- * -DadminLoc=<Dir Location>  -> admin module location. default ../admin
- * -DdeployLoc=<Dir Location> -> location to deploy apps. default ../apps
- * -Darivu.nioserver.json=<location of json config file> -> default ./arivu.nioserver.json
- * -Dssl=true/false  -> Enable ssl protocol.
- * -Dssl.ksfile=<keystore file Loc>  -> ssl keystore file Location. default 'nioserver.jks'
- * -Dssl.pass=<keystore password>  -> ssl keystore password. default 'nioserver'
- * -Dssl.protocol=<Protocol>  ->  ssl protocol. default 'TLSv1.2'
- * -Dssl.cipherSuites=<List of Cipher suites>  -> default TLS_RSA_WITH_AES_128_CBC_SHA
+ *     Note: Write operation is asynchronous and always happens in new seperate thread even on single thread mode. Performance may vary based on the use case.</li>
+ * <li>-DthreadCnt=xxx(Number)  -> no of threads (only on multi threaded mode) default 50</li>
+ * <li>-DschedulerCnt=xxx(Number)  -> no of schedule threads default 2</li>
+ * <li>-Daccess.log=<Location of access.log> -> default ../logs/access.log. Format of access log is standard "[EEE, dd MMM yyyy HH:mm:ss z] uri httpMethod responseCode contentLength [ProcessTime in millisecs] remoteAddress"</li>
+ * <li>-Dport=xxx(Number)  -> port on which the sever will run. default to 8080</li>
+ * <li>-Dsocket.backlog=xxx(Number) -> Server socket backlog. default 1024</li>
+ * <li>-Dsocket.timeout=xxx(Number) -> server socket timeout. default to 0</li>
+ * <li>-DadminMod=true/false  -> Enable admin module as home page. default false , Enabled on server <a href="https://github.com/parthipan1/arivu/blob/master/nioserver/arivu.nioserver-1.0.1.zip">distribution</a> </li>
+ * <li>-DadminLoc=(admin module directory location)  -> admin module location. default ../admin</li>
+ * <li>-DdeployLoc=(app deployment directory location) -> location to deploy apps. default ../apps</li>
+ * <li>-Darivu.nioserver.json=(location of json config file) -> default ./arivu.nioserver.json</li>
+ * <li>-Dssl=true/false  -> Enable ssl protocol.</li>
+ * <li>-Dssl.ksfile=(keystore file Location)  -> ssl keystore file Location. default 'nioserver.jks'</li>
+ * <li>-Dssl.pass=<keystore password>  -> ssl keystore password. default 'nioserver'</li>
+ * <li>-Dssl.protocol=(<a href="https://docs.oracle.com/javase/7/docs/technotes/guides/security/StandardNames.html#SSLContext">protocol</a>)  ->  ssl protocol. default 'TLSv1.2'</li> 
+ * <li>-Dssl.cipherSuites=(comma separated list of <a href="https://docs.oracle.com/javase/7/docs/technotes/guides/security/StandardNames.html#ciphersuites">ciphersuites</a>)  -> default TLS_RSA_WITH_AES_128_CBC_SHA</li>
  * 
+ * </ul>
  * 
  * @author P
  *

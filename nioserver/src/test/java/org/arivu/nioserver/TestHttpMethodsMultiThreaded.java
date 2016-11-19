@@ -101,6 +101,7 @@ public class TestHttpMethodsMultiThreaded {
 
 	@Before
 	public void setUp() throws Exception {
+//		Thread.sleep(200);
 	}
 
 	@After
