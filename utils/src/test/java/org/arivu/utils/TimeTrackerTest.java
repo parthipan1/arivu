@@ -41,6 +41,7 @@ public class TimeTrackerTest {
 		tt.stop();
 //		System.out.println(tt.toString());
 		assertTrue(((Number)tt.tracks.get("total")).intValue()>=300);
+		assertTrue(tt.toString()!=null);
 	}
 	
 }
