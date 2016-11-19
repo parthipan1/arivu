@@ -55,13 +55,13 @@ class FileAppender implements Appender {
 	@Override
 	public void append(String log) {
 		dayRollover();
-		lock.lock();
-		try {
+//		lock.lock();
+//		try {
 			oWriter.println(log);
 			fileSize = file.length();
-		}finally {
-			lock.unlock();
-		}
+//		}finally {
+//			lock.unlock();
+//		}
 	}
 
 	private final void dayRollover() {

@@ -280,6 +280,12 @@ final class Connection {
 					readRawRequestBody(key, clientSelector, bytesRead, readBuf).andProcessIt(this, key, bytesRead,
 							endOfLineByte, readBuf, clientSelector);
 				}
+			}else if(bytesRead==0){
+				ReadState.next.andProcessIt(this, key, bytesRead,
+							endOfLineByte, readBuf, clientSelector);
+			}else{
+				ReadState.proc.andProcessIt(this, key, bytesRead,
+						endOfLineByte, readBuf, clientSelector);
 			}
 		} catch (Throwable e) {
 			logger.error("Failed in readNormal :: ", e);

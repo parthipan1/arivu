@@ -23,9 +23,6 @@ public class TestHttpMethodsAsync extends TestHttpMethodsMultiThreaded {
 	public static void tearDownAfterClass() throws Exception {
 		TestApis.runAsync = false;
 		TestHttpMethodsMultiThreaded.tearDownAfterClass();
-//		Server.handler.stop();
-//		exe.shutdownNow();
-//		TestApis.exe.shutdownNow();
 	}
 
 	@Before

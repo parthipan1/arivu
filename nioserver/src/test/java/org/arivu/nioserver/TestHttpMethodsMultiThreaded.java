@@ -374,7 +374,7 @@ public class TestHttpMethodsMultiThreaded {
 	}
 
 	@Test
-	@Ignore
+//	@Ignore
 	public void testPostMultipart3() throws IOException, InterruptedException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;
