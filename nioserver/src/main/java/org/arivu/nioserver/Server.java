@@ -26,12 +26,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This is the Nio server main class , entry point for all Apps. Server download able from main <a href="https://github.com/parthipan1/arivu/blob/master/nioserver/arivu.nioserver-1.0.1.zip">distribution</a> or can be used part of your build.
+ * This is the Nio server main class, entry point for all Apps. Server download able from main <a href="https://github.com/parthipan1/arivu/blob/master_1_6/nioserver/arivu.nioserver-1.0.0.zip">distribution</a> or can be used part of your build.
  * If used part of build following command will start the server 
  * <pre>
  * 	java -server -classpath XXX org.arivu.nioserver.Server start
  * 		OR
- *  java -jar nioserver-1.0.1.jar
+ *  java -jar nioserver-1.0.0.jar
  * </pre>
  * Some of the configuration parameters all are optional.
  * <ul>
@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
  * <li>-Dport=xxx(Number)  -> port on which the sever will run. default to 8080</li>
  * <li>-Dsocket.backlog=xxx(Number) -> Server socket backlog. default 1024</li>
  * <li>-Dsocket.timeout=xxx(Number) -> server socket timeout. default to 0</li>
- * <li>-DadminMod=true/false  -> Enable admin module as home page. default false , Enabled on server <a href="https://github.com/parthipan1/arivu/blob/master/nioserver/arivu.nioserver-1.0.1.zip">distribution</a> </li>
+ * <li>-DadminMod=true/false  -> Enable admin module as home page. default false , Enabled on server <a href="https://github.com/parthipan1/arivu/blob/master_1_6/nioserver/arivu.nioserver-1.0.0.zip">distribution</a> </li>
  * <li>-DadminLoc=(admin module directory location)  -> admin module location. default ../admin</li>
  * <li>-DdeployLoc=(app deployment directory location) -> location to deploy apps. default ../apps</li>
  * <li>-Darivu.nioserver.json=(location of json config file) -> default ./arivu.nioserver.json</li>

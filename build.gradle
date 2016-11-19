@@ -125,7 +125,10 @@ subprojects {
 	  	new File("${project.buildDir}"+FS+".."+FS+"logs").mkdirs()
 	  }
   
-  
+   tasks.withType(Javadoc) {
+        options.addStringOption('Xdoclint:none', '-quiet')
+    }
+    
     findbugs {
 //      toolVersion = "2.0.1"
       sourceSets = [sourceSets.main]
@@ -390,7 +393,6 @@ project(':resourcepool'){
 dependencies {
     compile project(':datastructure')
     testCompile project(':lightninglog')
-    runtime project(':lightninglog')
   }
 }
 
@@ -408,11 +410,18 @@ dependencies {
 	compile project(':resourcepool')
 	compile project(':datastructure')
 	compile project(':utils')
+	compile project(':lightninglog')
 	testCompile group: 'io.rest-assured', name: 'rest-assured', version: '3.0.1'
-    runtime project(':lightninglog')
+    
   }
   test {
      forkEvery = 1
+  }
+  
+  jar {
+    manifest {
+        attributes 'Main-Class': 'org.arivu.nioserver.Server'
+    }
   }
 	// deployment directory
 	def deployDir = project.getProject().getProjectDir().getAbsolutePath() 
@@ -450,6 +459,11 @@ dependencies {
 	
 	copy{
 		from("favicon.ico")
+		into(deployDir+FS+"dist"+FS+"bin") 
+	} 
+	
+	copy{
+		from("nioserver.jks")
 		into(deployDir+FS+"dist"+FS+"bin") 
 	} 
 	
