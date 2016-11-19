@@ -71,8 +71,7 @@ public class TestHttpMethodsMultiThreaded {
 			RestAssured.baseURI = "http://localhost:" + port;
 		}
 		
-		
-		System.setProperty("access.log", "."+File.separator+"logs"+File.separator+"access.log");
+		System.setProperty("access.log", "."+File.separator+"logs"+File.separator+"access.test.log");
 		System.setProperty("singleThread", ""+singleThread);
 		System.setProperty("port", port);
 

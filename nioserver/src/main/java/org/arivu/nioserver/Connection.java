@@ -581,6 +581,7 @@ final class Connection {
 		handshakeStatus = engine.getHandshakeStatus();
 		while (handshakeStatus != SSLEngineResult.HandshakeStatus.FINISHED
 				&& handshakeStatus != SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING) {
+			logger.debug(" doSslHandshake while loop {} connection {} ",handshakeStatus,this);
 			switch (handshakeStatus) {
 			case NEED_UNWRAP:
 				logger.debug(" doSslHandshake NEED_UNWRAP connection {} ",this);

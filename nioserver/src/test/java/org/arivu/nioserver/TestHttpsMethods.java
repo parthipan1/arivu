@@ -9,6 +9,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
+//@Ignore
 public class TestHttpsMethods {
 	
 	@BeforeClass
@@ -23,7 +24,7 @@ public class TestHttpsMethods {
 
 	@Before
 	public void setUp() throws Exception {
-		Thread.sleep(250);
+//		Thread.sleep(250);
 	}
 	
 	static TestHttpMethodsMultiThreaded instance = new TestHttpMethodsMultiThreaded();
