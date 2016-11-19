@@ -21,6 +21,7 @@ import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.datastructure.DoublyLinkedSet;
 import org.arivu.utils.NullCheck;
+import org.arivu.utils.Utils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -704,15 +705,15 @@ com.rjil
 	
 	@Test
 	public void testReadBB() throws IOException {
-		assertTrue(RequestUtil.readBB(null) == null);
-		assertTrue(RequestUtil.readBB(new File("donotexists")) == null);
+		assertTrue(Utils.readBB(null) == null);
+		assertTrue(Utils.readBB(new File("donotexists")) == null);
 
-		MappedByteBuffer readBB = RequestUtil.readBB(new File("README.md"));
+		MappedByteBuffer readBB = Utils.readBB(new File("README.md"));
 		assertTrue(readBB != null);
 
-		assertTrue(RequestUtil.read(null) == null);
-		assertTrue(RequestUtil.read(new File("donotexists")) == null);
-		byte[] read = RequestUtil.read(new File("README.md"));
+		assertTrue(Utils.read(null) == null);
+		assertTrue(Utils.read(new File("donotexists")) == null);
+		byte[] read = Utils.read(new File("README.md"));
 		assertTrue(read != null);
 		assertTrue(read.length == 1113);
 	}

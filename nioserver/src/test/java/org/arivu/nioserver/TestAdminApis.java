@@ -13,6 +13,7 @@ import javax.script.ScriptException;
 
 import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.utils.Ason;
+import org.arivu.utils.Utils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -183,7 +184,7 @@ public class TestAdminApis {
 
 	@Test
 	public void testIconGet() throws ScriptException, IOException {
-		final byte[] body = RequestUtil.read(new File("favicon.ico"));
+		final byte[] body = Utils.read(new File("favicon.ico"));
 		io.restassured.response.Response response = RestAssured.given().when().get("/favicon.ico");
 		response.then().statusCode(200);
 		

@@ -1,11 +1,17 @@
 package org.arivu.utils;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 public final class Utils {
 
@@ -85,4 +91,33 @@ public final class Utils {
 		buf.append("]");
 		return buf.toString();
 	}
+	
+	public static MappedByteBuffer readBB(File file) throws IOException {
+        if (file == null)
+            return null;
+        else if (!file.exists())
+            return null;
+        RandomAccessFile randomAccessFile = null;
+        try {
+            randomAccessFile = new RandomAccessFile(file, "r");
+            final FileChannel fileChannel = randomAccessFile.getChannel();
+            return fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size());
+        } finally {
+            if (randomAccessFile != null) {
+                randomAccessFile.close();
+            }
+        }
+    }
+	
+	public static byte[] read(File file) throws IOException {
+        if (file == null)
+            return null;
+        else if (!file.exists())
+            return null;
+
+        ByteBuffer bb = readBB(file);
+        byte[] data = new byte[bb.remaining()];
+        bb.get(data, 0, data.length);
+        return data;
+    }
 }

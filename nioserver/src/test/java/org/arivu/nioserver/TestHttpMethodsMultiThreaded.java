@@ -12,6 +12,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.arivu.utils.Env;
+import org.arivu.utils.Utils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -160,7 +161,7 @@ public class TestHttpMethodsMultiThreaded {
 		response.then().statusCode(200);
 		byte[] responseBodyAsByteArray = response.asByteArray();
 		File expectedFile = new File(README_MD);
-		byte[] read = RequestUtil.read(expectedFile);
+		byte[] read = Utils.read(expectedFile);
 		assertTrue(responseBodyAsByteArray.length == read.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != read[i]) {
@@ -175,7 +176,7 @@ public class TestHttpMethodsMultiThreaded {
 		response.then().statusCode(200);
 		byte[] responseBodyAsByteArray = response.asByteArray();
 		File expectedFile = new File(SRC_TEST_RESOURCES_MULTI_BYTE_TXT);
-		byte[] read = RequestUtil.read(expectedFile);
+		byte[] read = Utils.read(expectedFile);
 		assertTrue(responseBodyAsByteArray.length == read.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != read[i]) {
@@ -190,7 +191,7 @@ public class TestHttpMethodsMultiThreaded {
 		response.then().statusCode(200);
 		byte[] responseBodyAsByteArray = response.asByteArray();
 		File expectedFile = new File(DOWNLOAD_ZIP);
-		byte[] read = RequestUtil.read(expectedFile);
+		byte[] read = Utils.read(expectedFile);
 		assertTrue(responseBodyAsByteArray.length == read.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != read[i]) {
@@ -252,7 +253,7 @@ public class TestHttpMethodsMultiThreaded {
 		response.then().statusCode(200);
 		byte[] responseBodyAsByteArray = response.asByteArray();
 		File expectedFile = new File(SRC_TEST_RESOURCES_LIGHTNINGLOG_JSON);
-		byte[] read = RequestUtil.read(expectedFile);
+		byte[] read = Utils.read(expectedFile);
 		// System.out.println("******** response ::
 		// "+responseBodyAsByteArray.length+" read :: "+read.length);
 		assertTrue(responseBodyAsByteArray.length == read.length);
@@ -302,7 +303,7 @@ public class TestHttpMethodsMultiThreaded {
 		response.then().statusCode(200);
 		byte[] responseBodyAsByteArray = response.asByteArray();
 		File expectedFile = new File(SRC_TEST_RESOURCES_ADMIN_ADMIN_HTML);
-		byte[] read = RequestUtil.read(expectedFile);
+		byte[] read = Utils.read(expectedFile);
 		assertTrue(responseBodyAsByteArray.length == read.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != read[i]) {
@@ -317,7 +318,7 @@ public class TestHttpMethodsMultiThreaded {
 		response.then().statusCode(200);
 		byte[] responseBodyAsByteArray = response.asByteArray();
 		File expectedFile = new File(SRC_TEST_RESOURCES_ADMIN_ADMIN_HTML);
-		byte[] read = RequestUtil.read(expectedFile);
+		byte[] read = Utils.read(expectedFile);
 		assertTrue(responseBodyAsByteArray.length == read.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != read[i]) {
@@ -332,7 +333,7 @@ public class TestHttpMethodsMultiThreaded {
 		response.then().statusCode(200);
 		byte[] responseBodyAsByteArray = response.asByteArray();
 		File expectedFile = new File(SRC_TEST_RESOURCES_ADMIN_ADMIN_CSS);
-		byte[] read = RequestUtil.read(expectedFile);
+		byte[] read = Utils.read(expectedFile);
 		assertTrue(responseBodyAsByteArray.length == read.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != read[i]) {
@@ -352,8 +353,8 @@ public class TestHttpMethodsMultiThreaded {
 				.post("/test/multipart");
 
 		response.then().statusCode(200);
-		byte[] responseBodyAsByteArray = RequestUtil.read(inputFile);
-		byte[] read = RequestUtil.read(expectedFile);
+		byte[] responseBodyAsByteArray = Utils.read(inputFile);
+		byte[] read = Utils.read(expectedFile);
 		assertTrue(responseBodyAsByteArray.length == read.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != read[i]) {
@@ -391,8 +392,8 @@ public class TestHttpMethodsMultiThreaded {
 				.post("/test/multipart");
 
 		response.then().statusCode(200);
-		byte[] responseBodyAsByteArray = RequestUtil.read(inputFile);
-		byte[] read = RequestUtil.read(expectedFile);
+		byte[] responseBodyAsByteArray = Utils.read(inputFile);
+		byte[] read = Utils.read(expectedFile);
 		assertTrue(responseBodyAsByteArray.length == read.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != read[i]) {
@@ -418,8 +419,8 @@ public class TestHttpMethodsMultiThreaded {
 				.post("/test/multipart");
 
 		response.then().statusCode(200);
-		byte[] responseBodyAsByteArray = RequestUtil.read(inputFile);
-		byte[] read = RequestUtil.read(expectedFile);
+		byte[] responseBodyAsByteArray = Utils.read(inputFile);
+		byte[] read = Utils.read(expectedFile);
 		assertTrue(responseBodyAsByteArray.length == read.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != read[i]) {
@@ -442,8 +443,8 @@ public class TestHttpMethodsMultiThreaded {
 				.post("/test/multipart");
 
 		response.then().statusCode(200);
-		byte[] responseBodyAsByteArray = RequestUtil.read(inputFile);
-		byte[] read = RequestUtil.read(expectedFile);
+		byte[] responseBodyAsByteArray = Utils.read(inputFile);
+		byte[] read = Utils.read(expectedFile);
 		assertTrue("Exp :: "+read.length+" but got :: "+responseBodyAsByteArray.length,responseBodyAsByteArray.length == read.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != read[i]) {
@@ -466,8 +467,8 @@ public class TestHttpMethodsMultiThreaded {
 				.post("/test/multipart");
 
 		response.then().statusCode(200);
-		byte[] responseBodyAsByteArray = RequestUtil.read(inputFile);
-		byte[] read = RequestUtil.read(expectedFile);
+		byte[] responseBodyAsByteArray = Utils.read(inputFile);
+		byte[] read = Utils.read(expectedFile);
 		assertTrue(responseBodyAsByteArray.length == read.length);
 		for (int i = 0; i < responseBodyAsByteArray.length; i++) {
 			if (responseBodyAsByteArray[i] != read[i]) {
@@ -543,7 +544,7 @@ public class TestHttpMethodsMultiThreaded {
 	public void testPost3() throws IOException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;
-		final byte[] body = RequestUtil.read(new File(SRC_TEST_RESOURCES_LIGHTNINGLOG_JSON));
+		final byte[] body = Utils.read(new File(SRC_TEST_RESOURCES_LIGHTNINGLOG_JSON));
 		io.restassured.response.Response response = RestAssured.given().header("Expires", "-1")
 				.header("Cache-Control", "private, max-age=0").header("Server", "clownhggashgasserver")
 				.header("X-XSS-Protection", "1; mode=block").
@@ -585,7 +586,7 @@ public class TestHttpMethodsMultiThreaded {
 	public void testPost4() throws IOException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;
-		final byte[] body = RequestUtil.read(new File(SRC_TEST_RESOURCES_LIGHTNINGLOG_JSON));
+		final byte[] body = Utils.read(new File(SRC_TEST_RESOURCES_LIGHTNINGLOG_JSON));
 		io.restassured.response.Response response = RestAssured.given().header("Expires", "-1")
 				.header("Cache-Control", "private, max-age=0").header("Server", "clownhggashgasserver")
 				.header("X-XSS-Protection", "1; mode=block").header("Connection", "close").body(body).when()
@@ -599,7 +600,7 @@ public class TestHttpMethodsMultiThreaded {
 	public void testPost5() throws IOException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;
-		final byte[] body = RequestUtil.read(new File(SRC_TEST_RESOURCES_MULTI_BYTE_TXT));
+		final byte[] body = Utils.read(new File(SRC_TEST_RESOURCES_MULTI_BYTE_TXT));
 		io.restassured.response.Response response = RestAssured.given().header("Expires", "-1")
 				.header("Cache-Control", "private, max-age=0").header("Server", "clownhggashgasserver")
 				.header("X-XSS-Protection", "1; mode=block").
@@ -641,7 +642,7 @@ public class TestHttpMethodsMultiThreaded {
 	public void testPost6() throws IOException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;
-		final byte[] body = RequestUtil.read(new File(SRC_TEST_RESOURCES_MULTI_BYTE_TXT));
+		final byte[] body = Utils.read(new File(SRC_TEST_RESOURCES_MULTI_BYTE_TXT));
 		io.restassured.response.Response response = RestAssured.given().body(body).header("Expires", "-1")
 				.header("Cache-Control", "private, max-age=0").header("Server", "clownhggashgasserver")
 				.header("X-XSS-Protection", "1; mode=block").header("Connection", "close").when().post("/test/post101");
@@ -654,7 +655,7 @@ public class TestHttpMethodsMultiThreaded {
 	public void testPost7() throws IOException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;
-		final byte[] body = "".getBytes();// RequestUtil.read(new
+		final byte[] body = "".getBytes();// Utils.read(new
 											// File("multiByte.txt"));
 		io.restassured.response.Response response = RestAssured.given().body(body).header("Expires", "-1")
 				.header("Cache-Control", "private, max-age=0").header("Server", "clownhggashgasserver")
@@ -681,7 +682,7 @@ public class TestHttpMethodsMultiThreaded {
 	public void testPost8() throws IOException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;
-		final byte[] body = RequestUtil.read(new File(SRC_TEST_RESOURCES_MULTI_BYTE_TXT));
+		final byte[] body = Utils.read(new File(SRC_TEST_RESOURCES_MULTI_BYTE_TXT));
 		io.restassured.response.Response response = RestAssured.given().body(body).header("Expires", "-1")
 				.header("Cache-Control", "private, max-age=0").header("Server", "clownhggashgasserver")
 				.header("X-XSS-Protection", "1; mode=block").header("Connection", "close").when().post("/test/postexp");
@@ -755,7 +756,7 @@ public class TestHttpMethodsMultiThreaded {
 	public void testPut3() throws IOException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;
-		final byte[] body = RequestUtil.read(new File(SRC_TEST_RESOURCES_LIGHTNINGLOG_JSON));
+		final byte[] body = Utils.read(new File(SRC_TEST_RESOURCES_LIGHTNINGLOG_JSON));
 		io.restassured.response.Response response = RestAssured.given().header("Expires", "-1")
 				.header("Cache-Control", "private, max-age=0").header("Server", "clownhggashgasserver")
 				.header("X-XSS-Protection", "1; mode=block").
@@ -797,7 +798,7 @@ public class TestHttpMethodsMultiThreaded {
 	public void testPut4() throws IOException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;
-		final byte[] body = RequestUtil.read(new File(SRC_TEST_RESOURCES_LIGHTNINGLOG_JSON));
+		final byte[] body = Utils.read(new File(SRC_TEST_RESOURCES_LIGHTNINGLOG_JSON));
 		io.restassured.response.Response response = RestAssured.given().header("Expires", "-1")
 				.header("Cache-Control", "private, max-age=0").header("Server", "clownhggashgasserver")
 				.header("X-XSS-Protection", "1; mode=block").header("Connection", "close").body(body).when()
@@ -811,7 +812,7 @@ public class TestHttpMethodsMultiThreaded {
 	public void testPut5() throws IOException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;
-		final byte[] body = RequestUtil.read(new File(SRC_TEST_RESOURCES_MULTI_BYTE_TXT));
+		final byte[] body = Utils.read(new File(SRC_TEST_RESOURCES_MULTI_BYTE_TXT));
 		io.restassured.response.Response response = RestAssured.given().header("Expires", "-1")
 				.header("Cache-Control", "private, max-age=0").header("Server", "clownhggashgasserver")
 				.header("X-XSS-Protection", "1; mode=block").
@@ -853,7 +854,7 @@ public class TestHttpMethodsMultiThreaded {
 	public void testPut6() throws IOException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;
-		final byte[] body = RequestUtil.read(new File(SRC_TEST_RESOURCES_MULTI_BYTE_TXT));
+		final byte[] body = Utils.read(new File(SRC_TEST_RESOURCES_MULTI_BYTE_TXT));
 		io.restassured.response.Response response = RestAssured.given().body(body).header("Expires", "-1")
 				.header("Cache-Control", "private, max-age=0").header("Server", "clownhggashgasserver")
 				.header("X-XSS-Protection", "1; mode=block").header("Connection", "close").when().put("/test/put101");
@@ -890,7 +891,7 @@ public class TestHttpMethodsMultiThreaded {
 	public void testPut8() throws IOException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;
-		final byte[] body = RequestUtil.read(new File(SRC_TEST_RESOURCES_MULTI_BYTE_TXT));
+		final byte[] body = Utils.read(new File(SRC_TEST_RESOURCES_MULTI_BYTE_TXT));
 		io.restassured.response.Response response = RestAssured.given().body(body).header("Expires", "-1")
 				.header("Cache-Control", "private, max-age=0").header("Server", "clownhggashgasserver")
 				.header("X-XSS-Protection", "1; mode=block").header("Connection", "close").when().put("/test/putexp");

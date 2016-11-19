@@ -8,7 +8,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.io.RandomAccessFile;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
@@ -18,9 +17,6 @@ import java.net.MalformedURLException;
 import java.net.SocketAddress;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -697,34 +693,34 @@ public final class RequestUtil {
 		}
 	}
 
-	public static byte[] read(File file) throws IOException {
-		if (file == null)
-			return null;
-		else if (!file.exists())
-			return null;
-
-		ByteBuffer bb = readBB(file);
-		byte[] data = new byte[bb.remaining()];
-		bb.get(data, 0, data.length);
-		return data;
-	}
-
-	public static MappedByteBuffer readBB(File file) throws IOException {
-		if (file == null)
-			return null;
-		else if (!file.exists())
-			return null;
-		RandomAccessFile randomAccessFile = null;
-		try {
-			randomAccessFile = new RandomAccessFile(file, "r");
-			final FileChannel fileChannel = randomAccessFile.getChannel();
-			return fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size());
-		} finally {
-			if (randomAccessFile != null) {
-				randomAccessFile.close();
-			}
-		}
-	}
+//	public static byte[] read(File file) throws IOException {
+//		if (file == null)
+//			return null;
+//		else if (!file.exists())
+//			return null;
+//
+//		ByteBuffer bb = readBB(file);
+//		byte[] data = new byte[bb.remaining()];
+//		bb.get(data, 0, data.length);
+//		return data;
+//	}
+//
+//	public static MappedByteBuffer readBB(File file) throws IOException {
+//		if (file == null)
+//			return null;
+//		else if (!file.exists())
+//			return null;
+//		RandomAccessFile randomAccessFile = null;
+//		try {
+//			randomAccessFile = new RandomAccessFile(file, "r");
+//			final FileChannel fileChannel = randomAccessFile.getChannel();
+//			return fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size());
+//		} finally {
+//			if (randomAccessFile != null) {
+//				randomAccessFile.close();
+//			}
+//		}
+//	}
 
 	static void scanApps(File root) {
 		File[] list = root.listFiles(new FileFilter() {
@@ -741,7 +737,7 @@ public final class RequestUtil {
 			try {
 				File scanpackagesFile = new File(f, SCANPACKAGES_TOKEN);
 				if (scanpackagesFile.exists())
-					new App(f.getName(), new String(read(scanpackagesFile))).deploy();
+					new App(f.getName(), new String(Utils.read(scanpackagesFile))).deploy();
 				else {
 					del(f);
 					logger.info("Invalid folder " + f.getAbsolutePath() + " removed!");
