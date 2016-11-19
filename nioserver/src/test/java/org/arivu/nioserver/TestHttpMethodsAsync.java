@@ -16,7 +16,7 @@ public class TestHttpMethodsAsync {
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		TestApis.runAsync = true;
-		TestHttpMethodsMultiThreaded.init("false", false);
+		TestHttpMethodsMultiThreaded.init(false, false);
 	}
 
 	@AfterClass

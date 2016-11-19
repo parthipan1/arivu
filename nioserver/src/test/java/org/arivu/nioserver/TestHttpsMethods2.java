@@ -14,7 +14,7 @@ public class TestHttpsMethods2 {
 	
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-		TestHttpMethodsMultiThreaded.init("true", true);
+		TestHttpMethodsMultiThreaded.init(true, true);
 	}
 
 	@AfterClass

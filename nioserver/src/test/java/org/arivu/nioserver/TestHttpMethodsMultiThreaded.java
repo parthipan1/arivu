@@ -50,10 +50,10 @@ public class TestHttpMethodsMultiThreaded {
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		TestApis.runAsync = false;
-		init("false", false);
+		init(false, false);
 	}
 
-	static void init(String singleThread, boolean ssl) throws Exception {
+	static void init(boolean singleThread, boolean ssl) throws Exception {
 		if(ssl){
 			RestAssured.baseURI = "https://localhost:" + port;
 			String keyStorePath = Env.getEnv("ssl.ksfile", "nioserver.jks");
@@ -73,7 +73,7 @@ public class TestHttpMethodsMultiThreaded {
 		
 		
 		System.setProperty("access.log", "."+File.separator+"logs"+File.separator+"access.log");
-		System.setProperty("singleThread", singleThread);
+		System.setProperty("singleThread", ""+singleThread);
 		System.setProperty("port", port);
 
 		System.setProperty("adminMod", "true");

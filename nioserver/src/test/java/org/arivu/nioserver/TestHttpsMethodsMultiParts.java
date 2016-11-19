@@ -13,7 +13,7 @@ public class TestHttpsMethodsMultiParts  {
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		TestApis.runAsync = false;
-		TestHttpMethodsMultiThreaded.init("true", true);
+		TestHttpMethodsMultiThreaded.init(true, true);
 	}
 
 	@AfterClass
