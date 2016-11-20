@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -181,10 +182,134 @@ public class AsonTest {
 		end.await();
 		
 	}
-//
-//	@Test
-//	public void testFromJsonInputStream() {
-//		fail("Not yet implemented");
-//	}
 
+	@Test
+	public void testSplit() {
+		assertTrue(Ason.split(null, ",")==null);
+		assertTrue(Ason.split("1", ",")!=null);
+		assertTrue(Ason.split("1", ",").length==1);
+		assertTrue(Ason.split("1,2", ",").length==2);
+	}
+
+	@Test
+	public void testConvert() {
+		assertTrue(Ason.convert(null)==null);
+		Map<String,String> map = new HashMap<String,String>();
+		assertTrue(Ason.convert(map).size()==0);
+		map.put("0", "0");
+		assertTrue(Ason.convert(map).size()==1);
+	}
+
+	@Test
+	public void testGetObject1() {
+		Map<String, Object> json = new HashMap<String, Object>();
+		String key = "test";
+		json.put(key, key);
+		String token = "one";
+		String dfltvalue = "two";
+		assertTrue(Ason.get(json, token, null)==null);
+		assertTrue(Ason.get(json, token, dfltvalue)==dfltvalue);
+		assertTrue(Ason.get(json, key, dfltvalue)==key);
+	}
+
+	@Test
+	public void testGetObject2() {
+		String key = "test";
+		String token = "one";
+		String dfltvalue = "two";
+
+		Map<String, Object> json = new HashMap<String, Object>();
+		
+		Map<String, Object> innerjson = new HashMap<String, Object>();
+		json.put(key, innerjson);
+		innerjson.put(token, dfltvalue);
+		
+		assertTrue(Ason.get(json, "test.one", null)==dfltvalue);
+		assertTrue(Ason.get(json, "test.two", dfltvalue)==dfltvalue);
+		assertTrue(Ason.get(json, "test.two", null)==null);
+	}
+
+	@Test
+	public void testLoadProperties() {
+		Map<String, Object> json = Ason.loadProperties("test.json");
+		assertTrue(((Number)Ason.get(json, "buffer.batch", null)).intValue()==50);
+	}
+	
+	@Test
+	public void testGetList() {
+		Map<String, Object> json = Ason.loadProperties("test2.json");
+		Collection<Map<String,Object>> deflt = new ArrayList<Map<String,Object>>();
+		assertTrue(Ason.getList(json, "test1", null)==null);
+		assertTrue(Ason.getList(json, "test1", deflt)==deflt);
+		assertTrue(Ason.getList(json, "test", null)!=null);
+		assertTrue(Ason.getList(json, "test", null).size()==2);
+	}
+
+	@Test
+	public void testGetStr() {
+		String key = "test";
+		String token = "one";
+		String dfltvalue = "two";
+
+		Map<String, Object> json = new HashMap<String, Object>();
+		
+		Map<String, Object> innerjson = new HashMap<String, Object>();
+		json.put(key, innerjson);
+		innerjson.put(token, dfltvalue);
+		
+		assertTrue(Ason.getStr(json, "test.one", null)==dfltvalue);
+		assertTrue(Ason.getStr(json, "test.two", dfltvalue)==dfltvalue);
+		assertTrue(Ason.getStr(json, "test.two", null)==null);
+	}
+
+	@Test
+	public void testGetObj() {
+		String key = "test";
+		String token = "one";
+		Map<String,Object> dfltvalue = new HashMap<String,Object>();
+
+		Map<String, Object> json = new HashMap<String, Object>();
+		
+		Map<String, Object> innerjson = new HashMap<String, Object>();
+		json.put(key, innerjson);
+		innerjson.put(token, dfltvalue);
+		
+		assertTrue(Ason.getObj(json, "test.one", null)==dfltvalue);
+		assertTrue(Ason.getObj(json, "test.two", dfltvalue)==dfltvalue);
+		assertTrue(Ason.getObj(json, "test.two", null)==null);
+	}
+
+	@Test
+	public void testGetNumber() {
+		String key = "test";
+		String token = "one";
+		Number dfltvalue = 11;
+
+		Map<String, Object> json = new HashMap<String, Object>();
+		
+		Map<String, Object> innerjson = new HashMap<String, Object>();
+		json.put(key, innerjson);
+		innerjson.put(token, dfltvalue);
+		
+		assertTrue(Ason.getNumber(json, "test.one", null)==dfltvalue);
+		assertTrue(Ason.getNumber(json, "test.two", dfltvalue)==dfltvalue);
+		assertTrue(Ason.getNumber(json, "test.two", null)==null);
+	}
+	
+	@Test
+	public void testGetArray() {
+		String key = "test";
+		String token = "one";
+		Collection<String> dfltvalue = new ArrayList<String>();
+
+		Map<String, Object> json = new HashMap<String, Object>();
+		
+		Map<String, Object> innerjson = new HashMap<String, Object>();
+		json.put(key, innerjson);
+		innerjson.put(token, dfltvalue);
+		
+//		assertTrue(Ason.getArray(json, "test.one", null)==dfltvalue);
+		assertTrue(Ason.getArray(json, "test.two", dfltvalue)==dfltvalue);
+		assertTrue(Ason.getArray(json, "test.two", null)==null);
+	}
 }

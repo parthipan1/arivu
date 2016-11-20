@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This is the Nio server main class, entry point for all Apps. Server download able from main <a href="https://github.com/parthipan1/arivu/blob/master_1_6/nioserver/arivu.nioserver-1.0.0.zip">distribution</a> or can be used part of your build.
+ * This is the Nio server main class , entry point for all Apps. Server download able from main <a href="https://github.com/parthipan1/arivu/blob/master_1_6/nioserver/arivu.nioserver-1.0.0.zip">distribution</a> or can be used part of your build.
  * If used part of build following command will start the server 
  * <pre>
  * 	java -server -classpath XXX org.arivu.nioserver.Server start
@@ -48,7 +48,8 @@ import org.slf4j.LoggerFactory;
  * <li>-DadminLoc=(admin module directory location)  -> admin module location. default ../admin</li>
  * <li>-DdeployLoc=(app deployment directory location) -> location to deploy apps. default ../apps</li>
  * <li>-Darivu.nioserver.json=(location of json config file) -> default ./arivu.nioserver.json</li>
- * <li>-Dssl=true/false  -> Enable ssl protocol.</li>
+ * <li>-Dssl=true/false  -> Enable ssl protocol. default false</li>
+ * <li>-Dssl.bufferSize=xxx(Number)  -> Buffer size. default 1048576</li>
  * <li>-Dssl.ksfile=(keystore file Location)  -> ssl keystore file Location. default 'nioserver.jks'</li>
  * <li>-Dssl.pass=<keystore password>  -> ssl keystore password. default 'nioserver'</li>
  * <li>-Dssl.protocol=(<a href="https://docs.oracle.com/javase/7/docs/technotes/guides/security/StandardNames.html#SSLContext">protocol</a>)  ->  ssl protocol. default 'TLSv1.2'</li> 

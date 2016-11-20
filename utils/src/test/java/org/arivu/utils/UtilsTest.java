@@ -2,6 +2,8 @@ package org.arivu.utils;
 
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -67,6 +69,7 @@ public class UtilsTest {
 	public void testReplaceAll() {
 		assertTrue(Utils.replaceAll("test", "t", "1").equals("1es1"));
 		assertTrue(Utils.replaceAll("12345", "t", "1").equals("12345"));
+		assertTrue(Utils.replaceAll("12345", "a", "a").equals("12345"));
 	}
 
 	@Test
@@ -109,5 +112,23 @@ public class UtilsTest {
 		list.add(v2);
 		assertTrue("[value,[value1],{ikey=ivalue}]".equals(Utils.toString(list)));
 	}
+	
+	private static final String TEST_RESOURCE_BASE = "."+File.separator+"src"+File.separator+"test"+File.separator+"resources"+File.separator;
 
+	static final String TEST_1 = TEST_RESOURCE_BASE+"1.txt";
+
+	@Test
+	public void testReadBB1() throws IOException {
+		assertTrue(Utils.readBB(null)==null);
+		assertTrue(Utils.readBB(new File("Donotexist"))==null);
+		assertTrue(Utils.readBB(new File(TEST_1))!=null);
+	}
+	
+	@Test
+	public void testRead1() throws IOException {
+		assertTrue(Utils.read(null)==null);
+		assertTrue(Utils.read(new File("Donotexist"))==null);
+		assertTrue(Utils.read(new File(TEST_1))!=null);
+		assertTrue(Utils.read(new File(TEST_1)).length==5);
+	}
 }

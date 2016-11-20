@@ -107,7 +107,7 @@ final class SelectorHandler {
 						continue;
 					} else if (key.isAcceptable()) {
 						if(ssl){
-							SocketChannel clientSocket = ((ServerSocketChannel) key.channel()).accept();
+							SocketChannel clientSocket = ssc.accept();
 					        clientSocket.configureBlocking(false);
 
 					        SSLEngine engine = sslContext.createSSLEngine();

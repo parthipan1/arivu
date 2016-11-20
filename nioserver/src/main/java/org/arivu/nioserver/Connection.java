@@ -11,15 +11,18 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLSession;
 
 import org.arivu.datastructure.DoublyLinkedList;
+import org.arivu.pool.ConcurrentPool;
 import org.arivu.pool.Pool;
+import org.arivu.pool.PoolFactory;
+import org.arivu.utils.Env;
 import org.arivu.utils.NullCheck;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +34,51 @@ import org.slf4j.LoggerFactory;
 final class Connection {
 	private static final Logger logger = LoggerFactory.getLogger(Connection.class);
 
+	private static final int BUFFER_SIZE = Integer.parseInt(Env.getEnv("ssl.bufferSize", "1048576")) ;
+	
+	private static final class SSLByteBuffer{
+		final ByteBuffer bb = ByteBuffer.allocateDirect(BUFFER_SIZE);
+	} 
+	
+	static final Pool<SSLByteBuffer> sslbufferPool = new ConcurrentPool<SSLByteBuffer>(new PoolFactory<SSLByteBuffer>() {
+
+		@Override
+		public SSLByteBuffer create(Map<String, Object> params) {
+			return new SSLByteBuffer();
+		}
+
+		@Override
+		public void close(SSLByteBuffer t) {
+		}
+
+		@Override
+		public void clear(SSLByteBuffer t) {
+			if (t != null){
+				t.bb.clear();
+				t.bb.position(0);
+			}
+
+		}
+	}, SSLByteBuffer.class);
+	
+	static{
+		sslbufferPool.setMaxPoolSize(-1);
+		sslbufferPool.setIdleTimeout(30000);
+		sslbufferPool.setLifeSpan(-1);
+		sslbufferPool.setMaxReuseCount(-1);
+		Server.registerShutdownHook(new Runnable() {
+			
+			@Override
+			public void run() {
+				try {
+					sslbufferPool.close();
+				} catch (Exception e) {
+					logger.error("Failed in close sslbufferPool :: ", e);
+				}
+			}
+		});
+	}
+	
 	long startTime = System.currentTimeMillis();
 
 	Pool<Connection> pool;
@@ -49,12 +97,12 @@ final class Connection {
 	RequestImpl req = null;
 	Route route = null;
 	boolean ssl = false;
-	ByteBuffer myAppData;
-	ByteBuffer myNetData;
-	ByteBuffer peerAppData;
-	ByteBuffer peerNetData;
+//	ByteBuffer myAppData;
+//	ByteBuffer myNetData;
+//	ByteBuffer peerAppData;
+//	ByteBuffer peerNetData;
 	SSLEngine engine;
-	int appBufferSize = 0;
+//	int appBufferSize = 0;
 	
 	Connection assign(boolean ssl) {
 		this.ssl = ssl;
@@ -70,12 +118,16 @@ final class Connection {
 		startTime = 0;
 		
 		ssl = true;
-		myAppData = null;
-		myNetData = null;
-		peerAppData = null;
-		peerNetData = null;
+//		sslbufferPool.put(myAppData);
+//		sslbufferPool.put(myNetData);
+//		sslbufferPool.put(peerAppData);
+//		sslbufferPool.put(peerNetData);
+//		myAppData = null;
+//		myNetData = null;
+//		peerAppData = null;
+//		peerNetData = null;
 		engine = null;
-		appBufferSize = 0;
+//		appBufferSize = 0;
 	}
 	 
 	void read(SelectionKey key, Selector clientSelector) throws IOException {
@@ -450,7 +502,13 @@ final class Connection {
 	void readSsl(SelectionKey key, Selector clientSelector) throws IOException {
 		logger.debug(" readSsl connection {} ",this);
 		SocketChannel socketChannel = (SocketChannel) key.channel();
-
+		
+		SSLByteBuffer peerAppDataRef = sslbufferPool.get(null);
+		SSLByteBuffer peerNetDataRef = sslbufferPool.get(null);
+		
+		ByteBuffer peerAppData = peerAppDataRef.bb;
+		ByteBuffer peerNetData = peerNetDataRef.bb;
+		
 		peerNetData.clear();
 		int bytesRead = socketChannel.read(peerNetData);
 		if (bytesRead > 0) {
@@ -466,7 +524,7 @@ final class Connection {
 					int noofReads = bytesRemaining/Configuration.defaultChunkSize;
 					int tailLen = bytesRemaining%Configuration.defaultChunkSize;
 					for(int i=0;i<noofReads;i++){
-						byte[] array = new byte[Configuration.defaultChunkSize];//ByteData.getChunkData(false);//peerAppData.array();
+						byte[] array = new byte[Configuration.defaultChunkSize];
 						peerAppData.get(array);
 						readIn(key, clientSelector, array);
 					}
@@ -480,7 +538,7 @@ final class Connection {
 					break;
 				case BUFFER_UNDERFLOW:
 					logger.debug(" readSsl BUFFER_UNDERFLOW connection {} ",this);
-					peerNetData = handleSslDataBufferUnderflow(peerNetData);
+					peerNetData = handleSslDataBufferUnderflow(peerNetData,peerNetDataRef);
 //					ByteBuffer replaceBuffer = ByteBuffer.allocate(peerNetData.capacity() * 2);
 //					peerNetData.flip();
 //					replaceBuffer.put(peerNetData);
@@ -489,6 +547,8 @@ final class Connection {
 				case CLOSED:
 					logger.debug(" readSsl CLOSED connection {} ",this);
 					closeSslConnection(key);
+					sslbufferPool.put(peerAppDataRef);
+					sslbufferPool.put(peerNetDataRef);
 					return;
 				default:
 					throw new IllegalStateException("Invalid SSL status :: " + result.getStatus());
@@ -498,6 +558,8 @@ final class Connection {
 			logger.debug(" readSsl handleSslEndOfStream connection {} ",this);
 			handleSslEndOfStream(key);
 		}
+		sslbufferPool.put(peerAppDataRef);
+		sslbufferPool.put(peerNetDataRef);
 	}
 
 	private void readIn(SelectionKey key, Selector clientSelector,
@@ -526,7 +588,13 @@ final class Connection {
 						state.resBuff.queue.size());
 			}
 		}
-		final int length = Math.min(appBufferSize, state.rem - state.pos);
+		SSLByteBuffer myAppDataRef = sslbufferPool.get(null);
+		SSLByteBuffer myNetDataRef = sslbufferPool.get(null);
+		
+		ByteBuffer myAppData = myAppDataRef.bb;
+		ByteBuffer myNetData = myNetDataRef.bb;
+		
+		final int length = Math.min(BUFFER_SIZE, state.rem - state.pos);
 		myAppData.clear();
 		myAppData.put(state.poll.copyOfRange(state.pos, state.pos + length));
 		myAppData.flip();
@@ -548,10 +616,14 @@ final class Connection {
 				break;
 			case BUFFER_UNDERFLOW:
 				logger.debug(" writeSsl BUFFER_UNDERFLOW connection {} ",this);
+				sslbufferPool.put(myAppDataRef);
+				sslbufferPool.put(myNetDataRef);
 				throw new SSLException("Buffer underflow occured after a wrap!");
 			case CLOSED:
 				logger.debug(" writeSsl CLOSED connection {} ",this);
 				closeSslConnection(key);
+				sslbufferPool.put(myAppDataRef);
+				sslbufferPool.put(myNetDataRef);
 				return;
 			default:
 				throw new IllegalStateException("Invalid SSL status :: " + result.getStatus());
@@ -559,6 +631,8 @@ final class Connection {
 		}
 		state.pos += length;
 		finishByteBuff(key, clientSelector);
+		sslbufferPool.put(myAppDataRef);
+		sslbufferPool.put(myNetDataRef);
 	}
 
 	boolean doSslHandshake(SocketChannel socketChannel, SSLEngine engine) throws IOException {
@@ -568,13 +642,17 @@ final class Connection {
 		SSLEngineResult result;
 		HandshakeStatus handshakeStatus;
 
-		SSLSession session = engine.getSession();
-		appBufferSize = session.getApplicationBufferSize();
-		myAppData = ByteBuffer.allocateDirect(appBufferSize);
-		myNetData = ByteBuffer.allocateDirect(session.getPacketBufferSize());
-		peerAppData = ByteBuffer.allocateDirect(appBufferSize);
-		peerNetData = ByteBuffer.allocateDirect(session.getPacketBufferSize());
+		SSLByteBuffer myAppDataRef = sslbufferPool.get(null);
+		SSLByteBuffer myNetDataRef = sslbufferPool.get(null);
+		SSLByteBuffer peerAppDataRef = sslbufferPool.get(null);
+		SSLByteBuffer peerNetDataRef = sslbufferPool.get(null);
+		
+		ByteBuffer myAppData = myAppDataRef.bb;
+		ByteBuffer myNetData = myNetDataRef.bb;
+		ByteBuffer peerAppData = peerAppDataRef.bb;
+		ByteBuffer peerNetData = peerNetDataRef.bb;
 
+		int peerNetDataCap = BUFFER_SIZE;
 		myNetData.clear();
 		peerNetData.clear();
 
@@ -587,6 +665,10 @@ final class Connection {
 				logger.debug(" doSslHandshake NEED_UNWRAP connection {} ",this);
 				if (socketChannel.read(peerNetData) < 0) {
 					if (engine.isInboundDone() && engine.isOutboundDone()) {
+						sslbufferPool.put(myAppDataRef);
+						sslbufferPool.put(myNetDataRef);
+						sslbufferPool.put(peerAppDataRef);
+						sslbufferPool.put(peerNetDataRef);
 						return false;
 					}
 					try {
@@ -620,14 +702,20 @@ final class Connection {
 				case BUFFER_UNDERFLOW:
 					logger.debug(" doSslHandshake NEED_UNWRAP BUFFER_UNDERFLOW connection {} ",this);
 //					peerNetData = handleSslDataBufferUnderflow(peerNetData);
-					ByteBuffer replaceBuffer = ByteBuffer.allocate(peerNetData.capacity() * 2);
+					peerNetDataCap *= 2;
+					ByteBuffer replaceBuffer = ByteBuffer.allocateDirect(peerNetDataCap);
 					peerNetData.flip();
 					replaceBuffer.put(peerNetData);
+					sslbufferPool.put(peerNetDataRef);
 					peerNetData = replaceBuffer;
 					break;
 				case CLOSED:
 					logger.debug(" doSslHandshake NEED_UNWRAP CLOSED connection {} ",this);
 					if (engine.isOutboundDone()) {
+						sslbufferPool.put(myAppDataRef);
+						sslbufferPool.put(myNetDataRef);
+						sslbufferPool.put(peerAppDataRef);
+						sslbufferPool.put(peerNetDataRef);
 						return false;
 					} else {
 						engine.closeOutbound();
@@ -635,6 +723,10 @@ final class Connection {
 						break;
 					}
 				default:
+					sslbufferPool.put(myAppDataRef);
+					sslbufferPool.put(myNetDataRef);
+					sslbufferPool.put(peerAppDataRef);
+					sslbufferPool.put(peerNetDataRef);
 					throw new IllegalStateException("Invalid SSL status :: " + result.getStatus());
 				}
 				break;
@@ -664,6 +756,10 @@ final class Connection {
 					break;
 				case BUFFER_UNDERFLOW:
 					logger.debug(" doSslHandshake NEED_WRAP BUFFER_UNDERFLOW connection {} ",this);
+					sslbufferPool.put(myAppDataRef);
+					sslbufferPool.put(myNetDataRef);
+					sslbufferPool.put(peerAppDataRef);
+					sslbufferPool.put(peerNetDataRef);
 					throw new SSLException(
 							"Buffer underflow occured after wrap!");
 				case CLOSED:
@@ -680,6 +776,10 @@ final class Connection {
 					}
 					break;
 				default:
+					sslbufferPool.put(myAppDataRef);
+					sslbufferPool.put(myNetDataRef);
+					sslbufferPool.put(peerAppDataRef);
+					sslbufferPool.put(peerNetDataRef);
 					throw new IllegalStateException("Invalid SSL status :: " + result.getStatus());
 				}
 				break;
@@ -698,10 +798,19 @@ final class Connection {
 				logger.debug(" doSslHandshake NOT_HANDSHAKING connection {} ",this);
 				break;
 			default:
+				sslbufferPool.put(myAppDataRef);
+				sslbufferPool.put(myNetDataRef);
+				sslbufferPool.put(peerAppDataRef);
+				sslbufferPool.put(peerNetDataRef);
 				throw new IllegalStateException("Invalid SSL status :: " + handshakeStatus);
 			}
 		}
-
+		
+		sslbufferPool.put(myAppDataRef);
+		sslbufferPool.put(myNetDataRef);
+		sslbufferPool.put(peerAppDataRef);
+		sslbufferPool.put(peerNetDataRef);
+		
 		return true;
 
 	}
@@ -723,10 +832,11 @@ final class Connection {
 		return buffer;
 	}
 
-	ByteBuffer handleSslDataBufferUnderflow(ByteBuffer buffer) {
+	ByteBuffer handleSslDataBufferUnderflow(ByteBuffer buffer,SSLByteBuffer ref) {
 		ByteBuffer replaceBuffer = enlargeSslDataBuffer(buffer);
 		buffer.flip();
 		replaceBuffer.put(buffer);
+		sslbufferPool.put(ref);
 		return replaceBuffer;
 	}
 	
