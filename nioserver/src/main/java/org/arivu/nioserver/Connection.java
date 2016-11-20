@@ -528,19 +528,25 @@ final class Connection {
 						peerAppData.get(array);
 						readIn(key, clientSelector, array);
 					}
-					if (tailLen>0) {
-						byte[] array = new byte[tailLen];
-						peerAppData.get(array);
-						readIn(key, clientSelector, array);
-					}
+					byte[] array = new byte[tailLen];
+					peerAppData.get(array);
+					readIn(key, clientSelector, array);
 					break;
 				case BUFFER_OVERFLOW:
 					logger.debug(" readSsl BUFFER_OVERFLOW connection {} ",this);
-					peerAppData = enlargeSslApplicationDataBuffer(peerAppData);
+					if(peerAppData.capacity()==BUFFER_SIZE){
+						peerAppData = enlargeSslApplicationDataBuffer(peerAppData,peerAppDataRef);
+						peerAppDataRef = null;
+					}else
+						peerAppData = enlargeSslApplicationDataBuffer(peerAppData,null);
 					break;
 				case BUFFER_UNDERFLOW:
 					logger.debug(" readSsl BUFFER_UNDERFLOW connection {} ",this);
-					peerNetData = handleSslDataBufferUnderflow(peerNetData,peerNetDataRef);
+					if(peerNetData.capacity()==BUFFER_SIZE){
+						peerNetData = handleSslDataBufferUnderflow(peerNetData,peerNetDataRef);
+						peerNetDataRef = null;
+					}else
+						peerNetData = handleSslDataBufferUnderflow(peerNetData,null);
 //					ByteBuffer replaceBuffer = ByteBuffer.allocate(peerNetData.capacity() * 2);
 //					peerNetData.flip();
 //					replaceBuffer.put(peerNetData);
@@ -614,7 +620,11 @@ final class Connection {
 				break;
 			case BUFFER_OVERFLOW:
 				logger.debug(" writeSsl BUFFER_OVERFLOW connection {} ",this);
-				myNetData = enlargeSslDataBuffer(myNetData);
+				if(myNetData.capacity()==BUFFER_SIZE){
+					myNetData = enlargeSslDataBuffer(myNetData,myNetDataRef);
+					myNetDataRef = null;
+				}else
+					myNetData = enlargeSslDataBuffer(myNetData,null);
 				break;
 			case BUFFER_UNDERFLOW:
 				logger.debug(" writeSsl BUFFER_UNDERFLOW connection {} ",this);
@@ -699,7 +709,12 @@ final class Connection {
 					break;
 				case BUFFER_OVERFLOW:
 					logger.debug(" doSslHandshake NEED_UNWRAP BUFFER_OVERFLOW connection {} ",this);
-					peerAppData = enlargeSslApplicationDataBuffer(peerAppData);
+					if(peerAppData.capacity()==BUFFER_SIZE){
+						peerAppData = enlargeSslApplicationDataBuffer(peerAppData,peerAppDataRef);
+						peerAppDataRef = null;
+					}
+					else
+						peerAppData = enlargeSslApplicationDataBuffer(peerAppData,null);
 					break;
 				case BUFFER_UNDERFLOW:
 					logger.debug(" doSslHandshake NEED_UNWRAP BUFFER_UNDERFLOW connection {} ",this);
@@ -709,8 +724,10 @@ final class Connection {
 					peerNetData.flip();
 					replaceBuffer.put(peerNetData);
 					
-					if( peerNetDataCap == BUFFER_SIZE*2 )
+					if(peerNetDataCap == BUFFER_SIZE*2){
 						sslbufferPool.put(peerNetDataRef);
+						peerNetDataRef = null;
+					}
 					
 					peerNetData = replaceBuffer;
 					break;
@@ -757,7 +774,11 @@ final class Connection {
 					break;
 				case BUFFER_OVERFLOW:
 					logger.debug(" doSslHandshake NEED_WRAP BUFFER_OVERFLOW connection {} ",this);
-					myNetData = enlargeSslDataBuffer(myNetData);
+					if(myNetData.capacity()==BUFFER_SIZE){
+						myNetData = enlargeSslDataBuffer(myNetData,myNetDataRef);
+						myNetDataRef = null;
+					}else
+						myNetData = enlargeSslDataBuffer(myNetData,null);
 					break;
 				case BUFFER_UNDERFLOW:
 					logger.debug(" doSslHandshake NEED_WRAP BUFFER_UNDERFLOW connection {} ",this);
@@ -820,15 +841,15 @@ final class Connection {
 
 	}
 
-	ByteBuffer enlargeSslDataBuffer(ByteBuffer buffer) {
-		return enlargeSslDataBuffer(buffer, engine.getSession().getPacketBufferSize());
+	ByteBuffer enlargeSslDataBuffer(ByteBuffer buffer,SSLByteBuffer ref) {
+		return enlargeSslDataBuffer(buffer, BUFFER_SIZE, ref);
 	}
 
-	ByteBuffer enlargeSslApplicationDataBuffer(ByteBuffer buffer) {
-		return enlargeSslDataBuffer(buffer, engine.getSession().getApplicationBufferSize());
+	ByteBuffer enlargeSslApplicationDataBuffer(ByteBuffer buffer,SSLByteBuffer ref) {
+		return enlargeSslDataBuffer(buffer, BUFFER_SIZE, ref);
 	}
 
-	ByteBuffer enlargeSslDataBuffer(ByteBuffer buffer, int sessionProposedCapacity) {
+	ByteBuffer enlargeSslDataBuffer(ByteBuffer buffer, int sessionProposedCapacity,SSLByteBuffer ref) {
 		if (sessionProposedCapacity > buffer.capacity()) {
 			buffer = ByteBuffer.allocateDirect(sessionProposedCapacity);
 		} else {
@@ -838,7 +859,7 @@ final class Connection {
 	}
 
 	ByteBuffer handleSslDataBufferUnderflow(ByteBuffer buffer,SSLByteBuffer ref) {
-		ByteBuffer replaceBuffer = enlargeSslDataBuffer(buffer);
+		ByteBuffer replaceBuffer = enlargeSslDataBuffer(buffer, ref);
 		buffer.flip();
 		replaceBuffer.put(buffer);
 		sslbufferPool.put(ref);
@@ -875,7 +896,7 @@ final class ConnectionState {
 	Ref resBuff = null;
 
 	// Read state
-	final List<ByteData> in = new DoublyLinkedList<>();
+	final List<ByteData> in = new DoublyLinkedList<ByteData>();
 	boolean onceFlag = false;
 	long contentLen = -1l;
 	int start = 0;
