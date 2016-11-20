@@ -719,7 +719,8 @@ final class Connection {
 				case BUFFER_UNDERFLOW:
 					logger.debug(" doSslHandshake NEED_UNWRAP BUFFER_UNDERFLOW connection {} ",this);
 //					peerNetData = handleSslDataBufferUnderflow(peerNetData);
-					peerNetDataCap *= 2;
+					peerNetDataCap += BUFFER_SIZE;
+					logger.debug(" doSslHandshake NEED_UNWRAP BUFFER_UNDERFLOW peerNetDataCap {} ",peerNetDataCap);
 					ByteBuffer replaceBuffer = ByteBuffer.allocateDirect(peerNetDataCap);
 					peerNetData.flip();
 					replaceBuffer.put(peerNetData);
