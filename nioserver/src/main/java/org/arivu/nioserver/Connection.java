@@ -528,9 +528,11 @@ final class Connection {
 						peerAppData.get(array);
 						readIn(key, clientSelector, array);
 					}
-					byte[] array = new byte[tailLen];
-					peerAppData.get(array);
-					readIn(key, clientSelector, array);
+					if (tailLen>0) {
+						byte[] array = new byte[tailLen];
+						peerAppData.get(array);
+						readIn(key, clientSelector, array);
+					}
 					break;
 				case BUFFER_OVERFLOW:
 					logger.debug(" readSsl BUFFER_OVERFLOW connection {} ",this);
