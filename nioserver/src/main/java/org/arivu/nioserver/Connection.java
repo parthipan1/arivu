@@ -706,7 +706,10 @@ final class Connection {
 					ByteBuffer replaceBuffer = ByteBuffer.allocateDirect(peerNetDataCap);
 					peerNetData.flip();
 					replaceBuffer.put(peerNetData);
-					sslbufferPool.put(peerNetDataRef);
+					
+					if( peerNetDataCap == BUFFER_SIZE*2 )
+						sslbufferPool.put(peerNetDataRef);
+					
 					peerNetData = replaceBuffer;
 					break;
 				case CLOSED:
