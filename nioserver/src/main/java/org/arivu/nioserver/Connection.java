@@ -534,16 +534,18 @@ final class Connection {
 					break;
 				case BUFFER_OVERFLOW:
 					logger.debug(" readSsl BUFFER_OVERFLOW connection {} ",this);
-					if(peerAppData.capacity()==BUFFER_SIZE)
+					if(peerAppData.capacity()==BUFFER_SIZE){
 						peerAppData = enlargeSslApplicationDataBuffer(peerAppData,peerAppDataRef);
-					else
+						peerAppDataRef = null;
+					}else
 						peerAppData = enlargeSslApplicationDataBuffer(peerAppData,null);
 					break;
 				case BUFFER_UNDERFLOW:
 					logger.debug(" readSsl BUFFER_UNDERFLOW connection {} ",this);
-					if(peerNetData.capacity()==BUFFER_SIZE)
+					if(peerNetData.capacity()==BUFFER_SIZE){
 						peerNetData = handleSslDataBufferUnderflow(peerNetData,peerNetDataRef);
-					else
+						peerNetDataRef = null;
+					}else
 						peerNetData = handleSslDataBufferUnderflow(peerNetData,null);
 //					ByteBuffer replaceBuffer = ByteBuffer.allocate(peerNetData.capacity() * 2);
 //					peerNetData.flip();
@@ -618,9 +620,10 @@ final class Connection {
 				break;
 			case BUFFER_OVERFLOW:
 				logger.debug(" writeSsl BUFFER_OVERFLOW connection {} ",this);
-				if(myNetData.capacity()==BUFFER_SIZE)
+				if(myNetData.capacity()==BUFFER_SIZE){
 					myNetData = enlargeSslDataBuffer(myNetData,myNetDataRef);
-				else
+					myNetDataRef = null;
+				}else
 					myNetData = enlargeSslDataBuffer(myNetData,null);
 				break;
 			case BUFFER_UNDERFLOW:
@@ -706,8 +709,10 @@ final class Connection {
 					break;
 				case BUFFER_OVERFLOW:
 					logger.debug(" doSslHandshake NEED_UNWRAP BUFFER_OVERFLOW connection {} ",this);
-					if(peerAppData.capacity()==BUFFER_SIZE)
+					if(peerAppData.capacity()==BUFFER_SIZE){
 						peerAppData = enlargeSslApplicationDataBuffer(peerAppData,peerAppDataRef);
+						peerAppDataRef = null;
+					}
 					else
 						peerAppData = enlargeSslApplicationDataBuffer(peerAppData,null);
 					break;
@@ -719,8 +724,10 @@ final class Connection {
 					peerNetData.flip();
 					replaceBuffer.put(peerNetData);
 					
-					if(peerNetDataCap == BUFFER_SIZE*2)
+					if(peerNetDataCap == BUFFER_SIZE*2){
 						sslbufferPool.put(peerNetDataRef);
+						peerNetDataRef = null;
+					}
 					
 					peerNetData = replaceBuffer;
 					break;
@@ -767,9 +774,10 @@ final class Connection {
 					break;
 				case BUFFER_OVERFLOW:
 					logger.debug(" doSslHandshake NEED_WRAP BUFFER_OVERFLOW connection {} ",this);
-					if(myNetData.capacity()==BUFFER_SIZE)
+					if(myNetData.capacity()==BUFFER_SIZE){
 						myNetData = enlargeSslDataBuffer(myNetData,myNetDataRef);
-					else
+						myNetDataRef = null;
+					}else
 						myNetData = enlargeSslDataBuffer(myNetData,null);
 					break;
 				case BUFFER_UNDERFLOW:
