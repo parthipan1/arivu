@@ -48,7 +48,8 @@ import org.slf4j.LoggerFactory;
  * <li>-DadminLoc=(admin module directory location)  -> admin module location. default ../admin</li>
  * <li>-DdeployLoc=(app deployment directory location) -> location to deploy apps. default ../apps</li>
  * <li>-Darivu.nioserver.json=(location of json config file) -> default ./arivu.nioserver.json</li>
- * <li>-Dssl=true/false  -> Enable ssl protocol.</li>
+ * <li>-Dssl=true/false  -> Enable ssl protocol. default false</li>
+ * <li>-Dssl.bufferSize=xxx(Number)  -> Buffer size. default 1048576</li>
  * <li>-Dssl.ksfile=(keystore file Location)  -> ssl keystore file Location. default 'nioserver.jks'</li>
  * <li>-Dssl.pass=<keystore password>  -> ssl keystore password. default 'nioserver'</li>
  * <li>-Dssl.protocol=(<a href="https://docs.oracle.com/javase/7/docs/technotes/guides/security/StandardNames.html#SSLContext">protocol</a>)  ->  ssl protocol. default 'TLSv1.2'</li> 

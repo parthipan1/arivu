@@ -22,6 +22,7 @@ import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.pool.ConcurrentPool;
 import org.arivu.pool.Pool;
 import org.arivu.pool.PoolFactory;
+import org.arivu.utils.Env;
 import org.arivu.utils.NullCheck;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +34,7 @@ import org.slf4j.LoggerFactory;
 final class Connection {
 	private static final Logger logger = LoggerFactory.getLogger(Connection.class);
 
-	private static final int BUFFER_SIZE = 1024*1024;
+	private static final int BUFFER_SIZE = Integer.parseInt(Env.getEnv("ssl.bufferSize", "1048576")) ;
 	
 	private static final class SSLByteBuffer{
 		final ByteBuffer bb = ByteBuffer.allocateDirect(BUFFER_SIZE);
