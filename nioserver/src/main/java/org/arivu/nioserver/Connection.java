@@ -326,10 +326,10 @@ final class Connection {
 			if ((bytesRead = ((SocketChannel) key.channel()).read(wrap)) > 0) {
 				endOfLineByte = wrap.get(wrap.position() - 1);
 				if (req == null) {
-					readRawRequestHeader(key, clientSelector, bytesRead, readBuf).andProcessIt(this, key,
+					readRawRequestHeader(bytesRead, readBuf).andProcessIt(this, key,
 							bytesRead, endOfLineByte, readBuf, clientSelector);
 				} else {
-					readRawRequestBody(key, clientSelector, bytesRead, readBuf).andProcessIt(this, key, bytesRead,
+					readRawRequestBody(bytesRead, readBuf).andProcessIt(this, key, bytesRead,
 							endOfLineByte, readBuf, clientSelector);
 				}
 			}else if(bytesRead==0){
@@ -354,8 +354,7 @@ final class Connection {
 		}
 	}
 	
-	ReadState readRawRequestBody(final SelectionKey key, final Selector clientSelector, final int bytesRead,
-			final byte[] readBuf) {
+	ReadState readRawRequestBody(final int bytesRead, final byte[] readBuf) {
 		state.contentLen -= bytesRead;
 		if (!state.is404Res) {
 			if (req.isMultipart) {
@@ -374,7 +373,7 @@ final class Connection {
 			return ReadState.next;
 	}
 
-	ReadState readRawRequestHeader(final SelectionKey key, final Selector clientSelector, final int bytesRead, final byte[] readBuf) {
+	ReadState readRawRequestHeader(final int bytesRead, final byte[] readBuf) {
 		final int headerIndex = RequestUtil.getHeaderIndex(readBuf, RequestUtil.BYTE_13,
 				RequestUtil.BYTE_10, 2);
 		if (headerIndex == -1) {
@@ -576,9 +575,9 @@ final class Connection {
 		byte endOfLineByte = array[array.length-1];//peerAppData.get(peerAppData.position() - 1);
 		ReadState rstate = ReadState.next;
 		if (req == null) {
-			rstate = readRawRequestHeader(key, clientSelector, array.length, array);
+			rstate = readRawRequestHeader(array.length, array);
 		} else {
-			rstate = readRawRequestBody(key, clientSelector, array.length, array);
+			rstate = readRawRequestBody(array.length, array);
 		}
 		rstate.andProcessIt(this, key,
 				array.length, endOfLineByte, array, clientSelector);
