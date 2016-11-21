@@ -994,8 +994,22 @@ final class Connection {
 	void fillBuffer(ByteBuffer writeBuf) throws IOException{
 		while (writeBuf.position()<writeBuf.capacity()) {
 			final int length = Math.min(writeBuf.capacity()-writeBuf.position(), state.rem - state.pos);
-			writeBuf.put(state.poll.copyOfRange(state.pos, state.pos + length));
-			state.pos += length;
+			
+//			writeBuf.put(state.poll.copyOfRange(state.pos, state.pos + length));
+//			state.pos += length;
+			
+			final int noofReads = length/Configuration.defaultChunkSize;
+			for(int i=0;i<noofReads;i++){
+				writeBuf.put(state.poll.copyOfRange(state.pos, state.pos + Configuration.defaultChunkSize));
+				state.pos += Configuration.defaultChunkSize;
+				
+			}
+			final int tailLen = length%Configuration.defaultChunkSize;
+			if(tailLen>0){
+				writeBuf.put(state.poll.copyOfRange(state.pos, state.pos + tailLen));
+				state.pos += tailLen;
+			}
+			
 			if(state.rem == state.pos){
 				state.clearBytes();
 				state.poll = state.resBuff.queue.poll();
