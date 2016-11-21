@@ -9,6 +9,7 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
@@ -672,6 +673,78 @@ final class AsynContextImpl  implements AsynContext{
 			clientSelector.wakeup();
 			clientSelector = null;
 			key = null;
+		}
+	}
+	
+}
+/**
+ * @author P
+ *
+ */
+final class AsynContextImpl2  implements AsynContext{
+	private static final Logger logger = LoggerFactory.getLogger(AsynContextImpl2.class);
+	Connection connection;
+	AsynchronousSocketChannel asc;
+	boolean flag = false;
+	final Request request;
+	final Response response;
+	ConnectionState state;
+
+	final int threadId = Thread.currentThread().hashCode();
+	
+	AsynContextImpl2(Connection connection, Request request, Response response, ConnectionState state, AsynchronousSocketChannel asc) {
+		super();
+		this.connection = connection;
+		this.asc = asc;
+		this.request = request;
+		this.response = response;
+		this.state = state;
+	}
+
+	@Override
+	public void setAsynchronousFinish(boolean flag) {
+		if( this.threadId == Thread.currentThread().hashCode() ){
+			this.flag = flag;
+		}else{
+			throw new IllegalStateException("Cannot modify ouside the created Thread!");
+		}
+	}
+
+	@Override
+	public boolean isAsynchronousFinish() {
+		return flag;
+	}
+
+	/* (non-Javadoc)
+	 * @see org.arivu.nioserver.AsynContext#getRequest()
+	 */
+	@Override
+	public Request getRequest() {
+		return request;
+	}
+
+	/* (non-Javadoc)
+	 * @see org.arivu.nioserver.AsynContext#getResponse()
+	 */
+	@Override
+	public Response getResponse() {
+		return response;
+	}
+
+	/**
+	 * 
+	 */
+	@Override
+	public void finish() {
+		if( flag ){
+			state.resBuff = RequestUtil.getResponseBytes(request, response);
+			if( response instanceof ResponseImpl )
+				((ResponseImpl)response).done = true;
+			
+			logger.debug(" request :: {} response :: {}", request.toString() ,state.resBuff.cl);			
+			connection.finish(asc);
+			asc = null;
+			connection = null;
 		}
 	}
 	

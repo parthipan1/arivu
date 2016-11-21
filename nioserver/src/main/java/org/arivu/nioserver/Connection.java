@@ -6,6 +6,7 @@ package org.arivu.nioserver;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
@@ -97,12 +98,7 @@ final class Connection {
 	RequestImpl req = null;
 	Route route = null;
 	boolean ssl = false;
-//	ByteBuffer myAppData;
-//	ByteBuffer myNetData;
-//	ByteBuffer peerAppData;
-//	ByteBuffer peerNetData;
 	SSLEngine engine;
-//	int appBufferSize = 0;
 	
 	Connection assign(boolean ssl) {
 		this.ssl = ssl;
@@ -118,16 +114,7 @@ final class Connection {
 		startTime = 0;
 		
 		ssl = true;
-//		sslbufferPool.put(myAppData);
-//		sslbufferPool.put(myNetData);
-//		sslbufferPool.put(peerAppData);
-//		sslbufferPool.put(peerNetData);
-//		myAppData = null;
-//		myNetData = null;
-//		peerAppData = null;
-//		peerNetData = null;
 		engine = null;
-//		appBufferSize = 0;
 	}
 	 
 	void read(SelectionKey key, Selector clientSelector) throws IOException {
@@ -326,10 +313,10 @@ final class Connection {
 			if ((bytesRead = ((SocketChannel) key.channel()).read(wrap)) > 0) {
 				endOfLineByte = wrap.get(wrap.position() - 1);
 				if (req == null) {
-					readRawRequestHeader(key, clientSelector, bytesRead, readBuf).andProcessIt(this, key,
+					readRawRequestHeader(bytesRead, readBuf).andProcessIt(this, key,
 							bytesRead, endOfLineByte, readBuf, clientSelector);
 				} else {
-					readRawRequestBody(key, clientSelector, bytesRead, readBuf).andProcessIt(this, key, bytesRead,
+					readRawRequestBody(bytesRead, readBuf).andProcessIt(this, key, bytesRead,
 							endOfLineByte, readBuf, clientSelector);
 				}
 			}else if(bytesRead==0){
@@ -354,8 +341,7 @@ final class Connection {
 		}
 	}
 	
-	ReadState readRawRequestBody(final SelectionKey key, final Selector clientSelector, final int bytesRead,
-			final byte[] readBuf) {
+	ReadState readRawRequestBody(final int bytesRead, final byte[] readBuf) {
 		state.contentLen -= bytesRead;
 		if (!state.is404Res) {
 			if (req.isMultipart) {
@@ -374,7 +360,7 @@ final class Connection {
 			return ReadState.next;
 	}
 
-	ReadState readRawRequestHeader(final SelectionKey key, final Selector clientSelector, final int bytesRead, final byte[] readBuf) {
+	ReadState readRawRequestHeader(final int bytesRead, final byte[] readBuf) {
 		final int headerIndex = RequestUtil.getHeaderIndex(readBuf, RequestUtil.BYTE_13,
 				RequestUtil.BYTE_10, 2);
 		if (headerIndex == -1) {
@@ -576,9 +562,9 @@ final class Connection {
 		byte endOfLineByte = array[array.length-1];//peerAppData.get(peerAppData.position() - 1);
 		ReadState rstate = ReadState.next;
 		if (req == null) {
-			rstate = readRawRequestHeader(key, clientSelector, array.length, array);
+			rstate = readRawRequestHeader(array.length, array);
 		} else {
-			rstate = readRawRequestBody(key, clientSelector, array.length, array);
+			rstate = readRawRequestBody(array.length, array);
 		}
 		rstate.andProcessIt(this, key,
 				array.length, endOfLineByte, array, clientSelector);
@@ -883,6 +869,86 @@ final class Connection {
         }
         closeSslConnection(key);
     }
+
+	void handle(AsynchronousSocketChannel result) {
+		int bytesRead = 0;
+		try {
+			
+			do{
+				final byte[] readBuf = new byte[Configuration.defaultRequestBuffer];
+				final ByteBuffer wrap = ByteBuffer.wrap(readBuf);
+				bytesRead = result.read(wrap).get();
+				ReadState rs = ReadState.next;
+				if (req == null) {
+					rs = readRawRequestHeader(bytesRead, readBuf);
+				} else {
+					rs = readRawRequestBody(bytesRead, readBuf);
+				}
+				if(rs == ReadState.proc) break;
+			}while(bytesRead!=-1);
+			
+			AsynContext ctx = null;
+			try {
+				if (route != null) {
+					final Response response = route.getResponse(req);
+					if (response != null) {
+						ctx = new AsynContextImpl2(this, req, response, state, result);
+						StaticRef.set(req, response, ctx, null);
+						route.handle(req, response);
+					}
+				}
+			} finally {
+				StaticRef.clear();
+				if (!ctx.isAsynchronousFinish()) {
+					ctx.setAsynchronousFinish(true);
+					ctx.finish();
+				}
+			}
+			
+		} catch (Throwable e) {
+			logger.error("Failed in readNormal :: ", e);
+		}
+	}
+
+	void finish(AsynchronousSocketChannel asc) {
+		try {
+			while( (state.poll = state.resBuff.queue.poll()) != null ){
+				state.rem = (int) state.poll.length();
+				logger.debug("InnerPoll {} write next ByteBuff size :: {} queueSize :: {}", state.resBuff, state.rem,
+						state.resBuff.queue.size());
+				
+				while( state.rem > state.pos ){
+					final int length = Math.min(Configuration.defaultChunkSize, state.rem - state.pos);
+					final ByteBuffer wrap = ByteBuffer.wrap(state.poll.copyOfRange(state.pos, state.pos + length));
+					while (wrap.hasRemaining()) {
+						asc.write(wrap);
+					}
+					logger.debug("copyOfRange InnerWrite {} write bytes from  :: {}  length :: {} to :: {} size :: {}", state.resBuff,
+							state.pos, length, (state.pos + length), state.rem);
+					state.pos += length;
+				}
+				state.clearBytes();
+			}
+			logger.debug("Innerwrite {} write next ByteBuff is null! finish!", state.resBuff);
+		} catch (Throwable e) {
+			logger.error("Failed in innerWrite req " + req + " :: ", e);
+		}finally {
+			try {
+				SocketAddress remoteSocketAddress = asc.getRemoteAddress();
+				asc.close();
+				if (state.resBuff != null)
+					RequestUtil.accessLog(state.resBuff.rc, state.resBuff.uri, startTime, System.currentTimeMillis(),
+							state.resBuff.cl, remoteSocketAddress, state.resBuff.method);
+			} catch (IOException e) {
+				logger.error("Failed in close asc " + req + " :: ", e);
+			}
+			state.writeLen = 0;
+			req = null;
+			route = null;
+			pool.put(this);
+			logger.debug("finish connection {}",this);
+		}
+	}
 
 }
 

@@ -6,12 +6,19 @@ package org.arivu.nioserver;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.net.InetSocketAddress;
+import java.net.StandardSocketOptions;
+import java.nio.channels.AsynchronousChannelGroup;
+import java.nio.channels.AsynchronousServerSocketChannel;
+import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.CompletionHandler;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -19,6 +26,9 @@ import javax.management.ObjectName;
 import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.log.Appender;
 import org.arivu.log.appender.Appenders;
+import org.arivu.pool.ConcurrentPool;
+import org.arivu.pool.Pool;
+import org.arivu.pool.PoolFactory;
 import org.arivu.utils.Env;
 import org.arivu.utils.NullCheck;
 import org.arivu.utils.Utils;
@@ -203,6 +213,29 @@ public final class Server {
 
 	};
 	
+	static final Pool<Connection> connectionPool = new ConcurrentPool<Connection>(new PoolFactory<Connection>() {
+
+		@Override
+		public Connection create(Map<String, Object> params) {
+			return new Connection(connectionPool);
+		}
+
+		@Override
+		public void close(Connection t) {
+			if (t != null)
+				t.pool = null;
+		}
+
+		@Override
+		public void clear(Connection t) {
+			if (t != null)
+				t.reset();
+
+		}
+	}, Connection.class);
+	
+	static AsynchronousChannelGroup group = null;
+	static CompletionHandler<AsynchronousSocketChannel, Connection> completionHandler = null;
 	/**
 	 * @param args
 	 * @throws InterruptedException
@@ -215,11 +248,47 @@ public final class Server {
 			try {
 				beforeStart();
 				(handler = new SelectorHandler()).start(Integer.parseInt(Env.getEnv("port", Server.DEFAULT_PORT)), Boolean.parseBoolean(Env.getEnv("ssl", "false")));
+//				startAsync(Integer.parseInt(Env.getEnv("port", Server.DEFAULT_PORT)), Boolean.parseBoolean(Env.getEnv("ssl", "false"))); 
 			} catch (Throwable e) {
 				e.printStackTrace();
+				logger.error("Server Failed :: ",e); 
 			} finally {
 				afterStop();
 			}
+		}
+	}
+
+	static void startAsync(final int port, final boolean ssl) throws IOException {
+		group = AsynchronousChannelGroup.withCachedThreadPool(exe,50); 
+		final AsynchronousServerSocketChannel serverSocketChannel = AsynchronousServerSocketChannel 
+		        .open(group).bind( 
+		                new InetSocketAddress(port)); 
+		serverSocketChannel 
+		        .setOption(StandardSocketOptions.SO_RCVBUF, 4 * 1024); 
+		serverSocketChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true); 
+ 
+		completionHandler = new CompletionHandler<AsynchronousSocketChannel, Connection>(){
+
+			@Override
+			public void completed(AsynchronousSocketChannel result, Connection attachment) {
+				serverSocketChannel.accept(connectionPool.get(null).assign(ssl), completionHandler); 
+				attachment.handle(result);
+			}
+
+			@Override
+			public void failed(Throwable exc, Connection attachment) {
+				logger.info("Failed connection {} ",attachment); 
+				connectionPool.put(attachment);
+			}
+			
+		};
+		serverSocketChannel.accept(connectionPool.get(null).assign(ssl), completionHandler); 
+		logger.debug("Server started successfully"); 
+		try { 
+		    group.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS); 
+		    logger.info("Terminating "); 
+		} catch (InterruptedException e) { 
+		    Thread.currentThread().interrupt(); 
 		}
 	}
 
@@ -251,6 +320,21 @@ public final class Server {
 		accessLog = Appenders.file
 				.get(Env.getEnv("access.log", ".." + File.separator + "logs" + File.separator + "access.log"));
 		registerMXBean();
+		connectionPool.setMaxPoolSize(-1);
+		connectionPool.setMaxReuseCount(-1);
+		connectionPool.setLifeSpan(-1);
+		connectionPool.setIdleTimeout(30000);
+		Server.registerShutdownHook(new Runnable() {
+			
+			@Override
+			public void run() {
+				try {
+					connectionPool.close();
+				} catch (Exception e) {
+					logger.error("Failed to close connectionPool::", e);
+				}
+			}
+		});
 //		Runtime.getRuntime().addShutdownHook(systemShutdownHook);
 	}
 
@@ -339,6 +423,11 @@ public final class Server {
 	static void stop() {
 //		Runtime.getRuntime().removeShutdownHook(systemShutdownHook);
 		handler.close();
+//		try {
+//			group.shutdownNow();
+//		} catch (IOException e) {
+//			logger.error("Failed to stop Server::", e);
+//		}
 	}
 	
 }
