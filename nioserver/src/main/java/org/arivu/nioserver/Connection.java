@@ -881,30 +881,54 @@ final class Connection {
 
 			@Override
 			public void completed(Integer bytesRead, ByteBuffer attachment) {
+				if(bytesRead==-1 && req==null){
+					logger.error("Invalid request terminated! req is null and bytesRead is -1");
+					try {
+						result.close();
+					} catch (IOException e1) {
+						logger.error("Failed in readAsynchronousSocketChannel :: ", e1);
+					}
+					return;
+				}
+				
 				attachment.flip();
 				final int bytesRemaining = attachment.remaining();
 				int noofReads = bytesRemaining/Configuration.defaultChunkSize;
 				int tailLen = bytesRemaining%Configuration.defaultChunkSize;
-				logger.debug("handle AsynchronousSocketChannel read bytesRead {} bytesRemaining {} noofReads {} tailLen {}",bytesRead,bytesRemaining,noofReads,tailLen);
+				byte endOfLineByte = 0;
+				byte[] array = null;
+				logger.debug("handle AsynchronousSocketChannel read bytesRead {} bytesRemaining {} noofReads {} tailLen {} \n req {}",bytesRead,bytesRemaining,noofReads,tailLen,req);
 				for(int i=0;i<noofReads;i++){
-					byte[] array = new byte[Configuration.defaultChunkSize];
+					array = new byte[Configuration.defaultChunkSize];
 					attachment.get(array);
 					if (req == null) {
 						readRawRequestHeader(array.length, array);
 					} else {
 						readRawRequestBody(array.length, array);
 					}
+					endOfLineByte = array[array.length-1];
 				}
 				if(tailLen>0){
-					byte[] array = new byte[tailLen];
+					array = new byte[tailLen];
 					attachment.get(array);
 					if (req == null) {
 						readRawRequestHeader(array.length, array);
 					} else {
 						readRawRequestBody(array.length, array);
 					}
+					endOfLineByte = array[array.length-1];
 				}
-				if( bytesRead == -1 || bytesRead==bytesRemaining){
+				boolean end = false;
+				if (req!=null) {
+					if (req.isMultipart) {
+						end = (bytesRead == -1
+								|| endOfLineByte == RequestUtil.BYTE_10 && isEndOfLine(array.length, array));
+					} else {
+						end = (bytesRead == -1 || state.contentLen == 0l
+								|| (state.contentLen == -1l && endOfLineByte == RequestUtil.BYTE_10));
+					} 
+				}
+				if (end){
 					sslbufferPool.put(readBufRef);
 					logger.debug("handle AsynchronousSocketChannel process req connection {} req {} route {}",this,req,route);
 					try {

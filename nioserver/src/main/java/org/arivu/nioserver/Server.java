@@ -48,6 +48,7 @@ import org.slf4j.LoggerFactory;
  * <li>
  * -DsingleThread=true/false -> Either run on single thread mode or multi-threaded mode (only read and process request). default to true
  *     Note: Write operation is asynchronous and always happens in new seperate thread even on single thread mode. Performance may vary based on the use case.</li>
+ * <li>-DuseJ7Nio=true/false -> Either to use Java7Nio async library , default true. singleThread mode will be ignored for this mode.</li>
  * <li>-DthreadCnt=xxx(Number)  -> no of threads (only on multi threaded mode) default 50</li>
  * <li>-DschedulerCnt=xxx(Number)  -> no of schedule threads default 2</li>
  * <li>-Daccess.log=<Location of access.log> -> default ../logs/access.log. Format of access log is standard "[EEE, dd MMM yyyy HH:mm:ss z] uri httpMethod responseCode contentLength [ProcessTime in millisecs] remoteAddress"</li>
@@ -311,7 +312,6 @@ public final class Server {
 				exe = Executors.newFixedThreadPool( Math.max(50, Integer.parseInt(Env.getEnv("threadCnt", "50")) ) );
 			}
 		}
-		
 		
 		sexe = Executors.newScheduledThreadPool( Math.max(2, Integer.parseInt(Env.getEnv("schedulerCnt", "2")) ) );
 		accessLog = Appenders.file
