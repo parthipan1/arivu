@@ -217,6 +217,8 @@ public final class Server {
 	
 	static AsynchronousChannelGroup group = null;
 	static CompletionHandler<AsynchronousSocketChannel, Connection> completionHandler = null;
+	static final boolean ssl = Boolean.parseBoolean(Env.getEnv("ssl", "false"));
+	static final boolean useJ7Nio =  Boolean.parseBoolean(Env.getEnv("useJ7Nio", "true"));
 	/**
 	 * @param args
 	 * @throws InterruptedException
@@ -229,9 +231,13 @@ public final class Server {
 			try {
 				beforeStart();
 				final int port = Integer.parseInt(Env.getEnv("port", Server.DEFAULT_PORT));
-				final boolean ssl = Boolean.parseBoolean(Env.getEnv("ssl", "false"));
-				(handler = new SelectorHandler()).start(port, ssl);
-//				startAsync(port, ssl); 
+				if(ssl){
+					(handler = new SelectorHandler()).start(port, ssl);
+				}else if(useJ7Nio){
+					startAsync(port, ssl); 
+				}else{
+					(handler = new SelectorHandler()).start(port, ssl);
+				}
 			} catch (Throwable e) {
 				e.printStackTrace();
 				logger.error("Server Failed :: ",e); 
@@ -250,23 +256,20 @@ public final class Server {
 			serverSocketChannel.accept(connectionPool.get(null).assign(ssl), new CompletionHandler<AsynchronousSocketChannel, Connection>() {
 				@Override
 				public void completed(AsynchronousSocketChannel channel, Connection connection) {	
-					logger.info("completionHandler accept completed "); 
+					logger.debug("completionHandler accept completed "); 
 					serverSocketChannel.accept(connectionPool.get(null).assign(ssl), this); 
 					connection.handle(channel);
 				}
 				@Override
 				public void failed(Throwable t, Connection connection) {
-					logger.info("Failed connection {} ",connection); 
+					logger.error("Failed connection {} ",connection); 
 					connectionPool.put(connection);
 				}					
 			});
 			
 			try { 
 			    group.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS); 
-//			    logger.info("Terminating "); 
-			} catch (InterruptedException e) { 
-//			    Thread.currentThread().interrupt(); 
-//			    logger.error("Failed Server::", e);
+			} catch (InterruptedException ignored) { 
 			}
 		} catch (IOException e) {
 			logger.error("Failed Server::", e);
@@ -293,11 +296,23 @@ public final class Server {
 //	});
 	
 	private static void beforeStart() throws IOException {
-		if( Configuration.SINGLE_THREAD_MODE ){
+		if(ssl){
+			if( Configuration.SINGLE_THREAD_MODE ){
+				exe = Executors.newCachedThreadPool();
+			}else{
+				exe = Executors.newFixedThreadPool( Math.max(50, Integer.parseInt(Env.getEnv("threadCnt", "50")) ) );
+			}
+		}else if(useJ7Nio){
 			exe = Executors.newCachedThreadPool();
 		}else{
-			exe = Executors.newFixedThreadPool( Math.max(50, Integer.parseInt(Env.getEnv("threadCnt", "50")) ) );
+			if( Configuration.SINGLE_THREAD_MODE ){
+				exe = Executors.newCachedThreadPool();
+			}else{
+				exe = Executors.newFixedThreadPool( Math.max(50, Integer.parseInt(Env.getEnv("threadCnt", "50")) ) );
+			}
 		}
+		
+		
 		sexe = Executors.newScheduledThreadPool( Math.max(2, Integer.parseInt(Env.getEnv("schedulerCnt", "2")) ) );
 		accessLog = Appenders.file
 				.get(Env.getEnv("access.log", ".." + File.separator + "logs" + File.separator + "access.log"));
@@ -424,12 +439,17 @@ public final class Server {
 
 	static void stop() {
 //		Runtime.getRuntime().removeShutdownHook(systemShutdownHook);
-		handler.close();
-//		try {
-//			group.shutdownNow();
-//		} catch (IOException e) {
-//			logger.error("Failed to stop Server::", e);
-//		}
+		if(ssl){
+			handler.close();
+		}else if(useJ7Nio){
+			try {
+				group.shutdownNow();
+			} catch (IOException e) {
+				logger.error("Failed to stop Server::", e);
+			}
+		}else{
+			handler.close();
+		}
 	}
 	
 }

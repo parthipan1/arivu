@@ -9,8 +9,6 @@ import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.SocketChannel;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -57,18 +55,19 @@ final class Admin {
 	}
 
 	static boolean isHashMatching(String clientHash) {
-		SelectionKey key = StaticRef.getSelectionKey();
-		if (key!=null) {
-			InetAddress remoteHostAddress = ((SocketChannel) key.channel()).socket().getInetAddress();
+//		SelectionKey key = StaticRef.getRemoteHostAddress()
+//		if (key!=null) {
+			InetAddress remoteHostAddress = StaticRef.getRemoteHostAddress();//((SocketChannel) key.channel()).socket().getInetAddress();
 			if (remoteHostAddress!=null) {
 				String keyv = remoteHostAddress.toString();
+//				System.err.println("\n\n************** auth token isHashMatching "+keyv+"\n\n");
 				String serverHash = AdminRoute.authTokens.get(keyv);
 				if (!NullCheck.isNullOrEmpty(serverHash)) {
 					logger.debug("Hash auth server hash {} client hash{}", serverHash, clientHash);
 					return Long.parseLong(clientHash.trim())>=Long.parseLong(serverHash);
 				} 
 			}
-		}
+//		}
 		return false;
 	}
 

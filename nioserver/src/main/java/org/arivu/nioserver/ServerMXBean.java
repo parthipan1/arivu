@@ -101,5 +101,4 @@ public interface ServerMXBean {
 	 * 
 	 */
 	void clearByteCache();
-
 }

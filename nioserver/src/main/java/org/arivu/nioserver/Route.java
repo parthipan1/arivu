@@ -345,14 +345,15 @@ final class AdminRoute extends ProxyRoute {
 	void handleFile(Response res, String fileLoc, File file) throws IOException {
 		super.handleFile(res, fileLoc, file);
 		if(fileLoc.endsWith("Admin.html")){
-			SelectionKey key = StaticRef.getSelectionKey();
-			if (key!=null) {
-				InetAddress remoteHostAddress = ((SocketChannel) key.channel()).socket().getInetAddress();
+//			SelectionKey key = StaticRef.getSelectionKey();
+//			if (key!=null) {
+				InetAddress remoteHostAddress = StaticRef.getRemoteHostAddress();// ((SocketChannel) key.channel()).socket().getInetAddress();
 				if (remoteHostAddress!=null) {
 					String keyv = remoteHostAddress.toString();
+//					System.err.println("\n\n************** auth token "+keyv+"\n\n");
 					authTokens.put(keyv, String.valueOf(System.currentTimeMillis()));
 				}
-			}
+//			}
 		}
 	}
 }

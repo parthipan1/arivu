@@ -4,9 +4,11 @@
 package org.arivu.nioserver;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.CompletionHandler;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
@@ -469,7 +471,7 @@ final class Connection {
 				final Response response = route.getResponse(req);
 				if (response != null) {
 					ctx = new AsynContextImpl(key, req, response, state, clientSelector);
-					StaticRef.set(req, response, ctx, key);
+					StaticRef.set(req, response, ctx, key, ((SocketChannel) key.channel()).socket().getInetAddress());
 					route.handle(req, response);
 				}
 			}
@@ -514,9 +516,11 @@ final class Connection {
 						peerAppData.get(array);
 						readIn(key, clientSelector, array);
 					}
-					byte[] array = new byte[tailLen];
-					peerAppData.get(array);
-					readIn(key, clientSelector, array);
+					if(tailLen>0){
+						byte[] array = new byte[tailLen];
+						peerAppData.get(array);
+						readIn(key, clientSelector, array);
+					}
 					break;
 				case BUFFER_OVERFLOW:
 					logger.debug(" readSsl BUFFER_OVERFLOW connection {} ",this);
@@ -870,84 +874,185 @@ final class Connection {
         closeSslConnection(key);
     }
 
-	void handle(AsynchronousSocketChannel result) {
-		int bytesRead = 0;
-		try {
-			logger.debug("handle AsynchronousSocketChannel parse Req connection {} ",this);
-			do{
-				final byte[] readBuf = new byte[Configuration.defaultRequestBuffer];
-				final ByteBuffer wrap = ByteBuffer.wrap(readBuf);
-				bytesRead = result.read(wrap).get();
-				ReadState rs = ReadState.next;
-				if (req == null) {
-					rs = readRawRequestHeader(bytesRead, readBuf);
-				} else {
-					rs = readRawRequestBody(bytesRead, readBuf);
-				}
-				if(rs == ReadState.proc) break;
-			}while(bytesRead!=-1);
-			logger.debug("handle AsynchronousSocketChannel process req connection {} req {} route {}",this,req,route);
-			AsynContext ctx = null;
-			try {
-				if (route != null) {
-					final Response response = route.getResponse(req);
-					if (response != null) {
-						ctx = new AsynContextImpl2(this, req, response, state, result);
-						StaticRef.set(req, response, ctx, null);
-						route.handle(req, response);
+	void handle(final AsynchronousSocketChannel result) {
+		final SSLByteBuffer readBufRef = sslbufferPool.get(null);
+		final ByteBuffer readBuf = readBufRef.bb;
+		result.read(readBuf, readBuf, new CompletionHandler<Integer, ByteBuffer>() {
+
+			@Override
+			public void completed(Integer bytesRead, ByteBuffer attachment) {
+				attachment.flip();
+				final int bytesRemaining = attachment.remaining();
+				int noofReads = bytesRemaining/Configuration.defaultChunkSize;
+				int tailLen = bytesRemaining%Configuration.defaultChunkSize;
+				logger.debug("handle AsynchronousSocketChannel read bytesRead {} bytesRemaining {} noofReads {} tailLen {}",bytesRead,bytesRemaining,noofReads,tailLen);
+				for(int i=0;i<noofReads;i++){
+					byte[] array = new byte[Configuration.defaultChunkSize];
+					attachment.get(array);
+					if (req == null) {
+						readRawRequestHeader(array.length, array);
+					} else {
+						readRawRequestBody(array.length, array);
 					}
 				}
-			} finally {
-				StaticRef.clear();
-				if (!ctx.isAsynchronousFinish()) {
-					ctx.setAsynchronousFinish(true);
-					ctx.finish();
+				if(tailLen>0){
+					byte[] array = new byte[tailLen];
+					attachment.get(array);
+					if (req == null) {
+						readRawRequestHeader(array.length, array);
+					} else {
+						readRawRequestBody(array.length, array);
+					}
+				}
+				if( bytesRead == -1 || bytesRead==bytesRemaining){
+					sslbufferPool.put(readBufRef);
+					logger.debug("handle AsynchronousSocketChannel process req connection {} req {} route {}",this,req,route);
+					try {
+						processRequest(result);
+					} catch (IOException e) {
+						pool.put(Connection.this);
+						logger.error("Failed in readAsynchronousSocketChannel :: ", e);
+						try {
+							result.close();
+						} catch (IOException e1) {
+							logger.error("Failed in readAsynchronousSocketChannel :: ", e1);
+						}
+					}
+				}else{
+					logger.debug("handle AsynchronousSocketChannel next read");
+					readBuf.clear();
+					readBuf.position(0);
+					result.read(readBuf, readBuf, this);
 				}
 			}
-			
-		} catch (Throwable e) {
-			logger.error("Failed in readNormal :: ", e);
+
+			@Override
+			public void failed(Throwable exc, ByteBuffer attachment) {
+				sslbufferPool.put(readBufRef);
+				pool.put(Connection.this);
+				logger.error("Failed in readAsynchronousSocketChannel :: ", exc);
+				try {
+					result.close();
+				} catch (IOException e) {
+					logger.error("Failed in readAsynchronousSocketChannel :: ", e);
+				}
+			}
+		});
+		
+	}
+
+	void processRequest(AsynchronousSocketChannel result) throws IOException {
+		AsynContext ctx = null;
+		try {
+			if (route != null) {
+				final Response response = route.getResponse(req);
+				if (response != null) {
+					ctx = new AsynContextImpl2(this, req, response, state, result);
+					StaticRef.set(req, response, ctx, null, ((InetSocketAddress)result.getRemoteAddress()).getAddress());
+					route.handle(req, response);
+				}
+			}
+		} finally {
+			StaticRef.clear();
+			if(ctx==null){
+				try {
+					result.close();
+				} catch (IOException e) {
+					logger.error("Failed in readAsynchronousSocketChannel :: ", e);
+				}
+			}else if (!ctx.isAsynchronousFinish()) {
+				ctx.setAsynchronousFinish(true);
+				ctx.finish();
+			}
 		}
 	}
 
-	void finish(AsynchronousSocketChannel asc) {
-		logger.debug("finish AsynchronousSocketChannel connection {} ",this);
-		try {
-			while( (state.poll = state.resBuff.queue.poll()) != null ){
-				state.rem = (int) state.poll.length();
-				logger.debug("finish AsynchronousSocketChannel {} write next ByteBuff size :: {} queueSize :: {}", state.resBuff, state.rem,
-						state.resBuff.queue.size());
-				
-				while( state.rem > state.pos ){
-					final int length = Math.min(Configuration.defaultChunkSize, state.rem - state.pos);
-					final ByteBuffer wrap = ByteBuffer.wrap(state.poll.copyOfRange(state.pos, state.pos + length));
-					while (wrap.hasRemaining()) {
-						asc.write(wrap);
-					}
-					logger.debug("finish AsynchronousSocketChannel copyOfRange InnerWrite {} write bytes from  :: {}  length :: {} to :: {} size :: {}", state.resBuff,
-							state.pos, length, (state.pos + length), state.rem);
-					state.pos += length;
-				}
+	void fillBuffer(ByteBuffer writeBuf) throws IOException{
+		while (writeBuf.position()<writeBuf.capacity()) {
+			final int length = Math.min(writeBuf.capacity()-writeBuf.position(), state.rem - state.pos);
+			writeBuf.put(state.poll.copyOfRange(state.pos, state.pos + length));
+			state.pos += length;
+			if(state.rem == state.pos){
 				state.clearBytes();
+				state.poll = state.resBuff.queue.poll();
+				if( state.poll == null )
+					break;
+				state.rem = (int) state.poll.length();
 			}
-			logger.debug("finish AsynchronousSocketChannel {} write next ByteBuff is null! finish!", state.resBuff);
-		} catch (Throwable e) {
-			logger.error("Failed in finish AsynchronousSocketChannel req " + req + " :: ", e);
-		}finally {
+		}
+		writeBuf.flip();
+	}
+	
+	void finish(final AsynchronousSocketChannel asc) {
+		
+		state.poll = state.resBuff.queue.poll();
+		state.rem = (int) state.poll.length();
+		final SSLByteBuffer writeBufRef = sslbufferPool.get(null);
+		final ByteBuffer writeBuf = writeBufRef.bb;
+		try {
+			fillBuffer(writeBuf);
+			asc.write(writeBuf, writeBuf, new CompletionHandler<Integer, ByteBuffer>() {
+
+				@Override
+				public void completed(Integer result, ByteBuffer attachment) {
+					logger.debug("handle AsynchronousSocketChannel write bytesWritten {} bytesRemaining {} state.resBuff.queue.isEmpty() {} (state.rem == state.pos) {}",result,attachment.remaining(),state.resBuff.queue.isEmpty(),(state.rem == state.pos));
+					if( attachment.hasRemaining() ){
+						asc.write(attachment,attachment,this);
+					}else{
+						if( state.resBuff.queue.isEmpty() && (state.rem == state.pos) ){
+							logger.debug("handle AsynchronousSocketChannel write completed");
+							sslbufferPool.put(writeBufRef);
+							try {
+								SocketAddress remoteSocketAddress = asc.getRemoteAddress();
+								asc.close();
+								if (state.resBuff != null)
+									RequestUtil.accessLog(state.resBuff.rc, state.resBuff.uri, startTime, System.currentTimeMillis(),
+											state.resBuff.cl, remoteSocketAddress, state.resBuff.method);
+							} catch (IOException e) {
+								logger.error("Failed in close asc " + req + " :: ", e);
+							}
+							state.writeLen = 0;
+							req = null;
+							route = null;
+							pool.put(Connection.this);
+							logger.debug("finish AsynchronousSocketChannel connection {}",this);
+						}else{
+							writeBuf.clear();
+							writeBuf.position(0);
+							logger.debug("handle AsynchronousSocketChannel write next");
+							try {
+								fillBuffer(writeBuf);
+								asc.write(writeBuf,writeBuf,this);
+							} catch (IOException e) {
+								pool.put(Connection.this);
+								sslbufferPool.put(writeBufRef);
+							}
+						}
+					}
+				}
+
+				@Override
+				public void failed(Throwable exc, ByteBuffer attachment) {
+					sslbufferPool.put(writeBufRef);
+					pool.put(Connection.this);
+					logger.error("Failed in readAsynchronousSocketChannel :: ", exc);
+					try {
+						asc.close();
+					} catch (IOException e1) {
+						logger.error("Failed in readAsynchronousSocketChannel :: ", e1);
+					}
+				}
+			} );
+			
+		} catch (IOException e) {
+			sslbufferPool.put(writeBufRef);
+			pool.put(Connection.this);
+			logger.error("Failed in readAsynchronousSocketChannel :: ", e);
 			try {
-				SocketAddress remoteSocketAddress = asc.getRemoteAddress();
 				asc.close();
-				if (state.resBuff != null)
-					RequestUtil.accessLog(state.resBuff.rc, state.resBuff.uri, startTime, System.currentTimeMillis(),
-							state.resBuff.cl, remoteSocketAddress, state.resBuff.method);
-			} catch (IOException e) {
-				logger.error("Failed in close asc " + req + " :: ", e);
+			} catch (IOException e1) {
+				logger.error("Failed in readAsynchronousSocketChannel :: ", e1);
 			}
-			state.writeLen = 0;
-			req = null;
-			route = null;
-			pool.put(this);
-			logger.debug("finish connection {}",this);
 		}
 	}
 
