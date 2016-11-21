@@ -682,8 +682,8 @@ final class AsynContextImpl  implements AsynContext{
  * @author P
  *
  */
-final class AsynContextImpl2  implements AsynContext{
-	private static final Logger logger = LoggerFactory.getLogger(AsynContextImpl2.class);
+final class AsynContextImplJ7Nio  implements AsynContext{
+	private static final Logger logger = LoggerFactory.getLogger(AsynContextImplJ7Nio.class);
 	Connection connection;
 	AsynchronousSocketChannel asc;
 	boolean flag = false;
@@ -693,7 +693,7 @@ final class AsynContextImpl2  implements AsynContext{
 
 	final int threadId = Thread.currentThread().hashCode();
 	
-	AsynContextImpl2(Connection connection, Request request, Response response, ConnectionState state, AsynchronousSocketChannel asc) {
+	AsynContextImplJ7Nio(Connection connection, Request request, Response response, ConnectionState state, AsynchronousSocketChannel asc) {
 		super();
 		this.connection = connection;
 		this.asc = asc;

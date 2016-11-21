@@ -971,7 +971,7 @@ final class Connection {
 			if (route != null) {
 				final Response response = route.getResponse(req);
 				if (response != null) {
-					ctx = new AsynContextImpl2(this, req, response, state, result);
+					ctx = new AsynContextImplJ7Nio(this, req, response, state, result);
 					StaticRef.set(req, response, ctx, null, ((InetSocketAddress)result.getRemoteAddress()).getAddress());
 					route.handle(req, response);
 				}
