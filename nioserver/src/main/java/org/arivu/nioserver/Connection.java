@@ -873,7 +873,7 @@ final class Connection {
 	void handle(AsynchronousSocketChannel result) {
 		int bytesRead = 0;
 		try {
-			
+			logger.debug("handle AsynchronousSocketChannel parse Req connection {} ",this);
 			do{
 				final byte[] readBuf = new byte[Configuration.defaultRequestBuffer];
 				final ByteBuffer wrap = ByteBuffer.wrap(readBuf);
@@ -886,7 +886,7 @@ final class Connection {
 				}
 				if(rs == ReadState.proc) break;
 			}while(bytesRead!=-1);
-			
+			logger.debug("handle AsynchronousSocketChannel process req connection {} req {} route {}",this,req,route);
 			AsynContext ctx = null;
 			try {
 				if (route != null) {
@@ -911,10 +911,11 @@ final class Connection {
 	}
 
 	void finish(AsynchronousSocketChannel asc) {
+		logger.debug("finish AsynchronousSocketChannel connection {} ",this);
 		try {
 			while( (state.poll = state.resBuff.queue.poll()) != null ){
 				state.rem = (int) state.poll.length();
-				logger.debug("InnerPoll {} write next ByteBuff size :: {} queueSize :: {}", state.resBuff, state.rem,
+				logger.debug("finish AsynchronousSocketChannel {} write next ByteBuff size :: {} queueSize :: {}", state.resBuff, state.rem,
 						state.resBuff.queue.size());
 				
 				while( state.rem > state.pos ){
@@ -923,15 +924,15 @@ final class Connection {
 					while (wrap.hasRemaining()) {
 						asc.write(wrap);
 					}
-					logger.debug("copyOfRange InnerWrite {} write bytes from  :: {}  length :: {} to :: {} size :: {}", state.resBuff,
+					logger.debug("finish AsynchronousSocketChannel copyOfRange InnerWrite {} write bytes from  :: {}  length :: {} to :: {} size :: {}", state.resBuff,
 							state.pos, length, (state.pos + length), state.rem);
 					state.pos += length;
 				}
 				state.clearBytes();
 			}
-			logger.debug("Innerwrite {} write next ByteBuff is null! finish!", state.resBuff);
+			logger.debug("finish AsynchronousSocketChannel {} write next ByteBuff is null! finish!", state.resBuff);
 		} catch (Throwable e) {
-			logger.error("Failed in innerWrite req " + req + " :: ", e);
+			logger.error("Failed in finish AsynchronousSocketChannel req " + req + " :: ", e);
 		}finally {
 			try {
 				SocketAddress remoteSocketAddress = asc.getRemoteAddress();

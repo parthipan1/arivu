@@ -213,26 +213,7 @@ public final class Server {
 
 	};
 	
-	static final Pool<Connection> connectionPool = new ConcurrentPool<Connection>(new PoolFactory<Connection>() {
-
-		@Override
-		public Connection create(Map<String, Object> params) {
-			return new Connection(connectionPool);
-		}
-
-		@Override
-		public void close(Connection t) {
-			if (t != null)
-				t.pool = null;
-		}
-
-		@Override
-		public void clear(Connection t) {
-			if (t != null)
-				t.reset();
-
-		}
-	}, Connection.class);
+	static Pool<Connection> connectionPool = null;
 	
 	static AsynchronousChannelGroup group = null;
 	static CompletionHandler<AsynchronousSocketChannel, Connection> completionHandler = null;
@@ -247,8 +228,10 @@ public final class Server {
 		} else {
 			try {
 				beforeStart();
-				(handler = new SelectorHandler()).start(Integer.parseInt(Env.getEnv("port", Server.DEFAULT_PORT)), Boolean.parseBoolean(Env.getEnv("ssl", "false")));
-//				startAsync(Integer.parseInt(Env.getEnv("port", Server.DEFAULT_PORT)), Boolean.parseBoolean(Env.getEnv("ssl", "false"))); 
+				final int port = Integer.parseInt(Env.getEnv("port", Server.DEFAULT_PORT));
+				final boolean ssl = Boolean.parseBoolean(Env.getEnv("ssl", "false"));
+				(handler = new SelectorHandler()).start(port, ssl);
+//				startAsync(port, ssl); 
 			} catch (Throwable e) {
 				e.printStackTrace();
 				logger.error("Server Failed :: ",e); 
@@ -259,7 +242,7 @@ public final class Server {
 	}
 
 	static void startAsync(final int port, final boolean ssl) throws IOException {
-		group = AsynchronousChannelGroup.withCachedThreadPool(exe,50); 
+		group = AsynchronousChannelGroup.withCachedThreadPool(exe, Math.max(50, Integer.parseInt(Env.getEnv("threadCnt", "50")) ) ); 
 		final AsynchronousServerSocketChannel serverSocketChannel = AsynchronousServerSocketChannel 
 		        .open(group).bind( 
 		                new InetSocketAddress(port)); 
@@ -271,6 +254,7 @@ public final class Server {
 
 			@Override
 			public void completed(AsynchronousSocketChannel result, Connection attachment) {
+				logger.info("completionHandler accept completed connection {} ",attachment); 
 				serverSocketChannel.accept(connectionPool.get(null).assign(ssl), completionHandler); 
 				attachment.handle(result);
 			}
@@ -320,6 +304,26 @@ public final class Server {
 		accessLog = Appenders.file
 				.get(Env.getEnv("access.log", ".." + File.separator + "logs" + File.separator + "access.log"));
 		registerMXBean();
+		connectionPool = new ConcurrentPool<Connection>(new PoolFactory<Connection>() {
+
+			@Override
+			public Connection create(Map<String, Object> params) {
+				return new Connection(connectionPool);
+			}
+
+			@Override
+			public void close(Connection t) {
+				if (t != null)
+					t.pool = null;
+			}
+
+			@Override
+			public void clear(Connection t) {
+				if (t != null)
+					t.reset();
+
+			}
+		}, Connection.class);
 		connectionPool.setMaxPoolSize(-1);
 		connectionPool.setMaxReuseCount(-1);
 		connectionPool.setLifeSpan(-1);
