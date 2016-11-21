@@ -30,7 +30,7 @@ public class TestAdminApis {
 	
 	static void init(String singleThread) throws InterruptedException {
 		RestAssured.baseURI = "http://localhost:"+port;
-		System.setProperty("access.log", "./logs/access.log");
+		System.setProperty("access.log", "./logs/access.test.log");
 		System.setProperty("singleThread", singleThread);
 		System.setProperty("port", port);
 		

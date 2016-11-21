@@ -242,38 +242,36 @@ public final class Server {
 	}
 
 	static void startAsync(final int port, final boolean ssl) throws IOException {
-		group = AsynchronousChannelGroup.withCachedThreadPool(exe, Math.max(50, Integer.parseInt(Env.getEnv("threadCnt", "50")) ) ); 
-		final AsynchronousServerSocketChannel serverSocketChannel = AsynchronousServerSocketChannel 
-		        .open(group).bind( 
-		                new InetSocketAddress(port)); 
-		serverSocketChannel 
-		        .setOption(StandardSocketOptions.SO_RCVBUF, 4 * 1024); 
-		serverSocketChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true); 
- 
-		completionHandler = new CompletionHandler<AsynchronousSocketChannel, Connection>(){
-
-			@Override
-			public void completed(AsynchronousSocketChannel result, Connection attachment) {
-				logger.info("completionHandler accept completed connection {} ",attachment); 
-				serverSocketChannel.accept(connectionPool.get(null).assign(ssl), completionHandler); 
-				attachment.handle(result);
-			}
-
-			@Override
-			public void failed(Throwable exc, Connection attachment) {
-				logger.info("Failed connection {} ",attachment); 
-				connectionPool.put(attachment);
-			}
+		group = AsynchronousChannelGroup.withCachedThreadPool(getExecutorService(), Math.max(50, Integer.parseInt(Env.getEnv("threadCnt", "50")) ) ); 
+		try (final AsynchronousServerSocketChannel serverSocketChannel = 
+				AsynchronousServerSocketChannel.open(group).bind(new InetSocketAddress(port))) { 
+			serverSocketChannel.setOption(StandardSocketOptions.SO_RCVBUF, 4 * 1024); 
+		    serverSocketChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
+			serverSocketChannel.accept(connectionPool.get(null).assign(ssl), new CompletionHandler<AsynchronousSocketChannel, Connection>() {
+				@Override
+				public void completed(AsynchronousSocketChannel channel, Connection connection) {	
+					logger.info("completionHandler accept completed "); 
+					serverSocketChannel.accept(connectionPool.get(null).assign(ssl), this); 
+					connection.handle(channel);
+				}
+				@Override
+				public void failed(Throwable t, Connection connection) {
+					logger.info("Failed connection {} ",connection); 
+					connectionPool.put(connection);
+				}					
+			});
 			
-		};
-		serverSocketChannel.accept(connectionPool.get(null).assign(ssl), completionHandler); 
-		logger.debug("Server started successfully"); 
-		try { 
-		    group.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS); 
-		    logger.info("Terminating "); 
-		} catch (InterruptedException e) { 
-		    Thread.currentThread().interrupt(); 
-		}
+			try { 
+			    group.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS); 
+//			    logger.info("Terminating "); 
+			} catch (InterruptedException e) { 
+//			    Thread.currentThread().interrupt(); 
+//			    logger.error("Failed Server::", e);
+			}
+		} catch (IOException e) {
+			logger.error("Failed Server::", e);
+		} 
+		
 	}
 
 	private static void afterStop() {
