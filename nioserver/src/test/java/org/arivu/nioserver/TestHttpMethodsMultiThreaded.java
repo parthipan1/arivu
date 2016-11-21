@@ -409,6 +409,11 @@ public class TestHttpMethodsMultiThreaded {
 	public void testPostMultipart4() throws IOException {
 		int oldValue = Configuration.defaultRequestBuffer;
 		Configuration.defaultRequestBuffer = 150;
+		try {
+			Thread.sleep(200);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 		File inputFile = new File(SRC_TEST_RESOURCES_MULTI_BYTE_TXT);
 		File expectedFile = new File("1_multiByte.txt");
 		if (expectedFile.exists())
