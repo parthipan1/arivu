@@ -15,6 +15,7 @@ import java.nio.channels.CompletionHandler;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -48,7 +49,7 @@ import org.slf4j.LoggerFactory;
  * <li>
  * -DsingleThread=true/false -> Either run on single thread mode or multi-threaded mode (only read and process request). default to true
  *     Note: Write operation is asynchronous and always happens in new seperate thread even on single thread mode. Performance may vary based on the use case.</li>
- * <li>-DuseJ7Nio=true/false -> Either to use Java7Nio async library , default true. singleThread mode will be ignored for this mode.</li>
+ * <li>-DuseJ7Nio=true/false -> Either to use Java7Nio async library , default true</li>
  * <li>-DthreadCnt=xxx(Number)  -> no of threads (only on multi threaded mode) default 50</li>
  * <li>-DschedulerCnt=xxx(Number)  -> no of schedule threads default 2</li>
  * <li>-Daccess.log=<Location of access.log> -> default ../logs/access.log. Format of access log is standard "[EEE, dd MMM yyyy HH:mm:ss z] uri httpMethod responseCode contentLength [ProcessTime in millisecs] remoteAddress"</li>
@@ -217,6 +218,7 @@ public final class Server {
 	static Pool<Connection> connectionPool = null;
 	
 	static AsynchronousChannelGroup group = null;
+	static CountDownLatch  waitLatch = null;
 	static CompletionHandler<AsynchronousSocketChannel, Connection> completionHandler = null;
 	static final boolean ssl = Boolean.parseBoolean(Env.getEnv("ssl", "false"));
 	static final boolean useJ7Nio =  Boolean.parseBoolean(Env.getEnv("useJ7Nio", "true"));
@@ -249,7 +251,9 @@ public final class Server {
 	}
 
 	static void startAsync(final int port, final boolean ssl) throws IOException {
-		group = AsynchronousChannelGroup.withCachedThreadPool(getExecutorService(), Math.max(50, Integer.parseInt(Env.getEnv("threadCnt", "50")) ) ); 
+		if( !Configuration.SINGLE_THREAD_MODE )
+			group = AsynchronousChannelGroup.withCachedThreadPool(getExecutorService(), Math.max(50, Integer.parseInt(Env.getEnv("threadCnt", "50")) ) ); 
+		
 		try (final AsynchronousServerSocketChannel serverSocketChannel = 
 				AsynchronousServerSocketChannel.open(group).bind(new InetSocketAddress(port))) { 
 			serverSocketChannel.setOption(StandardSocketOptions.SO_RCVBUF, 4 * 1024); 
@@ -269,7 +273,10 @@ public final class Server {
 			});
 			
 			try { 
-			    group.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS); 
+				if( !Configuration.SINGLE_THREAD_MODE )
+					group.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
+				else
+					(waitLatch=new CountDownLatch(1)).await();
 			} catch (InterruptedException ignored) { 
 			}
 		} catch (IOException e) {
@@ -443,7 +450,10 @@ public final class Server {
 			handler.close();
 		}else if(useJ7Nio){
 			try {
-				group.shutdownNow();
+				if( !Configuration.SINGLE_THREAD_MODE )
+					group.shutdownNow();
+				else 
+					waitLatch.countDown();
 			} catch (IOException e) {
 				logger.error("Failed to stop Server::", e);
 			}

@@ -986,7 +986,18 @@ final class Connection {
 				}
 			}else if (!ctx.isAsynchronousFinish()) {
 				ctx.setAsynchronousFinish(true);
-				ctx.finish();
+				final AsynContext ctx1 = ctx;
+				if( Configuration.SINGLE_THREAD_MODE ){
+					Server.getExecutorService().execute(new Runnable() {
+						
+						@Override
+						public void run() {
+							ctx1.finish();
+						}
+					});
+				}else{
+					ctx.finish();
+				}
 			}
 		}
 	}
