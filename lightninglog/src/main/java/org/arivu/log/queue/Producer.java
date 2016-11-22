@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.management.InstanceAlreadyExistsException;
@@ -17,8 +18,8 @@ import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.datastructure.Threadlocal;
 import org.arivu.datastructure.Threadlocal.Factory;
 import org.arivu.log.Appender;
-import org.arivu.log.LightningLogger;
 import org.arivu.log.Converter;
+import org.arivu.log.LightningLogger;
 import org.arivu.log.LogMXBean;
 import org.arivu.log.appender.Appenders;
 
@@ -244,8 +245,8 @@ public final class Producer<T> implements AutoCloseable {
 	 * @throws Exception
 	 */
 	public void flush() throws Exception {
-		for ( Consumer<T> c : threadlocal.getAll()) {
-			c.flush();
+		for ( Entry<Object, Consumer<T>> e : threadlocal.getAll()) {
+			e.getValue().flush();
 		}
 	}
 

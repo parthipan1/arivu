@@ -5,17 +5,23 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
+import org.arivu.datastructure.DoublyLinkedSet;
 import org.arivu.utils.NullCheck;
+import org.arivu.utils.Utils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -38,6 +44,153 @@ public class RequestUtilTest {
 
 	@After
 	public void tearDown() throws Exception {
+	}
+	/*
+--rd_fssKjEw5P9pFdW-nfFsq9M37FvSn
+Content-Disposition: form-data; name="file"; filename="lightninglog.json"
+Content-Type: application/octet-stream
+Content-Transfer-Encoding: binary
+
+{
+	"appenders":["file","console"],
+	"loggers":{
+		"root":"debug"
+	},
+	"buffer":{
+		"batch":1,
+		"ring":1
+	},
+	"log":{
+		"showDateTime":true,
+		"showThreadName":true,
+		"showName":true,
+		"showShortName":true,
+		"file":"logs//nioserver.log",
+		"fileSize":5242880000,
+		"dateTimeFormat":"yyyy-MM-dd HH:mm:ss:SSS Z",
+		"fileDateTimeExt":"yyyy-MM-dd'T'HH:mm:ss:SSS'Z'"
+	}
+}
+--rd_fssKjEw5P9pFdW-nfFsq9M37FvSn
+Content-Disposition: form-data; name="name"
+Content-Type: text/plain
+
+test
+--rd_fssKjEw5P9pFdW-nfFsq9M37FvSn
+Content-Disposition: form-data; name="scanpackages"
+Content-Type: text/plain
+
+com.rjil
+--rd_fssKjEw5P9pFdW-nfFsq9M37FvSn--
+	 */
+	
+	
+	static String HOL = new String(new byte[]{RequestUtil.BYTE_13,RequestUtil.BYTE_10});
+	
+	static String boundaryStr = "--rd_fssKjEw5P9pFdW-nfFsq9M37FvSn";
+	
+	static String body = "";
+	static{
+		body = boundaryStr+System.lineSeparator();
+		body += "Content-Disposition: form-data; name=\"name\""+System.lineSeparator();
+		body += "Content-Type: text/plain"+HOL+HOL;
+		body += "test"+HOL;
+		body += "--rd_fssKjEw5P9pFdW-nfFsq9M37FvSn"+System.lineSeparator();
+		body += "Content-Disposition: form-data; name=\"file\"; filename=\"lightninglog.json\""+System.lineSeparator();
+		body += "Content-Type: application/octet-stream"+System.lineSeparator();
+		body += "Content-Transfer-Encoding: binary"+HOL+HOL;
+		body += "{"+System.lineSeparator();
+		body += "	\"appenders\":[\"file\",\"console\"],"+System.lineSeparator();
+		body += "	\"loggers\":{"+System.lineSeparator();
+		body += "		\"root\":\"debug\""+System.lineSeparator();
+		body += "	},"+System.lineSeparator();
+		body += "	\"buffer\":{"+System.lineSeparator();
+		body += "		\"batch\":1,"+System.lineSeparator();
+		body += "		\"ring\":1"+System.lineSeparator();
+		body += "	},"+System.lineSeparator();
+		body += "	\"log\":{"+System.lineSeparator();
+		body += "		\"showDateTime\":true,"+System.lineSeparator();
+		body += "		\"showThreadName\":true,"+System.lineSeparator();
+		body += "		\"showName\":true,"+System.lineSeparator();
+		body += "		\"showShortName\":true,"+System.lineSeparator();
+		body += "		\"file\":\"logs//nioserver.log\","+System.lineSeparator();
+		body += "		\"fileSize\":5242880000,"+System.lineSeparator();
+		body += "		\"dateTimeFormat\":\"yyyy-MM-dd HH:mm:ss:SSS Z\","+System.lineSeparator();
+		body += "		\"fileDateTimeExt\":\"yyyy-MM-dd'T'HH:mm:ss:SSS'Z'\""+System.lineSeparator();
+		body += "	}"+System.lineSeparator();
+		body += "}"+HOL;
+		body += "--rd_fssKjEw5P9pFdW-nfFsq9M37FvSn"+System.lineSeparator();
+		body += "Content-Disposition: form-data; name=\"scanpackages\""+System.lineSeparator();
+		body += "Content-Type: text/plain"+HOL+HOL;
+		body += "com.rjil"+HOL;
+		body += "--rd_fssKjEw5P9pFdW-nfFsq9M37FvSn--"+System.lineSeparator();
+	}
+	
+	@Test
+	public void testSearchMultipartPattern(){
+		
+		final byte[] content = body.getBytes();
+		final byte[] pattern = boundaryStr.getBytes();
+		int[] lens = {369,4,8};
+		String[] values = {null,"test","com.rjil"};
+		
+		
+		int[] splitByValues = {50,100,150,300,500,1024};
+		
+		for( final int splitBy : splitByValues ){
+			
+			Connection conn = new Connection(null);
+			conn.reset();
+			conn.state.start = pattern.length + 1;
+			
+			conn.req = new RequestImpl(HttpMethod.POST, "/test", "/test", "HTTP/1.1", null, null);
+			conn.req.isMultipart = true;
+			conn.req.boundary = pattern;
+			
+			for(int i=0;i<content.length;i+=splitBy){
+				conn.processMultipartInBytes(Arrays.copyOfRange(content, i, Math.min(i+splitBy, content.length)));
+			}
+			int i = 0;
+			Map<String, MultiPart> multiParts = conn.req.getMultiParts();
+			for (Entry<String, MultiPart> e : multiParts.entrySet()) {
+				MultiPart mp = e.getValue();
+				String convert = RequestUtil.convert(mp.body);
+				String v = values[i];
+				if(v!=null)
+					assertTrue("Failed ob splitby "+splitBy+" value",v.equals(convert));
+				assertTrue("Failed ob splitby "+splitBy+" length",lens[i++]==convert.length());
+			}
+		}
+	}
+	
+	@Test
+	public void testGetFirstHeaderValue(){
+		Map<String, List<Object>> headers = new Amap<>();
+		List<Object> v = new DoublyLinkedList<>();
+		v.add("one");
+		
+		assertTrue(RequestUtil.getFirstHeaderValue(null, "one")==null);
+		assertTrue(RequestUtil.getFirstHeaderValue(headers, "one")==null);
+		
+		headers.put("one", v);
+		
+		assertTrue(RequestUtil.getFirstHeaderValue(headers, "one").equals("one"));
+		assertTrue(RequestUtil.getFirstHeaderValue(headers, "two")==null);
+	}
+	
+
+	@Test
+	public void testUnModifiable(){
+		Map<String, List<Object>> headers = new Amap<>();
+		List<Object> v = new DoublyLinkedList<>();
+		v.add("one");
+		
+		assertTrue(RequestUtil.unModifiable(null)==null);
+		assertTrue(RequestUtil.unModifiable(headers)==null);
+		
+		headers.put("one", v);
+		
+		assertTrue(RequestUtil.unModifiable(headers).size()==1);
 	}
 	
 	@Test
@@ -150,7 +303,7 @@ public class RequestUtilTest {
 	}
 	
 	@Test
-	public void testGetMatchingRoute_Case1(){
+	public void testGetMatchingRoute_Case1() throws IOException{
 		System.setProperty("lightninglog.json", "./lightninglog.json");
 		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
 		System.setProperty("access.log", "./access.log");
@@ -194,7 +347,7 @@ public class RequestUtilTest {
 	}
 	
 	@Test
-	public void testGetMatchingRoute_Case2(){
+	public void testGetMatchingRoute_Case2() throws IOException{
 		System.setProperty("lightninglog.json", "./lightninglog.json");
 		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
 		System.setProperty("access.log", "./access.log");
@@ -238,7 +391,7 @@ public class RequestUtilTest {
 	}
 	
 	@Test
-	public void testGetMatchingRoute_Case3(){
+	public void testGetMatchingRoute_Case3() throws IOException{
 		System.setProperty("lightninglog.json", "./lightninglog.json");
 		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
 		System.setProperty("access.log", "./access.log");
@@ -285,7 +438,7 @@ public class RequestUtilTest {
 	}
 	
 	@Test
-	public void testGetMatchingRoute_Case4(){
+	public void testGetMatchingRoute_Case4() throws IOException{
 		System.setProperty("lightninglog.json", "./lightninglog.json");
 		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
 		System.setProperty("access.log", "./access.log");
@@ -332,7 +485,7 @@ public class RequestUtilTest {
 	}
 
 	@Test
-	public void testGetMatchingRoute_Case5(){
+	public void testGetMatchingRoute_Case5() throws IOException{
 		System.setProperty("lightninglog.json", "./lightninglog.json");
 		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
 		System.setProperty("access.log", "./access.log");
@@ -392,7 +545,7 @@ public class RequestUtilTest {
 	
 	
 	@Test
-	public void testGetMatchingRoute_Case6(){
+	public void testGetMatchingRoute_Case6() throws IOException{
 		System.setProperty("lightninglog.json", "./lightninglog.json");
 		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
 		System.setProperty("access.log", "./access.log");
@@ -455,7 +608,7 @@ public class RequestUtilTest {
 	public void testSearchPattern(){
 		assertTrue(RequestUtil.searchPattern("123456".getBytes(), "a".getBytes(), 0, 0)==RequestUtil.BYTE_SEARCH_DEFLT);
 		assertTrue(RequestUtil.searchPattern("123456".getBytes(), "6".getBytes(), 0, 0)==5);
-		assertTrue(RequestUtil.searchPattern("123456".getBytes(), "34".getBytes(), 0, 0)==2);
+		assertTrue("Got :: "+RequestUtil.searchPattern("123456".getBytes(), "34".getBytes(), 0, 0),RequestUtil.searchPattern("123456".getBytes(), "34".getBytes(), 0, 0)==3);
 		assertTrue(RequestUtil.searchPattern("123456".getBytes(), "67".getBytes(), 0, 0)==-1);
 	}
 	
@@ -521,16 +674,26 @@ public class RequestUtilTest {
 	
 	@Test
 	public void testUnZipAndDel() throws IOException, InterruptedException {
-		File dd = new File("testUnzip");
+		File dd = new File("testUnzip/download");
+		RequestUtil.del(dd);
 		assertFalse(dd.exists());
-		RequestUtil.unzip(dd, new File("download.zip"));
+		RequestUtil.unzip(new File("testUnzip/download/libs"), new File(TestHttpMethodsMultiThreaded.DOWNLOAD_ZIP));
 		assertTrue(dd.exists());
+		
+		try (FileOutputStream fileOutputStream = new FileOutputStream(new File("testUnzip/download/scanpackages"), true);
+			FileChannel channel = fileOutputStream.getChannel();) {
+			channel.write( ByteBuffer.wrap("com.rjil".getBytes()) );
+		}
+		
 		List<URL> urls = new DoublyLinkedList<>();
 		RequestUtil.allUrls(dd, urls);
 		assertFalse(urls.isEmpty());
 		assertTrue(urls.size() == RequestUtil.toArray(urls).length);
-		RequestUtil.scanApps(dd);
-		RequestUtil.del(dd);
+		
+		new File("testUnzip/download2").mkdirs();
+		
+		RequestUtil.scanApps(new File("testUnzip"));
+		RequestUtil.del(new File("testUnzip"));
 		assertFalse(dd.exists());
 	}
 
@@ -542,21 +705,21 @@ public class RequestUtilTest {
 	
 	@Test
 	public void testReadBB() throws IOException {
-		assertTrue(RequestUtil.readBB(null) == null);
-		assertTrue(RequestUtil.readBB(new File("donotexists")) == null);
+		assertTrue(Utils.readBB(null) == null);
+		assertTrue(Utils.readBB(new File("donotexists")) == null);
 
-		MappedByteBuffer readBB = RequestUtil.readBB(new File("README.md"));
+		MappedByteBuffer readBB = Utils.readBB(new File("README.md"));
 		assertTrue(readBB != null);
 
-		assertTrue(RequestUtil.read(null) == null);
-		assertTrue(RequestUtil.read(new File("donotexists")) == null);
-		byte[] read = RequestUtil.read(new File("README.md"));
+		assertTrue(Utils.read(null) == null);
+		assertTrue(Utils.read(new File("donotexists")) == null);
+		byte[] read = Utils.read(new File("README.md"));
 		assertTrue(read != null);
 		assertTrue(read.length == 1113);
 	}
 
 	@Test
-	public void testAddProxyRouteRuntime() {
+	public void testAddProxyRouteRuntime() throws IOException {
 		Collection<Route> routes = new DoublyLinkedList<Route>();
 
 		routes.add(new Route("/one", HttpMethod.ALL));
@@ -575,7 +738,7 @@ public class RequestUtilTest {
 		}
 
 		try {
-			RequestUtil.addProxyRouteRuntime("test", null, "/uri", "proxyPass", "proxyPass", routes, null);
+			RequestUtil.addProxyRouteRuntime("test", null, "/uri", "proxyPass", "logs", routes, null);
 			fail("Failed on proxy and dir notnull validation!");
 		} catch (Throwable e) {
 			assertTrue(e != null);
@@ -625,10 +788,10 @@ public class RequestUtilTest {
 
 		// Dir duplicate
 		routes.clear();
-		RequestUtil.addProxyRouteRuntime("test", null, "/uri", null, "dir", routes, null);
+		RequestUtil.addProxyRouteRuntime("test", null, "/uri", null, "logs", routes, null);
 
 		try {
-			RequestUtil.addProxyRouteRuntime("test", null, "/uri", null, "dir", routes, null);
+			RequestUtil.addProxyRouteRuntime("test", null, "/uri", null, "logs", routes, null);
 			fail("Failed on Duplicate dir route validation!");
 		} catch (Throwable e) {
 			assertTrue(e != null);
@@ -636,10 +799,10 @@ public class RequestUtilTest {
 
 		routes.clear();
 
-		RequestUtil.addProxyRouteRuntime("test", "ALL", "/uri", null, "dir", routes, null);
+		RequestUtil.addProxyRouteRuntime("test", "ALL", "/uri", null, "logs", routes, null);
 
 		try {
-			RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", null, "dir", routes, null);
+			RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", null, "logs", routes, null);
 			fail("Failed on Duplicate dir route validation!");
 		} catch (Throwable e) {
 			assertTrue(e != null);
@@ -647,10 +810,10 @@ public class RequestUtilTest {
 
 		routes.clear();
 
-		RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", null, "dir", routes, null);
+		RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", null, "logs", routes, null);
 
 		try {
-			RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", null, "dir", routes, null);
+			RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", null, "logs", routes, null);
 			fail("Failed on Duplicate dir route validation!");
 		} catch (Throwable e) {
 			assertTrue(e != null);
@@ -658,10 +821,10 @@ public class RequestUtilTest {
 
 		routes.clear();
 
-		RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", null, "dir", routes, null);
+		RequestUtil.addProxyRouteRuntime("test", "GET", "/uri", null, "logs", routes, null);
 
 		try {
-			RequestUtil.addProxyRouteRuntime("test", "POST", "/uri", null, "dir", routes, null);
+			RequestUtil.addProxyRouteRuntime("test", "POST", "/uri", null, "logs", routes, null);
 		} catch (Throwable e) {
 			fail("Failed on Duplicate dir route validation!");
 		}
@@ -918,19 +1081,59 @@ public class RequestUtilTest {
 				+ System.lineSeparator() + "Content-Type: application/octet-stream" + System.lineSeparator()
 				+ System.lineSeparator()).getBytes();
 
-		assertTrue(RequestUtil.searchPattern(content, pattern, 0, 0) == 0);
+		assertTrue(RequestUtil.searchPattern(content, pattern, 0, 0) == pattern.length-1);
 
 		byte[] copyOfRange = Arrays.copyOfRange(content,
 				RequestUtil.searchPattern(content, pattern, 0, 0) + pattern.length + 1,
 				RequestUtil.searchPattern(content, pattern, pattern.length, 0));
 		int headerIndex = RequestUtil.getHeaderIndex(copyOfRange, RequestUtil.BYTE_10, RequestUtil.BYTE_10, 1);
-		byte[] header = Arrays.copyOfRange(copyOfRange, 0, headerIndex - 1);
-		byte[] body = Arrays.copyOfRange(copyOfRange, headerIndex + 1, copyOfRange.length - 1);
-		System.out.println("%" + new String(header) + "%");
-		System.out.println("%" + new String(body) + "%");
-
+		assertTrue(headerIndex>0);
 	}
 
+	@Test
+	public void testGetPaths() throws ClassNotFoundException, IOException {
+		System.setProperty("lightninglog.json", "./lightninglog.json");
+		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
+		System.setProperty("access.log", "./access.log");
+
+		Collection<String> packageNames = new DoublyLinkedSet<String>();
+
+		Collection<Route> paths = PackageScanner.getPaths("System", packageNames);
+		assertTrue(NullCheck.isNullOrEmpty(paths));
+
+		packageNames.add("org.arivu.nioserver");
+		paths = PackageScanner.getPaths("System", packageNames);
+
+		assertFalse(NullCheck.isNullOrEmpty(paths));
+	}
+
+	@Test
+	public void testGetClassesForPackage() throws ClassNotFoundException {
+
+		System.setProperty("lightninglog.json", "./lightninglog.json");
+		System.setProperty("arivu.nioserver.json", "./arivu.nioserver.json");
+		System.setProperty("access.log", "./access.log");
+
+		Collection<Class<?>> classesForPackage = PackageScanner
+				.getClassesForPackage(Thread.currentThread().getContextClassLoader(), "org.arivu.nioserver", false);
+		assertFalse(NullCheck.isNullOrEmpty(classesForPackage));
+		// for( Class<?> c:classesForPackage )
+		// System.out.println(c.getName());
+	}
+
+	@Test
+	public void testAddMethod() {
+		Collection<Route> reqPaths = new DoublyLinkedSet<Route>();
+
+		assertTrue(NullCheck.isNullOrEmpty(reqPaths));
+		PackageScanner.addMethod("System", reqPaths, Connection.class);
+		assertTrue(NullCheck.isNullOrEmpty(reqPaths));
+
+		PackageScanner.addMethod("System", reqPaths, Admin.class);
+		assertFalse(NullCheck.isNullOrEmpty(reqPaths));
+
+	}
+	
 }
 
 class TestRoute {

@@ -12,7 +12,6 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -32,11 +31,7 @@ public final class Ason {
 		Object object = engine.get(variable);
 		engine.eval(" " + variable + " = null;\n");
 		Map<String, Object> object2 = (Map<String, Object>) object;
-//		 Set<Entry<String, Object>> entrySet = object2.entrySet();
-//		 for( Entry<String, Object> e:entrySet ){
-//		 System.out.println(e.getKey()+" :: "+e.getValue());
-//		 }
-		return Collections.unmodifiableMap(object2);
+		return Utils.unmodifiableMap(object2);
 	}
 
 	public Map<String, Object> fromJson(Reader reader) throws ScriptException, IOException {
@@ -54,7 +49,7 @@ public final class Ason {
 		return fromJson(new BufferedReader(new InputStreamReader(in)));
 	}
 
-	private static Collection<String> convert(final Map<String,String> map){
+	static Collection<String> convert(final Map<String,String> map){
 		if(map != null){
 			Collection<String> arr = new ArrayList<String>();
 			Set<Entry<String, String>> entrySet = map.entrySet();
@@ -66,7 +61,9 @@ public final class Ason {
 		return null;
 	}
 	
-	private static String[] split(String txt,String k){
+	static String[] split(String txt,String k){
+		if(NullCheck.isNullOrEmpty(txt))
+			return null;
 		int index = txt.indexOf(k);
 		Collection<String> arr = new ArrayList<String>();
 		while( index >=0 ){
@@ -83,7 +80,7 @@ public final class Ason {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static Object get(Map<String, Object> json,String token,Object deflt){
+	static Object get(Map<String, Object> json,String token,Object deflt){
 		String[] split = split(token, ".");
 		Map<String, Object> obj = json;
 		
@@ -117,28 +114,45 @@ public final class Ason {
 	public static Collection<String> getArray(Map<String, Object> json,String token,Collection<String> deflt){
 		@SuppressWarnings("unchecked")
 		Collection<String> arr = convert((Map<String, String>) get(json, token, null));
-		if( arr==null || arr.size()==0 )
+		if( NullCheck.isNullOrEmpty(arr) )
 			return deflt;
 		else
 			return arr;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static Collection<Map<String,Object>> getList(Map<String, Object> json,String token,Collection<Map<String,Object>> deflt){
+		Object object = get(json, token, null);
+		if(object==null)
+			return deflt;
+		else if( object instanceof Collection<?>){
+			Collection<Map<String,Object>> arr = (Collection<Map<String,Object>>) object;
+			if( NullCheck.isNullOrEmpty(arr) )
+				return deflt;
+			else
+				return arr;
+		}else if( object instanceof Map){
+			Map<String,Object> map = (Map<String,Object>)object;
+			Collection<Map<String,Object>> arr = new ArrayList<>();
+			for(Entry<String, Object> e:map.entrySet()){
+				arr.add((Map<String,Object>)e.getValue());
+			}
+			return arr;
+		}
+		return deflt;
 	}
 	
 	public static Number getNumber(Map<String, Object> json,String token,Number deflt){
 		return (Number) get(json, token, deflt);
 	}
 	
-	public static Map<String, Object> loadProperties(final String file) {
+	public static Map<String, Object> loadProperties(final String file,final ClassLoader classLoader) {
 		InputStream in = null;
 		String instr = Env.getEnv(file, null);
 		if (instr == null) {
 			in = AccessController.doPrivileged(new PrivilegedAction<InputStream>() {
 				public InputStream run() {
-					ClassLoader threadCL = Thread.currentThread().getContextClassLoader();
-					if (threadCL != null) {
-						return threadCL.getResourceAsStream(file);
-					} else {
-						return ClassLoader.getSystemResourceAsStream(file);
-					}
+					return classLoader.getResourceAsStream(file);
 				}
 			});
 		} else {
@@ -158,5 +172,14 @@ public final class Ason {
 			}
 		}
 		return null;
+	}
+	
+	public static Map<String, Object> loadProperties(final String file) {
+		ClassLoader threadCL = Thread.currentThread().getContextClassLoader();
+		if (threadCL != null) {
+			return loadProperties(file, threadCL);//threadCL.getResourceAsStream(file);
+		} else {
+			return loadProperties(file, ClassLoader.getSystemClassLoader());//ClassLoader.getSystemResourceAsStream(file);
+		}
 	}
 }

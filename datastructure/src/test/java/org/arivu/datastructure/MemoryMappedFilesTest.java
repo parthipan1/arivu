@@ -6,6 +6,7 @@ package org.arivu.datastructure;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.junit.After;
@@ -19,7 +20,11 @@ import org.junit.Test;
  *
  */
 public class MemoryMappedFilesTest {
+	private static final String TEST_RESOURCE_BASE = "."+File.separator+"src"+File.separator+"test"+File.separator+"resources"+File.separator;
 
+	static final String TEST_1 = TEST_RESOURCE_BASE+"1.txt";
+	static final String TEST_2 = TEST_RESOURCE_BASE+"2.txt";
+	static final String TEST_3 = TEST_RESOURCE_BASE+"3.txt";
 	/**
 	 * @throws java.lang.Exception
 	 */
@@ -56,8 +61,8 @@ public class MemoryMappedFilesTest {
 	public void testAdd() throws IOException {
 		MemoryMappedFiles mmf = new MemoryMappedFiles();
 		
-		String one = "1.txt";
-		String two = "2.txt";
+		String one = TEST_1;
+		String two = TEST_2;
 		
 		assertTrue(mmf.size()==0);
 		
@@ -79,8 +84,8 @@ public class MemoryMappedFilesTest {
 		assertTrue(mmf.get(two)==null);
 		
 		try {
-			mmf.add("3.txt");
-			fail("Failed to open 3.txt!");
+			mmf.add(TEST_3);
+			fail("Failed to open "+TEST_3+"!");
 		} catch (IOException e) {
 			assertTrue(e!=null);
 		}

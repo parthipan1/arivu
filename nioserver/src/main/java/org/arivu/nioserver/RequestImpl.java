@@ -193,8 +193,8 @@ final class RequestImpl implements Request {
 
 	@Override
 	public String toString() {
-		return "RequestImpl [headers=" + Utils.toString(headers) + ", uri=" + uri + ", params=" + Utils.toString(params)
-				+ ", httpMethod=" + httpMethod + ", body=" + body + ", protocol=" + protocol + "]";
+		return "RequestImpl [uri=" + uri + ", httpMethod=" + httpMethod + ", headers=" + Utils.toString(headers) + ", params=" + Utils.toString(params)
+				+ ", protocol=" + protocol + "]";
 	}
 
 }

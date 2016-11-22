@@ -1,0 +1,18 @@
+POST %URL% HTTP/1.1
+Content-Type: multipart/mixed;boundary=xxBOUNDARYxx
+Content-Length: {POST body in length in bytes}
+
+--xxBOUNDARYxx
+Content-Type: application/json
+
+{"IsHidden": false, "IsLocked": false, "ShortTitle": "Test", "Type": 1,
+"DueDate": null, "Url": "/content/extensibility/EXT-104/file.txt",
+"StartDate": null, "TopicType": 1, "EndDate": null, "Title": "Test topic
+content"}
+--xxBOUNDARYxx
+Content-Disposition: form-data; name=""; filename="file.txt"
+Content-Type: text/plain
+
+This is a sample text file
+with some text content.
+--xxBOUNDARYxx--

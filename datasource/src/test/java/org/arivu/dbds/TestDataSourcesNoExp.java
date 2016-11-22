@@ -6,6 +6,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 //@Ignore
@@ -44,6 +45,7 @@ public class TestDataSourcesNoExp {
 	}
 
 	@Test
+	@Ignore
 	public void testRequestScope() throws SQLException, InterruptedException {
 		helper.testDataSource(new RequestDataSource(helper.factory), helper.nThreads, true, true);
 	}

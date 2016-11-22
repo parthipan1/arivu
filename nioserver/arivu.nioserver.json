@@ -11,6 +11,7 @@
                "Cache-Control":"private, max-age=0",
                "Server":"clownserver",
                "X-XSS-Protection":"1; mode=block",
+               "Set-Cookie":"Secure; HttpOnly",
                "Connection":"close"
             },
             "location":"/search",
@@ -23,6 +24,7 @@
                "Cache-Control":"private, max-age=0",
                "Server":"clownserver",
                "X-XSS-Protection":"1; mode=block",
+               "Set-Cookie":"Secure; HttpOnly",
                "Connection":"close"
             },
             "location":"/static",

@@ -14,10 +14,10 @@ public final class TimeTracker {
 		this.name = name;
 	}
 
-	public TimeTracker(String name,Map<String, Object> data) {
-		this(name);
-		this.tracks.putAll(data);
-	}
+//	public TimeTracker(String name,Map<String, Object> data) {
+//		this(name);
+//		this.tracks.putAll(data);
+//	}
 	
 	long s = System.currentTimeMillis();
 

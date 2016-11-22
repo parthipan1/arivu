@@ -788,7 +788,10 @@ public final class LightningLogger implements Logger {
 		final PrintWriter pw = new PrintWriter(sw, true);
 		throwable.printStackTrace(pw);
 		pw.close();
-		return sw.getBuffer().toString();
+		if(throwable.getCause()==null)
+			return sw.getBuffer().toString();
+		else
+			return sw.getBuffer().toString()+System.lineSeparator()+stackTraceToString(throwable.getCause());
 	}
 	
 	private String computeShortName() {

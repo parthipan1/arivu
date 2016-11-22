@@ -5,11 +5,9 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.io.RandomAccessFile;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
@@ -19,9 +17,6 @@ import java.net.MalformedURLException;
 import java.net.SocketAddress;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -33,17 +28,25 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.arivu.datastructure.Amap;
 import org.arivu.datastructure.DoublyLinkedList;
+import org.arivu.utils.Env;
 import org.arivu.utils.NullCheck;
 import org.arivu.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Utility helper class.
+ * 
+ * @author Mr P
+ *
+ */
 public final class RequestUtil {
 
 	private static final String CLOSE_CHAIN_BRKT = "}";
@@ -58,8 +61,8 @@ public final class RequestUtil {
 
 	private static final String CONTENT_DISPOSITION = "Content-Disposition";
 
-	private static final String MULTIPART_FORM_DATA = "multipart/form-data";
-
+	private static final String[] MULTIPART_CTS = {"multipart/form-data","multipart/mixed","multipart/related","multipart/alternative","multipart/digest","multipart/parallel"};
+	
 	private static final String CONTENT_TYPE = "Content-Type";
 
 	private static final String SCANPACKAGES_TOKEN = "scanpackages";
@@ -75,12 +78,32 @@ public final class RequestUtil {
 
 	private static final String LINE_SEPARATOR = System.lineSeparator();
 
-//	final static DateFormat dateFormat = new SimpleDateFormat("EEE MMM d hh:mm:ss.SSS yyyy");
-	
 	final static DateFormat dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z");
-	
+
 	static final Pattern validUrl = Pattern.compile("^[a-zA-Z0-9-_]*$");
-	
+
+	public static Object getFirstHeaderValue(final Map<String, List<Object>> headers, final String headerToken) {
+		if (!NullCheck.isNullOrEmpty(headers) && !NullCheck.isNullOrEmpty(headerToken)) {
+			List<Object> list = headers.get(headerToken);
+			if (!NullCheck.isNullOrEmpty(list)) {
+				return list.get(0);
+			}
+		}
+		return null;
+	}
+
+	static Map<String, List<Object>> unModifiable(final Map<String, List<Object>> headers) {
+		if (!NullCheck.isNullOrEmpty(headers)) {
+			Map<String, List<Object>> theaders = new Amap<>();
+			Set<Entry<String, List<Object>>> entrySet = headers.entrySet();
+			for (Entry<String, List<Object>> e : entrySet) {
+				theaders.put(e.getKey(), Utils.unmodifiableList(e.getValue()));
+			}
+			return Utils.unmodifiableMap(theaders);
+		}
+		return null;
+	}
+
 	static int searchPattern(byte[] content, byte[] pattern, int start, int disp) {
 		int mi = disp;
 		for (int i = start; i < content.length; i++) {
@@ -88,7 +111,11 @@ public final class RequestUtil {
 				mi++;
 				if (mi == pattern.length) {
 					// logger.debug(" searchPattern 1 "+(i + 1 - mi));
-					return i + 1 - mi;
+					return i;
+//					if(j<0)
+//						return i+1;
+//					else
+//						return j;
 				}
 			} else {
 				mi = 0;
@@ -152,7 +179,7 @@ public final class RequestUtil {
 	}
 
 	static Map<String, String> parseMultipartHeader(String metadata) {
-		// System.out.println(" parseMultipartHeader :: "+metadata);
+//		System.out.println(" parseMultipartHeader :: "+metadata);
 		String[] split = metadata.split(System.lineSeparator());
 		Map<String, String> tempheaders = new Amap<String, String>();
 		for (int i = 0; i < split.length; i++) {
@@ -160,7 +187,7 @@ public final class RequestUtil {
 			int indexOf2 = h.indexOf(":");
 			if (indexOf2 != -1) {
 				// tempheaders.put(h, "");
-//			} else {
+				// } else {
 				tempheaders.put(h.substring(0, indexOf2), h.substring(indexOf2 + 1).trim());
 			}
 		}
@@ -172,15 +199,15 @@ public final class RequestUtil {
 		String[] split = metadata.split(System.lineSeparator());
 		String[] split2 = split[0].split(" ");
 
-		HttpMethod valueOf = HttpMethod.valueOf(split2[0]);
+		HttpMethod valueOf = HttpMethod.valueOf(split2[0].trim());
 		if (valueOf == null)
 			throw new IllegalArgumentException("Unknown RequestImpl " + metadata);
-		String uriWithParams = split2[1];
-		String protocol = split2[2];
+		String uriWithParams = split2[1].trim();
+		String protocol = split2[2].trim();
 
 		Map<String, List<Object>> tempheaders = new Amap<String, List<Object>>();
 		for (int i = 1; i < split.length; i++) {
-			String h = split[i];
+			String h = split[i].trim();
 			int indexOf2 = h.indexOf(":");
 			if (indexOf2 == -1) {
 				String key = h;
@@ -215,13 +242,16 @@ public final class RequestUtil {
 		List<Object> list = requestImpl.getHeaders().get(CONTENT_TYPE);
 		if (!NullCheck.isNullOrEmpty(list)) {
 			contType = list.get(0).toString();
-		}
-		if (!NullCheck.isNullOrEmpty(contType)) {
-			requestImpl.isMultipart = contType.contains(MULTIPART_FORM_DATA);
-			if (requestImpl.isMultipart) {
-				contType = Utils.replaceAll(contType, MULTIPART_FORM_DATA+";", "").trim();
-				contType = Utils.replaceAll(contType, BOUNDARY+"=", "").trim();
-				requestImpl.boundary = ("--" + contType).getBytes();
+			if (!NullCheck.isNullOrEmpty(contType)) {
+				for(String mpfd:MULTIPART_CTS){
+					requestImpl.isMultipart = contType.contains(mpfd);
+					if( requestImpl.isMultipart ){
+						contType = Utils.replaceAll(contType, mpfd + ";", "").trim();
+						contType = Utils.replaceAll(contType, BOUNDARY + "=", "").trim();
+						requestImpl.boundary = ("--" + contType).getBytes();
+						break;
+					}
+				}
 			}
 		}
 
@@ -246,18 +276,17 @@ public final class RequestUtil {
 		int indexOf = -1;
 		if (cnt == 2) {
 			int inc = 1;
-			for (int i = 3; i < bytes.length; i+=inc) {
-				if (bytes[i] == bytes[i - 2] && bytes[i] == second ) {
-					if(bytes[i - 1] == bytes[i - 3]
-							&& bytes[i - 1] == first){
+			for (int i = 3; i < bytes.length; i += inc) {
+				if (bytes[i] == bytes[i - 2] && bytes[i] == second) {
+					if (bytes[i - 1] == bytes[i - 3] && bytes[i - 1] == first) {
 						indexOf = i;
 						break;
 					}
 					inc = 2;
-				}else{
+				} else {
 					inc = 1;
 				}
-				
+
 			}
 		} else if (cnt == 1) {
 			for (int i = 1; i < bytes.length; i++) {
@@ -359,7 +388,7 @@ public final class RequestUtil {
 			} else {
 				int ei = uritkn.indexOf(CLOSE_CHAIN_BRKT);
 				String paramName = uritkn.substring(1, uritkn.length() - 1);
-				if ( si != 0 && ei != uritkn.length() - 1 || NullCheck.isNullOrEmpty(paramName)
+				if (si != 0 && ei != uritkn.length() - 1 || NullCheck.isNullOrEmpty(paramName)
 						|| !validUrl.matcher(paramName).matches()) {
 					return false;
 				}
@@ -378,7 +407,10 @@ public final class RequestUtil {
 			} else if (route.rut == null) {
 				if (in.equals(route))
 					return route;
-				else if (route.httpMethod == HttpMethod.ALL) {
+				else if ( route.httpMethod == HttpMethod.GET
+						&& (httpMethod == HttpMethod.GET || httpMethod == HttpMethod.HEAD) && route.uri.equals(uri)) {
+					return route;// !(route instanceof ProxyRoute) && 
+				} else if (route.httpMethod == HttpMethod.ALL) {
 					if (route.uri.equals(uri))
 						return route;
 					else if (route instanceof ProxyRoute && uri.startsWith(route.uri))
@@ -387,7 +419,9 @@ public final class RequestUtil {
 					return route;
 				}
 			} else {
-				if (route.httpMethod == HttpMethod.ALL || route.httpMethod == httpMethod) {
+				if (route.httpMethod == HttpMethod.ALL || route.httpMethod == httpMethod
+						|| (route.httpMethod == HttpMethod.GET
+								&& (httpMethod == HttpMethod.GET || httpMethod == HttpMethod.HEAD))) {
 					String[] split = uri.split(URI_PATH_DIVIDER);
 					if (route.rut.uriTokens.length == split.length) {
 						boolean match = true;
@@ -492,18 +526,27 @@ public final class RequestUtil {
 			responseBody.append(protocol).append(" ").append(responseCode).append(" ").append(rescodetxt)
 					.append(LINE_SEPARATOR);
 
-//		Date endtime = new Date();
+		// Date endtime = new Date();
 		long enddate = System.currentTimeMillis();
 		responseBody.append("Date: ").append(dateFormat.format(enddate)).append(LINE_SEPARATOR);
 
+		boolean conLenSet = false;
 		for (Entry<String, List<Object>> e : headers.entrySet()) {
 			List<Object> value = e.getValue();
 			if (!NullCheck.isNullOrEmpty(value)) {
 				for (Object ov : value) {
 					responseBody.append(e.getKey()).append(": ").append(ov).append(LINE_SEPARATOR);
 				}
+				if (e.getKey().equalsIgnoreCase("Content-Length")) {
+					conLenSet = true;
+				}
 			}
 		}
+
+		if (!conLenSet) {
+			responseBody.append("Content-Length").append(": ").append(contentLen).append(LINE_SEPARATOR);
+		}
+
 		responseBody.append(LINE_SEPARATOR);
 
 		Ref ref = new Ref();
@@ -511,15 +554,25 @@ public final class RequestUtil {
 		ref.uri = uri;
 		ref.method = method;
 		ref.endtime = enddate;
-		
+
 		ref.queue.add(new ByteData(responseBody.toString().getBytes()));
-		ref.queue.addAll(out);
+
+		if (method == HttpMethod.HEAD || method == HttpMethod.TRACE) {
+		} else {
+			ref.queue.addAll(out);
+		}
+
 		ref.cl = contentLen;
 		return ref;
 	}
 
 	static void stopRemote() {
-		String url = DEFAULT_PROTOCOL+"://" + Server.DEFAULT_HOST + ":" + Server.DEFAULT_PORT + Configuration.stopUri;
+		
+		boolean parseBoolean = Boolean.parseBoolean(Env.getEnv("ssl", "false"));
+		String s = "";
+		if(parseBoolean) s = "s";
+		String url = DEFAULT_PROTOCOL + s + "://" + Env.getEnv("host", "localhost") + ":"
+				+ Integer.parseInt(Env.getEnv("port", Server.DEFAULT_PORT)) + Configuration.stopUri;
 		BufferedReader in = null;
 		try {
 			final HttpURLConnection con = (HttpURLConnection) new URL(url).openConnection();
@@ -555,16 +608,7 @@ public final class RequestUtil {
 	}
 
 	static void allUrls(File root, List<URL> urls) throws MalformedURLException {
-		File[] list = root.listFiles(new FilenameFilter() {
-
-			@Override
-			public boolean accept(File dir, String name) {
-				if (NullCheck.isNullOrEmpty(name))
-					return false;
-				final String ln = name.toLowerCase(Locale.getDefault());
-				return ln.endsWith(".jar") || ln.endsWith(".properties") || ln.endsWith(".xml") || ln.endsWith(".json");
-			}
-		});
+		File[] list = root.listFiles();
 		if (NullCheck.isNullOrEmpty(list))
 			return;
 
@@ -572,8 +616,11 @@ public final class RequestUtil {
 			if (f.isDirectory()) {
 				allUrls(f, urls);
 			} else {
-				urls.add(f.toURI().toURL());
-				logger.info("Hotdeploy :: Added file {}", f.getAbsoluteFile());
+				final String ln = f.getName().toLowerCase(Locale.getDefault());
+				if(ln.endsWith(".jar") || ln.endsWith(".properties") || ln.endsWith(".xml") || ln.endsWith(".json")){
+					urls.add(f.toURI().toURL());
+					logger.info("Hotdeploy :: Added file {}", f.getAbsoluteFile());
+				}
 			}
 		}
 	}
@@ -646,34 +693,34 @@ public final class RequestUtil {
 		}
 	}
 
-	public static byte[] read(File file) throws IOException {
-		if (file == null)
-			return null;
-		else if (!file.exists())
-			return null;
-
-		ByteBuffer bb = readBB(file);
-		byte[] data = new byte[bb.remaining()];
-		bb.get(data, 0, data.length);
-		return data;
-	}
-
-	public static MappedByteBuffer readBB(File file) throws IOException {
-		if (file == null)
-			return null;
-		else if (!file.exists())
-			return null;
-		RandomAccessFile randomAccessFile = null;
-		try {
-			randomAccessFile = new RandomAccessFile(file, "r");
-			final FileChannel fileChannel = randomAccessFile.getChannel();
-			return fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size());
-		} finally {
-			if (randomAccessFile != null) {
-				randomAccessFile.close();
-			}
-		}
-	}
+//	public static byte[] read(File file) throws IOException {
+//		if (file == null)
+//			return null;
+//		else if (!file.exists())
+//			return null;
+//
+//		ByteBuffer bb = readBB(file);
+//		byte[] data = new byte[bb.remaining()];
+//		bb.get(data, 0, data.length);
+//		return data;
+//	}
+//
+//	public static MappedByteBuffer readBB(File file) throws IOException {
+//		if (file == null)
+//			return null;
+//		else if (!file.exists())
+//			return null;
+//		RandomAccessFile randomAccessFile = null;
+//		try {
+//			randomAccessFile = new RandomAccessFile(file, "r");
+//			final FileChannel fileChannel = randomAccessFile.getChannel();
+//			return fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size());
+//		} finally {
+//			if (randomAccessFile != null) {
+//				randomAccessFile.close();
+//			}
+//		}
+//	}
 
 	static void scanApps(File root) {
 		File[] list = root.listFiles(new FileFilter() {
@@ -689,20 +736,21 @@ public final class RequestUtil {
 		for (File f : list) {
 			try {
 				File scanpackagesFile = new File(f, SCANPACKAGES_TOKEN);
-				if( scanpackagesFile.exists() )
-					new App(f.getName(), new String(read(scanpackagesFile))).deploy();
-				else{
+				if (scanpackagesFile.exists())
+					new App(f.getName(), new String(Utils.read(scanpackagesFile))).deploy();
+				else {
 					del(f);
-					logger.info("Invalid folder " + f.getAbsolutePath()+" removed!");
+					logger.info("Invalid folder " + f.getAbsolutePath() + " removed!");
 				}
 			} catch (Exception e) {
 				logger.error("Failed in scan Apps :: ", e);
 			}
 		}
-		logger.info("Discovered Apps :: " + Utils.toString(Admin.allHotDeployedArtifacts.keySet()) );
+		logger.info("Discovered Apps :: " + Utils.toString(Admin.allHotDeployedArtifacts.keySet()));
 	}
 
-	static void addProxyRouteRuntime(String name, String method, String location, String proxyPass, String dir, Collection<Route> rts, Map<String, List<Object>> header) {
+	static void addProxyRouteRuntime(String name, String method, String location, String proxyPass, String dir,
+			Collection<Route> rts, Map<String, List<Object>> header) throws IOException {
 		HttpMethod httpMethod = HttpMethod.ALL;
 		if (!NullCheck.isNullOrEmpty(method))
 			httpMethod = HttpMethod.valueOf(method);
@@ -714,19 +762,25 @@ public final class RequestUtil {
 		boolean notNullProxy = !NullCheck.isNullOrEmpty(proxy_pass);
 		boolean notNullDir = !NullCheck.isNullOrEmpty(dir);
 		if (notNullProxy && notNullDir)
-			throw new IllegalArgumentException("Illegal proxy_pass(" + proxyPass + ") and dir(" + dir + ") specified!");
-		else if(!notNullProxy && !notNullDir)
-			throw new IllegalArgumentException("Illegal proxy_pass(" + proxyPass + ") and dir(" + dir + ") specified!");
-		
+			throw new IOException("Illegal proxy_pass(" + proxyPass + ") and dir(" + dir + ") specified!");
+		else if (!notNullProxy && !notNullDir)
+			throw new IOException("Illegal proxy_pass(" + proxyPass + ") and dir(" + dir + ") specified!");
+
 		if (notNullProxy) {
-			proxy_pass = Utils.replaceAll(proxy_pass, "$host", Server.DEFAULT_HOST);
-			proxy_pass = Utils.replaceAll(proxy_pass, "$port", String.valueOf(Server.DEFAULT_PORT));
+			proxy_pass = Utils.replaceAll(proxy_pass, "$host", Env.getEnv("host", "localhost"));
+			proxy_pass = Utils.replaceAll(proxy_pass, "$port",
+					String.valueOf(Integer.parseInt(Env.getEnv("port", "8080"))));
 		}
 		if (notNullDir) {
 			dir = Utils.replaceAll(dir, "$home", new File(".").getAbsolutePath());
+			File dirFile = new File(dir);
+			if( !dirFile.exists() || !dirFile.isDirectory() ){
+				throw new IOException(
+						"Invalid dir(" + dir + ") specified!");
+			}
 		}
 		ProxyRoute prp = new ProxyRoute(name, proxy_pass, dir, location, httpMethod, null, null, false, header);
-//		Collection<Route> rts = Configuration.routes;
+		// Collection<Route> rts = Configuration.routes;
 		for (Route rt : rts) {
 			if (rt instanceof ProxyRoute) {
 				ProxyRoute prt = (ProxyRoute) rt;
@@ -754,7 +808,7 @@ public final class RequestUtil {
 					out.put(e.getKey(), list);
 				}
 				list.add(e.getValue());
-			} 
+			}
 		}
 		return out;
 	}

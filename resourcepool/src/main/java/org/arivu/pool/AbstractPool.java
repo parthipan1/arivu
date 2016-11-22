@@ -363,6 +363,38 @@ abstract class AbstractPool<T> implements Pool<T> {
 		list.clear();
 	}
 
+	private static final class ProxyInvoker<T> implements InvocationHandler{
+		final State<T> state;
+		final AbstractPool<T> pool;
+		ProxyInvoker(State<T> state,AbstractPool<T> pool) {
+			super();
+			this.state = state;
+			this.pool = pool;
+		}
+
+		@Override
+		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+			final String methodName = method.getName();
+			logger.debug("Proxy methodName :: {} {}" , methodName, state.t.hashCode());
+			if ("close".equals(methodName)) {
+				state.released.set(true);
+				this.pool.releaseLink(state);
+				return Void.TYPE;
+			} else if ("toString".equals(methodName)) {
+				return state.t.toString();
+			} else {
+				if (state.released.get())
+					throw new IllegalStateException(
+							"Resource Proxy " + state.t.toString() + " already closed!");
+
+				state.inc(IncType.GET);
+				return method.invoke(state.t, args);
+			}
+		}
+		
+	}
+	
+	
 	/**
 	 * @param state
 	 * @return tObject
@@ -374,31 +406,7 @@ abstract class AbstractPool<T> implements Pool<T> {
 		if (state.t instanceof AutoCloseable) {
 			logger.debug("reuse resource! " + state.t.hashCode());
 			if (state.proxy == null) {
-				state.proxy = (T) Proxy.newProxyInstance(klass.getClassLoader(), new Class[] { klass },
-						new InvocationHandler() {
-
-							@Override
-							public Object invoke(final Object proxy, final Method method, final Object[] args)
-									throws Throwable {
-								final String methodName = method.getName();
-								logger.debug("Proxy methodName :: {} {}" , methodName, state.t.hashCode());
-								if ("close".equals(methodName)) {
-									state.released.set(true);
-									releaseLink(state);
-									return Void.TYPE;
-								} else if ("toString".equals(methodName)) {
-									return state.t.toString();
-								} else {
-									if (state.released.get())
-										throw new IllegalStateException(
-												"Resource Proxy " + state.t.toString() + " already closed!");
-
-									state.inc(IncType.GET);
-									return method.invoke(state.t, args);
-								}
-							}
-
-						});
+				state.proxy = (T) Proxy.newProxyInstance(klass.getClassLoader(), new Class[] { klass },new ProxyInvoker<T>(state,this));
 			} else {
 				state.released.set(false);
 			}

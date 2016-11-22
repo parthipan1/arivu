@@ -3,9 +3,9 @@
  */
 package org.arivu.datastructure;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -148,13 +148,44 @@ public final class Threadlocal<T> {
 		threadLocal.clear();
 	}
 
-	public Collection<T> getAll() {
-		Collection<T> all = new DoublyLinkedList<T>();
-		for (Ref<T> ref : threadLocal.values()) {
-			if (ref.t != null)
-				all.add(ref.t);
+	public Set<Entry<Object, T>> getAll() {
+//		Collection<T> all = new DoublyLinkedList<T>();
+//		for (Ref<T> ref : threadLocal.values()) {
+//			if (ref.t != null)
+//				all.add(ref.t);
+//		}
+//		return all;
+		
+		Set<Entry<Object, Ref<T>>> entrySet = threadLocal.entrySet();
+		Set<Entry<Object, T>> ret = new DoublyLinkedSet<>();
+		
+		for(final Entry<Object, Ref<T>> e:entrySet ){
+			ret.add(new Entry<Object, T>() {
+
+				@Override
+				public Object getKey() {
+					return e.getKey();
+				}
+
+				@Override
+				public T getValue() {
+					return e.getValue().t;
+				}
+
+				@Override
+				public T setValue(T value) {
+					if(value == null){
+						e.setValue(null);
+						return null;
+					}else{
+						e.getValue().t = value;
+						return value;
+					}
+				}
+			});
 		}
-		return all;
+		
+		return ret;
 	}
 //	volatile boolean closed = false; 
 	public void close() {
@@ -191,7 +222,7 @@ public final class Threadlocal<T> {
 	 * @param <T>
 	 */
 	static final class Ref<T> {
-		private final T t;
+		private T t;
 		volatile long time = System.currentTimeMillis();
 
 		/**

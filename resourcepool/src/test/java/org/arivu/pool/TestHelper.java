@@ -21,11 +21,11 @@ public class TestHelper {
 
 	 private static final Logger logger = LoggerFactory.getLogger(TestHelper.class);
 
-	int maxThreadCnt = 500;
-	int nThreads = 1000000;
-	int poolSize = 625;
-	int reuseCount = 2500;
-	int lifeSpan = 30000;
+	int maxThreadCnt = 50;
+	int nThreads = 100000;
+	int poolSize = 62;
+	int reuseCount = 250;
+	int lifeSpan = 3000;
 	
 	ExecutorService exe = null;
 
@@ -186,7 +186,7 @@ interface Resource extends AutoCloseable {
 }
 
 class ResourceImp implements Resource {
-	private static final Logger logger = LoggerFactory.getLogger(ResourceImp.class);
+//	private static final Logger logger = LoggerFactory.getLogger(ResourceImp.class);
 	volatile boolean c = false;
 	final String name = Thread.currentThread().getName();
 	@Override
@@ -211,7 +211,7 @@ class ResourceImp implements Resource {
 	@Override
 	public int perform() {
 		if (c){
-			logger.info("ResourceImp" + hashCode() + " already closed! name "+name+" Thread "+Thread.currentThread().getName());
+//			logger.info("ResourceImp" + hashCode() + " already closed! name "+name+" Thread "+Thread.currentThread().getName());
 			throw new IllegalStateException("ResourceImp" + hashCode() + " already closed!");
 //			System.err.println("ResourceImp" + hashCode() + " already closed! name "+name+" Thread "+Thread.currentThread().getName());
 		}

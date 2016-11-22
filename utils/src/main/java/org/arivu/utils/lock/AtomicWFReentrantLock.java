@@ -7,7 +7,6 @@ import java.lang.reflect.Field;
 import java.util.Date;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
@@ -17,6 +16,7 @@ import sun.misc.Unsafe;
  * @author P
  *
  */
+@SuppressWarnings("restriction")
 public final class AtomicWFReentrantLock implements Lock {
 	static Unsafe unsafe;
 

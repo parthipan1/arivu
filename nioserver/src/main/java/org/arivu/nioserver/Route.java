@@ -1,18 +1,19 @@
 package org.arivu.nioserver;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
+import java.net.SocketException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -20,9 +21,9 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.arivu.datastructure.Amap;
-import org.arivu.datastructure.DoublyLinkedList;
 import org.arivu.datastructure.Threadlocal;
 import org.arivu.utils.NullCheck;
+import org.arivu.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,8 +62,12 @@ class Route {
 		this.klass = klass;
 		this.method = method;
 		this.isStatic = isStatic;
+		
 		if (klass != null) {
-			this.headers = new Amap<>(Configuration.defaultResponseHeader);
+			if( httpMethod!=null && httpMethod == HttpMethod.HEAD )
+				throw new IllegalStateException("Invalid httpMethod @Path declaration on "+name+" method "+method);
+			
+			this.headers = new Amap<String, List<Object>>(Configuration.defaultResponseHeader);
 			int is = uri.indexOf('{');
 			if (is == -1) {
 				this.invoker = RequestUtil.getMethodInvoker(method);
@@ -94,12 +99,12 @@ class Route {
 		}
 	}
 
-	boolean match(String requri) {
-		if (uri.equals(requri))
-			return true;
-
-		return false;
-	}
+//	boolean match(String requri) {
+//		if (uri.equals(requri))
+//			return true;
+//
+//		return false;
+//	}
 
 	Response getResponse(Request req) {
 		return new ResponseImpl(req, headers);
@@ -110,12 +115,7 @@ class Route {
 			this.invoker.handle(req, res, isStatic, method, tl, this.rut);
 		} catch (Throwable e) {
 			logger.error("Failed in route " + this + " :: ", e);
-			res.setResponseCode(400);
-			try {
-				res.append(RequestUtil.getStackTrace(e));
-			} catch (IOException e1) {
-				logger.error("Failed in route " + this + " :: ", e1);
-			}
+			Configuration.exceptionHandler.handle(e);
 		}
 	}
 
@@ -180,8 +180,7 @@ class ProxyRoute extends Route {
 
 	String proxy_pass;
 	String dir;
-//	Map<String,FileData> files;
-	Threadlocal<HttpMethodCall> proxyTh;
+	Threadlocal<JavaHttpMethodCall> proxyTh;
 
 	/**
 	 * @param uri
@@ -196,18 +195,17 @@ class ProxyRoute extends Route {
 		this.name = name;
 		this.proxy_pass = proxy_pass;
 		this.dir = dir;
-		this.headers = new Amap<>(defaultResponseHeader);
+		this.headers = new Amap<String, List<Object>>(defaultResponseHeader);
 		if (NullCheck.isNullOrEmpty(proxy_pass) && NullCheck.isNullOrEmpty(dir)) {
 			throw new IllegalArgumentException("Invalid config " + name + " !");
 		} else if (!NullCheck.isNullOrEmpty(proxy_pass) && !NullCheck.isNullOrEmpty(dir)) {
 			throw new IllegalArgumentException("Invalid config " + name + " !");
 		} else if (!NullCheck.isNullOrEmpty(dir)) {
-//			files = new Amap<>();
 		} else if (!NullCheck.isNullOrEmpty(proxy_pass)) {
-			this.proxyTh = new Threadlocal<HttpMethodCall>(new Threadlocal.Factory<HttpMethodCall>() {
+			this.proxyTh = new Threadlocal<JavaHttpMethodCall>(new Threadlocal.Factory<JavaHttpMethodCall>() {
 
 				@Override
-				public HttpMethodCall create(Map<String, Object> params) {
+				public JavaHttpMethodCall create(Map<String, Object> params) {
 					return new JavaHttpMethodCall();
 				}
 			}, 30000);
@@ -231,63 +229,39 @@ class ProxyRoute extends Route {
 			} else {
 				handleProxy(req, res);
 			}
+//			logger.debug("**** handle proxy res {}",res);
 		} catch (Throwable e) {
 			logger.error("Failed in route " + this + " :: ", e);
-			res.setResponseCode(400);
-			try {
-				res.append(RequestUtil.getStackTrace(e));
-			} catch (IOException e1) {
-				logger.error("Failed in route " + this + " :: ", e1);
+			Configuration.exceptionHandler.handle(e);
+		}
+	}
+
+	final void handleProxy(final Request req, final Response res) throws IOException {
+		final AsynContext ctx = StaticRef.getAsynContext();
+		ctx.setAsynchronousFinish(true);
+		Server.getExecutorService().execute(new Runnable() {
+			
+			@Override
+			public void run() {
+				
+				try {
+					final int indexOf = Math.max(req.getUri().length(), req.getUriWithParams().indexOf("?")) ;
+					String queryStr = URLDecoder.decode(req.getUriWithParams().substring(indexOf),
+							RequestUtil.ENC_UTF_8);
+					String loc = proxy_pass + req.getUri().substring(uri.length()) + queryStr;
+					req.getMethod().proxy(proxyTh.get(null), loc, req, res);
+				} catch (IOException e) {
+					logger.error("Failed in route " + this + " :: ", e);
+					Configuration.exceptionHandler.handle(e);
+				}finally {
+					ctx.finish();
+				}
 			}
-		}
+		});
 	}
 
-	final void handleProxy(Request req, Response res) throws IOException {
-		int indexOf = Math.max(req.getUri().length(), req.getUriWithParams().indexOf("?")) ;
-		String queryStr = URLDecoder.decode(req.getUriWithParams().substring(indexOf),
-				RequestUtil.ENC_UTF_8);
-		String loc = this.proxy_pass + req.getUri().substring(this.uri.length()) + queryStr;
-		HttpMethodCall httpMethodCall = proxyTh.get(null);
-		ProxyRes pres = null;
-		switch (req.getMethod()) {
-		case HEAD:
-			pres = httpMethodCall.head(loc, req.getHeaders());
-			break;
-		case OPTIONS:
-			pres = httpMethodCall.options(loc, RequestUtil.convert(req.getBody()) , req.getHeaders());
-			break;
-		case CONNECT:
-			pres = httpMethodCall.connect(loc, req.getHeaders());
-			break;
-		case TRACE:
-			pres = httpMethodCall.trace(loc, req.getHeaders());
-			break;
-		case GET:
-			pres = httpMethodCall.get(loc, req.getHeaders());
-			break;
-		case POST:
-			pres = httpMethodCall.post(loc, RequestUtil.convert(req.getBody()), req.getHeaders());
-			break;
-		case PUT:
-			pres = httpMethodCall.put(loc, RequestUtil.convert(req.getBody()), req.getHeaders());
-			break;
-		case DELETE:
-			pres = httpMethodCall.delete(loc, req.getHeaders());
-			break;
-		default:
-			break;
-		}
-		if (pres != null) {
-			res.setResponseCode(pres.responseCode);
-			res.append(pres.response);
-			res.putAllHeader(pres.headers);
-		}
-	}
-
-//	final Lock readLock = new AtomicWFReentrantLock();
-	
 	final void handleBrowser(Request req, Response res) throws IOException {
-		String fileLoc = this.dir + URLDecoder.decode(req.getUri().substring(this.uri.length()), RequestUtil.ENC_UTF_8);
+		String fileLoc = this.dir + Utils.replaceAll(URLDecoder.decode(req.getUri().substring(this.uri.length()), RequestUtil.ENC_UTF_8), "/", File.separator)  ;
 		File file = new File(fileLoc);
 		if (!file.exists()) {
 			res.setResponseCode(404);
@@ -309,36 +283,9 @@ class ProxyRoute extends Route {
 					res.putHeader("Content-Type", typeObj);
 				
 			}
+			res.putHeader("Content-Disposition", "inline; filename=\""+file.getName()+"\"");
 		}
-//		ByteData bytes = getWr(files.get(fileLoc)) ;//getOriginalBytes(file);
-//		if (bytes == null) {
-//			readLock.lock();
-//			bytes = getWr(files.get(fileLoc));
-//			if( bytes == null ){
-//				try {
-//					byte[] data = RequestUtil.read(file);//new byte[bb.remaining()];
-//					if (data!=null) {
-//						bytes = new ByteData(data);
-//						files.put(fileLoc, new FileData(new WeakReference<ByteData>(bytes), file));
-//					}
-//				} finally {
-//					readLock.unlock();
-//				}
-//			}else{
-//				readLock.unlock();
-//			}
-//		}
-//		if (bytes != null) {
-//			byte[] array = bytes.array();//bytes.array();//new byte[bytes.remaining()];
-			//			bytes.get(array, 0, array.length);
-//			res.append(array);
-		if( file.exists() ){
-			ByteData bytes = new ByteData(file);
-			res.append(bytes);
-			res.putHeader("Content-Length", bytes.length());
-		}else{
-			res.setResponseCode(404);
-		}
+		res.append(new ByteData(file));
 	}
 
 	void handleDirectory(Request req, Response res, File f) throws IOException {
@@ -365,52 +312,26 @@ class ProxyRoute extends Route {
 		res.putHeader("Content-Length", buf.length());
 	}
 
-//	final ByteData getWr(FileData ref){
-//		if( ref == null ) return null;
-//		else{
-//			if(!ref.file.exists()){
-//				files.remove(ref.file.getAbsolutePath());
-//				return null;
-//			}else if ( ref.time < ref.file.lastModified() ){
-//				files.remove(ref.file.getAbsolutePath());
-//				return null;
-//			}else{
-//				return ref.data.get();
-//			}
-//		} 
-//	}
-	
-	@Override
-	final Response getResponse(Request req) {
-		if (!NullCheck.isNullOrEmpty(dir)) {
-			return super.getResponse(req);
-		} else {
-			return new ResponseImpl(req, headers);
-		}
-	}
-
 	@Override
 	final void disable() {
 		super.disable();
-//		if( this.files!=null ) this.files.clear();
 		if( this.proxyTh!=null ) this.proxyTh.clearAll();
 	}
 
 	@Override
 	final void close() {
 		super.close();
-//		if( this.files!=null ) this.files.clear();
 		if( this.proxyTh!=null ) this.proxyTh.clearAll();
 	}
 
 	@Override
-	final public String toString() {
-		return "ProxyRoute [name=" + name + ", uri=" + uri + ", httpMethod=" + httpMethod + "]";
+	public String toString() {
+		return "ProxyRoute [proxy_pass=" + proxy_pass + ", dir=" + dir + ", name=" + name + ", uri=" + uri
+				+ ", httpMethod=" + httpMethod + ", headers=" + Utils.toString(headers) + "]";
 	}
-
 }
 final class AdminRoute extends ProxyRoute {
-	static final Map<String,String> authTokens = new Amap<>();
+	static final Map<String,String> authTokens = new Amap<String,String>();
 	AdminRoute() {
 		super("adminSite", null, Configuration.ADMIN_LOC, "/admin", HttpMethod.ALL, null, null, false, Configuration.defaultResponseHeader);
 	}
@@ -424,66 +345,22 @@ final class AdminRoute extends ProxyRoute {
 	void handleFile(Response res, String fileLoc, File file) throws IOException {
 		super.handleFile(res, fileLoc, file);
 		if(fileLoc.endsWith("Admin.html")){
-			SelectionKey key = StaticRef.getSelectionKey();
-			if (key!=null) {
-				InetAddress remoteHostAddress = ((SocketChannel) key.channel()).socket().getInetAddress();
+//			SelectionKey key = StaticRef.getSelectionKey();
+//			if (key!=null) {
+				InetAddress remoteHostAddress = StaticRef.getRemoteHostAddress();// ((SocketChannel) key.channel()).socket().getInetAddress();
 				if (remoteHostAddress!=null) {
 					String keyv = remoteHostAddress.toString();
+//					System.err.println("\n\n************** auth token "+keyv+"\n\n");
 					authTokens.put(keyv, String.valueOf(System.currentTimeMillis()));
 				}
-			}
+//			}
 		}
-		
 	}
-	
-}
-final class FileData{
-	final long time;
-	final WeakReference<ByteData> data;
-	final File file;
-	FileData(WeakReference<ByteData> data,File file) {
-		super();
-		this.data = data;
-		this.file = file;
-		this.time = file.lastModified();
-	}
-	
-}
-final class ProxyRes {
-	final String response;
-	final int responseCode;
-	Map<String, List<Object>> headers = new Amap<String, List<Object>>();
-
-	ProxyRes(int responseCode, String response) {
-		super();
-		this.responseCode = responseCode;
-		this.response = response;
-	}
-
 }
 
-interface HttpMethodCall {
-	ProxyRes trace(String uri, Map<String, List<Object>> headers) throws IOException;
+final class JavaHttpMethodCall {
 
-	ProxyRes head(String uri, Map<String, List<Object>> headers) throws IOException;
-
-	ProxyRes connect(String uri, Map<String, List<Object>> headers) throws IOException;
-
-	ProxyRes options(String uri, String body, Map<String, List<Object>> headers) throws IOException;
-
-	ProxyRes get(String uri, Map<String, List<Object>> headers) throws IOException;
-
-	ProxyRes post(String uri, String body, Map<String, List<Object>> headers) throws IOException;
-
-	ProxyRes put(String uri, String body, Map<String, List<Object>> headers) throws IOException;
-
-	ProxyRes delete(String uri, Map<String, List<Object>> headers) throws IOException;
-}
-
-class JavaHttpMethodCall implements HttpMethodCall {
-
-	@Override
-	public ProxyRes delete(String uri, Map<String, List<Object>> headers) throws IOException {
+	public void delete(String uri, Map<String, List<Object>> headers, Response res) throws IOException {
 		// System.out.println("DELETE "+uri);
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
@@ -492,12 +369,12 @@ class JavaHttpMethodCall implements HttpMethodCall {
 		// add requestImpl header
 		addReqHeaders(con, headers);
 
-		return extractResponse(con);
+		pipeResponse(con,res);
 	}
 
 	private void addReqHeaders(final HttpURLConnection con, Map<String, List<Object>> headers) {
-		con.setRequestProperty("User-Agent", "Java8");
-		con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
+//		con.setRequestProperty("User-Agent", "Java8");
+//		con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
 		if (!NullCheck.isNullOrEmpty(headers)) {
 			Set<Entry<String, List<Object>>> entrySet = headers.entrySet();
 			for (Entry<String, List<Object>> e : entrySet) {
@@ -511,8 +388,7 @@ class JavaHttpMethodCall implements HttpMethodCall {
 		}
 	}
 
-	@Override
-	public ProxyRes get(final String uri, Map<String, List<Object>> headers) throws IOException {
+	public void get(final String uri, Map<String, List<Object>> headers, Response res) throws IOException {
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
@@ -520,11 +396,10 @@ class JavaHttpMethodCall implements HttpMethodCall {
 		con.setRequestMethod("GET");
 		addReqHeaders(con, headers);
 
-		return extractResponse(con);
+		pipeResponse(con,res);
 	}
 
-	@Override
-	public ProxyRes post(final String uri, final String body, Map<String, List<Object>> headers) throws IOException {
+	public void post(final String uri, final String body, Map<String, List<Object>> headers, Response res) throws IOException {
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
@@ -540,11 +415,10 @@ class JavaHttpMethodCall implements HttpMethodCall {
 		} finally {
 			wr.close();
 		}
-		return extractResponse(con);
+		pipeResponse(con,res);
 	}
 
-	@Override
-	public ProxyRes put(final String uri, final String body, Map<String, List<Object>> headers) throws IOException {
+	public void put(final String uri, final String body, Map<String, List<Object>> headers, Response res) throws IOException {
 
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
@@ -561,40 +435,39 @@ class JavaHttpMethodCall implements HttpMethodCall {
 		} finally {
 			wr.close();
 		}
-		return extractResponse(con);
+		pipeResponse(con,res);
 	}
 
-	private ProxyRes extractResponse(final HttpURLConnection con) throws IOException {
-		int responseCode = con.getResponseCode();
-
+	private void pipeResponse(final HttpURLConnection con, Response res) throws IOException {
+		final int responseCode = con.getResponseCode();
+		res.setResponseCode(responseCode);
 		Map<String, List<String>> map = con.getHeaderFields();
 
-		final StringBuffer response = new StringBuffer();
-		final BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
 		try {
-			String inputLine;
-			while ((inputLine = in.readLine()) != null) {
-				response.append(inputLine);
-			}
+			int nRead = 0;
+			byte[] responseData = new byte[Configuration.defaultChunkSize];
+			while ((nRead = con.getInputStream().read(responseData)) != -1) {
+				if (nRead == responseData.length)
+					res.append(new ByteData(responseData));
+				else
+					res.append(new ByteData(Arrays.copyOfRange(responseData, 0, nRead)));
+
+				responseData = new byte[Configuration.defaultChunkSize];
+			} 
 		} finally {
-			in.close();
+			con.getInputStream().close();
 		}
-		ProxyRes proxyRes = new ProxyRes(responseCode, response.toString());
 		for (Map.Entry<String, List<String>> entry : map.entrySet()) {
 			final String key = entry.getKey();
 			List<String> value = entry.getValue();
 			if (!NullCheck.isNullOrEmpty(key) && !NullCheck.isNullOrEmpty(value)){
-				List<Object> ovs = new DoublyLinkedList<>();
-				ovs.addAll(value);
-				proxyRes.headers.put(key, ovs);
+				for( String v1:value )
+					res.putHeader(key, v1);
 			}
-				
 		}
-		return proxyRes;
 	}
 
-	@Override
-	public ProxyRes trace(String uri, Map<String, List<Object>> headers) throws IOException {
+	public void trace(String uri, Map<String, List<Object>> headers, Response res) throws IOException {
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
@@ -602,11 +475,10 @@ class JavaHttpMethodCall implements HttpMethodCall {
 		con.setRequestMethod("TRACE");
 		addReqHeaders(con, headers);
 
-		return extractResponse(con);
+		pipeResponse(con,res);
 	}
 
-	@Override
-	public ProxyRes head(String uri, Map<String, List<Object>> headers) throws IOException {
+	public void head(String uri, Map<String, List<Object>> headers, Response res) throws IOException {
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
@@ -614,17 +486,13 @@ class JavaHttpMethodCall implements HttpMethodCall {
 		con.setRequestMethod("HEAD");
 		addReqHeaders(con, headers);
 
-		return extractResponse(con);
+		pipeResponse(con,res);
 	}
 
-	@Override
-	public ProxyRes connect(String uri, Map<String, List<Object>> headers) throws IOException {
-		// TODO Auto-generated httpMethod stub
-		return null;
+	public void connect(String uri, Map<String, List<Object>> headers, Response res) throws IOException {
 	}
 
-	@Override
-	public ProxyRes options(String uri, String body, Map<String, List<Object>> headers) throws IOException {
+	public void options(String uri, String body, Map<String, List<Object>> headers, Response res) throws IOException {
 		final URL obj = new URL(uri);
 		final HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
@@ -640,7 +508,7 @@ class JavaHttpMethodCall implements HttpMethodCall {
 		} finally {
 			wr.close();
 		}
-		return extractResponse(con);
+		pipeResponse(con,res);
 	}
 
 }
@@ -739,17 +607,96 @@ final class AsynContextImpl  implements AsynContext{
 	private static final Logger logger = LoggerFactory.getLogger(AsynContextImpl.class);
 	
 	boolean flag = false;
-	final SelectionKey key;
-	
+	SelectionKey key;
+	Selector clientSelector;
 	final Request request;
 	final Response response;
-	final ConnectionState state;
+	ConnectionState state;
 
 	final int threadId = Thread.currentThread().hashCode();
 	
-	AsynContextImpl(SelectionKey key, Request request, Response response, ConnectionState state) {
+	AsynContextImpl(SelectionKey key, Request request, Response response, ConnectionState state, Selector clientSelector) {
 		super();
 		this.key = key;
+		this.clientSelector = clientSelector;
+		this.request = request;
+		this.response = response;
+		this.state = state;
+	}
+
+	@Override
+	public void setAsynchronousFinish(boolean flag) {
+		if( this.threadId == Thread.currentThread().hashCode() ){
+			this.flag = flag;
+			try {
+				((SocketChannel) key.channel()).socket().setSoTimeout(0);
+			} catch (SocketException e) {
+				logger.error("Error in setSoTimeout " + this + " :: ", e);
+			}
+		}else{
+			throw new IllegalStateException("Cannot modify ouside the created Thread!");
+		}
+	}
+
+	@Override
+	public boolean isAsynchronousFinish() {
+		return flag;
+	}
+
+	/* (non-Javadoc)
+	 * @see org.arivu.nioserver.AsynContext#getRequest()
+	 */
+	@Override
+	public Request getRequest() {
+		return request;
+	}
+
+	/* (non-Javadoc)
+	 * @see org.arivu.nioserver.AsynContext#getResponse()
+	 */
+	@Override
+	public Response getResponse() {
+		return response;
+	}
+
+	/**
+	 * 
+	 */
+	@Override
+	public void finish() {
+		if( flag && key.isValid()){
+			state.resBuff = RequestUtil.getResponseBytes(request, response);
+			if( response instanceof ResponseImpl )
+				((ResponseImpl)response).done = true;
+			
+			logger.debug(" request :: {} response :: {}", request.toString() ,state.resBuff.cl);			
+			key.interestOps(SelectionKey.OP_WRITE);
+			clientSelector.wakeup();
+			clientSelector = null;
+			key = null;
+		}
+	}
+	
+}
+/**
+ * @author P
+ *
+ */
+final class AsynContextImplJ7Nio  implements AsynContext{
+	private static final Logger logger = LoggerFactory.getLogger(AsynContextImplJ7Nio.class);
+	Connection connection;
+	AsynchronousSocketChannel asc;
+	boolean flag = false;
+	final Request request;
+	final Response response;
+	ConnectionState state;
+
+	final int threadId = Thread.currentThread().hashCode();
+	
+	AsynContextImplJ7Nio(Connection connection, Request request, Response response, ConnectionState state, AsynchronousSocketChannel asc) {
+		super();
+		this.connection = connection;
+		this.asc = asc;
 		this.request = request;
 		this.response = response;
 		this.state = state;
@@ -785,23 +732,35 @@ final class AsynContextImpl  implements AsynContext{
 		return response;
 	}
 
-	/* (non-Javadoc)
-	 * @see org.arivu.nioserver.AsynContext#getKey()
+	/**
+	 * 
 	 */
 	@Override
-	public SelectionKey getKey() {
-		return key;
-	}
-
-	@Override
 	public void finish() {
-		if( flag && key.isValid()){
+		if( flag ){
 			state.resBuff = RequestUtil.getResponseBytes(request, response);
-//			if (state.resBuff != null && state.resBuff.cl > Configuration.defaultChunkSize) {
-//				((SocketChannel) key.channel()).socket().setSoTimeout(0);
-//			}
+			if( response instanceof ResponseImpl )
+				((ResponseImpl)response).done = true;
+			
 			logger.debug(" request :: {} response :: {}", request.toString() ,state.resBuff.cl);			
-			key.interestOps(SelectionKey.OP_WRITE);
+			connection.finish(asc);
+			asc = null;
+			connection = null;
+		}
+	}
+	
+}
+final class DefaultExceptionHandler implements ExceptionHandler{
+	private static final Logger logger = LoggerFactory.getLogger(DefaultExceptionHandler.class);
+	
+	@Override
+	public void handle(Throwable t) {
+		Response res = StaticRef.getResponse();
+		res.setResponseCode(400);
+		try {
+			res.append(RequestUtil.getStackTrace(t));
+		} catch (IOException e1) {
+			logger.error("Failed in route " + this + " :: ", e1);
 		}
 	}
 	

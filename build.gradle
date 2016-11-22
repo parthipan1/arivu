@@ -400,7 +400,6 @@ project(':resourcepool'){
 dependencies {
     compile project(':datastructure')
     testCompile project(':lightninglog')
-    runtime project(':lightninglog')
   }
 }
 
@@ -413,13 +412,26 @@ dependencies {
 }
 
 project(':nioserver'){
-dependencies {
+   dependencies {
+	
 	compile 'org.slf4j:slf4j-api:1.7.21'
 	compile project(':resourcepool')
 	compile project(':datastructure')
 	compile project(':utils')
-	//compile project(':nioserver-admin')
-    runtime project(':lightninglog')
+    compile project(':lightninglog')
+	
+	testCompile group: 'io.rest-assured', name: 'rest-assured', version: '3.0.1'
+	testCompile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.2'
+	    
+  }
+  test {
+    forkEvery = 1
+  }
+  
+  jar {
+    manifest {
+        attributes 'Main-Class': 'org.arivu.nioserver.Server'
+    }
   }
   
 	// deployment directory
@@ -458,6 +470,11 @@ dependencies {
 	
 	copy{
 		from("favicon.ico")
+		into(deployDir+FS+"dist"+FS+"bin") 
+	} 
+	
+	copy{
+		from("nioserver.jks")
 		into(deployDir+FS+"dist"+FS+"bin") 
 	} 
 	
