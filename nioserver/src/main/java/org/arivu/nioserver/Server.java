@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
  * <li>
  * -DsingleThread=true/false -> Either run on single thread mode or multi-threaded mode (only read and process request). default to true
  *     Note: Write operation is asynchronous and always happens in new seperate thread even on single thread mode. Performance may vary based on the use case.</li>
- * <li>-DuseJ7Nio=true/false -> Either to use Java7Nio async library. default true , if set to false uses J4 selector nio library.</li>
+ * <li>-DuseJ7Nio=true/false -> Either to use Java7Nio async library. default false.</li>
  * <li>-DthreadCnt=xxx(Number)  -> no of threads (only on multi threaded mode) default 50</li>
  * <li>-DschedulerCnt=xxx(Number)  -> no of schedule threads default 2</li>
  * <li>-Daccess.log=<Location of access.log> -> default ../logs/access.log. Format of access log is standard "[EEE, dd MMM yyyy HH:mm:ss z] uri httpMethod responseCode contentLength [ProcessTime in millisecs] remoteAddress"</li>
@@ -73,6 +73,9 @@ import org.slf4j.LoggerFactory;
  *
  */
 public final class Server {
+	private static final String DEFAULT_J7NIO = "false";
+	private static final String DEFAULT_SSL = "false";
+
 	public static final String DEFAULT_PORT = "8080";
 
 	private static final Logger logger = LoggerFactory.getLogger(Server.class);
@@ -234,8 +237,8 @@ public final class Server {
 			try {
 				beforeStart();
 				final int port = Integer.parseInt(Env.getEnv("port", Server.DEFAULT_PORT));
-				final boolean ssl = Boolean.parseBoolean(Env.getEnv("ssl", "false"));
-				final boolean useJ7Nio =  Boolean.parseBoolean(Env.getEnv("useJ7Nio", "true"));
+				final boolean ssl = Boolean.parseBoolean(Env.getEnv("ssl", DEFAULT_SSL));
+				final boolean useJ7Nio =  Boolean.parseBoolean(Env.getEnv("useJ7Nio", DEFAULT_J7NIO));
 				if(ssl){
 					(handler = new SelectorHandler()).start(port, ssl);
 				}else if(useJ7Nio){
@@ -306,8 +309,8 @@ public final class Server {
 //	});
 	
 	private static void beforeStart() throws IOException {
-		final boolean ssl = Boolean.parseBoolean(Env.getEnv("ssl", "false"));
-		final boolean useJ7Nio =  Boolean.parseBoolean(Env.getEnv("useJ7Nio", "true"));
+		final boolean ssl = Boolean.parseBoolean(Env.getEnv("ssl", DEFAULT_SSL));
+		final boolean useJ7Nio =  Boolean.parseBoolean(Env.getEnv("useJ7Nio", DEFAULT_J7NIO));
 		if(ssl){
 			if( Configuration.SINGLE_THREAD_MODE ){
 				exe = Executors.newCachedThreadPool();
@@ -450,8 +453,8 @@ public final class Server {
 
 	static void stop() {
 //		Runtime.getRuntime().removeShutdownHook(systemShutdownHook);
-		final boolean ssl = Boolean.parseBoolean(Env.getEnv("ssl", "false"));
-		final boolean useJ7Nio =  Boolean.parseBoolean(Env.getEnv("useJ7Nio", "true"));
+		final boolean ssl = Boolean.parseBoolean(Env.getEnv("ssl", DEFAULT_SSL));
+		final boolean useJ7Nio =  Boolean.parseBoolean(Env.getEnv("useJ7Nio", DEFAULT_J7NIO));
 		if(ssl){
 			handler.close();
 		}else if(useJ7Nio){
