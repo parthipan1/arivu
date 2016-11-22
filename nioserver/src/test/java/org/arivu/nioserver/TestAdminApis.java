@@ -24,15 +24,15 @@ import io.restassured.RestAssured;
 
 public class TestAdminApis {
 //	private static final Logger logger = LoggerFactory.getLogger(TestHttpMethods.class);
-	static final String port = "8188";
 	
 	static ExecutorService exe = Executors.newFixedThreadPool(1);
 	
 	static void init(String singleThread) throws InterruptedException {
-		RestAssured.baseURI = "http://localhost:"+port;
+		RestAssured.baseURI = "http://localhost:"+TestHttpMethodsMultiThreaded.port;
 		System.setProperty("access.log", "./logs/access.test.log");
 		System.setProperty("singleThread", singleThread);
-		System.setProperty("port", port);
+		System.setProperty("useJ7Nio", TestHttpMethodsMultiThreaded.useJ7Nio);
+		System.setProperty("port", TestHttpMethodsMultiThreaded.port);
 		
 		System.setProperty("adminMod", "true");
 		System.setProperty("adminLoc", "./src/test/resources/admin");

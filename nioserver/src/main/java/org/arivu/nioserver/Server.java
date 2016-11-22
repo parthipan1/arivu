@@ -220,8 +220,8 @@ public final class Server {
 	static AsynchronousChannelGroup group = null;
 	static CountDownLatch  waitLatch = null;
 	static CompletionHandler<AsynchronousSocketChannel, Connection> completionHandler = null;
-	static final boolean ssl = Boolean.parseBoolean(Env.getEnv("ssl", "false"));
-	static final boolean useJ7Nio =  Boolean.parseBoolean(Env.getEnv("useJ7Nio", "true"));
+//	static final boolean ssl = Boolean.parseBoolean(Env.getEnv("ssl", "false"));
+//	static final boolean useJ7Nio =  Boolean.parseBoolean(Env.getEnv("useJ7Nio", "true"));
 	/**
 	 * @param args
 	 * @throws InterruptedException
@@ -234,6 +234,8 @@ public final class Server {
 			try {
 				beforeStart();
 				final int port = Integer.parseInt(Env.getEnv("port", Server.DEFAULT_PORT));
+				final boolean ssl = Boolean.parseBoolean(Env.getEnv("ssl", "false"));
+				final boolean useJ7Nio =  Boolean.parseBoolean(Env.getEnv("useJ7Nio", "true"));
 				if(ssl){
 					(handler = new SelectorHandler()).start(port, ssl);
 				}else if(useJ7Nio){
@@ -304,6 +306,8 @@ public final class Server {
 //	});
 	
 	private static void beforeStart() throws IOException {
+		final boolean ssl = Boolean.parseBoolean(Env.getEnv("ssl", "false"));
+		final boolean useJ7Nio =  Boolean.parseBoolean(Env.getEnv("useJ7Nio", "true"));
 		if(ssl){
 			if( Configuration.SINGLE_THREAD_MODE ){
 				exe = Executors.newCachedThreadPool();
@@ -446,6 +450,8 @@ public final class Server {
 
 	static void stop() {
 //		Runtime.getRuntime().removeShutdownHook(systemShutdownHook);
+		final boolean ssl = Boolean.parseBoolean(Env.getEnv("ssl", "false"));
+		final boolean useJ7Nio =  Boolean.parseBoolean(Env.getEnv("useJ7Nio", "true"));
 		if(ssl){
 			handler.close();
 		}else if(useJ7Nio){

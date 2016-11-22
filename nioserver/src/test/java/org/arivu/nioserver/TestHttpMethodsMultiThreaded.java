@@ -24,6 +24,9 @@ import io.restassured.RestAssured;
 import io.restassured.http.Headers;
 
 public class TestHttpMethodsMultiThreaded {
+	
+	static String useJ7Nio = "false";
+	
 	private static final String TEST_RESOURCE_BASE = "."+File.separator+"src"+File.separator+"test"+File.separator+"resources"+File.separator;
 	private static final String TEST_RESOURCE_ADMIN_BASE = TEST_RESOURCE_BASE+"admin";
 
@@ -73,6 +76,7 @@ public class TestHttpMethodsMultiThreaded {
 		
 		System.setProperty("access.log", "."+File.separator+"logs"+File.separator+"access.test.log");
 		System.setProperty("singleThread", ""+singleThread);
+		System.setProperty("useJ7Nio", useJ7Nio);
 		System.setProperty("port", port);
 
 		System.setProperty("adminMod", "true");
