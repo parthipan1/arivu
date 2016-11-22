@@ -101,9 +101,10 @@ final class Connection {
 	Route route = null;
 	boolean ssl = false;
 	SSLEngine engine;
-	
+	volatile boolean available = true;
 	Connection assign(boolean ssl) {
 		this.ssl = ssl;
+		this.available = false;
 		startTime = System.currentTimeMillis();
 		logger.debug("start connection {}",this);
 		return this;
@@ -117,6 +118,7 @@ final class Connection {
 		
 		ssl = true;
 		engine = null;
+		this.available = true;
 	}
 	 
 	void read(SelectionKey key, Selector clientSelector) throws IOException {
@@ -888,7 +890,10 @@ final class Connection {
 					} catch (IOException e1) {
 						logger.error("Failed in readAsynchronousSocketChannel :: ", e1);
 					}
-					pool.put(Connection.this);
+					
+					if(!Connection.this.available)
+						pool.put(Connection.this);
+					
 					return;
 				}
 				
