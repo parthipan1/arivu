@@ -888,6 +888,7 @@ final class Connection {
 					} catch (IOException e1) {
 						logger.error("Failed in readAsynchronousSocketChannel :: ", e1);
 					}
+					pool.put(Connection.this);
 					return;
 				}
 				
